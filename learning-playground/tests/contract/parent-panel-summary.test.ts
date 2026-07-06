@@ -14,6 +14,7 @@ import {
 import { createEmptyProgressProfile } from '../../src/core/progress';
 import type { ActivityAttemptEvent } from '../../src/types/events';
 import type { ParentObservation } from '../../src/types/observations';
+import type { ParentDifficultyAction } from '../../src/types/parent-actions';
 import type { ParentSettings } from '../../src/types/storage';
 
 describe('parent panel summary contract', () => {
@@ -25,13 +26,15 @@ describe('parent panel summary contract', () => {
       }),
     ];
     const observations = [makeObservation()];
+    const actions = [makeAction()];
 
-    const localHealth = buildLocalDataHealth(events, observations);
+    const localHealth = buildLocalDataHealth(events, observations, actions);
     const exportPayload = buildProgressExportPayload({
       settings: makeSettings(),
       childProfile: createEmptyProgressProfile('local-child'),
       events,
       observations,
+      actions,
       exportedAt: '2026-01-01T12:10:00.000Z',
     });
 
@@ -43,6 +46,7 @@ describe('parent panel summary contract', () => {
       total_events: 2,
       total_sessions: 1,
       total_observations: 1,
+      total_parent_actions: 1,
       first_event_timestamp: '2026-01-01T12:00:00.000Z',
       latest_event_timestamp: '2026-01-01T12:05:00.000Z',
       migrated_event_count: 1,
@@ -54,12 +58,14 @@ describe('parent panel summary contract', () => {
       { label: 'Events', value: '2' },
       { label: 'Sessions', value: '1' },
       { label: 'Parent Notes', value: '1' },
+      { label: 'Parent Actions', value: '1' },
       { label: 'Latest Event', value: '2026-01-01 12:05 UTC' },
     ]);
     expect(summary.metrics).toEqual([
       { label: 'Events', value: '2' },
       { label: 'Sessions', value: '1' },
       { label: 'Parent Notes', value: '1' },
+      { label: 'Parent Actions', value: '1' },
       { label: 'First Event', value: '2026-01-01 12:00 UTC' },
       { label: 'Latest Event', value: '2026-01-01 12:05 UTC' },
       { label: 'Migrated Events', value: '1' },
@@ -71,6 +77,7 @@ describe('parent panel summary contract', () => {
       total_events: 0,
       total_sessions: 0,
       total_observations: 0,
+      total_parent_actions: 0,
       migrated_event_count: 0,
     });
 
@@ -135,6 +142,21 @@ function makeObservation(): ParentObservation {
     child_id: 'local-child',
     note: 'Stayed focused.',
     created_at: '2026-01-01T12:08:00.000Z',
+  };
+}
+
+function makeAction(): ParentDifficultyAction {
+  return {
+    action_id: 'action-1',
+    session_id: 'session-1',
+    child_id: 'local-child',
+    skill_id: 'counting',
+    skill_label: 'Counting',
+    action_type: 'keep_stable',
+    source_recommendation: 'Keep stable',
+    source_status: 'Keep practicing here',
+    source_reason: 'Stay with this level and watch the next few attempts.',
+    created_at: '2026-01-01T12:09:00.000Z',
   };
 }
 

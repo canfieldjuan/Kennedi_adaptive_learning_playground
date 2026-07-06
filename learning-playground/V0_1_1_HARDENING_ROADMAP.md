@@ -176,16 +176,41 @@ Parent can answer:
 
 Only after the checklist is satisfied should the app add new activities or automatic adaptation.
 
-## Next Slice
+## Completed Slice: Parent Review UX Polish
 
-Parent Review UX Polish should come before new child activities.
+Status: Parent Review UX Polish is complete in v0.1.2.
 
-Build next:
+Completed:
 
 * Better empty states for no attempts, no guidance, and no parent notes.
 * Parent Panel data-health summary using local counts already included in export.
 * Easier scanning of guidance rows.
 * Focused tests for empty-state and data-health formatting.
+
+## Completed Slice: Parent-Approved Difficulty Actions
+
+Status: Parent-Approved Difficulty Actions are complete in v0.1.3.
+
+Completed:
+
+* Local parent-only difficulty action records.
+* Parent controls to record use-suggestion, keep-stable, add-support, promote-gently, review-later, or ignore-for-now decisions.
+* Recent parent action history in the Parent Panel.
+* Export includes action records.
+* Clear Progress Data clears action records.
+* Focused tests for action storage, export, clear behavior, and labels.
+
+## Next Slice
+
+Parent Gate Hardening should come before adding new child activities or making the Parent Panel more prominent.
+
+Build next:
+
+* Replace the hidden five-tap gear with a clearer parent-gate interaction.
+* Require a local parent PIN or simple parent challenge before rendering `#parent`.
+* Keep the gate local-only.
+* Do not add accounts, backend auth, or cloud sync.
+* Add focused tests for route gating and local-only gate behavior.
 
 Still not changing:
 
@@ -193,4 +218,5 @@ Still not changing:
 * No backend.
 * No accounts or cloud sync.
 * No automatic child-facing routing.
+* No automatic difficulty changes.
 * No rewards, streaks, rankings, or pressure loops.

@@ -27,6 +27,11 @@ export type {
 export type { ParentObservation } from './observations';
 
 export type {
+  ParentDifficultyAction,
+  ParentDifficultyActionType,
+} from './parent-actions';
+
+export type {
   ParentSettings,
   ApprovedAsset,
   StorageContract,

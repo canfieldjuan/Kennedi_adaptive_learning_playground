@@ -87,8 +87,8 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 10 test files passing
-- 31 tests passing
+- 14 test files passing
+- 43 tests passing
 
 Browser smoke checks confirmed:
 
@@ -97,7 +97,9 @@ Browser smoke checks confirmed:
 - Session Review renders.
 - Recent Attempts renders.
 - Parent Guidance renders.
-- Parent Notes textbox and save button render.
+- Parent Guidance lets a parent record local difficulty action decisions.
+- Parent Notes history, textbox, and save button render.
+- Local Data Snapshot renders.
 - No Vite/browser error overlay appeared.
 
 ## What We Intentionally Have Not Built
@@ -111,7 +113,7 @@ Browser smoke checks confirmed:
 - No public sharing.
 - No rewards, streaks, leaderboards, or pressure loops.
 - No child-facing AI generation.
-- No schema expansion beyond what was already needed for the original MVP.
+- No activity schema expansion beyond what was already needed for the original MVP.
 
 ## Remaining Risks
 
@@ -125,7 +127,11 @@ Events, observations, and progress currently live in localStorage. That is fine 
 
 ### Parent Notes Model
 
-Storage supports multiple observations, but the UI currently behaves like one editable latest note for the reviewed session. That is acceptable for now, but a later version may want a note history.
+Parent notes now preserve history for the reviewed session. A later version may want editing or categorization, but the lightweight local note history is in place.
+
+### Parent Difficulty Actions
+
+Parent difficulty actions are local decision records only. They are useful for tracking what the parent chose to do with a recommendation, but they do not yet change future activity difficulty.
 
 ## Where We Are Headed
 
@@ -152,18 +158,21 @@ Parent can answer:
 - Parent Interpretation Layer: status, reasons, repeated error pattern detection, non-pressure guidance.
 - Export Polish: export metadata, app baseline/version, data sections included, and local data health.
 - Adaptive Recommendation v1: parent-visible recommendations only, with no automatic child routing.
+- Parent Notes History: previous notes display newest first, and saving a note appends instead of overwriting.
+- Parent Review UX Polish: compact local data snapshot, clearer empty states, and easier-to-scan guidance rows.
+- Parent-Approved Difficulty Actions: local action records, recent action history, export inclusion, and clear-data support.
 
-### Next Slice: Parent Review UX Polish
+### Next Slice: Parent Gate Hardening
 
-Goal: make the Parent Panel easier to scan during ordinary parent use.
+Goal: make Parent Panel access intentional without exposing a normal child-facing menu item or pretending the app has account security.
 
 Planned work:
 
-- Improve empty states when there are no attempts, no guidance, or no observations.
-- Add a compact local data health summary inside the Parent Panel using the same counts as export.
-- Make the guidance rows easier to scan by grouping status, recommendation, and reason.
-- Keep raw ids in export data only, not as primary parent labels.
-- Add focused tests for data-health summary formatting and empty-state behavior.
+- Replace the five-tap hidden gear with a clearer parent-gate interaction.
+- Require a local parent PIN or simple parent challenge before rendering `#parent`.
+- Keep the PIN local-only.
+- Do not add accounts, backend auth, or cloud sync.
+- Add tests for route gating and local-only gate behavior.
 
 Not in scope:
 
@@ -171,28 +180,19 @@ Not in scope:
 - No backend.
 - No child UI changes.
 - No activity schema changes.
-- No automatic difficulty changes.
+- No automatic difficulty changes or routing.
 - No rewards, streaks, rankings, or pressure loops.
 
-### After That: Parent Notes History
+### Later: Parent-Controlled Difficulty Application
 
-Goal: let the parent preserve more than the latest note without turning notes into a heavy journaling system.
-
-Possible work:
-
-- Show previous notes for the reviewed session.
-- Allow adding a new note without overwriting the latest note.
-- Keep notes local and included in export.
-
-### Later: Parent-Approved Difficulty Actions
-
-Goal: let a parent act on recommendations without automatic child-facing routing.
+Goal: after parent action records are trustworthy, decide whether any approved action should affect future activity difficulty.
 
 Possible work:
 
 - Parent sees the recommendation first.
 - Parent can ignore it.
 - Parent can choose a difficulty adjustment manually.
+- Any future application is explicit and reversible.
 - No streaks or grind loops.
 - No adaptive routing until parent review is proven trustworthy.
 
@@ -200,6 +200,6 @@ Possible work:
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, and a basic parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, and a parent session review layer.
 
-That is now the correct base for v0.1.1 hardening. The next smart move is polishing parent review usability and data-health visibility before adding more activity types.
+The current v0.1.3 base has parent review usability polish and parent-approved difficulty action records in place. The next smart move is parent gate hardening, still without accounts, backend auth, or child-facing automatic adaptation.

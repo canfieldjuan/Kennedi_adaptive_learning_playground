@@ -6,6 +6,7 @@ import type { ParentSettings } from '../types/storage';
 import type { StorageServiceInterface } from '../types/runtime';
 import type { ActivityAttemptEvent } from '../types/events';
 import type { ParentObservation } from '../types/observations';
+import type { ParentDifficultyAction } from '../types/parent-actions';
 import type { ChildProgressProfile } from '../types/progress';
 import {
   buildProgressProfileFromEvents,
@@ -16,6 +17,7 @@ import { buildProgressExportJson } from './export-data';
 const SETTINGS_KEY = 'lp_parent_settings';
 const PROGRESS_KEY = 'lp_child_progress_profile';
 const OBSERVATIONS_KEY = 'lp_parent_observations';
+const DIFFICULTY_ACTIONS_KEY = 'lp_parent_difficulty_actions';
 const DEFAULT_CHILD_ID = 'local-child';
 
 export interface KeyValueStorage {
@@ -142,12 +144,49 @@ export class StorageService implements StorageServiceInterface {
     this.localStore.removeItem(OBSERVATIONS_KEY);
   }
 
+  getParentDifficultyActions(): ParentDifficultyAction[] {
+    try {
+      const raw = this.localStore.getItem(DIFFICULTY_ACTIONS_KEY);
+      if (!raw) return [];
+
+      const actions = JSON.parse(raw) as ParentDifficultyAction[];
+      return actions.filter(isParentDifficultyAction);
+    } catch {
+      return [];
+    }
+  }
+
+  saveParentDifficultyAction(action: ParentDifficultyAction): void {
+    const actions = this.getParentDifficultyActions();
+    const index = actions.findIndex((stored) => (
+      stored.action_id === action.action_id
+    ));
+
+    const nextActions = [...actions];
+    if (index >= 0) {
+      nextActions[index] = action;
+    } else {
+      nextActions.push(action);
+    }
+
+    try {
+      this.localStore.setItem(DIFFICULTY_ACTIONS_KEY, JSON.stringify(nextActions));
+    } catch (err) {
+      console.error('[Storage] Failed to save parent difficulty action:', err);
+    }
+  }
+
+  clearParentDifficultyActions(): void {
+    this.localStore.removeItem(DIFFICULTY_ACTIONS_KEY);
+  }
+
   exportProgressData(events: ActivityAttemptEvent[]): string {
     return buildProgressExportJson({
       settings: this.getSettings(),
       childProfile: this.getProgressProfile(DEFAULT_CHILD_ID),
       events,
       observations: this.getParentObservations(),
+      actions: this.getParentDifficultyActions(),
     });
   }
 }
@@ -166,5 +205,36 @@ function isParentObservation(value: unknown): value is ParentObservation {
       observation.updated_at === undefined ||
       typeof observation.updated_at === 'string'
     )
+  );
+}
+
+function isParentDifficultyAction(
+  value: unknown
+): value is ParentDifficultyAction {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const action = value as Record<string, unknown>;
+  return (
+    typeof action.action_id === 'string' &&
+    typeof action.session_id === 'string' &&
+    typeof action.child_id === 'string' &&
+    typeof action.skill_id === 'string' &&
+    typeof action.skill_label === 'string' &&
+    isParentDifficultyActionType(action.action_type) &&
+    typeof action.source_recommendation === 'string' &&
+    typeof action.source_status === 'string' &&
+    typeof action.source_reason === 'string' &&
+    typeof action.created_at === 'string'
+  );
+}
+
+function isParentDifficultyActionType(value: unknown): boolean {
+  return (
+    value === 'use_suggestion' ||
+    value === 'keep_stable' ||
+    value === 'add_support' ||
+    value === 'promote_gently' ||
+    value === 'review_later' ||
+    value === 'ignore_for_now'
   );
 }

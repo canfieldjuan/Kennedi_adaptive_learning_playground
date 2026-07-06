@@ -41,6 +41,7 @@ export function formatParentDataHealth(
     { label: 'Events', value: String(health.total_events) },
     { label: 'Sessions', value: String(health.total_sessions) },
     { label: 'Parent Notes', value: String(health.total_observations) },
+    { label: 'Parent Actions', value: String(health.total_parent_actions) },
     {
       label: 'Latest Event',
       value: formatHealthTimestamp(health.latest_event_timestamp),
@@ -54,12 +55,12 @@ export function formatParentDataHealth(
       : 'No local activity data has been recorded yet.',
     compact_metrics: compactMetrics,
     metrics: [
-      ...compactMetrics.slice(0, 3),
+      ...compactMetrics.slice(0, 4),
       {
         label: 'First Event',
         value: formatHealthTimestamp(health.first_event_timestamp),
       },
-      compactMetrics[3],
+      compactMetrics[4],
       {
         label: 'Migrated Events',
         value: String(health.migrated_event_count),

@@ -8,6 +8,7 @@ import type { ChildProgressProfile } from './progress';
 import type { ActivityAttemptEvent } from './events';
 import type { ContentPack } from './content-pack';
 import type { ParentObservation } from './observations';
+import type { ParentDifficultyAction } from './parent-actions';
 
 export interface ParentSettings {
   child_display_name: string;
@@ -35,6 +36,7 @@ export interface StorageContract {
   child_profile: ChildProgressProfile;
   activity_events: ActivityAttemptEvent[];
   parent_observations: ParentObservation[];
+  parent_difficulty_actions: ParentDifficultyAction[];
   content_packs: ContentPack[];
   approved_assets: ApprovedAsset[];
 }

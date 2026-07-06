@@ -4,6 +4,10 @@
 
 import type { StorageServiceInterface } from '../../types/runtime';
 import type { ParentObservation } from '../../types/observations';
+import type {
+  ParentDifficultyAction,
+  ParentDifficultyActionType,
+} from '../../types/parent-actions';
 import type { SkillMasteryState } from '../../types/progress';
 import {
   buildParentSessionReview,
@@ -25,6 +29,11 @@ import {
   buildParentNoteHistory,
   type ParentNoteHistoryItem,
 } from '../../core/parent-notes-history';
+import {
+  buildParentDifficultyActionHistory,
+  formatParentDifficultyActionLabel,
+  type ParentDifficultyActionHistoryItem,
+} from '../../core/parent-difficulty-actions';
 import { buildLocalDataHealth } from '../../core/export-data';
 import {
   formatParentDataHealth,
@@ -41,6 +50,15 @@ import {
 import { ACTIVITY_TITLE_LOOKUP } from '../../content/activity-title-lookup';
 
 let _container: HTMLElement | null = null;
+
+const PARENT_ACTION_TYPES: ParentDifficultyActionType[] = [
+  'use_suggestion',
+  'keep_stable',
+  'add_support',
+  'promote_gently',
+  'review_later',
+  'ignore_for_now',
+];
 
 interface SettingRow {
   label: string;
@@ -66,6 +84,7 @@ export function renderParentPanel(
     .sort((a, b) => a.skill_id.localeCompare(b.skill_id));
   const events = getEvents();
   const observations = storage.getParentObservations();
+  const difficultyActions = storage.getParentDifficultyActions();
   const sessionReview = buildParentSessionReview(
     events,
     observations,
@@ -82,7 +101,11 @@ export function renderParentPanel(
     sessionReview,
     sessionEvents
   );
-  const localDataHealth = buildLocalDataHealth(events, observations);
+  const localDataHealth = buildLocalDataHealth(
+    events,
+    observations,
+    difficultyActions
+  );
   const dataHealthSummary = formatParentDataHealth(
     localDataHealth
   );
@@ -139,7 +162,13 @@ export function renderParentPanel(
     context,
     parent
   ));
-  _container.appendChild(createParentGuidanceSection(skillInterpretations));
+  _container.appendChild(createParentGuidanceSection(
+    skillInterpretations,
+    difficultyActions,
+    storage,
+    context,
+    parent
+  ));
 
   // Session Settings
   _container.appendChild(
@@ -363,6 +392,7 @@ function createDataManagementSection(
       clearEvents();
       storage.resetProgress();
       storage.clearParentObservations();
+      storage.clearParentDifficultyActions();
       alert('Progress data cleared.');
       destroyParentPanel();
       renderParentPanel(parent, storage, context);
@@ -551,7 +581,11 @@ function createRecentAttemptsList(
 }
 
 function createParentGuidanceSection(
-  interpretations: ParentSkillInterpretation[]
+  interpretations: ParentSkillInterpretation[],
+  actions: ParentDifficultyAction[],
+  storage: StorageServiceInterface,
+  context: ParentPanelContext,
+  parent: HTMLElement
 ): HTMLElement {
   const section = document.createElement('div');
   section.className = 'parent-section';
@@ -566,6 +600,7 @@ function createParentGuidanceSection(
     empty.className = 'parent-section__placeholder';
     empty.textContent = getParentEmptyStateMessage('guidance');
     section.appendChild(empty);
+    section.appendChild(createParentActionHistory(actions));
     return section;
   }
 
@@ -573,15 +608,28 @@ function createParentGuidanceSection(
   list.className = 'parent-guidance-list';
 
   for (const interpretation of interpretations) {
-    list.appendChild(createParentGuidanceRow(interpretation));
+    list.appendChild(createParentGuidanceRow(
+      interpretation,
+      (actionType) => {
+        storage.saveParentDifficultyAction(createParentDifficultyAction(
+          actionType,
+          interpretation,
+          context
+        ));
+        destroyParentPanel();
+        renderParentPanel(parent, storage, context);
+      }
+    ));
   }
 
   section.appendChild(list);
+  section.appendChild(createParentActionHistory(actions));
   return section;
 }
 
 function createParentGuidanceRow(
-  interpretation: ParentSkillInterpretation
+  interpretation: ParentSkillInterpretation,
+  onAction: (actionType: ParentDifficultyActionType) => void
 ): HTMLElement {
   const row = document.createElement('div');
   row.className = 'parent-guidance-row';
@@ -617,6 +665,23 @@ function createParentGuidanceRow(
   reason.appendChild(reasonText);
   row.appendChild(reason);
 
+  const actions = document.createElement('div');
+  actions.className = 'parent-guidance-row__actions';
+  actions.appendChild(createGuidanceLabel('Record parent choice'));
+
+  const actionButtons = document.createElement('div');
+  actionButtons.className = 'parent-guidance-row__action-buttons';
+  for (const actionType of PARENT_ACTION_TYPES) {
+    const button = document.createElement('button');
+    button.className = 'parent-guidance-action';
+    button.type = 'button';
+    button.textContent = formatParentDifficultyActionLabel(actionType);
+    button.addEventListener('click', () => onAction(actionType));
+    actionButtons.appendChild(button);
+  }
+  actions.appendChild(actionButtons);
+  row.appendChild(actions);
+
   const evidenceGroup = document.createElement('div');
   evidenceGroup.className = 'parent-guidance-row__evidence-group';
   evidenceGroup.appendChild(createGuidanceLabel('Evidence'));
@@ -638,6 +703,79 @@ function createParentGuidanceRow(
   evidenceGroup.appendChild(metrics);
   row.appendChild(evidenceGroup);
   return row;
+}
+
+function createParentActionHistory(
+  actions: ParentDifficultyAction[]
+): HTMLElement {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'parent-action-history';
+
+  const title = document.createElement('h3');
+  title.className = 'parent-review-accuracy__title';
+  title.textContent = 'Recent Parent Actions';
+  wrapper.appendChild(title);
+
+  const history = buildParentDifficultyActionHistory(actions);
+  if (history.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-section__placeholder';
+    empty.textContent = 'No parent difficulty actions recorded yet.';
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'parent-action-history__list';
+  for (const action of history) {
+    list.appendChild(createParentActionHistoryItem(action));
+  }
+  wrapper.appendChild(list);
+
+  return wrapper;
+}
+
+function createParentActionHistoryItem(
+  action: ParentDifficultyActionHistoryItem
+): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'parent-action-history__item';
+
+  const meta = document.createElement('span');
+  meta.className = 'parent-action-history__meta';
+  meta.textContent = `${action.timestamp_label} · ${action.skill_label}`;
+  item.appendChild(meta);
+
+  const choice = document.createElement('strong');
+  choice.className = 'parent-action-history__choice';
+  choice.textContent = `Choice: ${action.action_label}`;
+  item.appendChild(choice);
+
+  const reason = document.createElement('p');
+  reason.className = 'parent-action-history__reason';
+  reason.textContent = `Recommendation was ${action.recommendation_label}. ${action.source_reason}`;
+  item.appendChild(reason);
+
+  return item;
+}
+
+function createParentDifficultyAction(
+  actionType: ParentDifficultyActionType,
+  interpretation: ParentSkillInterpretation,
+  context: ParentPanelContext
+): ParentDifficultyAction {
+  return {
+    action_id: createDifficultyActionId(),
+    session_id: context.sessionId,
+    child_id: context.childId,
+    skill_id: interpretation.skill_id,
+    skill_label: interpretation.skill_label,
+    action_type: actionType,
+    source_recommendation: interpretation.recommendation,
+    source_status: interpretation.status,
+    source_reason: `${interpretation.status_reason} ${interpretation.recommendation_reason}`,
+    created_at: new Date().toISOString(),
+  };
 }
 
 function createGuidanceSignal(labelText: string, valueText: string): HTMLElement {
@@ -850,6 +988,14 @@ function createObservationId(): string {
   }
 
   return `observation-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createDifficultyActionId(): string {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `difficulty-action-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function destroyParentPanel(): void {

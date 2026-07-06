@@ -231,10 +231,11 @@ function buildExportQuestion(
 ): Phase2ChecklistItem {
   return answered(
     'Can I export everything?',
-    'Yes. Export Progress Data downloads local settings, progress, activity events, and parent observations.',
+    'Yes. Export Progress Data downloads local settings, progress, activity events, parent observations, and parent difficulty actions.',
     [
       `${dataHealth.total_events} event(s).`,
       `${dataHealth.total_observations} parent note(s).`,
+      `${dataHealth.total_parent_actions} parent action(s).`,
     ],
     ['Data Management']
   );
