@@ -1,0 +1,45 @@
+{
+  "id": "shapes-v1",
+  "version": 1,
+  "title": "Shapes",
+  "status": "approved",
+  "created_by": "system",
+  "approved_by_parent": true,
+  "items": [
+    {
+      "id": "circle",
+      "type": "shape",
+      "label": "Circle",
+      "image_path": "/assets/images/circle.svg",
+      "tags": ["shape", "round", "no-corners"]
+    },
+    {
+      "id": "square",
+      "type": "shape",
+      "label": "Square",
+      "image_path": "/assets/images/square.svg",
+      "tags": ["shape", "4-sides", "equal-sides"]
+    },
+    {
+      "id": "triangle",
+      "type": "shape",
+      "label": "Triangle",
+      "image_path": "/assets/images/triangle.svg",
+      "tags": ["shape", "3-sides"]
+    },
+    {
+      "id": "star",
+      "type": "shape",
+      "label": "Star",
+      "image_path": "/assets/images/star.svg",
+      "tags": ["shape", "points"]
+    },
+    {
+      "id": "heart",
+      "type": "shape",
+      "label": "Heart",
+      "image_path": "/assets/images/heart.svg",
+      "tags": ["shape", "curved"]
+    }
+  ]
+}

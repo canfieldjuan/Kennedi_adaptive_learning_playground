@@ -1,0 +1,7 @@
+{
+  "id": "family-safe-videos-v1",
+  "version": 1,
+  "title": "Family Safe Videos",
+  "description": "Parent-approved local video manifest. Starts empty until local assets are added.",
+  "items": []
+}

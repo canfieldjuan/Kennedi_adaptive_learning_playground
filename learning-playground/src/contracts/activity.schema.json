@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Learning Activity",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "title",
+    "domain",
+    "skill_ids",
+    "difficulty",
+    "interaction_model",
+    "estimated_duration_seconds",
+    "content",
+    "success_rules",
+    "feedback_rules",
+    "safety"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "literacy",
+        "phonics",
+        "math",
+        "logic",
+        "spatial",
+        "memory",
+        "science",
+        "music",
+        "art",
+        "emotional",
+        "language",
+        "coding_concepts"
+      ]
+    },
+    "skill_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "difficulty": {
+      "type": "object",
+      "required": ["level", "choice_count", "distractor_strength"],
+      "properties": {
+        "level": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "choice_count": { "type": "integer", "minimum": 2, "maximum": 6 },
+        "distractor_strength": {
+          "type": "string",
+          "enum": ["none", "easy", "medium", "hard"]
+        }
+      }
+    },
+    "interaction_model": {
+      "type": "string",
+      "enum": [
+        "tap",
+        "tap_to_match",
+        "tap_then_place",
+        "drag_drop",
+        "draw",
+        "color_fill",
+        "watch_then_do"
+      ]
+    },
+    "estimated_duration_seconds": {
+      "type": "integer",
+      "minimum": 15,
+      "maximum": 300
+    },
+    "content": {
+      "type": "object"
+    },
+    "success_rules": {
+      "type": "object"
+    },
+    "feedback_rules": {
+      "type": "object"
+    },
+    "safety": {
+      "type": "object",
+      "required": ["requires_parent_approval", "external_links_allowed"],
+      "properties": {
+        "requires_parent_approval": { "type": "boolean" },
+        "external_links_allowed": { "type": "boolean" },
+        "contains_video": { "type": "boolean" },
+        "contains_audio": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,0 +1,74 @@
+/**
+ * Contract tests: Validate all sample activities against the activity schema.
+ *
+ * Tests:
+ * 1. All activities match the activity schema.
+ * 2. No activity exceeds 300 seconds.
+ * 3. All child activities require parent approval.
+ * 4. All child activities set external_links_allowed to false.
+ */
+
+import { describe, test, expect } from 'vitest';
+import type { AnySchema } from 'ajv';
+import Ajv2020 from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
+import activitySchema from '../../src/contracts/activity.schema.json';
+import artColorCircle from '../../src/content/activities/art-color-circle.json';
+import mathCountStarsThree from '../../src/content/activities/math-count-stars-three.json';
+import phonicsFindB from '../../src/content/activities/phonics-find-b.json';
+import shapesFindCircle from '../../src/content/activities/shapes-find-circle.json';
+import videoVault from '../../src/content/activities/video-vault.json';
+
+const ajv = new Ajv2020({ strict: false });
+addFormats(ajv);
+const validate = ajv.compile(activitySchema as AnySchema);
+
+interface ActivityJson {
+  id: string;
+  estimated_duration_seconds: number;
+  safety: {
+    requires_parent_approval: boolean;
+    external_links_allowed: boolean;
+    contains_video?: boolean;
+    contains_audio?: boolean;
+  };
+  [key: string]: unknown;
+}
+
+const allActivities: ActivityJson[] = [
+  phonicsFindB as unknown as ActivityJson,
+  shapesFindCircle as unknown as ActivityJson,
+  mathCountStarsThree as unknown as ActivityJson,
+  artColorCircle as unknown as ActivityJson,
+  videoVault as unknown as ActivityJson,
+];
+
+describe('activity schema contract', () => {
+  test('all activities match the activity schema', () => {
+    for (const activity of allActivities) {
+      const valid = validate(activity);
+      if (!valid) {
+        console.error(`Activity "${activity.id}" failed validation:`, validate.errors);
+      }
+      expect(valid).toBe(true);
+    }
+  });
+
+  test('no activity exceeds 300 seconds estimated duration', () => {
+    for (const activity of allActivities) {
+      expect(activity.estimated_duration_seconds).toBeLessThanOrEqual(300);
+    }
+  });
+
+  test('all child activities require parent approval', () => {
+    for (const activity of allActivities) {
+      expect(activity.safety.requires_parent_approval).toBe(true);
+    }
+  });
+
+  test('all child activities set external_links_allowed to false', () => {
+    for (const activity of allActivities) {
+      expect(activity.safety.external_links_allowed).toBe(false);
+    }
+  });
+});

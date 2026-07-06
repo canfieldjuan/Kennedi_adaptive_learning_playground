@@ -1,0 +1,50 @@
+{
+  "id": "animals-v1",
+  "version": 1,
+  "title": "Animals",
+  "status": "approved",
+  "created_by": "system",
+  "approved_by_parent": true,
+  "items": [
+    {
+      "id": "bear",
+      "type": "word",
+      "label": "Bear",
+      "phonetic_hint": "behr",
+      "image_path": "/assets/images/bear.svg",
+      "tags": ["animal", "mammal", "forest"]
+    },
+    {
+      "id": "cat",
+      "type": "word",
+      "label": "Cat",
+      "phonetic_hint": "kat",
+      "image_path": "/assets/images/cat.svg",
+      "tags": ["animal", "mammal", "pet"]
+    },
+    {
+      "id": "dog",
+      "type": "word",
+      "label": "Dog",
+      "phonetic_hint": "dawg",
+      "image_path": "/assets/images/dog.svg",
+      "tags": ["animal", "mammal", "pet"]
+    },
+    {
+      "id": "fish",
+      "type": "word",
+      "label": "Fish",
+      "phonetic_hint": "fish",
+      "image_path": "/assets/images/fish.svg",
+      "tags": ["animal", "aquatic"]
+    },
+    {
+      "id": "bird",
+      "type": "word",
+      "label": "Bird",
+      "phonetic_hint": "burd",
+      "image_path": "/assets/images/bird.svg",
+      "tags": ["animal", "flying"]
+    }
+  ]
+}

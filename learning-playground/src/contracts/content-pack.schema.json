@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Content Pack",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "title",
+    "status",
+    "created_by",
+    "approved_by_parent",
+    "items"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "approved", "archived"]
+    },
+    "created_by": {
+      "type": "string",
+      "enum": ["parent", "ai", "system"]
+    },
+    "approved_by_parent": {
+      "type": "boolean"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "label"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["word", "image", "sound", "video", "shape", "story_prompt"]
+          },
+          "label": { "type": "string" },
+          "phonetic_hint": { "type": "string" },
+          "image_path": { "type": "string" },
+          "audio_path": { "type": "string" },
+          "video_path": { "type": "string" },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

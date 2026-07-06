@@ -1,0 +1,45 @@
+{
+  "id": "video-vault",
+  "version": 1,
+  "title": "Video Vault",
+  "domain": "language",
+  "skill_ids": ["vocabulary"],
+  "difficulty": {
+    "level": 0,
+    "choice_count": 2,
+    "distractor_strength": "none"
+  },
+  "interaction_model": "watch_then_do",
+  "estimated_duration_seconds": 120,
+  "content": {
+    "prompt_audio": "Pick a video.",
+    "manifest_id": "family-safe-videos-v1",
+    "empty_message": "No videos yet."
+  },
+  "success_rules": {
+    "manual_start_required": true,
+    "completion_action": "watch_video"
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "All done.",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Try another choice.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Tap play when you are ready.",
+      "highlight_target": false
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": true,
+    "contains_audio": true
+  }
+}
