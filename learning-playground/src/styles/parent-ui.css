@@ -126,6 +126,23 @@
   font-weight: 700;
 }
 
+.parent-data-snapshot {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.parent-data-snapshot__status {
+  color: var(--parent-text-soft);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.parent-data-snapshot__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(100px, 1fr));
+  gap: var(--space-sm);
+}
+
 .parent-review-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -314,11 +331,12 @@
 }
 
 .parent-recent-attempts__heading,
-.parent-guidance-row__summary {
+.parent-guidance-row__header {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-sm);
   align-items: center;
+  justify-content: space-between;
 }
 
 .parent-recent-attempts__activity,
@@ -365,9 +383,22 @@
   margin: 0;
 }
 
-.parent-guidance-row__why {
+.parent-guidance-row__why,
+.parent-guidance-row__next,
+.parent-guidance-row__evidence-group {
   display: grid;
   gap: 0.15rem;
+}
+
+.parent-guidance-row__next {
+  padding: var(--space-sm);
+  border-left: 4px solid var(--parent-primary);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.parent-guidance-row__next-value {
+  font-size: 0.98rem;
+  font-weight: 800;
 }
 
 .parent-guidance-signal__label {
@@ -473,12 +504,14 @@
   .parent-review-accuracy__row,
   .parent-recent-attempts__details,
   .parent-guidance-row__evidence,
+  .parent-data-snapshot__metrics,
   .parent-data-health__metrics {
     grid-template-columns: 1fr;
   }
 
-  .parent-guidance-row__summary {
+  .parent-guidance-row__header {
     display: grid;
+    justify-content: stretch;
   }
 }
 

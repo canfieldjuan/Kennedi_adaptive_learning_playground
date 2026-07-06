@@ -50,6 +50,12 @@ describe('parent panel summary contract', () => {
 
     expect(summary.status_label).toBe('Local data ready');
     expect(summary.status_detail).toBe('Latest activity: 2026-01-01 12:05 UTC.');
+    expect(summary.compact_metrics).toEqual([
+      { label: 'Events', value: '2' },
+      { label: 'Sessions', value: '1' },
+      { label: 'Parent Notes', value: '1' },
+      { label: 'Latest Event', value: '2026-01-01 12:05 UTC' },
+    ]);
     expect(summary.metrics).toEqual([
       { label: 'Events', value: '2' },
       { label: 'Sessions', value: '1' },
@@ -80,13 +86,13 @@ describe('parent panel summary contract', () => {
       'No counted attempts in this session yet.'
     );
     expect(getParentEmptyStateMessage('recent_attempts')).toBe(
-      'No recent attempts for this session yet.'
+      'No attempts in this session yet. After an activity, this will show the prompt, answer, hint use, outcome, and response time.'
     );
     expect(getParentEmptyStateMessage('guidance')).toBe(
-      'Guidance appears after there is review data for a skill.'
+      'Guidance appears after a skill has enough local attempts. The child flow stays unchanged while the parent reviews the fit.'
     );
     expect(getParentEmptyStateMessage('parent_notes')).toBe(
-      'No parent note saved for this session yet.'
+      'No parent notes for this session yet. Add anything you noticed; notes stay local and export with progress data.'
     );
   });
 });

@@ -129,6 +129,7 @@ export function renderParentPanel(
     ])
   );
 
+  _container.appendChild(createLocalDataSnapshotSection(dataHealthSummary));
   _container.appendChild(createPhase2ReviewSection(phase2ChecklistCoverage));
   _container.appendChild(createProgressSection(skillStates));
   _container.appendChild(createSessionReviewSection(
@@ -190,6 +191,32 @@ export function renderParentPanel(
     context
   ));
   parent.appendChild(_container);
+}
+
+function createLocalDataSnapshotSection(
+  summary: ParentDataHealthSummary
+): HTMLElement {
+  const section = document.createElement('div');
+  section.className = 'parent-section parent-data-snapshot';
+
+  const title = document.createElement('h2');
+  title.className = 'parent-section__title';
+  title.textContent = 'Local Data Snapshot';
+  section.appendChild(title);
+
+  const status = document.createElement('p');
+  status.className = 'parent-data-snapshot__status';
+  status.textContent = `${summary.status_label}. ${summary.status_detail}`;
+  section.appendChild(status);
+
+  const metrics = document.createElement('div');
+  metrics.className = 'parent-data-snapshot__metrics';
+  for (const metric of summary.compact_metrics) {
+    metrics.appendChild(createProgressMetric(metric.label, metric.value));
+  }
+  section.appendChild(metrics);
+
+  return section;
 }
 
 function createPhase2ReviewSection(
@@ -559,29 +586,40 @@ function createParentGuidanceRow(
   const row = document.createElement('div');
   row.className = 'parent-guidance-row';
 
+  const header = document.createElement('div');
+  header.className = 'parent-guidance-row__header';
+
   const skill = document.createElement('span');
   skill.className = 'parent-guidance-row__skill';
   skill.textContent = interpretation.skill_label;
-  row.appendChild(skill);
+  header.appendChild(skill);
 
-  const summary = document.createElement('div');
-  summary.className = 'parent-guidance-row__summary';
-  summary.appendChild(createGuidanceSignal('Status', interpretation.status));
-  summary.appendChild(createGuidanceSignal(
-    'Recommendation',
-    interpretation.recommendation
-  ));
-  row.appendChild(summary);
+  header.appendChild(createGuidanceSignal('Status', interpretation.status));
+  row.appendChild(header);
+
+  const nextStep = document.createElement('div');
+  nextStep.className = 'parent-guidance-row__next';
+  nextStep.appendChild(createGuidanceLabel('Suggested next step'));
+
+  const nextStepText = document.createElement('span');
+  nextStepText.className = 'parent-guidance-row__next-value';
+  nextStepText.textContent = interpretation.recommendation;
+  nextStep.appendChild(nextStepText);
+  row.appendChild(nextStep);
 
   const reason = document.createElement('div');
   reason.className = 'parent-guidance-row__why';
-  reason.appendChild(createGuidanceLabel('Why'));
+  reason.appendChild(createGuidanceLabel('Reason'));
 
   const reasonText = document.createElement('p');
   reasonText.className = 'parent-guidance-row__reason';
   reasonText.textContent = `${interpretation.status_reason} ${interpretation.recommendation_reason}`;
   reason.appendChild(reasonText);
   row.appendChild(reason);
+
+  const evidenceGroup = document.createElement('div');
+  evidenceGroup.className = 'parent-guidance-row__evidence-group';
+  evidenceGroup.appendChild(createGuidanceLabel('Evidence'));
 
   const metrics = document.createElement('div');
   metrics.className = 'parent-guidance-row__evidence';
@@ -597,7 +635,8 @@ function createParentGuidanceRow(
     ));
   }
 
-  row.appendChild(metrics);
+  evidenceGroup.appendChild(metrics);
+  row.appendChild(evidenceGroup);
   return row;
 }
 

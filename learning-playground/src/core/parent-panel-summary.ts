@@ -15,15 +15,16 @@ export interface ParentDataHealthMetric {
 export interface ParentDataHealthSummary {
   status_label: string;
   status_detail: string;
+  compact_metrics: ParentDataHealthMetric[];
   metrics: ParentDataHealthMetric[];
 }
 
 const EMPTY_STATE_MESSAGES: Record<ParentEmptyStateKind, string> = {
   progress: 'No local attempts recorded yet.',
   accuracy: 'No counted attempts in this session yet.',
-  recent_attempts: 'No recent attempts for this session yet.',
-  guidance: 'Guidance appears after there is review data for a skill.',
-  parent_notes: 'No parent note saved for this session yet.',
+  recent_attempts: 'No attempts in this session yet. After an activity, this will show the prompt, answer, hint use, outcome, and response time.',
+  guidance: 'Guidance appears after a skill has enough local attempts. The child flow stays unchanged while the parent reviews the fit.',
+  parent_notes: 'No parent notes for this session yet. Add anything you noticed; notes stay local and export with progress data.',
 };
 
 export function getParentEmptyStateMessage(
@@ -36,24 +37,29 @@ export function formatParentDataHealth(
   health: LocalDataHealth
 ): ParentDataHealthSummary {
   const hasEvents = health.total_events > 0;
+  const compactMetrics = [
+    { label: 'Events', value: String(health.total_events) },
+    { label: 'Sessions', value: String(health.total_sessions) },
+    { label: 'Parent Notes', value: String(health.total_observations) },
+    {
+      label: 'Latest Event',
+      value: formatHealthTimestamp(health.latest_event_timestamp),
+    },
+  ];
 
   return {
     status_label: hasEvents ? 'Local data ready' : 'Waiting for first activity',
     status_detail: hasEvents
       ? `Latest activity: ${formatHealthTimestamp(health.latest_event_timestamp)}.`
       : 'No local activity data has been recorded yet.',
+    compact_metrics: compactMetrics,
     metrics: [
-      { label: 'Events', value: String(health.total_events) },
-      { label: 'Sessions', value: String(health.total_sessions) },
-      { label: 'Parent Notes', value: String(health.total_observations) },
+      ...compactMetrics.slice(0, 3),
       {
         label: 'First Event',
         value: formatHealthTimestamp(health.first_event_timestamp),
       },
-      {
-        label: 'Latest Event',
-        value: formatHealthTimestamp(health.latest_event_timestamp),
-      },
+      compactMetrics[3],
       {
         label: 'Migrated Events',
         value: String(health.migrated_event_count),
