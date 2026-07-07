@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.2.3 Phase 3 parent-approved transfer launch baseline
+Version: v0.2.4 Phase 3 transfer quality baseline
 
 ## Current Working MVP
 
@@ -24,6 +24,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and parent notes.
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Parent Guidance includes skill graph evidence, mastery status, suggested next action, evidence summary, graph rule, and source references.
+- Parent Guidance shows transfer quality so weak-only coverage is visible to the adult.
 - Parent Guidance can show a concrete approved transfer activity and let the parent start or hold it.
 - Local progress export and reset.
 - Local parent gate phrase setting.
@@ -31,6 +32,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Applied Guidance Review summarizes local attempts after active guidance affects a supported activity.
 - Curriculum graph and mastery engine reason over prerequisites, transfer, retention, and review timing.
 - Transfer Coverage shows when a skill is fluent in one context, ready for transfer, or blocked by missing approved transfer content.
+- Transfer Coverage assigns strength tiers to transfer contexts and prevents weak-only transfer from becoming likely mastery.
 - Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant.
 - Parent transfer content decisions are stored locally and included in export.
 

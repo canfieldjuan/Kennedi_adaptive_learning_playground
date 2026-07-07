@@ -14,6 +14,8 @@ import {
 } from './evidence';
 import {
   evaluateTransferCoverage,
+  hasDurableMasteryTransferContext,
+  hasLikelyMasteryTransferContext,
   type TransferCoverageEvaluation,
 } from './transfer-coverage';
 
@@ -169,24 +171,39 @@ function getNextStatus(params: {
   const hasCoreEvidence = hasAccuracy && hasLowHintUsage;
   const successfulContextCount = params.transferCoverage.successful_context_count;
   const requiredContextCount = params.transferCoverage.required_context_count;
+  const hasLikelyTransferQuality = hasLikelyMasteryTransferContext(
+    params.transferCoverage.successful_context_types
+  );
+  const hasDurableEvidence = (
+    hasRetention ||
+    hasDurableMasteryTransferContext(params.transferCoverage.successful_context_types)
+  );
 
   if (
     hasCoreEvidence &&
     successfulContextCount >= requiredContextCount &&
-    hasRetention
+    hasLikelyTransferQuality &&
+    hasDurableEvidence
   ) {
     return 'mastered';
   }
 
-  if (hasCoreEvidence && successfulContextCount >= requiredContextCount) {
+  if (
+    hasCoreEvidence &&
+    successfulContextCount >= requiredContextCount &&
+    hasLikelyTransferQuality
+  ) {
     return 'likely_mastered';
   }
 
-  if (hasCoreEvidence && successfulContextCount === 1) {
-    if (params.transferCoverage.status === 'ready_for_transfer') {
-      return 'transfer_ready';
-    }
+  if (
+    hasCoreEvidence &&
+    params.transferCoverage.status === 'ready_for_transfer'
+  ) {
+    return 'transfer_ready';
+  }
 
+  if (hasCoreEvidence && successfulContextCount === 1) {
     return 'single_context_fluent';
   }
 
@@ -283,15 +300,15 @@ function getReason(
   }
 
   if (nextStatus === 'mastered') {
-    return 'Evidence includes accuracy, low hint use, transfer, and retention.';
+    return 'Evidence includes accuracy, low hint use, rich transfer, and retention or real-world transfer.';
   }
 
   if (nextStatus === 'likely_mastered') {
-    return 'Accuracy is strong across enough approved transfer contexts; schedule review before durable mastery.';
+    return 'Accuracy is strong across enough approved transfer contexts, including medium or strong transfer evidence; schedule review before durable mastery.';
   }
 
   if (nextStatus === 'transfer_ready') {
-    return 'Single-context fluency is strong and another approved transfer context is available.';
+    return 'Fluency is strong and another approved transfer context is available.';
   }
 
   if (nextStatus === 'single_context_fluent') {
@@ -334,6 +351,7 @@ function formatSkillGraphRule(
     `${formatPercent(requirements.min_accuracy)} accuracy`,
     `hint rate at or below ${formatPercent(requirements.max_hint_rate)}`,
     `transfer across ${requirements.min_contexts_for_transfer} context(s)`,
+    'at least one medium or strong transfer context before likely mastery',
     requirements.requires_retention ? 'retention review' : 'no retention review',
   ].join(', ');
 }

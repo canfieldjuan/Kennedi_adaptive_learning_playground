@@ -297,7 +297,7 @@ Still not changing:
 
 ## Phase 3.5: Transfer Coverage + Content Gap Engine
 
-Status: Phase 3.5 continued in v0.2.1, added targeted transfer variants in v0.2.2, and added parent-approved transfer launch in v0.2.3.
+Status: Phase 3.5 continued in v0.2.1, added targeted transfer variants in v0.2.2, added parent-approved transfer launch in v0.2.3, and added transfer quality/context strength rules in v0.2.4.
 
 Completed:
 

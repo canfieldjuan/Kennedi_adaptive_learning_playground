@@ -35,6 +35,8 @@ describe('parent interpretation contract', () => {
       mastery_status: 'transfer_ready',
       mastery_recommended_action: 'test_transfer',
       transfer_coverage_status: 'ready_for_transfer',
+      transfer_successful_strengths: ['weak'],
+      transfer_strongest_context_strength: 'weak',
       transfer_activity_recommendation: {
         activity_id: 'math-count-hearts-three',
         activity_title: 'Count the Hearts',

@@ -76,7 +76,7 @@ describe('transfer activity recommendation', () => {
     expect(skill).toBeDefined();
     const activities = [
       makeActivity('math-count-stars-three', 'same_format_same_examples'),
-      makeActivity('math-count-hearts-three', 'same_format_new_examples'),
+      makeActivity('math-count-hearts-three', 'different_prompt_mode'),
     ];
     const evidence = buildEvidenceForSkill({
       skill: skill!,

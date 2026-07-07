@@ -50,7 +50,10 @@ export interface ParentSkillInterpretation {
   transfer_required_context_count?: number;
   transfer_approved_context_count?: number;
   transfer_successful_context_count?: number;
+  transfer_successful_strengths?: MasteryEvaluation['transfer_coverage']['successful_strengths'];
+  transfer_strongest_context_strength?: MasteryEvaluation['transfer_coverage']['strongest_context_strength'];
   transfer_missing_context_types?: string[];
+  transfer_missing_strengths?: MasteryEvaluation['transfer_coverage']['missing_strengths'];
   transfer_content_recommendation?: MasteryEvaluation['transfer_coverage']['recommended_content_actions'][number];
   transfer_activity_recommendation?: TransferActivityRecommendation;
   mastery_source_event_ids?: string[];
@@ -136,7 +139,11 @@ export function buildParentSkillInterpretations(
         transfer_required_context_count: mastery?.transfer_coverage.required_context_count,
         transfer_approved_context_count: mastery?.transfer_coverage.approved_context_count,
         transfer_successful_context_count: mastery?.transfer_coverage.successful_context_count,
+        transfer_successful_strengths: mastery?.transfer_coverage.successful_strengths,
+        transfer_strongest_context_strength:
+          mastery?.transfer_coverage.strongest_context_strength,
         transfer_missing_context_types: mastery?.transfer_coverage.missing_context_types,
+        transfer_missing_strengths: mastery?.transfer_coverage.missing_strengths,
         transfer_content_recommendation:
           mastery?.transfer_coverage.recommended_content_actions[0],
         transfer_activity_recommendation: transferActivityRecommendation,

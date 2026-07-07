@@ -41,6 +41,8 @@ describe('parent approval boundary contract', () => {
     expect(source).toContain('Hold transfer plan');
     expect(source).toContain('Start transfer activity');
     expect(source).toContain('Hold transfer activity');
+    expect(source).toContain('Transfer Quality');
+    expect(source).toContain('Suggested Strength');
     expect(source).toContain('window.location.hash = `#activity/${transferActivityId}`');
     expect(source).toContain('saveParentDifficultyOverride');
     expect(source).toContain('saveParentTransferDecision');

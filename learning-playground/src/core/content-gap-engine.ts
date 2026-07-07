@@ -1,4 +1,8 @@
-import type { TransferContextType } from '../types/activity';
+import {
+  getTransferContextStrength,
+  type TransferContextStrength,
+  type TransferContextType,
+} from '../types/activity';
 import type { CurriculumSkill } from './curriculum-graph';
 
 export type ContentGapRecommendationType =
@@ -10,6 +14,8 @@ export interface ContentGapRecommendation {
   recommendation_type: ContentGapRecommendationType;
   reason: string;
   suggested_context_type: TransferContextType;
+  missing_context_strength: TransferContextStrength;
+  current_strongest_context_strength?: TransferContextStrength;
   suggested_activity_template: string;
 }
 
@@ -18,24 +24,34 @@ export function buildContentGapRecommendations(params: {
   missing_context_types: TransferContextType[];
   approved_context_count: number;
   required_context_count: number;
+  current_strongest_context_strength?: TransferContextStrength;
 }): ContentGapRecommendation[] {
   if (params.missing_context_types.length === 0) return [];
 
-  return params.missing_context_types.map((contextType) => ({
-    skill_id: params.skill.id,
-    recommendation_type: params.approved_context_count === 0
-      ? 'approve_transfer_variant'
-      : 'create_transfer_variant',
-    reason: [
-      `${params.skill.label} needs ${params.required_context_count} approved transfer context(s).`,
-      `Missing context type: ${formatTransferContextType(contextType)}.`,
-    ].join(' '),
-    suggested_context_type: contextType,
-    suggested_activity_template: getSuggestedActivityTemplate(
-      params.skill.domain,
-      contextType
-    ),
-  }));
+  return params.missing_context_types.map((contextType) => {
+    const contextStrength = getTransferContextStrength(contextType);
+
+    return {
+      skill_id: params.skill.id,
+      recommendation_type: params.approved_context_count === 0
+        ? 'approve_transfer_variant'
+        : 'create_transfer_variant',
+      reason: [
+        `${params.skill.label} needs ${params.required_context_count} approved transfer context(s).`,
+        params.current_strongest_context_strength
+          ? `Current strongest evidence is ${formatTransferStrength(params.current_strongest_context_strength)}.`
+          : 'No successful transfer strength has been recorded yet.',
+        `Missing ${formatTransferStrength(contextStrength)} context: ${formatTransferContextType(contextType)}.`,
+      ].join(' '),
+      suggested_context_type: contextType,
+      missing_context_strength: contextStrength,
+      current_strongest_context_strength: params.current_strongest_context_strength,
+      suggested_activity_template: getSuggestedActivityTemplate(
+        params.skill.domain,
+        contextType
+      ),
+    };
+  });
 }
 
 export function formatTransferContextType(contextType: TransferContextType): string {
@@ -43,6 +59,10 @@ export function formatTransferContextType(contextType: TransferContextType): str
     .split('_')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+export function formatTransferStrength(strength: TransferContextStrength): string {
+  return strength.charAt(0).toUpperCase() + strength.slice(1);
 }
 
 function getSuggestedActivityTemplate(

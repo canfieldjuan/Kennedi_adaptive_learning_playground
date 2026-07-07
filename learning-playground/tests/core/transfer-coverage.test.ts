@@ -7,10 +7,25 @@ import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import { loadCurriculumGraph } from '../../src/core/curriculum-graph';
 import { buildEvidenceForSkill } from '../../src/core/evidence';
 import { evaluateTransferCoverage } from '../../src/core/transfer-coverage';
-import type { LearningActivity, TransferContextType } from '../../src/types/activity';
+import {
+  getTransferContextStrength,
+  type LearningActivity,
+  type TransferContextType,
+} from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
 
 describe('transfer coverage', () => {
+  test('maps transfer context types to strength tiers', () => {
+    expect(getTransferContextStrength('same_format_same_examples')).toBe('weak');
+    expect(getTransferContextStrength('same_format_new_examples')).toBe('weak');
+    expect(getTransferContextStrength('different_prompt_mode')).toBe('medium');
+    expect(getTransferContextStrength('different_interaction_model')).toBe('medium');
+    expect(getTransferContextStrength('reverse_mapping')).toBe('strong');
+    expect(getTransferContextStrength('category_sort')).toBe('strong');
+    expect(getTransferContextStrength('delayed_review')).toBe('retention');
+    expect(getTransferContextStrength('parent_observed_real_world')).toBe('strong');
+  });
+
   test('one successful context with no approved transfer variant is blocked by content gap', () => {
     const graph = loadCurriculumGraph();
     const skill = graph.getSkill('counting');
@@ -34,9 +49,14 @@ describe('transfer coverage', () => {
       required_context_count: 2,
       approved_context_count: 1,
       successful_context_count: 1,
+      successful_strengths: ['weak'],
+      strongest_context_strength: 'weak',
       status: 'blocked_by_content_gap',
     });
     expect(coverage.missing_context_types).toContain('same_format_new_examples');
+    expect(coverage.missing_strengths).toEqual(
+      expect.arrayContaining(['weak', 'medium', 'retention'])
+    );
   });
 
   test('content gap recommendations cite the missing context type', () => {
@@ -67,17 +87,61 @@ describe('transfer coverage', () => {
       skill_id: 'counting',
       recommendation_type: 'create_transfer_variant',
       suggested_context_type: 'same_format_new_examples',
+      missing_context_strength: 'weak',
+      current_strongest_context_strength: 'weak',
     });
     expect(recommendation.reason).toContain('Same Format New Examples');
+    expect(recommendation.reason).toContain('Missing Weak context');
   });
 
-  test('two approved and successful context types are covered', () => {
+  test('weak-only transfer recommends richer missing context before likely mastery', () => {
     const graph = loadCurriculumGraph();
     const skill = graph.getSkill('counting');
     expect(skill).toBeDefined();
     const activities = [
       makeActivity('math-count-stars-three', 'same_format_same_examples'),
       makeActivity('math-count-blocks-three', 'same_format_new_examples'),
+    ];
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1'),
+        makeEvent('event-2', 'math-count-blocks-three'),
+        makeEvent('event-3'),
+      ],
+      activities,
+    });
+
+    const coverage = evaluateTransferCoverage(
+      'counting',
+      activities,
+      evidence,
+      graph
+    );
+
+    expect(coverage).toMatchObject({
+      successful_context_count: 2,
+      successful_strengths: ['weak'],
+      strongest_context_strength: 'weak',
+      status: 'blocked_by_content_gap',
+    });
+    expect(coverage.recommended_content_actions[0]).toMatchObject({
+      suggested_context_type: 'different_prompt_mode',
+      missing_context_strength: 'medium',
+      current_strongest_context_strength: 'weak',
+    });
+    expect(coverage.recommended_content_actions[0].reason).toContain(
+      'Current strongest evidence is Weak'
+    );
+  });
+
+  test('two approved and successful context types are covered when one is medium or stronger', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('counting');
+    expect(skill).toBeDefined();
+    const activities = [
+      makeActivity('math-count-stars-three', 'same_format_same_examples'),
+      makeActivity('math-count-blocks-three', 'different_prompt_mode'),
     ];
     const evidence = buildEvidenceForSkill({
       skill: skill!,
@@ -97,6 +161,8 @@ describe('transfer coverage', () => {
     )).toMatchObject({
       approved_context_count: 2,
       successful_context_count: 2,
+      successful_strengths: ['weak', 'medium'],
+      strongest_context_strength: 'medium',
       status: 'covered',
     });
   });

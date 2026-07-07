@@ -51,7 +51,10 @@ import {
   type ParentDifficultyOverrideHistoryItem,
 } from '../../core/parent-difficulty-overrides';
 import { buildLocalDataHealth } from '../../core/export-data';
-import { formatTransferContextType } from '../../core/content-gap-engine';
+import {
+  formatTransferContextType,
+  formatTransferStrength,
+} from '../../core/content-gap-engine';
 import {
   formatParentDataHealth,
   getParentEmptyStateMessage,
@@ -1002,10 +1005,27 @@ function createTransferCoverageGroup(
     'Missing Contexts',
     formatTransferContextList(interpretation.transfer_missing_context_types ?? [])
   ));
+  metrics.appendChild(createProgressMetric(
+    'Transfer Quality',
+    formatTransferQuality(
+      interpretation.transfer_successful_strengths ?? [],
+      interpretation.transfer_strongest_context_strength
+    )
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Missing Strengths',
+    formatTransferStrengthList(interpretation.transfer_missing_strengths ?? [])
+  ));
   if (interpretation.transfer_content_recommendation) {
     metrics.appendChild(createProgressMetric(
       'Suggested Template',
       interpretation.transfer_content_recommendation.suggested_activity_template
+    ));
+    metrics.appendChild(createProgressMetric(
+      'Suggested Strength',
+      formatTransferStrength(
+        interpretation.transfer_content_recommendation.missing_context_strength
+      )
     ));
   }
   if (interpretation.transfer_activity_recommendation) {
@@ -1641,6 +1661,25 @@ function formatTransferContextList(values: string[]): string {
   return values.length > 0
     ? values.map((value) => formatInternalMasteryLabel(value)).join(', ')
     : 'None';
+}
+
+function formatTransferStrengthList(values: string[]): string {
+  return values.length > 0
+    ? values.map((value) => formatInternalMasteryLabel(value)).join(', ')
+    : 'None';
+}
+
+function formatTransferQuality(
+  strengths: string[],
+  strongest?: string
+): string {
+  if (strengths.length === 0) return 'No successful transfer yet';
+  if (strengths.length === 1 && strengths[0] === 'weak') return 'Weak only';
+
+  const strengthList = formatTransferStrengthList(strengths);
+  return strongest
+    ? `${strengthList}; strongest: ${formatInternalMasteryLabel(strongest)}`
+    : strengthList;
 }
 
 function formatTransferDecisionLabel(

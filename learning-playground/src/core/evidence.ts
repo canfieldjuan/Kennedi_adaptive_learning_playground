@@ -1,7 +1,11 @@
 import type { ActivityAttemptEvent } from '../types/events';
-import type { LearningActivity } from '../types/activity';
+import {
+  isTransferContextType,
+  type LearningActivity,
+} from '../types/activity';
 import type { ParentObservation } from '../types/observations';
 import type { CurriculumSkill } from './curriculum-graph';
+import { hasLikelyMasteryTransferContext } from './transfer-coverage';
 
 export type MasteryEvidenceType =
   | 'accuracy'
@@ -133,7 +137,10 @@ export function buildEvidenceForSkill(params: {
     });
   }
 
-  if (activityContexts.length >= requirements.min_contexts_for_transfer) {
+  if (
+    activityContexts.length >= requirements.min_contexts_for_transfer &&
+    hasLikelyMasteryTransferContext(activityContexts.filter(isTransferContextType))
+  ) {
     evidence.push({
       type: 'transfer',
       skill_id: params.skill.id,

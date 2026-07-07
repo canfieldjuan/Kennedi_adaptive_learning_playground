@@ -9,8 +9,16 @@ Transfer coverage is the bridge between mastery evidence and approved content br
 - Every skill used by an activity must have planned transfer context types in the curriculum graph.
 - Single-context fluency must not equal mastery.
 - `likely_mastered` requires successful evidence from at least two approved transfer contexts.
+- Transfer contexts must be assigned a strength tier: `weak`, `medium`, `strong`, or `retention`.
+- `same_format_same_examples` and `same_format_new_examples` are weak transfer.
+- `different_prompt_mode` and `different_interaction_model` are medium transfer.
+- `reverse_mapping`, `category_sort`, and `parent_observed_real_world` are strong transfer.
+- `delayed_review` is retention transfer.
+- Weak-only transfer must not produce `likely_mastered`.
+- `likely_mastered` requires at least one successful medium or strong transfer context.
 - `mastered` requires transfer evidence plus later retention evidence.
-- Content gap recommendations must cite the missing context type.
+- Content gap recommendations must cite the missing context type and missing context strength.
+- When only weak transfer evidence exists, content gap recommendations must prefer richer missing contexts before more weak variants.
 - Parent approval is required before a transfer recommendation is treated as approved.
 
 ## Non-Scope

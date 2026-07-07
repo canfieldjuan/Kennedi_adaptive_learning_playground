@@ -100,7 +100,7 @@ describe('mastery engine', () => {
       ],
       activities: [
         makeActivity('math-count-stars-three', 'same_format_same_examples'),
-        makeActivity('math-count-blocks-three', 'same_format_new_examples'),
+        makeActivity('math-count-blocks-three', 'different_prompt_mode'),
       ],
     });
 
@@ -108,6 +108,29 @@ describe('mastery engine', () => {
     expect(evaluation.recommended_action).toBe('schedule_review');
     expect(evaluation.evidence.map((item) => item.type)).toContain('transfer');
     expect(evaluation.evidence.map((item) => item.type)).not.toContain('retention');
+  });
+
+  test('weak-only transfer cannot produce likely mastery', () => {
+    const evaluation = evaluateSkillMastery({
+      skill_id: 'counting',
+      events: [
+        makeEvent('event-1', 'correct', '2026-01-01T12:00:00.000Z'),
+        makeEvent('event-2', 'correct', '2026-01-01T12:01:00.000Z', {
+          activityId: 'math-count-blocks-three',
+        }),
+        makeEvent('event-3', 'correct', '2026-01-01T12:02:00.000Z'),
+      ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
+        makeActivity('math-count-blocks-three', 'same_format_new_examples'),
+      ],
+    });
+
+    expect(evaluation.next_status).toBe('blocked_by_content_gap');
+    expect(evaluation.next_status).not.toBe('likely_mastered');
+    expect(evaluation.transfer_coverage.successful_strengths).toEqual(['weak']);
+    expect(evaluation.transfer_coverage.strongest_context_strength).toBe('weak');
+    expect(evaluation.evidence.map((item) => item.type)).not.toContain('transfer');
   });
 
   test('transfer without delayed review cannot become mastered', () => {
@@ -122,7 +145,7 @@ describe('mastery engine', () => {
       ],
       activities: [
         makeActivity('math-count-stars-three', 'same_format_same_examples'),
-        makeActivity('math-count-blocks-three', 'same_format_new_examples'),
+        makeActivity('math-count-blocks-three', 'different_prompt_mode'),
       ],
     });
 
@@ -142,7 +165,7 @@ describe('mastery engine', () => {
       ],
       activities: [
         makeActivity('math-count-stars-three', 'same_format_same_examples'),
-        makeActivity('math-count-blocks-three', 'same_format_new_examples'),
+        makeActivity('math-count-blocks-three', 'different_prompt_mode'),
       ],
     });
 

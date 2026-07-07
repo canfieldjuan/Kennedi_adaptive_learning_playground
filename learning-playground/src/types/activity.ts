@@ -15,6 +15,53 @@ export type TransferContextType =
   | 'delayed_review'
   | 'parent_observed_real_world';
 
+export const TRANSFER_CONTEXT_TYPES: TransferContextType[] = [
+  'same_format_same_examples',
+  'same_format_new_examples',
+  'different_prompt_mode',
+  'different_interaction_model',
+  'reverse_mapping',
+  'category_sort',
+  'delayed_review',
+  'parent_observed_real_world',
+];
+
+export type TransferContextStrength =
+  | 'weak'
+  | 'medium'
+  | 'strong'
+  | 'retention';
+
+export const TRANSFER_CONTEXT_STRENGTHS: Record<
+  TransferContextType,
+  TransferContextStrength
+> = {
+  same_format_same_examples: 'weak',
+  same_format_new_examples: 'weak',
+  different_prompt_mode: 'medium',
+  different_interaction_model: 'medium',
+  reverse_mapping: 'strong',
+  category_sort: 'strong',
+  delayed_review: 'retention',
+  parent_observed_real_world: 'strong',
+};
+
+export function getTransferContextStrength(
+  contextType: TransferContextType
+): TransferContextStrength {
+  return TRANSFER_CONTEXT_STRENGTHS[contextType];
+}
+
+export function isLikelyMasteryTransferStrength(
+  strength: TransferContextStrength
+): boolean {
+  return strength === 'medium' || strength === 'strong';
+}
+
+export function isTransferContextType(value: string): value is TransferContextType {
+  return TRANSFER_CONTEXT_TYPES.includes(value as TransferContextType);
+}
+
 export type TransferPromptMode =
   | 'visual'
   | 'spoken'
