@@ -64,10 +64,14 @@ export function renderKennedisOrdersActivity(
     container.innerHTML = '';
 
     container.appendChild(createTopBar(() => {
+      // Replaying the prompt is a no-penalty repeat, not a hint or an attempt.
+      // The count still reaches parent evidence via the replay_count metadata
+      // on the real tray_checked/order_delivered events. Emitting a separate
+      // event here would have to pick an AttemptOutcome, and every outcome
+      // pollutes a parent-facing metric (hint_used inflates the hint count).
       replayCount += 1;
       attemptStartedAt = Date.now();
       options.speech.speak(content.prompt_audio);
-      emitPromptReplayEvent(options, content, replayCount);
     }));
 
     const title = document.createElement('h1');
@@ -814,29 +818,6 @@ function getFoodLabel(content: BearCafeContent, foodId: string | undefined): str
   return content.foods.find((food) => food.id === foodId)?.label ?? foodId;
 }
 
-function emitPromptReplayEvent(
-  options: KennedisOrdersOptions,
-  content: BearCafeContent,
-  replayCount: number
-): void {
-  options.onEvent({
-    ...createBaseEvent(options, content, {
-      outcome: 'hint_used',
-      selectedAnswer: 'replayed order',
-      correctAnswer: getCorrectAnswer(content),
-      attemptNumber: 0,
-      responseTimeMs: 0,
-      hintShown: true,
-    }),
-    metadata: {
-      ...createTransferMetadata(options.activity),
-      ...createEvidenceMetadata(content),
-      event_name: 'order_prompt_replayed',
-      replay_count: replayCount,
-    },
-  });
-}
-
 function emitAttemptEvent(params: {
   options: KennedisOrdersOptions;
   content: BearCafeContent;
@@ -958,40 +939,6 @@ function createEvidenceMetadata(content: BearCafeContent): Record<string, string
       ? { required_quantity: content.required_order.quantity }
       : {}),
     ...(content.required_order?.color_id ? { required_color_id: content.required_order.color_id } : {}),
-  };
-}
-
-function createBaseEvent(
-  options: KennedisOrdersOptions,
-  content: BearCafeContent,
-  params: {
-    outcome: ActivityAttemptEvent['outcome'];
-    selectedAnswer: string;
-    correctAnswer: string;
-    attemptNumber: number;
-    responseTimeMs: number;
-    hintShown: boolean;
-  }
-): ActivityAttemptEvent {
-  return {
-    event_id: createEventId(),
-    session_id: options.sessionId,
-    child_id: options.childId,
-    activity_id: options.activity.id,
-    activity_version: options.activity.version,
-    skill_ids: options.activity.skill_ids,
-    timestamp: new Date().toISOString(),
-    prompt_text: content.prompt_audio,
-    outcome: params.outcome,
-    selected_answer: params.selectedAnswer,
-    correct_answer: params.correctAnswer,
-    attempt_number: params.attemptNumber,
-    response_time_ms: params.responseTimeMs,
-    difficulty_level: options.activity.difficulty.level,
-    choice_count: options.activity.difficulty.choice_count,
-    distractor_strength: options.activity.difficulty.distractor_strength,
-    input_type: 'tap',
-    hint_shown: params.hintShown,
   };
 }
 
