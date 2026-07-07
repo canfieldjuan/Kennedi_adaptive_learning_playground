@@ -1,0 +1,117 @@
+{
+  "id": "nature-camera-free-picture-walk",
+  "version": 1,
+  "title": "Free Picture Walk",
+  "domain": "language",
+  "skill_ids": ["vocabulary"],
+  "transfer": {
+    "skill_ids": ["vocabulary"],
+    "context_type": "different_prompt_mode",
+    "context_id": "nature-camera-free-picture-walk",
+    "example_set_id": "safari-starter-objects-1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 1,
+    "choice_count": 4,
+    "distractor_strength": "none"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "game": "nature-camera-safari",
+    "mode": "free_picture_walk",
+    "uses_real_camera": false,
+    "guide": {
+      "id": "daddy-bear",
+      "name": "Daddy Bear",
+      "icon": "🐻",
+      "intro_line": "Let’s go on a picture walk.",
+      "success_line": "Baby Polar Bear saw it too."
+    },
+    "prompt_audio": "Take a picture of anything you see.",
+    "scene_label": "A sunny path with a bird, squirrel, flower, and tree",
+    "walk_label": "Daddy Bear picture walk",
+    "round_label": "Photo 1: Free Picture Walk",
+    "round_index": 1,
+    "round_total": 6,
+    "completion_line": "Photo saved.",
+    "objects": [
+      {
+        "id": "bird",
+        "label": "bird",
+        "image": "/assets/images/bird.svg",
+        "x": 30,
+        "y": 30,
+        "size": 92,
+        "tap_area_px": 112,
+        "kind": "bird",
+        "first_sound": "b",
+        "hint": "The bird is up by the tree."
+      },
+      {
+        "id": "squirrel",
+        "label": "squirrel",
+        "image": "/assets/images/squirrel.svg",
+        "x": 72,
+        "y": 64,
+        "size": 104,
+        "tap_area_px": 120,
+        "kind": "squirrel",
+        "first_sound": "s"
+      },
+      {
+        "id": "flower",
+        "label": "flower",
+        "image": "/assets/images/flower.svg",
+        "x": 18,
+        "y": 70,
+        "size": 82,
+        "tap_area_px": 104,
+        "kind": "flower",
+        "first_sound": "f"
+      },
+      {
+        "id": "tree",
+        "label": "tree",
+        "image": "/assets/images/tree.svg",
+        "x": 54,
+        "y": 45,
+        "size": 118,
+        "tap_area_px": 128,
+        "kind": "tree",
+        "first_sound": "t"
+      }
+    ],
+    "required_task": {},
+    "parent_evidence_summary": "Free picture walk captures chosen nature vocabulary, visual attention, ownership, and completed pretend camera capture.",
+    "next_activity_id": "nature-camera-bird-photo",
+    "future_evidence_notes": ["visual_attention", "spatial_language"]
+  },
+  "success_rules": {
+    "completion": "photo_saved",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "Photo saved.",
+      "animation": "camera_flash",
+      "sound": "soft_shutter"
+    },
+    "incorrect": {
+      "speech": "Take a picture.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Pick something for your nature book.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

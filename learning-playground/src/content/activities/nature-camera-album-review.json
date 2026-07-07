@@ -1,0 +1,107 @@
+{
+  "id": "nature-camera-album-review",
+  "version": 1,
+  "title": "Nature Book Review",
+  "domain": "language",
+  "skill_ids": ["vocabulary"],
+  "transfer": {
+    "skill_ids": ["vocabulary"],
+    "context_type": "different_prompt_mode",
+    "context_id": "nature-camera-album-review",
+    "example_set_id": "safari-starter-album-1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 2,
+    "choice_count": 3,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "game": "nature-camera-safari",
+    "mode": "album_review",
+    "uses_real_camera": false,
+    "guide": {
+      "id": "daddy-bear",
+      "name": "Daddy Bear",
+      "icon": "🐻",
+      "intro_line": "Let’s look in your nature book.",
+      "success_line": "You remembered the picture."
+    },
+    "prompt_audio": "What animal did we take a picture of? Pick the bird.",
+    "scene_label": "A nature book with animal photo cards",
+    "walk_label": "Daddy Bear picture walk",
+    "round_label": "Photo 6: Memory Album",
+    "round_index": 6,
+    "round_total": 6,
+    "completion_line": "Nature book remembered.",
+    "objects": [
+      {
+        "id": "bird-card",
+        "label": "bird",
+        "image": "/assets/images/bird.svg",
+        "x": 28,
+        "y": 52,
+        "size": 104,
+        "tap_area_px": 120,
+        "kind": "bird",
+        "first_sound": "b",
+        "hint": "We saw the bird."
+      },
+      {
+        "id": "squirrel-card",
+        "label": "squirrel",
+        "image": "/assets/images/squirrel.svg",
+        "x": 58,
+        "y": 52,
+        "size": 104,
+        "tap_area_px": 120,
+        "kind": "squirrel",
+        "first_sound": "s"
+      },
+      {
+        "id": "flower-card",
+        "label": "flower",
+        "image": "/assets/images/flower.svg",
+        "x": 82,
+        "y": 52,
+        "size": 92,
+        "tap_area_px": 112,
+        "kind": "flower",
+        "first_sound": "f"
+      }
+    ],
+    "required_task": {
+      "target_id": "bird-card"
+    },
+    "parent_evidence_summary": "Memory album captures immediate photo-card recall and vocabulary choice without claiming delayed retention.",
+    "future_evidence_notes": ["memory_album_review", "story_recall"]
+  },
+  "success_rules": {
+    "completion": "album_card_selected",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You remembered the bird.",
+      "animation": "camera_flash",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let’s look in the nature book.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "We saw the bird.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

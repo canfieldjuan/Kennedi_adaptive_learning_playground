@@ -1,0 +1,108 @@
+{
+  "id": "nature-camera-bird-photo",
+  "version": 1,
+  "title": "Bird Picture Walk",
+  "domain": "language",
+  "skill_ids": ["vocabulary"],
+  "transfer": {
+    "skill_ids": ["vocabulary"],
+    "context_type": "different_prompt_mode",
+    "context_id": "nature-camera-scene-vocabulary",
+    "example_set_id": "safari-starter-animals-1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 2,
+    "choice_count": 3,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "game": "nature-camera-safari",
+    "mode": "target_photo",
+    "uses_real_camera": false,
+    "guide": {
+      "id": "daddy-bear",
+      "name": "Daddy Bear",
+      "icon": "🐻",
+      "intro_line": "Let’s go on a picture walk.",
+      "success_line": "Baby Polar Bear saw it too."
+    },
+    "prompt_audio": "Take a picture of the bird.",
+    "scene_label": "A sunny path with a bird, squirrel, and flower",
+    "walk_label": "Daddy Bear picture walk",
+    "round_label": "Photo 2: Bird Spotter",
+    "round_index": 2,
+    "round_total": 6,
+    "completion_line": "Picture walk complete.",
+    "objects": [
+      {
+        "id": "bird",
+        "label": "bird",
+        "image": "/assets/images/bird.svg",
+        "x": 30,
+        "y": 30,
+        "size": 92,
+        "tap_area_px": 112,
+        "kind": "bird",
+        "first_sound": "b",
+        "hint": "The bird is up by the tree."
+      },
+      {
+        "id": "squirrel",
+        "label": "squirrel",
+        "image": "/assets/images/squirrel.svg",
+        "x": 72,
+        "y": 64,
+        "size": 104,
+        "tap_area_px": 120,
+        "kind": "squirrel",
+        "first_sound": "s"
+      },
+      {
+        "id": "flower",
+        "label": "flower",
+        "image": "/assets/images/flower.svg",
+        "x": 18,
+        "y": 70,
+        "size": 82,
+        "tap_area_px": 104,
+        "kind": "flower",
+        "first_sound": "f"
+      }
+    ],
+    "required_task": {
+      "target_id": "bird"
+    },
+    "parent_evidence_summary": "Bird picture captures vocabulary transfer from a scene, visual discrimination, response time, and hint use.",
+    "next_activity_id": "nature-camera-squirrel-photo",
+    "future_evidence_notes": ["visual_attention", "spatial_language"]
+  },
+  "success_rules": {
+    "completion": "target_photo_saved",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You found it.",
+      "animation": "camera_flash",
+      "sound": "soft_shutter"
+    },
+    "incorrect": {
+      "speech": "Look for the bird.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "The bird is up in the tree.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "id": "kennedis-orders-three-berries-001",
+  "version": 1,
+  "title": "Three Berries Order",
+  "domain": "math",
+  "skill_ids": ["counting"],
+  "transfer": {
+    "skill_ids": ["counting"],
+    "context_type": "same_format_new_examples",
+    "context_id": "quantity-in-pretend-play",
+    "example_set_id": "counting-foods-to-5-1",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": {
+    "level": 3,
+    "choice_count": 2,
+    "distractor_strength": "none"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 75,
+  "content": {
+    "game": "kennedis-orders",
+    "mode": "quantity",
+    "character": {
+      "id": "baby-polar-bear",
+      "name": "Baby Polar Bear",
+      "icon": "🐻‍❄️",
+      "callLine": "Baby Polar Bear has a berry order.",
+      "happyLine": "You delivered it."
+    },
+    "prompt_audio": "Baby Polar Bear wants 3 berries.",
+    "order_ticket": "3 berries",
+    "shift_label": "Bear Cafe morning shift",
+    "round_label": "Round 3: Quantity Order",
+    "round_index": 3,
+    "round_total": 5,
+    "foods": [
+      { "id": "berry", "label": "berry", "icon": "🫐", "first_sound": "b" }
+    ],
+    "required_order": {
+      "food_id": "berry",
+      "quantity": 3
+    },
+    "parent_evidence_summary": "Quantity order captures counting objects, one-to-one berry taps, over/under count patterns, and correction.",
+    "next_activity_id": "kennedis-orders-b-foods-001"
+  },
+  "success_rules": {
+    "completion": "required_order_delivered",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You made the order.",
+      "animation": "gentle_sparkle",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let’s check the order.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Baby Polar Bear asked for 3. Let’s count.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

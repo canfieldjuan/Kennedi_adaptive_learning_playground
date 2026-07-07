@@ -1,0 +1,78 @@
+{
+  "id": "kennedis-orders-fix-berries-001",
+  "version": 1,
+  "title": "Fix the Berry Order",
+  "domain": "language",
+  "skill_ids": ["vocabulary"],
+  "transfer": {
+    "skill_ids": ["vocabulary"],
+    "context_type": "different_prompt_mode",
+    "context_id": "error-correction-order-fix",
+    "example_set_id": "bear-cafe-starter-foods",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": {
+    "level": 3,
+    "choice_count": 3,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 75,
+  "content": {
+    "game": "kennedis-orders",
+    "mode": "fix_order",
+    "character": {
+      "id": "baby-polar-bear",
+      "name": "Baby Polar Bear",
+      "icon": "🐻‍❄️",
+      "callLine": "Baby Polar Bear needs the cafe boss.",
+      "happyLine": "You fixed it."
+    },
+    "prompt_audio": "Oops. Baby Polar Bear ordered berries, but the tray has soup. Fix the order.",
+    "order_ticket": "Fix it: berry order",
+    "shift_label": "Bear Cafe morning shift",
+    "round_label": "Round 5: Fix the Order",
+    "round_index": 5,
+    "round_total": 5,
+    "foods": [
+      { "id": "berry", "label": "berry", "icon": "🫐", "first_sound": "b" },
+      { "id": "soup", "label": "soup", "icon": "🥣", "first_sound": "s" },
+      { "id": "cookie", "label": "cookie", "icon": "🍪", "first_sound": "c" }
+    ],
+    "required_order": {
+      "food_id": "berry"
+    },
+    "starting_tray": {
+      "foodCounts": {
+        "soup": 1
+      }
+    },
+    "parent_evidence_summary": "Fix order captures mismatch detection, food vocabulary, correction, attempts, hint use, and executive function in a boss role."
+  },
+  "success_rules": {
+    "completion": "required_order_delivered",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You fixed it.",
+      "animation": "gentle_sparkle",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let’s check the order.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Baby Polar Bear asked for berries.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

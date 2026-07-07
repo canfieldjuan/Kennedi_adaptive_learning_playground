@@ -1,0 +1,82 @@
+{
+  "id": "kennedis-orders-pink-cupcake-001",
+  "version": 1,
+  "title": "Pink Cupcake Order",
+  "domain": "language",
+  "skill_ids": ["vocabulary", "color_fill"],
+  "transfer": {
+    "skill_ids": ["vocabulary", "color_fill"],
+    "context_type": "same_format_new_examples",
+    "context_id": "attribute-combo-order",
+    "example_set_id": "starter-food-colors-1",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": {
+    "level": 2,
+    "choice_count": 5,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 75,
+  "content": {
+    "game": "kennedis-orders",
+    "mode": "single_attribute",
+    "character": {
+      "id": "daddy-bear",
+      "name": "Daddy Bear",
+      "icon": "🐻",
+      "callLine": "Daddy Bear is calling the cafe.",
+      "happyLine": "You made the order."
+    },
+    "prompt_audio": "Daddy Bear wants a pink cupcake.",
+    "order_ticket": "Pink cupcake",
+    "shift_label": "Bear Cafe morning shift",
+    "round_label": "Round 2: Color Order",
+    "round_index": 2,
+    "round_total": 5,
+    "foods": [
+      { "id": "cupcake", "label": "cupcake", "icon": "🧁", "first_sound": "c" },
+      { "id": "berry", "label": "berry", "icon": "🫐", "first_sound": "b" },
+      { "id": "cookie", "label": "cookie", "icon": "🍪", "first_sound": "c" }
+    ],
+    "colors": [
+      { "id": "pink", "label": "pink", "value": "#f472b6" },
+      { "id": "yellow", "label": "yellow", "value": "#facc15" },
+      { "id": "red", "label": "red", "value": "#ef4444" },
+      { "id": "orange", "label": "orange", "value": "#fb923c" },
+      { "id": "blue", "label": "blue", "value": "#60a5fa" }
+    ],
+    "required_order": {
+      "food_id": "cupcake",
+      "color_id": "pink"
+    },
+    "parent_evidence_summary": "Single attribute order captures food vocabulary, color recognition, listening comprehension, hint use, and safe correction.",
+    "next_activity_id": "kennedis-orders-three-berries-001"
+  },
+  "success_rules": {
+    "completion": "required_order_delivered",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You made the order.",
+      "animation": "gentle_sparkle",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let’s check the order.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Daddy Bear wanted something pink.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

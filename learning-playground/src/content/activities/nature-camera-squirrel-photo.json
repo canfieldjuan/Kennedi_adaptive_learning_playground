@@ -1,0 +1,108 @@
+{
+  "id": "nature-camera-squirrel-photo",
+  "version": 1,
+  "title": "Squirrel Picture Walk",
+  "domain": "language",
+  "skill_ids": ["vocabulary"],
+  "transfer": {
+    "skill_ids": ["vocabulary"],
+    "context_type": "different_prompt_mode",
+    "context_id": "nature-camera-scene-vocabulary",
+    "example_set_id": "safari-starter-animals-1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 2,
+    "choice_count": 3,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "game": "nature-camera-safari",
+    "mode": "target_photo",
+    "uses_real_camera": false,
+    "guide": {
+      "id": "daddy-bear",
+      "name": "Daddy Bear",
+      "icon": "🐻",
+      "intro_line": "Let’s find a squirrel picture.",
+      "success_line": "You spotted the squirrel."
+    },
+    "prompt_audio": "Take a picture of the squirrel.",
+    "scene_label": "A sunny path with a squirrel, bird, and tree",
+    "walk_label": "Daddy Bear picture walk",
+    "round_label": "Photo 3: Squirrel Spotter",
+    "round_index": 3,
+    "round_total": 6,
+    "completion_line": "Photo saved in your nature book.",
+    "objects": [
+      {
+        "id": "squirrel",
+        "label": "squirrel",
+        "image": "/assets/images/squirrel.svg",
+        "x": 64,
+        "y": 64,
+        "size": 112,
+        "tap_area_px": 124,
+        "kind": "squirrel",
+        "first_sound": "s",
+        "hint": "The squirrel is on the grass."
+      },
+      {
+        "id": "bird",
+        "label": "bird",
+        "image": "/assets/images/bird.svg",
+        "x": 28,
+        "y": 30,
+        "size": 88,
+        "tap_area_px": 108,
+        "kind": "bird",
+        "first_sound": "b"
+      },
+      {
+        "id": "tree",
+        "label": "tree",
+        "image": "/assets/images/tree.svg",
+        "x": 82,
+        "y": 38,
+        "size": 132,
+        "tap_area_px": 132,
+        "kind": "tree",
+        "first_sound": "t"
+      }
+    ],
+    "required_task": {
+      "target_id": "squirrel"
+    },
+    "parent_evidence_summary": "Squirrel picture captures preferred animal vocabulary in a scene with bird and tree distractors.",
+    "next_activity_id": "nature-camera-count-two-birds",
+    "future_evidence_notes": ["visual_attention", "spatial_language"]
+  },
+  "success_rules": {
+    "completion": "target_photo_saved",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You spotted the squirrel.",
+      "animation": "camera_flash",
+      "sound": "soft_shutter"
+    },
+    "incorrect": {
+      "speech": "That’s not the squirrel. Look again.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "The squirrel is on the grass.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

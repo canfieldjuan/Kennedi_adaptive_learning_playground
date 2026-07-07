@@ -1,0 +1,120 @@
+{
+  "id": "nature-camera-b-sound-safari",
+  "version": 1,
+  "title": "B Sound Safari",
+  "domain": "phonics",
+  "skill_ids": ["initial_sound"],
+  "transfer": {
+    "skill_ids": ["initial_sound"],
+    "context_type": "category_sort",
+    "context_id": "nature-camera-first-sound-sort",
+    "example_set_id": "b-nature-things-1",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": {
+    "level": 5,
+    "choice_count": 4,
+    "distractor_strength": "medium"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 90,
+  "content": {
+    "game": "nature-camera-safari",
+    "mode": "first_sound",
+    "uses_real_camera": false,
+    "guide": {
+      "id": "baby-polar-bear",
+      "name": "Baby Polar Bear",
+      "icon": "🐻‍❄️",
+      "intro_line": "Baby Polar Bear wants B pictures.",
+      "success_line": "You found the B pictures."
+    },
+    "prompt_audio": "Take pictures of things that start with B.",
+    "scene_label": "A nature scene with B things and distractors",
+    "walk_label": "Daddy Bear picture walk",
+    "round_label": "Photo 5: B-Sound Safari",
+    "round_index": 5,
+    "round_total": 6,
+    "completion_line": "The B pictures are in your nature book.",
+    "objects": [
+      {
+        "id": "bird",
+        "label": "bird",
+        "image": "/assets/images/bird.svg",
+        "x": 28,
+        "y": 30,
+        "size": 88,
+        "tap_area_px": 108,
+        "kind": "bird",
+        "first_sound": "b",
+        "hint": "Bird starts with b-b-b."
+      },
+      {
+        "id": "butterfly",
+        "label": "butterfly",
+        "image": "/assets/images/butterfly.svg",
+        "x": 66,
+        "y": 36,
+        "size": 96,
+        "tap_area_px": 112,
+        "kind": "butterfly",
+        "first_sound": "b",
+        "hint": "Butterfly starts with b-b-b."
+      },
+      {
+        "id": "squirrel",
+        "label": "squirrel",
+        "image": "/assets/images/squirrel.svg",
+        "x": 76,
+        "y": 70,
+        "size": 104,
+        "tap_area_px": 120,
+        "kind": "squirrel",
+        "first_sound": "s"
+      },
+      {
+        "id": "tree",
+        "label": "tree",
+        "image": "/assets/images/tree.svg",
+        "x": 16,
+        "y": 48,
+        "size": 128,
+        "tap_area_px": 128,
+        "kind": "tree",
+        "first_sound": "t"
+      }
+    ],
+    "required_task": {
+      "first_sound": "b"
+    },
+    "parent_evidence_summary": "B-sound safari captures first-sound category sorting in a nature scene, selected distractors, and sound hint use.",
+    "next_activity_id": "nature-camera-album-review",
+    "future_evidence_notes": ["phonemic_awareness", "category_selection"]
+  },
+  "success_rules": {
+    "completion": "first_sound_photos_saved",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You found the B pictures.",
+      "animation": "camera_flash",
+      "sound": "soft_shutter"
+    },
+    "incorrect": {
+      "speech": "Bear starts with b-b-b.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Bird starts with b-b-b.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

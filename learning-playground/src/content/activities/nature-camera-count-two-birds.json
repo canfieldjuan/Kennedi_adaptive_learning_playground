@@ -1,0 +1,121 @@
+{
+  "id": "nature-camera-count-two-birds",
+  "version": 1,
+  "title": "Two Bird Photos",
+  "domain": "math",
+  "skill_ids": ["counting"],
+  "transfer": {
+    "skill_ids": ["counting"],
+    "context_type": "different_interaction_model",
+    "context_id": "nature-camera-counting-photos",
+    "example_set_id": "two-birds-scene-1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 3,
+    "choice_count": 4,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 90,
+  "content": {
+    "game": "nature-camera-safari",
+    "mode": "count_photo",
+    "uses_real_camera": false,
+    "guide": {
+      "id": "daddy-bear",
+      "name": "Daddy Bear",
+      "icon": "🐻",
+      "intro_line": "Let’s count bird pictures.",
+      "success_line": "You took 2 bird pictures."
+    },
+    "prompt_audio": "Take 2 bird pictures.",
+    "scene_label": "A park scene with two birds and two distractors",
+    "walk_label": "Daddy Bear picture walk",
+    "round_label": "Photo 4: Count Two Birds",
+    "round_index": 4,
+    "round_total": 6,
+    "completion_line": "Two bird photos are in your nature book.",
+    "objects": [
+      {
+        "id": "bird-1",
+        "label": "bird",
+        "image": "/assets/images/bird.svg",
+        "x": 24,
+        "y": 32,
+        "size": 82,
+        "tap_area_px": 104,
+        "kind": "bird",
+        "first_sound": "b",
+        "hint": "One bird is by the cloud."
+      },
+      {
+        "id": "bird-2",
+        "label": "bird",
+        "image": "/assets/images/bird.svg",
+        "x": 66,
+        "y": 28,
+        "size": 82,
+        "tap_area_px": 104,
+        "kind": "bird",
+        "first_sound": "b",
+        "hint": "One bird is up high."
+      },
+      {
+        "id": "squirrel",
+        "label": "squirrel",
+        "image": "/assets/images/squirrel.svg",
+        "x": 74,
+        "y": 68,
+        "size": 104,
+        "tap_area_px": 120,
+        "kind": "squirrel",
+        "first_sound": "s"
+      },
+      {
+        "id": "flower",
+        "label": "flower",
+        "image": "/assets/images/flower.svg",
+        "x": 18,
+        "y": 72,
+        "size": 76,
+        "tap_area_px": 100,
+        "kind": "flower",
+        "first_sound": "f"
+      }
+    ],
+    "required_task": {
+      "target_kind": "bird",
+      "quantity": 2
+    },
+    "parent_evidence_summary": "Count two birds captures counting in a scene, requested count, selected count, distractor taps, and correction.",
+    "next_activity_id": "nature-camera-b-sound-safari",
+    "future_evidence_notes": ["quantity_matching", "one_to_one_correspondence"]
+  },
+  "success_rules": {
+    "completion": "requested_count_saved",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You found 2 birds.",
+      "animation": "camera_flash",
+      "sound": "soft_shutter"
+    },
+    "incorrect": {
+      "speech": "Let’s count the bird pictures.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Take 2 bird pictures.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

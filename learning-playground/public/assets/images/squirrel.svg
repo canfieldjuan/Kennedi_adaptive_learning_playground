@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="squirrel">
+  <path d="M78 74c24-7 28-41 8-53-12-7-26 1-23 15 2 9 12 13 20 8-3 13-14 20-28 21z" fill="#b45309"/>
+  <circle cx="55" cy="67" r="25" fill="#d97706"/>
+  <circle cx="38" cy="48" r="17" fill="#f59e0b"/>
+  <circle cx="44" cy="44" r="4" fill="#1f2937"/>
+  <path d="M27 51l-13 5 13 6z" fill="#92400e"/>
+  <path d="M51 90l-9 16M65 90l9 16" stroke="#78350f" stroke-width="6" stroke-linecap="round"/>
+</svg>

@@ -42,6 +42,14 @@ import {
   destroyVideoVault,
 } from '../modules/video-vault/VideoVault';
 import type { VideoVaultManifest } from '../modules/video-vault/video-vault.types';
+import {
+  renderKennedisOrdersActivity,
+  destroyKennedisOrdersActivity,
+} from '../modules/kennedis-orders/KennedisOrdersActivity';
+import {
+  renderNatureCameraSafariActivity,
+  destroyNatureCameraSafariActivity,
+} from '../modules/nature-camera-safari/NatureCameraSafariActivity';
 import { APPROVED_ACTIVITIES } from '../content/activity-catalog';
 import familySafeVideos from '../content/videos/family-safe-videos.v1.json';
 
@@ -77,6 +85,8 @@ function handleRoute(route: Route): void {
   destroyTapChoiceActivity();
   destroyColoringActivity();
   destroyVideoVault();
+  destroyKennedisOrdersActivity();
+  destroyNatureCameraSafariActivity();
   app.innerHTML = '';
 
   switch (route.view) {
@@ -148,6 +158,36 @@ function renderActivityRoute(activityId: string): void {
       sessionId,
       speech,
       videoManifest: familySafeVideos as VideoVaultManifest,
+      onEvent: handleActivityEvent,
+    });
+    return;
+  }
+
+  if (
+    runtimeActivity.interaction_model === 'tap_then_place' &&
+    runtimeActivity.content.game === 'kennedis-orders'
+  ) {
+    renderKennedisOrdersActivity(app, {
+      activity: runtimeActivity,
+      childId,
+      sessionId,
+      speech,
+      audio,
+      onEvent: handleActivityEvent,
+    });
+    return;
+  }
+
+  if (
+    runtimeActivity.interaction_model === 'tap_then_place' &&
+    runtimeActivity.content.game === 'nature-camera-safari'
+  ) {
+    renderNatureCameraSafariActivity(app, {
+      activity: runtimeActivity,
+      childId,
+      sessionId,
+      speech,
+      audio,
       onEvent: handleActivityEvent,
     });
     return;

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="bird">
+  <circle cx="58" cy="58" r="28" fill="#60a5fa"/>
+  <circle cx="78" cy="46" r="20" fill="#93c5fd"/>
+  <path d="M94 45l18 9-18 9z" fill="#f59e0b"/>
+  <circle cx="83" cy="40" r="4" fill="#1f2937"/>
+  <path d="M35 61c-16-2-24-11-27-24 18 4 30 12 39 25z" fill="#2563eb"/>
+  <path d="M51 84l-8 15M68 84l8 15" stroke="#92400e" stroke-width="6" stroke-linecap="round"/>
+</svg>
