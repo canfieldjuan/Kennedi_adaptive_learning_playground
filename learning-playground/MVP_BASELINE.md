@@ -24,6 +24,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Local progress export and reset.
 - Local parent gate phrase setting.
+- Active parent-approved guidance state by skill.
 
 ## Local Data
 
@@ -33,6 +34,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Pre-v0.1.1 local attempt events are migrated on read rather than dropped.
 - Progress profiles are derived from local activity events and stored in localStorage.
 - Parent observations are stored in localStorage and included in export.
+- Parent difficulty action history and active guidance state are stored in localStorage and included in export.
 - Export includes metadata, app baseline/version, section list, and local data health.
 - Child data does not leave the device by default.
 

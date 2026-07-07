@@ -228,6 +228,18 @@ Completed:
 
 The v0.1.1 hardening lane is complete enough for next-phase planning.
 
+## Phase 3 Started: Parent-Approved Difficulty Override Model
+
+Status: Phase 3.1 is complete in v0.1.6.
+
+Completed:
+
+* Add active local parent-approved guidance by skill.
+* Keep parent difficulty action history intact.
+* Export active guidance with local progress data.
+* Clear active guidance with local progress data.
+* Do not apply active guidance to child activities yet.
+
 Still not changing:
 
 * No new games.

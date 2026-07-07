@@ -1,11 +1,14 @@
 import type { ActivityAttemptEvent } from '../types/events';
 import type { ParentObservation } from '../types/observations';
-import type { ParentDifficultyAction } from '../types/parent-actions';
+import type {
+  ParentDifficultyAction,
+  ParentDifficultyOverride,
+} from '../types/parent-actions';
 import type { ChildProgressProfile } from '../types/progress';
 import type { ParentSettings } from '../types/storage';
 
 const EXPORT_VERSION = '1';
-const APP_BASELINE = 'v0.1.5';
+const APP_BASELINE = 'v0.1.6';
 
 export interface LocalDataHealth {
   total_events: number;
@@ -31,6 +34,7 @@ export interface ProgressExportPayload {
   activity_events: ActivityAttemptEvent[];
   parent_observations: ParentObservation[];
   parent_difficulty_actions: ParentDifficultyAction[];
+  parent_difficulty_overrides: ParentDifficultyOverride[];
 }
 
 export function buildProgressExportPayload(params: {
@@ -39,10 +43,12 @@ export function buildProgressExportPayload(params: {
   events: ActivityAttemptEvent[];
   observations: ParentObservation[];
   actions?: ParentDifficultyAction[];
+  overrides?: ParentDifficultyOverride[];
   exportedAt?: string;
 }): ProgressExportPayload {
   const exportedAt = params.exportedAt ?? new Date().toISOString();
   const actions = params.actions ?? [];
+  const overrides = params.overrides ?? [];
 
   return {
     exported_at: exportedAt,
@@ -56,6 +62,7 @@ export function buildProgressExportPayload(params: {
         'activity_events',
         'parent_observations',
         'parent_difficulty_actions',
+        'parent_difficulty_overrides',
       ],
     },
     data_health: buildLocalDataHealth(params.events, params.observations, actions),
@@ -64,6 +71,7 @@ export function buildProgressExportPayload(params: {
     activity_events: params.events,
     parent_observations: params.observations,
     parent_difficulty_actions: actions,
+    parent_difficulty_overrides: overrides,
   };
 }
 
@@ -95,6 +103,7 @@ export function buildProgressExportJson(params: {
   events: ActivityAttemptEvent[];
   observations: ParentObservation[];
   actions?: ParentDifficultyAction[];
+  overrides?: ParentDifficultyOverride[];
   exportedAt?: string;
 }): string {
   return JSON.stringify(buildProgressExportPayload(params), null, 2);

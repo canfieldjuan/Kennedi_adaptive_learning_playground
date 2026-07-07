@@ -6,7 +6,10 @@ import type { ParentSettings } from '../types/storage';
 import type { StorageServiceInterface } from '../types/runtime';
 import type { ActivityAttemptEvent } from '../types/events';
 import type { ParentObservation } from '../types/observations';
-import type { ParentDifficultyAction } from '../types/parent-actions';
+import type {
+  ParentDifficultyAction,
+  ParentDifficultyOverride,
+} from '../types/parent-actions';
 import type { ChildProgressProfile } from '../types/progress';
 import {
   buildProgressProfileFromEvents,
@@ -18,6 +21,7 @@ const SETTINGS_KEY = 'lp_parent_settings';
 const PROGRESS_KEY = 'lp_child_progress_profile';
 const OBSERVATIONS_KEY = 'lp_parent_observations';
 const DIFFICULTY_ACTIONS_KEY = 'lp_parent_difficulty_actions';
+const DIFFICULTY_OVERRIDES_KEY = 'lp_parent_difficulty_overrides';
 const DEFAULT_CHILD_ID = 'local-child';
 
 export interface KeyValueStorage {
@@ -181,6 +185,61 @@ export class StorageService implements StorageServiceInterface {
     this.localStore.removeItem(DIFFICULTY_ACTIONS_KEY);
   }
 
+  getParentDifficultyOverrides(): ParentDifficultyOverride[] {
+    try {
+      const raw = this.localStore.getItem(DIFFICULTY_OVERRIDES_KEY);
+      if (!raw) return [];
+
+      const overrides = JSON.parse(raw) as ParentDifficultyOverride[];
+      return overrides.filter(isParentDifficultyOverride);
+    } catch {
+      return [];
+    }
+  }
+
+  saveParentDifficultyOverride(override: ParentDifficultyOverride): void {
+    const overrides = this.getParentDifficultyOverrides();
+    let foundOverride = false;
+    const nextOverrides = overrides.map((stored) => {
+      if (stored.override_id === override.override_id) {
+        foundOverride = true;
+        return override;
+      }
+
+      if (
+        override.active &&
+        stored.active &&
+        stored.child_id === override.child_id &&
+        stored.skill_id === override.skill_id
+      ) {
+        return {
+          ...stored,
+          active: false,
+          deactivated_at: override.created_at,
+        };
+      }
+
+      return stored;
+    });
+
+    if (!foundOverride) {
+      nextOverrides.push(override);
+    }
+
+    try {
+      this.localStore.setItem(
+        DIFFICULTY_OVERRIDES_KEY,
+        JSON.stringify(nextOverrides)
+      );
+    } catch (err) {
+      console.error('[Storage] Failed to save parent difficulty override:', err);
+    }
+  }
+
+  clearParentDifficultyOverrides(): void {
+    this.localStore.removeItem(DIFFICULTY_OVERRIDES_KEY);
+  }
+
   exportProgressData(events: ActivityAttemptEvent[]): string {
     return buildProgressExportJson({
       settings: this.getSettings(),
@@ -188,6 +247,7 @@ export class StorageService implements StorageServiceInterface {
       events,
       observations: this.getParentObservations(),
       actions: this.getParentDifficultyActions(),
+      overrides: this.getParentDifficultyOverrides(),
     });
   }
 }
@@ -237,5 +297,38 @@ function isParentDifficultyActionType(value: unknown): boolean {
     value === 'promote_gently' ||
     value === 'review_later' ||
     value === 'ignore_for_now'
+  );
+}
+
+function isParentDifficultyOverride(
+  value: unknown
+): value is ParentDifficultyOverride {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const override = value as Record<string, unknown>;
+  return (
+    typeof override.override_id === 'string' &&
+    typeof override.child_id === 'string' &&
+    typeof override.skill_id === 'string' &&
+    typeof override.skill_label === 'string' &&
+    isParentDifficultyOverrideType(override.override_type) &&
+    typeof override.source_recommendation === 'string' &&
+    typeof override.source_status === 'string' &&
+    typeof override.source_reason === 'string' &&
+    typeof override.active === 'boolean' &&
+    typeof override.created_at === 'string' &&
+    (
+      override.deactivated_at === undefined ||
+      typeof override.deactivated_at === 'string'
+    )
+  );
+}
+
+function isParentDifficultyOverrideType(value: unknown): boolean {
+  return (
+    value === 'keep_current' ||
+    value === 'add_support' ||
+    value === 'promote_gently' ||
+    value === 'review_later'
   );
 }

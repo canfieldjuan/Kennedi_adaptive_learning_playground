@@ -8,6 +8,8 @@ import type { ParentObservation } from '../../types/observations';
 import type {
   ParentDifficultyAction,
   ParentDifficultyActionType,
+  ParentDifficultyOverride,
+  ParentDifficultyOverrideType,
 } from '../../types/parent-actions';
 import type { SkillMasteryState } from '../../types/progress';
 import {
@@ -35,6 +37,11 @@ import {
   formatParentDifficultyActionLabel,
   type ParentDifficultyActionHistoryItem,
 } from '../../core/parent-difficulty-actions';
+import {
+  buildActiveParentDifficultyOverrideHistory,
+  getParentDifficultyOverrideTypeForRecommendation,
+  type ParentDifficultyOverrideHistoryItem,
+} from '../../core/parent-difficulty-overrides';
 import { buildLocalDataHealth } from '../../core/export-data';
 import {
   formatParentDataHealth,
@@ -90,6 +97,7 @@ export function renderParentPanel(
   const events = getEvents();
   const observations = storage.getParentObservations();
   const difficultyActions = storage.getParentDifficultyActions();
+  const difficultyOverrides = storage.getParentDifficultyOverrides();
   const sessionReview = buildParentSessionReview(
     events,
     observations,
@@ -176,6 +184,7 @@ export function renderParentPanel(
   _container.appendChild(createParentGuidanceSection(
     skillInterpretations,
     difficultyActions,
+    difficultyOverrides,
     storage,
     context,
     parent
@@ -485,6 +494,7 @@ function createDataManagementSection(
       storage.resetProgress();
       storage.clearParentObservations();
       storage.clearParentDifficultyActions();
+      storage.clearParentDifficultyOverrides();
       alert('Progress data cleared.');
       destroyParentPanel();
       renderParentPanel(parent, storage, context);
@@ -675,6 +685,7 @@ function createRecentAttemptsList(
 function createParentGuidanceSection(
   interpretations: ParentSkillInterpretation[],
   actions: ParentDifficultyAction[],
+  overrides: ParentDifficultyOverride[],
   storage: StorageServiceInterface,
   context: ParentPanelContext,
   parent: HTMLElement
@@ -692,6 +703,12 @@ function createParentGuidanceSection(
     empty.className = 'parent-section__placeholder';
     empty.textContent = getParentEmptyStateMessage('guidance');
     section.appendChild(empty);
+    section.appendChild(createActiveParentGuidanceSection(
+      overrides,
+      (overrideId) => {
+        deactivateParentDifficultyOverride(overrideId);
+      }
+    ));
     section.appendChild(createParentActionHistory(actions));
     return section;
   }
@@ -710,18 +727,58 @@ function createParentGuidanceSection(
         ));
         destroyParentPanel();
         renderParentPanel(parent, storage, context);
+      },
+      (overrideType) => {
+        const actionType = getParentDifficultyActionTypeForOverride(
+          overrideType
+        );
+        const createdAt = new Date().toISOString();
+        storage.saveParentDifficultyAction(createParentDifficultyAction(
+          actionType,
+          interpretation,
+          context,
+          createdAt
+        ));
+        storage.saveParentDifficultyOverride(createParentDifficultyOverride(
+          overrideType,
+          interpretation,
+          context,
+          createdAt
+        ));
+        destroyParentPanel();
+        renderParentPanel(parent, storage, context);
       }
     ));
   }
 
   section.appendChild(list);
+  section.appendChild(createActiveParentGuidanceSection(
+    overrides,
+    (overrideId) => {
+      deactivateParentDifficultyOverride(overrideId);
+    }
+  ));
   section.appendChild(createParentActionHistory(actions));
   return section;
+
+  function deactivateParentDifficultyOverride(overrideId: string): void {
+    const override = overrides.find((item) => item.override_id === overrideId);
+    if (!override) return;
+
+    storage.saveParentDifficultyOverride({
+      ...override,
+      active: false,
+      deactivated_at: new Date().toISOString(),
+    });
+    destroyParentPanel();
+    renderParentPanel(parent, storage, context);
+  }
 }
 
 function createParentGuidanceRow(
   interpretation: ParentSkillInterpretation,
-  onAction: (actionType: ParentDifficultyActionType) => void
+  onAction: (actionType: ParentDifficultyActionType) => void,
+  onApplyOverride: (overrideType: ParentDifficultyOverrideType) => void
 ): HTMLElement {
   const row = document.createElement('div');
   row.className = 'parent-guidance-row';
@@ -774,6 +831,18 @@ function createParentGuidanceRow(
   actions.appendChild(actionButtons);
   row.appendChild(actions);
 
+  const overrideType = getParentDifficultyOverrideTypeForRecommendation(
+    interpretation.recommendation
+  );
+  if (overrideType) {
+    const apply = document.createElement('button');
+    apply.className = 'parent-guidance-apply';
+    apply.type = 'button';
+    apply.textContent = 'Apply as active guidance';
+    apply.addEventListener('click', () => onApplyOverride(overrideType));
+    row.appendChild(apply);
+  }
+
   const evidenceGroup = document.createElement('div');
   evidenceGroup.className = 'parent-guidance-row__evidence-group';
   evidenceGroup.appendChild(createGuidanceLabel('Evidence'));
@@ -795,6 +864,69 @@ function createParentGuidanceRow(
   evidenceGroup.appendChild(metrics);
   row.appendChild(evidenceGroup);
   return row;
+}
+
+function createActiveParentGuidanceSection(
+  overrides: ParentDifficultyOverride[],
+  onReset: (overrideId: string) => void
+): HTMLElement {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'parent-active-guidance';
+
+  const title = document.createElement('h3');
+  title.className = 'parent-review-accuracy__title';
+  title.textContent = 'Active Parent Guidance';
+  wrapper.appendChild(title);
+
+  const history = buildActiveParentDifficultyOverrideHistory(overrides);
+  if (history.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-section__placeholder';
+    empty.textContent = 'No active parent guidance has been applied yet.';
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'parent-active-guidance__list';
+  for (const override of history) {
+    list.appendChild(createActiveParentGuidanceItem(override, onReset));
+  }
+  wrapper.appendChild(list);
+
+  return wrapper;
+}
+
+function createActiveParentGuidanceItem(
+  override: ParentDifficultyOverrideHistoryItem,
+  onReset: (overrideId: string) => void
+): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'parent-active-guidance__item';
+
+  const meta = document.createElement('span');
+  meta.className = 'parent-active-guidance__meta';
+  meta.textContent = `${override.timestamp_label} · ${override.skill_label}`;
+  item.appendChild(meta);
+
+  const choice = document.createElement('strong');
+  choice.className = 'parent-active-guidance__choice';
+  choice.textContent = `Active: ${override.override_label}`;
+  item.appendChild(choice);
+
+  const reason = document.createElement('p');
+  reason.className = 'parent-active-guidance__reason';
+  reason.textContent = `Based on ${override.recommendation_label}. ${override.source_reason}`;
+  item.appendChild(reason);
+
+  const resetButton = document.createElement('button');
+  resetButton.className = 'parent-guidance-action';
+  resetButton.type = 'button';
+  resetButton.textContent = 'Reset active guidance';
+  resetButton.addEventListener('click', () => onReset(override.override_id));
+  item.appendChild(resetButton);
+
+  return item;
 }
 
 function createParentActionHistory(
@@ -854,7 +986,8 @@ function createParentActionHistoryItem(
 function createParentDifficultyAction(
   actionType: ParentDifficultyActionType,
   interpretation: ParentSkillInterpretation,
-  context: ParentPanelContext
+  context: ParentPanelContext,
+  createdAt = new Date().toISOString()
 ): ParentDifficultyAction {
   return {
     action_id: createDifficultyActionId(),
@@ -866,8 +999,35 @@ function createParentDifficultyAction(
     source_recommendation: interpretation.recommendation,
     source_status: interpretation.status,
     source_reason: `${interpretation.status_reason} ${interpretation.recommendation_reason}`,
-    created_at: new Date().toISOString(),
+    created_at: createdAt,
   };
+}
+
+function createParentDifficultyOverride(
+  overrideType: ParentDifficultyOverrideType,
+  interpretation: ParentSkillInterpretation,
+  context: ParentPanelContext,
+  createdAt: string
+): ParentDifficultyOverride {
+  return {
+    override_id: createDifficultyOverrideId(),
+    child_id: context.childId,
+    skill_id: interpretation.skill_id,
+    skill_label: interpretation.skill_label,
+    override_type: overrideType,
+    source_recommendation: interpretation.recommendation,
+    source_status: interpretation.status,
+    source_reason: `${interpretation.status_reason} ${interpretation.recommendation_reason}`,
+    active: true,
+    created_at: createdAt,
+  };
+}
+
+function getParentDifficultyActionTypeForOverride(
+  overrideType: ParentDifficultyOverrideType
+): ParentDifficultyActionType {
+  if (overrideType === 'keep_current') return 'keep_stable';
+  return overrideType;
 }
 
 function createGuidanceSignal(labelText: string, valueText: string): HTMLElement {
@@ -1088,6 +1248,14 @@ function createDifficultyActionId(): string {
   }
 
   return `difficulty-action-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createDifficultyOverrideId(): string {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `difficulty-override-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function destroyParentPanel(): void {

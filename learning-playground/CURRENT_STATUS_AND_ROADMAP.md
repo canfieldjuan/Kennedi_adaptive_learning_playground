@@ -66,10 +66,11 @@ The important shift is that the app is no longer just a set of playable screens.
   - parent notes
 - Shows Parent Guidance by reviewed skill.
 - Parent Guidance includes recent accuracy, attempts, hint use, abandoned activity count, repeated error pattern when present, plain-language status, and parent-controlled recommendation.
+- Parent Guidance can save an active parent-approved guidance choice per skill.
 - Parent notes are stored locally as `ParentObservation` records.
 - Shows Parent Gate Settings for changing the local adult gate phrase.
-- Export now includes settings, progress profile, raw activity events, parent observations, parent difficulty actions, export metadata, and local data health.
-- Clear progress clears events, progress, observations, and parent difficulty actions.
+- Export now includes settings, progress profile, raw activity events, parent observations, parent difficulty actions, active parent guidance, export metadata, and local data health.
+- Clear progress clears events, progress, observations, parent difficulty actions, and active parent guidance.
 
 ### Documentation and Process
 
@@ -88,8 +89,8 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 16 test files passing
-- 51 tests passing
+- 17 test files passing
+- 54 tests passing
 
 Browser smoke checks confirmed:
 
@@ -102,6 +103,7 @@ Browser smoke checks confirmed:
 - Recent Attempts renders.
 - Parent Guidance renders.
 - Parent Guidance lets a parent record local difficulty action decisions.
+- Active Parent Guidance renders, applies a parent-approved guidance choice, and can reset it.
 - Parent Notes history, textbox, and save button render.
 - Local Data Snapshot renders.
 - No Vite/browser error overlay appeared.
@@ -133,9 +135,9 @@ Events, observations, and progress currently live in localStorage. That is fine 
 
 Parent notes now preserve history for the reviewed session. A later version may want editing or categorization, but the lightweight local note history is in place.
 
-### Parent Difficulty Actions
+### Active Parent Guidance
 
-Parent difficulty actions are local decision records only. They are useful for tracking what the parent chose to do with a recommendation, but they do not yet change future activity difficulty.
+Parent difficulty actions remain local decision history. Active Parent Guidance now records the parent-approved state per skill, but child activities do not consume it until a later runtime application slice.
 
 ## Where We Are Headed
 
@@ -167,10 +169,11 @@ Parent can answer:
 - Parent-Approved Difficulty Actions: local action records, recent action history, export inclusion, and clear-data support.
 - Parent Gate Hardening: visible parent access button, local-only challenge, and direct `#parent` route gating.
 - Parent Gate Settings Polish: configurable local gate phrase, default fallback, export preservation, and focused tests.
+- Parent-Approved Difficulty Override Model: active local guidance state, export inclusion, reset support, and focused tests.
 
-### Current Lane Status
+### Current Phase Status
 
-The parent understanding and local-control lane is complete enough to plan the next phase after v0.1.5 verification.
+Phase 3 has started with parent-approved difficulty application. v0.1.6 adds active parent guidance as local state before any child runtime consumes it.
 
 What this lane now covers:
 
@@ -180,6 +183,7 @@ What this lane now covers:
 - What the app recommends next, with reasons.
 - Local export and local delete.
 - Parent notes and parent action records.
+- Active parent-approved guidance by skill.
 - Local-only parent access friction.
 
 Still protected:
@@ -189,25 +193,25 @@ Still protected:
 - No child activity UI changes.
 - No activity schema changes.
 - No automatic difficulty changes or routing.
+- No child runtime application of active guidance yet.
 - No rewards, streaks, rankings, or pressure loops.
 
-### Next Phase Planning
+### Next Slice: Phase 3.2 Apply Approved Difficulty
 
-The next phase should be planned before implementation. Strong candidates are parent-controlled difficulty application, larger local storage durability, or a carefully scoped new activity lane.
+Goal: let child runtimes read active parent-approved guidance and apply safe difficulty adjustments only after the parent has approved them.
 
-Parent-controlled difficulty application remains the nearest product continuation if we stay in the adaptation lane:
+Possible work:
 
 - Parent sees the recommendation first.
-- Parent can ignore it.
-- Parent can choose a difficulty adjustment manually.
-- Any future application is explicit and reversible.
-- No streaks or grind loops.
-- No adaptive routing until parent review is proven trustworthy.
+- Parent can ignore or reset it.
+- Tap-choice activities can use safe bounded adjustments.
+- Activity events record when active parent guidance affected difficulty.
+- No streaks, grind loops, or hidden routing.
 
 ## Current Product Shape
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, configurable local parent gate friction, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, configurable local parent gate friction, and a parent session review layer.
 
-The current v0.1.5 base has parent review usability polish, parent-approved difficulty action records, local parent route gating, and configurable local gate settings in place. The next smart move is phase planning, still without accounts, backend auth, or child-facing automatic adaptation.
+The current v0.1.6 base has active parent-approved guidance state in place. The next smart move is applying that state to child activities in a bounded, visible, parent-approved way, still without accounts, backend auth, or automatic routing.

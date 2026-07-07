@@ -29,6 +29,8 @@ export type { ParentObservation } from './observations';
 export type {
   ParentDifficultyAction,
   ParentDifficultyActionType,
+  ParentDifficultyOverride,
+  ParentDifficultyOverrideType,
 } from './parent-actions';
 
 export type {

@@ -806,6 +806,9 @@ export interface StorageContract {
   settings: ParentSettings;
   child_profile: ChildProgressProfile;
   activity_events: ActivityAttemptEvent[];
+  parent_observations: ParentObservation[];
+  parent_difficulty_actions: ParentDifficultyAction[];
+  parent_difficulty_overrides: ParentDifficultyOverride[];
   content_packs: ContentPack[];
   approved_assets: ApprovedAsset[];
 }

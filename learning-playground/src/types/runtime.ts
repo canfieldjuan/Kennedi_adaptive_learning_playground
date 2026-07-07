@@ -6,7 +6,10 @@
 import type { LearningActivity } from './activity';
 import type { ActivityAttemptEvent } from './events';
 import type { ParentObservation } from './observations';
-import type { ParentDifficultyAction } from './parent-actions';
+import type {
+  ParentDifficultyAction,
+  ParentDifficultyOverride,
+} from './parent-actions';
 import type { ParentSettings } from './storage';
 import type { ChildProgressProfile, SkillMasteryState } from './progress';
 
@@ -45,6 +48,9 @@ export interface StorageServiceInterface {
   getParentDifficultyActions(): ParentDifficultyAction[];
   saveParentDifficultyAction(action: ParentDifficultyAction): void;
   clearParentDifficultyActions(): void;
+  getParentDifficultyOverrides(): ParentDifficultyOverride[];
+  saveParentDifficultyOverride(override: ParentDifficultyOverride): void;
+  clearParentDifficultyOverrides(): void;
   exportProgressData(events: ActivityAttemptEvent[]): string;
 }
 

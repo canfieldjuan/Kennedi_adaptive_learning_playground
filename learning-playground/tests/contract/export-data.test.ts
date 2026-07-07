@@ -5,7 +5,10 @@
 import { describe, expect, test } from 'vitest';
 import { StorageService, type KeyValueStorage } from '../../src/core/storage';
 import type { ActivityAttemptEvent } from '../../src/types/events';
-import type { ParentDifficultyAction } from '../../src/types/parent-actions';
+import type {
+  ParentDifficultyAction,
+  ParentDifficultyOverride,
+} from '../../src/types/parent-actions';
 
 class MemoryKeyValueStorage implements KeyValueStorage {
   private readonly data = new Map<string, string>();
@@ -33,6 +36,7 @@ describe('progress export contract', () => {
       }),
     ];
     storage.saveParentDifficultyAction(makeAction());
+    storage.saveParentDifficultyOverride(makeOverride());
 
     const exported = JSON.parse(storage.exportProgressData(events)) as {
       exported_at: string;
@@ -54,12 +58,13 @@ describe('progress export contract', () => {
       settings: { parent_gate_phrase: string };
       activity_events: ActivityAttemptEvent[];
       parent_difficulty_actions: ParentDifficultyAction[];
+      parent_difficulty_overrides: ParentDifficultyOverride[];
     };
 
     expect(exported.exported_at).toBe(exported.export_metadata.export_timestamp);
     expect(exported.export_metadata).toMatchObject({
       export_version: '1',
-      app_baseline: 'v0.1.5',
+      app_baseline: 'v0.1.6',
     });
     expect(exported.export_metadata.data_sections_included).toEqual([
       'settings',
@@ -67,6 +72,7 @@ describe('progress export contract', () => {
       'activity_events',
       'parent_observations',
       'parent_difficulty_actions',
+      'parent_difficulty_overrides',
     ]);
     expect(exported.data_health).toMatchObject({
       total_events: 2,
@@ -80,6 +86,9 @@ describe('progress export contract', () => {
     expect(exported.settings.parent_gate_phrase).toBe('PARENT');
     expect(exported.activity_events[0].activity_id).toBe('math-count-stars-three');
     expect(exported.parent_difficulty_actions[0].action_type).toBe('keep_stable');
+    expect(exported.parent_difficulty_overrides[0].override_type).toBe(
+      'promote_gently'
+    );
   });
 });
 
@@ -126,5 +135,20 @@ function makeAction(): ParentDifficultyAction {
     source_status: 'Keep practicing here',
     source_reason: 'Stay with this level and watch the next few attempts.',
     created_at: '2026-01-01T12:08:00.000Z',
+  };
+}
+
+function makeOverride(): ParentDifficultyOverride {
+  return {
+    override_id: 'override-1',
+    child_id: 'local-child',
+    skill_id: 'counting',
+    skill_label: 'Counting',
+    override_type: 'promote_gently',
+    source_recommendation: 'Promote gently',
+    source_status: 'Ready for next challenge',
+    source_reason: '100% accuracy with no hints or stops.',
+    active: true,
+    created_at: '2026-01-01T12:09:00.000Z',
   };
 }
