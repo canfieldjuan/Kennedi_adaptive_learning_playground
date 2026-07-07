@@ -777,15 +777,18 @@ function createParentGuidanceSection(
         destroyParentPanel();
         renderParentPanel(parent, storage, context);
       },
-      (decisionType) => {
-        const transferRecommendation = interpretation.transfer_content_recommendation;
-        if (!transferRecommendation) return;
-
+      (decisionType, transferActivityId) => {
         storage.saveParentTransferDecision(createParentTransferDecision(
           decisionType,
           interpretation,
           context
         ));
+
+        if (transferActivityId && decisionType === 'approve_transfer_activity') {
+          window.location.hash = `#activity/${transferActivityId}`;
+          return;
+        }
+
         destroyParentPanel();
         renderParentPanel(parent, storage, context);
       }
@@ -822,7 +825,10 @@ function createParentGuidanceRow(
   interpretation: ParentSkillInterpretation,
   onAction: (actionType: ParentDifficultyActionType) => void,
   onApplyOverride: (overrideType: ParentDifficultyOverrideType) => void,
-  onTransferDecision: (decisionType: ParentTransferDecisionType) => void
+  onTransferDecision: (
+    decisionType: ParentTransferDecisionType,
+    transferActivityId?: string
+  ) => void
 ): HTMLElement {
   const row = document.createElement('div');
   row.className = 'parent-guidance-row';
@@ -967,7 +973,10 @@ function createMasteryEvidenceGroup(
 
 function createTransferCoverageGroup(
   interpretation: ParentSkillInterpretation,
-  onTransferDecision: (decisionType: ParentTransferDecisionType) => void
+  onTransferDecision: (
+    decisionType: ParentTransferDecisionType,
+    transferActivityId?: string
+  ) => void
 ): HTMLElement {
   const evidenceGroup = document.createElement('div');
   evidenceGroup.className = 'parent-guidance-row__evidence-group';
@@ -999,9 +1008,24 @@ function createTransferCoverageGroup(
       interpretation.transfer_content_recommendation.suggested_activity_template
     ));
   }
+  if (interpretation.transfer_activity_recommendation) {
+    metrics.appendChild(createProgressMetric(
+      'Suggested Activity',
+      interpretation.transfer_activity_recommendation.activity_title
+    ));
+    metrics.appendChild(createProgressMetric(
+      'Transfer Context',
+      formatInternalMasteryLabel(
+        interpretation.transfer_activity_recommendation.context_type
+      )
+    ));
+  }
   evidenceGroup.appendChild(metrics);
 
-  if (interpretation.transfer_content_recommendation) {
+  if (
+    interpretation.transfer_content_recommendation ||
+    interpretation.transfer_activity_recommendation
+  ) {
     const controls = document.createElement('div');
     controls.className = 'parent-guidance-row__actions';
     controls.appendChild(createGuidanceLabel('Transfer decision'));
@@ -1012,16 +1036,23 @@ function createTransferCoverageGroup(
     const approveButton = document.createElement('button');
     approveButton.className = 'parent-guidance-action';
     approveButton.type = 'button';
-    approveButton.textContent = 'Approve transfer plan';
+    approveButton.textContent = interpretation.transfer_activity_recommendation
+      ? 'Start transfer activity'
+      : 'Approve transfer plan';
     approveButton.addEventListener('click', () => {
-      onTransferDecision('approve_transfer_activity');
+      onTransferDecision(
+        'approve_transfer_activity',
+        interpretation.transfer_activity_recommendation?.activity_id
+      );
     });
     buttons.appendChild(approveButton);
 
     const holdButton = document.createElement('button');
     holdButton.className = 'parent-guidance-action';
     holdButton.type = 'button';
-    holdButton.textContent = 'Hold transfer plan';
+    holdButton.textContent = interpretation.transfer_activity_recommendation
+      ? 'Hold transfer activity'
+      : 'Hold transfer plan';
     holdButton.addEventListener('click', () => {
       onTransferDecision('hold_transfer_activity');
     });
@@ -1279,10 +1310,15 @@ function createParentTransferDecisionHistoryItem(
 
   const reason = document.createElement('p');
   reason.className = 'parent-action-history__reason';
-  reason.textContent = [
-    `Context: ${formatTransferContextType(decision.missing_context_type)}.`,
-    `Template: ${decision.suggested_activity_template}.`,
-  ].join(' ');
+  reason.textContent = decision.transfer_activity_title
+    ? [
+      `Activity: ${decision.transfer_activity_title}.`,
+      `Context: ${formatTransferContextType(decision.missing_context_type)}.`,
+    ].join(' ')
+    : [
+      `Context: ${formatTransferContextType(decision.missing_context_type)}.`,
+      `Template: ${decision.suggested_activity_template}.`,
+    ].join(' ');
   item.appendChild(reason);
 
   return item;
@@ -1315,8 +1351,9 @@ function createParentTransferDecision(
   createdAt = new Date().toISOString()
 ): ParentTransferDecision {
   const recommendation = interpretation.transfer_content_recommendation;
-  if (!recommendation) {
-    throw new Error('Cannot save transfer decision without a content recommendation.');
+  const activityRecommendation = interpretation.transfer_activity_recommendation;
+  if (!recommendation && !activityRecommendation) {
+    throw new Error('Cannot save transfer decision without a transfer recommendation.');
   }
 
   return {
@@ -1329,8 +1366,14 @@ function createParentTransferDecision(
     source_recommendation: interpretation.recommendation,
     source_status: interpretation.mastery_status ?? interpretation.status,
     source_reason: `${interpretation.status_reason} ${interpretation.recommendation_reason}`,
-    missing_context_type: recommendation.suggested_context_type,
-    suggested_activity_template: recommendation.suggested_activity_template,
+    missing_context_type:
+      recommendation?.suggested_context_type ??
+      activityRecommendation!.context_type,
+    suggested_activity_template:
+      recommendation?.suggested_activity_template ??
+      activityRecommendation!.activity_id,
+    transfer_activity_id: activityRecommendation?.activity_id,
+    transfer_activity_title: activityRecommendation?.activity_title,
     created_at: createdAt,
   };
 }

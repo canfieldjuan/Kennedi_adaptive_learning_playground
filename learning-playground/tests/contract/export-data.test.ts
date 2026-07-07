@@ -68,7 +68,7 @@ describe('progress export contract', () => {
     expect(exported.exported_at).toBe(exported.export_metadata.export_timestamp);
     expect(exported.export_metadata).toMatchObject({
       export_version: '1',
-      app_baseline: 'v0.2.2',
+      app_baseline: 'v0.2.3',
     });
     expect(exported.export_metadata.data_sections_included).toEqual([
       'settings',
@@ -97,6 +97,9 @@ describe('progress export contract', () => {
     );
     expect(exported.parent_transfer_decisions[0].decision_type).toBe(
       'approve_transfer_activity'
+    );
+    expect(exported.parent_transfer_decisions[0].transfer_activity_id).toBe(
+      'math-count-hearts-three'
     );
 
     storage.clearParentTransferDecisions();
@@ -178,6 +181,8 @@ function makeTransferDecision(): ParentTransferDecision {
     source_reason: 'Single-context fluency needs transfer coverage.',
     missing_context_type: 'same_format_new_examples',
     suggested_activity_template: 'same_quantity_new_layout',
+    transfer_activity_id: 'math-count-hearts-three',
+    transfer_activity_title: 'Count the Hearts',
     created_at: '2026-01-01T12:10:00.000Z',
   };
 }

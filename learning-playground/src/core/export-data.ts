@@ -9,7 +9,7 @@ import type { ChildProgressProfile } from '../types/progress';
 import type { ParentSettings } from '../types/storage';
 
 const EXPORT_VERSION = '1';
-const APP_BASELINE = 'v0.2.2';
+const APP_BASELINE = 'v0.2.3';
 
 export interface LocalDataHealth {
   total_events: number;

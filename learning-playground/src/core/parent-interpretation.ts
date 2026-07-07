@@ -16,6 +16,10 @@ import {
   getMasteryRecommendation,
   type ParentAdaptiveRecommendation,
 } from './recommendation-engine';
+import {
+  getTransferActivityRecommendation,
+  type TransferActivityRecommendation,
+} from './transfer-activity-recommendation';
 import { formatSkillLabel } from './parent-review-format';
 
 export type ParentSkillStatus =
@@ -48,6 +52,7 @@ export interface ParentSkillInterpretation {
   transfer_successful_context_count?: number;
   transfer_missing_context_types?: string[];
   transfer_content_recommendation?: MasteryEvaluation['transfer_coverage']['recommended_content_actions'][number];
+  transfer_activity_recommendation?: TransferActivityRecommendation;
   mastery_source_event_ids?: string[];
   mastery_source_observation_ids?: string[];
 }
@@ -97,6 +102,13 @@ export function buildParentSkillInterpretations(
         })
         : undefined;
       const recommendation = getRecommendation(signal, mastery);
+      const transferActivityRecommendation = mastery
+        ? getTransferActivityRecommendation({
+          skillId: summary.skill_id,
+          activities,
+          coverage: mastery.transfer_coverage,
+        })
+        : undefined;
 
       return {
         skill_id: summary.skill_id,
@@ -127,6 +139,7 @@ export function buildParentSkillInterpretations(
         transfer_missing_context_types: mastery?.transfer_coverage.missing_context_types,
         transfer_content_recommendation:
           mastery?.transfer_coverage.recommended_content_actions[0],
+        transfer_activity_recommendation: transferActivityRecommendation,
         mastery_source_event_ids: mastery?.source_event_ids,
         mastery_source_observation_ids: mastery?.source_observation_ids,
       };

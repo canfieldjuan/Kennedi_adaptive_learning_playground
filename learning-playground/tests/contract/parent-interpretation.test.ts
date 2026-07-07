@@ -35,6 +35,11 @@ describe('parent interpretation contract', () => {
       mastery_status: 'transfer_ready',
       mastery_recommended_action: 'test_transfer',
       transfer_coverage_status: 'ready_for_transfer',
+      transfer_activity_recommendation: {
+        activity_id: 'math-count-hearts-three',
+        activity_title: 'Count the Hearts',
+        context_type: 'same_format_new_examples',
+      },
     });
     expect(interpretation.recommendation_reason).toContain('approved context');
     expect(interpretation.skill_graph_rule).toContain('Counting requires');

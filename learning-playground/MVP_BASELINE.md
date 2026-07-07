@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.2.2 Phase 3 targeted transfer variant baseline
+Version: v0.2.3 Phase 3 parent-approved transfer launch baseline
 
 ## Current Working MVP
 
@@ -24,6 +24,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and parent notes.
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Parent Guidance includes skill graph evidence, mastery status, suggested next action, evidence summary, graph rule, and source references.
+- Parent Guidance can show a concrete approved transfer activity and let the parent start or hold it.
 - Local progress export and reset.
 - Local parent gate phrase setting.
 - Active parent-approved guidance state by skill, applied only to supported tap-choice activities.
@@ -46,6 +47,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Applied-fit review is derived from local event metadata and active guidance records.
 - Mastery evidence is derived from local events and parent observations, with source IDs cited.
 - Transfer coverage and parent transfer decisions are local-first and export with progress data.
+- Parent-started transfer activity decisions include the selected activity when available.
 - Export includes metadata, app baseline/version, section list, and local data health.
 - Child data does not leave the device by default.
 

@@ -297,7 +297,7 @@ Still not changing:
 
 ## Phase 3.5: Transfer Coverage + Content Gap Engine
 
-Status: Phase 3.5 continued in v0.2.1 and added targeted transfer variants in v0.2.2.
+Status: Phase 3.5 continued in v0.2.1, added targeted transfer variants in v0.2.2, and added parent-approved transfer launch in v0.2.3.
 
 Completed:
 
@@ -310,6 +310,7 @@ Completed:
 * Include parent transfer decisions in export and clear-data behavior.
 * Add same-format/new-example transfer variants for core evidence-bearing MVP skills using existing runtimes.
 * Keep the child home grid unchanged while variants become approved local contexts.
+* Let the parent start or hold a concrete approved transfer activity from Parent Guidance.
 
 Still not changing:
 

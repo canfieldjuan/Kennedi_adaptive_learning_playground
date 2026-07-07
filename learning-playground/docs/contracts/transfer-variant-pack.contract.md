@@ -11,6 +11,7 @@ Targeted transfer variants exist to close known transfer coverage gaps. They are
 - A strong single-context skill with an approved second context may become `transfer_ready`, but not `likely_mastered` until successful evidence exists in both contexts.
 - The child home grid must stay unchanged in this slice.
 - Activity title lookup, schema validation, and curriculum graph tests must include transfer variants.
+- Parent launch of transfer variants must remain parent-clicked and local.
 
 ## Non-Scope
 

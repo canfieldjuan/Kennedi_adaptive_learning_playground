@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 describe('parent approval boundary contract', () => {
   test('mastery and recommendation core modules do not save active guidance', () => {
     const sources = import.meta.glob(
-      '../../src/core/{mastery-engine,evidence,curriculum-graph,review-scheduler,parent-interpretation,transfer-coverage,content-gap-engine,recommendation-engine}.ts',
+      '../../src/core/{mastery-engine,evidence,curriculum-graph,review-scheduler,parent-interpretation,transfer-coverage,content-gap-engine,recommendation-engine,transfer-activity-recommendation}.ts',
       {
         eager: true,
         import: 'default',
@@ -15,7 +15,7 @@ describe('parent approval boundary contract', () => {
       }
     ) as Record<string, string>;
 
-    expect(Object.keys(sources)).toHaveLength(8);
+    expect(Object.keys(sources)).toHaveLength(9);
     for (const source of Object.values(sources)) {
       expect(source).not.toContain('saveParentDifficultyOverride');
       expect(source).not.toContain('saveParentTransferDecision');
@@ -39,6 +39,9 @@ describe('parent approval boundary contract', () => {
     expect(source).toContain('Record parent choice');
     expect(source).toContain('Approve transfer plan');
     expect(source).toContain('Hold transfer plan');
+    expect(source).toContain('Start transfer activity');
+    expect(source).toContain('Hold transfer activity');
+    expect(source).toContain('window.location.hash = `#activity/${transferActivityId}`');
     expect(source).toContain('saveParentDifficultyOverride');
     expect(source).toContain('saveParentTransferDecision');
   });

@@ -17,5 +17,7 @@ export interface ParentTransferDecision {
   source_reason: string;
   missing_context_type: TransferContextType;
   suggested_activity_template: string;
+  transfer_activity_id?: string;
+  transfer_activity_title?: string;
   created_at: string;
 }

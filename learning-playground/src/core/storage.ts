@@ -393,6 +393,14 @@ function isParentTransferDecision(
     typeof decision.source_reason === 'string' &&
     typeof decision.missing_context_type === 'string' &&
     typeof decision.suggested_activity_template === 'string' &&
+    (
+      decision.transfer_activity_id === undefined ||
+      typeof decision.transfer_activity_id === 'string'
+    ) &&
+    (
+      decision.transfer_activity_title === undefined ||
+      typeof decision.transfer_activity_title === 'string'
+    ) &&
     typeof decision.created_at === 'string'
   );
 }

@@ -4,7 +4,7 @@
 
 The MVP is working as a local-first adaptive learning playground. The child can open the app, choose from the home screen, play working activities, and return home. The parent can open the Parent Panel, see progress, export local data, clear progress, review session-level information, add notes, and see parent-readable guidance.
 
-The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now includes a curriculum graph, mastery engine, transfer coverage layer, content gap engine, local parent transfer-decision persistence, and the first targeted transfer variants within existing game types.
+The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now includes a curriculum graph, mastery engine, transfer coverage layer, content gap engine, local parent transfer-decision persistence, targeted transfer variants within existing game types, and parent-approved transfer launch.
 
 ## What We Have Built
 
@@ -77,6 +77,7 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Parent Guidance includes transfer coverage status, successful/required context counts, missing context types, and targeted transfer content recommendations when required content is still missing.
 - Parent Guidance can save an active parent-approved guidance choice per skill.
 - Parent Guidance can store parent approve/hold transfer-content choices locally.
+- Parent Guidance can show a concrete approved transfer activity and let the parent start or hold it.
 - Recent Attempts shows when parent-approved guidance was applied to a supported activity.
 - Applied Guidance Review summarizes the attempts after active guidance affected a supported activity and offers a keep/reset/support review.
 - Parent notes are stored locally as `ParentObservation` records.
@@ -102,7 +103,7 @@ The current implementation has passed:
 The most recent test state was:
 
 - 24 test files passing
-- 94 tests passing
+- 97 tests passing
 
 Browser smoke checks confirmed:
 
@@ -159,7 +160,7 @@ Parent difficulty actions remain local decision history. Active Parent Guidance 
 
 ### Transfer Evidence
 
-The app no longer treats one-context fluency as likely mastery. Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant, but parent-approved transfer launching and richer transfer contexts are still future work. Video/vocabulary evidence remains limited by the empty local Video Vault shell.
+The app no longer treats one-context fluency as likely mastery. Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant, and the parent can start an approved transfer activity from the Parent Panel. Richer transfer contexts are still future work. Video/vocabulary evidence remains limited by the empty local Video Vault shell.
 
 ## Where We Are Headed
 
@@ -197,7 +198,7 @@ Parent can answer:
 
 ### Current Phase Status
 
-Phase 3 has continued in v0.2.2 with targeted transfer variants inside existing game types.
+Phase 3 has continued in v0.2.3 with parent-approved transfer launch.
 
 What this lane now covers:
 
@@ -210,6 +211,7 @@ What this lane now covers:
 - Parent approval still required before active guidance changes.
 - Transfer coverage showing single-context fluency, transfer readiness, blocked content gaps, missing context types, and targeted content recommendations.
 - First same-format/new-example transfer variants for Words, Math, Art, and shape/spatial practice.
+- Parent-approved transfer launch from Parent Guidance into an existing activity route.
 - Local parent transfer-content decisions included in export and clear-data behavior.
 
 Still protected:
@@ -229,8 +231,8 @@ Goal: deepen Phase 3 without breaking Phase 2.
 Good candidates:
 
 - Persist mastery snapshots beyond export-only transfer decisions.
-- Add parent-approved transfer launch/application from the Parent Panel.
 - Add stronger transfer contexts beyond same-format/new-example variants.
+- Persist mastery snapshots beyond export-only transfer decisions.
 - Add parent-facing review schedule visibility.
 - Add more nuanced parent observation categories.
 - Add accessibility polish for the child activity screens.
@@ -240,6 +242,6 @@ Good candidates:
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, targeted transfer variants inside existing game types, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage, content gap recommendations, review scheduler, configurable local parent gate friction, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, targeted transfer variants inside existing game types, parent-approved transfer launch, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage, content gap recommendations, review scheduler, configurable local parent gate friction, and a parent session review layer.
 
-The current v0.2.2 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, and approved local transfer variants while keeping accounts, backend auth, cloud sync, and automatic routing out of scope.
+The current v0.2.3 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, approved local transfer variants, and parent-clicked transfer launch while keeping accounts, backend auth, cloud sync, and automatic routing out of scope.
