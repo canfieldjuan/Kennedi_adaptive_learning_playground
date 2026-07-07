@@ -674,6 +674,12 @@ function createRecentAttemptsList(
     details.appendChild(createProgressMetric('Correct Answer', attempt.correct_answer));
     details.appendChild(createProgressMetric('Hint', attempt.hint_used ? 'Used' : 'Not used'));
     details.appendChild(createProgressMetric('Response Time', attempt.response_time_label));
+    if (attempt.parent_guidance_label) {
+      details.appendChild(createProgressMetric(
+        'Parent Guidance',
+        attempt.parent_guidance_label
+      ));
+    }
     row.appendChild(details);
 
     wrapper.appendChild(row);

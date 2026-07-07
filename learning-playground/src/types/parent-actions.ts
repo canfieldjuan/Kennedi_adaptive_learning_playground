@@ -1,7 +1,7 @@
 /**
  * Parent-only difficulty records.
  * Actions are decision history. Overrides are active parent-approved guidance.
- * In v0.1.6, overrides do not change child-facing routing or difficulty.
+ * Overrides are applied only after parent approval and remain local.
  */
 
 import type { ParentAdaptiveRecommendation } from '../core/parent-interpretation';

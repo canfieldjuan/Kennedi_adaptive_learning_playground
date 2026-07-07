@@ -109,7 +109,7 @@ describe('parent difficulty override contract', () => {
     ]);
   });
 
-  test('does not apply active guidance inside child runtimes in this slice', () => {
+  test('keeps active guidance storage and override selection outside child runtimes', () => {
     const runtimeSources = import.meta.glob(
       '../../src/modules/{tap-choice/TapChoiceActivity,coloring-book/ColoringActivity,video-vault/VideoVault}.ts',
       {

@@ -16,6 +16,7 @@ export interface ParentRecentAttempt {
   hint_used: boolean;
   response_time_ms: number;
   response_time_label: string;
+  parent_guidance_label?: string;
 }
 
 const REVIEW_ATTEMPT_OUTCOMES = new Set<AttemptOutcome>([
@@ -83,6 +84,7 @@ export function formatRecentAttempts(
       hint_used: event.hint_shown || event.outcome === 'hint_used',
       response_time_ms: event.response_time_ms,
       response_time_label: formatResponseTime(event.response_time_ms),
+      parent_guidance_label: formatParentGuidanceLabel(event.metadata),
     }));
 }
 
@@ -102,6 +104,22 @@ function formatResponseTime(responseTimeMs: number): string {
     ? seconds.toFixed(0)
     : seconds.toFixed(1);
   return `${roundedSeconds} sec`;
+}
+
+function formatParentGuidanceLabel(
+  metadata: ActivityAttemptEvent['metadata']
+): string | undefined {
+  if (metadata?.parent_guidance_applied !== true) return undefined;
+
+  if (typeof metadata.parent_guidance_label === 'string') {
+    return `Applied: ${metadata.parent_guidance_label}`;
+  }
+
+  if (typeof metadata.parent_guidance_override_type === 'string') {
+    return `Applied: ${formatInternalName(metadata.parent_guidance_override_type)}`;
+  }
+
+  return 'Applied';
 }
 
 function compareNewestFirst(

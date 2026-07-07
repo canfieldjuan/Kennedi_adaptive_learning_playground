@@ -9,6 +9,10 @@ import type {
   AudioServiceInterface,
   SpeechServiceInterface,
 } from '../../types/runtime';
+import {
+  buildParentGuidanceEventMetadata,
+  type AppliedParentGuidance,
+} from '../../core/parent-difficulty-application';
 
 interface TapChoiceChoice {
   id: string;
@@ -25,6 +29,7 @@ interface FeedbackRule {
 
 interface TapChoiceOptions {
   activity: LearningActivity;
+  parentGuidance?: AppliedParentGuidance;
   childId: string;
   sessionId: string;
   speech: SpeechServiceInterface;
@@ -165,6 +170,7 @@ export function renderTapChoiceActivity(
           attemptNumber,
           responseTimeMs,
           hintShown,
+          parentGuidance: options.parentGuidance,
         })
       );
 
@@ -187,6 +193,7 @@ export function renderTapChoiceActivity(
             attemptNumber,
             responseTimeMs,
             hintShown,
+            parentGuidance: options.parentGuidance,
           })
         );
 
@@ -223,6 +230,7 @@ export function renderTapChoiceActivity(
             attemptNumber,
             responseTimeMs,
             hintShown,
+            parentGuidance: options.parentGuidance,
           })
         );
       }
@@ -367,6 +375,7 @@ function createAttemptEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  parentGuidance?: AppliedParentGuidance;
 }): ActivityAttemptEvent {
   return {
     event_id: createEventId(),
@@ -389,6 +398,7 @@ function createAttemptEvent(params: {
     distractor_strength: params.activity.difficulty.distractor_strength,
     input_type: 'tap',
     hint_shown: params.hintShown,
+    metadata: buildParentGuidanceEventMetadata(params.parentGuidance),
   };
 }
 

@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.1.1 baseline
+Version: v0.1.7 runtime baseline
 
 ## Current Working MVP
 
@@ -20,11 +20,11 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent Panel behind a visible local parent check.
 - Settings summary for display name, difficulty mode, session length, audio, speech, video, and enabled domains.
 - Local progress summary by skill.
-- Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, and parent notes.
+- Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, and parent notes.
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Local progress export and reset.
 - Local parent gate phrase setting.
-- Active parent-approved guidance state by skill.
+- Active parent-approved guidance state by skill, applied only to supported tap-choice activities.
 
 ## Local Data
 
@@ -35,6 +35,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Progress profiles are derived from local activity events and stored in localStorage.
 - Parent observations are stored in localStorage and included in export.
 - Parent difficulty action history and active guidance state are stored in localStorage and included in export.
+- Attempt event metadata records when parent-approved guidance affected a supported activity.
 - Export includes metadata, app baseline/version, section list, and local data health.
 - Child data does not leave the device by default.
 
@@ -54,6 +55,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 
 - Existing game types only: tap choice, coloring, and local video vault shell.
 - Activities conform to the existing activity schema.
+- Supported tap-choice activities can receive a bounded runtime copy from active parent-approved guidance; source activity JSON is not mutated.
 - Wrong answers guide gently and do not remove progress.
 - Completion remains short and returns control to the child or parent.
 
@@ -76,4 +78,5 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - No backend services.
 - No schema expansion unless strictly required.
 - No automatic adaptive routing.
+- No hidden difficulty changes without parent approval.
 - No rewards, streaks, leaderboards, or pressure loops.

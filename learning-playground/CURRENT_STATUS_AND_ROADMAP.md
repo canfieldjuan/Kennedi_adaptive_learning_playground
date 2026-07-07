@@ -4,7 +4,7 @@
 
 The MVP is working as a local-first adaptive learning playground. The child can open the app, choose from the home screen, play working activities, and return home. The parent can open the Parent Panel, see progress, export local data, clear progress, review session-level information, add notes, and see parent-readable guidance.
 
-The important shift is that the app is no longer just a set of playable screens. It now has a baseline observability layer: local events, progress state, parent observations, parent-readable session review, local export health, and parent-facing recommendations.
+The important shift is that the app is no longer just a set of playable screens. It now has a baseline observability layer and a parent-approved fit loop: local events, progress state, parent observations, parent-readable session review, local export health, parent-facing recommendations, active parent guidance, and bounded application for supported activities.
 
 ## What We Have Built
 
@@ -21,6 +21,7 @@ The important shift is that the app is no longer just a set of playable screens.
 ### Activity Runtime
 
 - Tap-choice runtime for Words, Math, and Puzzle-style activities.
+- Supported tap-choice activities can receive a bounded runtime copy from active parent-approved guidance.
 - Coloring runtime for Art.
 - Video Vault runtime for local, parent-approved media only.
 - Existing activity schema remains unchanged.
@@ -67,6 +68,7 @@ The important shift is that the app is no longer just a set of playable screens.
 - Shows Parent Guidance by reviewed skill.
 - Parent Guidance includes recent accuracy, attempts, hint use, abandoned activity count, repeated error pattern when present, plain-language status, and parent-controlled recommendation.
 - Parent Guidance can save an active parent-approved guidance choice per skill.
+- Recent Attempts shows when parent-approved guidance was applied to a supported activity.
 - Parent notes are stored locally as `ParentObservation` records.
 - Shows Parent Gate Settings for changing the local adult gate phrase.
 - Export now includes settings, progress profile, raw activity events, parent observations, parent difficulty actions, active parent guidance, export metadata, and local data health.
@@ -89,8 +91,8 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 17 test files passing
-- 54 tests passing
+- 18 test files passing
+- 59 tests passing
 
 Browser smoke checks confirmed:
 
@@ -101,9 +103,11 @@ Browser smoke checks confirmed:
 - Parent Gate Settings renders with the current phrase and can apply/reset the local phrase.
 - Session Review renders.
 - Recent Attempts renders.
+- Recent Attempts shows applied parent guidance after a supported tap-choice activity uses it.
 - Parent Guidance renders.
 - Parent Guidance lets a parent record local difficulty action decisions.
 - Active Parent Guidance renders, applies a parent-approved guidance choice, and can reset it.
+- Supported Math tap-choice activity used an active Counting support override with two choices and stored applied-guidance metadata.
 - Parent Notes history, textbox, and save button render.
 - Local Data Snapshot renders.
 - No Vite/browser error overlay appeared.
@@ -137,7 +141,7 @@ Parent notes now preserve history for the reviewed session. A later version may 
 
 ### Active Parent Guidance
 
-Parent difficulty actions remain local decision history. Active Parent Guidance now records the parent-approved state per skill, but child activities do not consume it until a later runtime application slice.
+Parent difficulty actions remain local decision history. Active Parent Guidance is applied only to supported tap-choice activities. Coloring and Video Vault remain unsupported for difficulty application in this slice.
 
 ## Where We Are Headed
 
@@ -170,10 +174,11 @@ Parent can answer:
 - Parent Gate Hardening: visible parent access button, local-only challenge, and direct `#parent` route gating.
 - Parent Gate Settings Polish: configurable local gate phrase, default fallback, export preservation, and focused tests.
 - Parent-Approved Difficulty Override Model: active local guidance state, export inclusion, reset support, and focused tests.
+- Parent-Approved Difficulty Application v1: bounded tap-choice runtime copies, event metadata, and visible Recent Attempts evidence.
 
 ### Current Phase Status
 
-Phase 3 has started with parent-approved difficulty application. v0.1.6 adds active parent guidance as local state before any child runtime consumes it.
+Phase 3 has started with parent-approved difficulty application. v0.1.7 closes the first approved fit loop for supported tap-choice activities: observe, recommend, approve, apply, and show evidence.
 
 What this lane now covers:
 
@@ -184,34 +189,36 @@ What this lane now covers:
 - Local export and local delete.
 - Parent notes and parent action records.
 - Active parent-approved guidance by skill.
+- Bounded application of active guidance to supported tap-choice activities.
+- Local attempt metadata showing which guidance was applied.
 - Local-only parent access friction.
 
 Still protected:
 
 - No new games.
 - No backend.
-- No child activity UI changes.
+- No new child activity UI concepts.
 - No activity schema changes.
-- No automatic difficulty changes or routing.
-- No child runtime application of active guidance yet.
+- No hidden automatic difficulty changes or routing.
+- No coloring or Video Vault difficulty application yet.
 - No rewards, streaks, rankings, or pressure loops.
 
-### Next Slice: Phase 3.2 Apply Approved Difficulty
+### Next Slice: Phase 3.3 Review Applied Fit
 
-Goal: let child runtimes read active parent-approved guidance and apply safe difficulty adjustments only after the parent has approved them.
+Goal: help the parent understand whether an applied guidance choice improved fit, stayed neutral, or should be reset.
 
 Possible work:
 
-- Parent sees the recommendation first.
-- Parent can ignore or reset it.
-- Tap-choice activities can use safe bounded adjustments.
-- Activity events record when active parent guidance affected difficulty.
+- Summarize attempts after guidance was applied.
+- Compare recent fit signals before and after the active guidance timestamp.
+- Show a parent-facing "keep, reset, or adjust" review.
+- Keep all decisions parent-controlled.
 - No streaks, grind loops, or hidden routing.
 
 ## Current Product Shape
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, configurable local parent gate friction, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, configurable local parent gate friction, and a parent session review layer.
 
-The current v0.1.6 base has active parent-approved guidance state in place. The next smart move is applying that state to child activities in a bounded, visible, parent-approved way, still without accounts, backend auth, or automatic routing.
+The current v0.1.7 base applies active parent-approved guidance to supported tap-choice activities in a bounded, visible, parent-approved way, still without accounts, backend auth, or automatic routing. The next smart move is reviewing whether those approved changes improved the activity fit before adding broader adaptation.

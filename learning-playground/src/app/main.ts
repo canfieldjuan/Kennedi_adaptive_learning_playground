@@ -23,6 +23,7 @@ import {
 import { AudioService } from '../core/audio';
 import { SpeechService } from '../core/speech';
 import { StorageService } from '../core/storage';
+import { applyParentApprovedDifficulty } from '../core/parent-difficulty-application';
 import type { LearningActivity } from '../types/activity';
 import type { ActivityAttemptEvent } from '../types/events';
 import { renderHomeScreen, destroyHomeScreen } from '../modules/home/HomeScreen';
@@ -128,9 +129,15 @@ function renderActivityRoute(activityId: string): void {
     return;
   }
 
-  if (activity.interaction_model === 'color_fill') {
+  const appliedDifficulty = applyParentApprovedDifficulty(
+    activity,
+    storage.getParentDifficultyOverrides()
+  );
+  const runtimeActivity = appliedDifficulty.activity;
+
+  if (runtimeActivity.interaction_model === 'color_fill') {
     renderColoringActivity(app, {
-      activity,
+      activity: runtimeActivity,
       childId,
       sessionId,
       speech,
@@ -140,9 +147,9 @@ function renderActivityRoute(activityId: string): void {
     return;
   }
 
-  if (activity.interaction_model === 'watch_then_do') {
+  if (runtimeActivity.interaction_model === 'watch_then_do') {
     renderVideoVault(app, {
-      activity,
+      activity: runtimeActivity,
       childId,
       sessionId,
       speech,
@@ -153,7 +160,8 @@ function renderActivityRoute(activityId: string): void {
   }
 
   renderTapChoiceActivity(app, {
-    activity,
+    activity: runtimeActivity,
+    parentGuidance: appliedDifficulty.appliedGuidance,
     childId,
     sessionId,
     speech,

@@ -228,7 +228,7 @@ Completed:
 
 The v0.1.1 hardening lane is complete enough for next-phase planning.
 
-## Phase 3 Started: Parent-Approved Difficulty Override Model
+## Phase 3.1: Parent-Approved Difficulty Override Model
 
 Status: Phase 3.1 is complete in v0.1.6.
 
@@ -238,7 +238,19 @@ Completed:
 * Keep parent difficulty action history intact.
 * Export active guidance with local progress data.
 * Clear active guidance with local progress data.
-* Do not apply active guidance to child activities yet.
+* Stage active guidance before child activity runtime application.
+
+## Completed Slice: Parent-Approved Difficulty Application v1
+
+Status: Phase 3.2 is complete in v0.1.7.
+
+Completed:
+
+* Apply active parent-approved guidance to supported tap-choice activities through a bounded runtime copy.
+* Keep source activity JSON and the existing activity schema unchanged.
+* Record applied guidance in local attempt event metadata.
+* Show applied guidance in parent Recent Attempts.
+* Leave coloring and Video Vault unsupported for difficulty application in this slice.
 
 Still not changing:
 
@@ -246,5 +258,5 @@ Still not changing:
 * No backend.
 * No accounts or cloud sync.
 * No automatic child-facing routing.
-* No automatic difficulty changes.
+* No hidden or automatic difficulty changes without parent approval.
 * No rewards, streaks, rankings, or pressure loops.

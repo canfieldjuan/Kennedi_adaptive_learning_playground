@@ -51,6 +51,10 @@ describe('parent review formatting contract', () => {
         selectedAnswer: 'cat',
         correctAnswer: 'bear',
         responseTimeMs: 1450,
+        metadata: {
+          parent_guidance_applied: true,
+          parent_guidance_label: 'Promote gently',
+        },
       }),
     ], ACTIVITY_TITLE_LOOKUP);
 
@@ -64,6 +68,7 @@ describe('parent review formatting contract', () => {
       correct_answer: 'bear',
       outcome_label: 'Incorrect',
       response_time_label: '1.4 sec',
+      parent_guidance_label: 'Applied: Promote gently',
     });
     expect(recentAttempts[1].activity_title).toBe('Count the Stars');
   });
@@ -79,6 +84,7 @@ function makeEvent(overrides: {
   selectedAnswer?: string;
   correctAnswer?: string;
   responseTimeMs?: number;
+  metadata?: ActivityAttemptEvent['metadata'];
 }): ActivityAttemptEvent {
   return {
     event_id: overrides.eventId,
@@ -101,5 +107,6 @@ function makeEvent(overrides: {
     distractor_strength: 'easy',
     input_type: 'tap',
     hint_shown: overrides.outcome === 'hint_used',
+    metadata: overrides.metadata,
   };
 }
