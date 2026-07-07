@@ -613,9 +613,10 @@
   padding: var(--space-md);
   border: 2px solid var(--parent-border);
   border-radius: var(--radius-sm);
-  font-size: 1.5rem;
+  font-size: 1.15rem;
   text-align: center;
-  letter-spacing: 0.5em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   font-family: inherit;
   outline: none;
   transition: border-color var(--transition-fast);
@@ -625,8 +626,22 @@
   border-color: var(--parent-primary);
 }
 
-.parent-gate-dialog__submit {
+.parent-gate-dialog__error {
+  color: var(--parent-danger);
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin: var(--space-sm) 0 0;
+}
+
+.parent-gate-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: center;
   margin-top: var(--space-md);
+}
+
+.parent-gate-dialog__submit {
   padding: var(--space-sm) var(--space-xl);
   border-radius: var(--radius-sm);
   background: var(--parent-primary);
@@ -637,6 +652,19 @@
   transition: opacity var(--transition-fast);
 }
 
-.parent-gate-dialog__submit:hover {
+.parent-gate-dialog__cancel {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--parent-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--parent-text);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.parent-gate-dialog__submit:hover,
+.parent-gate-dialog__cancel:hover {
   opacity: 0.85;
 }

@@ -106,27 +106,16 @@ export function renderHomeScreen(
 
   _container.appendChild(grid);
 
-  // Hidden parent gate trigger (tiny, invisible-ish button)
+  // Parent access stays outside the four child activity choices.
   const parentGate = document.createElement('button');
   parentGate.className = 'parent-gate-hint';
   parentGate.id = 'parent-gate-trigger';
-  parentGate.textContent = '⚙';
-  parentGate.setAttribute('aria-label', 'Parent settings');
-  parentGate.title = 'Parent Panel';
-
-  let _pressCount = 0;
-  let _pressTimer: ReturnType<typeof setTimeout> | null = null;
+  parentGate.textContent = 'Parent';
+  parentGate.setAttribute('aria-label', 'Open parent check');
+  parentGate.title = 'Parent tools';
 
   parentGate.addEventListener('click', () => {
-    _pressCount++;
-    if (_pressTimer) clearTimeout(_pressTimer);
-    _pressTimer = setTimeout(() => { _pressCount = 0; }, 2000);
-
-    // Require 5 quick taps to open parent panel (simple gate)
-    if (_pressCount >= 5) {
-      _pressCount = 0;
-      window.location.hash = '#parent';
-    }
+    window.location.hash = '#parent';
   });
 
   _container.appendChild(parentGate);

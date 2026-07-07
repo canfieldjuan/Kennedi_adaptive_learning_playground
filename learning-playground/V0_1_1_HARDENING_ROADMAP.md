@@ -200,17 +200,29 @@ Completed:
 * Clear Progress Data clears action records.
 * Focused tests for action storage, export, clear behavior, and labels.
 
-## Next Slice
+## Completed Slice: Parent Gate Hardening
 
-Parent Gate Hardening should come before adding new child activities or making the Parent Panel more prominent.
+Status: Parent Gate Hardening is complete in v0.1.4.
 
-Build next:
+Completed:
 
 * Replace the hidden five-tap gear with a clearer parent-gate interaction.
-* Require a local parent PIN or simple parent challenge before rendering `#parent`.
+* Require a local parent challenge before rendering `#parent`.
 * Keep the gate local-only.
 * Do not add accounts, backend auth, or cloud sync.
 * Add focused tests for route gating and local-only gate behavior.
+
+## Next Slice
+
+Parent Gate Settings Polish should come before making parent access more configurable elsewhere.
+
+Build next:
+
+* Let the parent choose a local gate phrase or PIN from the Parent Panel.
+* Keep the default simple challenge for first-run use.
+* Explain that the gate is local adult friction, not a cloud account login.
+* Do not add accounts, backend auth, or cloud sync.
+* Add focused tests for saving, exporting, clearing, and applying the local gate setting.
 
 Still not changing:
 

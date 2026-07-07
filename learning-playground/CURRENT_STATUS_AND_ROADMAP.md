@@ -87,12 +87,13 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 14 test files passing
-- 43 tests passing
+- 15 test files passing
+- 47 tests passing
 
 Browser smoke checks confirmed:
 
 - Home screen renders with the four primary choices.
+- Parent Check renders before the Parent Panel.
 - Parent Panel renders.
 - Session Review renders.
 - Recent Attempts renders.
@@ -161,24 +162,25 @@ Parent can answer:
 - Parent Notes History: previous notes display newest first, and saving a note appends instead of overwriting.
 - Parent Review UX Polish: compact local data snapshot, clearer empty states, and easier-to-scan guidance rows.
 - Parent-Approved Difficulty Actions: local action records, recent action history, export inclusion, and clear-data support.
+- Parent Gate Hardening: visible parent access button, local-only challenge, and direct `#parent` route gating.
 
-### Next Slice: Parent Gate Hardening
+### Next Slice: Parent Gate Settings Polish
 
-Goal: make Parent Panel access intentional without exposing a normal child-facing menu item or pretending the app has account security.
+Goal: make the local parent gate configurable without turning it into account security.
 
 Planned work:
 
-- Replace the five-tap hidden gear with a clearer parent-gate interaction.
-- Require a local parent PIN or simple parent challenge before rendering `#parent`.
-- Keep the PIN local-only.
+- Let the parent choose a local gate phrase or PIN from the Parent Panel.
+- Keep the default simple challenge for first-run use.
+- Explain that the gate is local adult friction, not a cloud account login.
 - Do not add accounts, backend auth, or cloud sync.
-- Add tests for route gating and local-only gate behavior.
+- Add tests for saving, exporting, clearing, and applying the local gate setting.
 
 Not in scope:
 
 - No new games.
 - No backend.
-- No child UI changes.
+- No child activity UI changes.
 - No activity schema changes.
 - No automatic difficulty changes or routing.
 - No rewards, streaks, rankings, or pressure loops.
@@ -200,6 +202,6 @@ Possible work:
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, local parent gate friction, and a parent session review layer.
 
-The current v0.1.3 base has parent review usability polish and parent-approved difficulty action records in place. The next smart move is parent gate hardening, still without accounts, backend auth, or child-facing automatic adaptation.
+The current v0.1.4 base has parent review usability polish, parent-approved difficulty action records, and local parent route gating in place. The next smart move is parent gate settings polish, still without accounts, backend auth, or child-facing automatic adaptation.

@@ -14,6 +14,11 @@ import type { Route } from './router';
 import { createSessionId, SessionTimer } from './session';
 import { registerActivity, getActivity } from '../core/activity-registry';
 import { appendEvent, getEvents } from '../core/event-log';
+import {
+  createParentGateState,
+  shouldRequireParentGate,
+  unlockParentGate,
+} from '../core/parent-gate';
 import { AudioService } from '../core/audio';
 import { SpeechService } from '../core/speech';
 import { StorageService } from '../core/storage';
@@ -21,6 +26,7 @@ import type { LearningActivity } from '../types/activity';
 import type { ActivityAttemptEvent } from '../types/events';
 import { renderHomeScreen, destroyHomeScreen } from '../modules/home/HomeScreen';
 import { renderParentPanel, destroyParentPanel } from '../modules/parent-panel/ParentPanel';
+import { renderParentGate, destroyParentGate } from '../modules/parent-gate/ParentGate';
 import {
   renderTapChoiceActivity,
   destroyTapChoiceActivity,
@@ -55,6 +61,7 @@ const audio = new AudioService(settings.sound_enabled);
 const sessionId = createSessionId();
 const childId = 'local-child';
 const sessionTimer = new SessionTimer(settings.session_limit_minutes);
+const parentGateState = createParentGateState();
 
 // — App container —
 const app = document.getElementById('app')!;
@@ -69,6 +76,7 @@ sessionTimer.start();
 function handleRoute(route: Route): void {
   // Destroy existing views
   destroyHomeScreen();
+  destroyParentGate();
   destroyParentPanel();
   destroyTapChoiceActivity();
   destroyColoringActivity();
@@ -80,6 +88,24 @@ function handleRoute(route: Route): void {
       renderHomeScreen(app, speech);
       break;
     case 'parent':
+      if (shouldRequireParentGate({
+        routeView: route.view,
+        settings: storage.getSettings(),
+        state: parentGateState,
+      })) {
+        renderParentGate(app, {
+          onUnlock: () => {
+            unlockParentGate(parentGateState);
+            destroyParentGate();
+            app.innerHTML = '';
+            renderParentPanel(app, storage, { childId, sessionId });
+          },
+          onCancel: () => {
+            window.location.hash = '#home';
+          },
+        });
+        break;
+      }
       renderParentPanel(app, storage, { childId, sessionId });
       break;
     case 'activity':
