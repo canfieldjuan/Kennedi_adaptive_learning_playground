@@ -7,7 +7,7 @@ import { describe, expect, test } from 'vitest';
 describe('parent approval boundary contract', () => {
   test('mastery and recommendation core modules do not save active guidance', () => {
     const sources = import.meta.glob(
-      '../../src/core/{mastery-engine,evidence,curriculum-graph,review-scheduler,parent-interpretation,transfer-coverage,content-gap-engine,recommendation-engine,transfer-activity-recommendation}.ts',
+      '../../src/core/{mastery-engine,evidence,curriculum-graph,review-scheduler,parent-interpretation,transfer-coverage,content-gap-engine,recommendation-engine,transfer-activity-recommendation,activity-brief-design-queue}.ts',
       {
         eager: true,
         import: 'default',
@@ -15,7 +15,7 @@ describe('parent approval boundary contract', () => {
       }
     ) as Record<string, string>;
 
-    expect(Object.keys(sources)).toHaveLength(9);
+    expect(Object.keys(sources)).toHaveLength(10);
     for (const source of Object.values(sources)) {
       expect(source).not.toContain('saveParentDifficultyOverride');
       expect(source).not.toContain('saveParentTransferDecision');
@@ -52,6 +52,7 @@ describe('parent approval boundary contract', () => {
     expect(source).toContain('Archive brief');
     expect(source).toContain('saveParentActivityBriefDecision');
     expect(source).toContain('Recent Activity Brief Choices');
+    expect(source).toContain('Activity Brief Design Queue');
     expect(source).toContain('saveParentMasterySnapshot');
     expect(source).toContain('saveParentReviewScheduleRecord');
     expect(source).toContain('Recent Mastery Checks');
@@ -75,6 +76,7 @@ describe('parent approval boundary contract', () => {
     for (const source of Object.values(sources)) {
       expect(source).not.toContain('Recommended Brief');
       expect(source).not.toContain('Activity brief');
+      expect(source).not.toContain('Activity Brief Design Queue');
       expect(source).not.toContain('Approve brief');
       expect(source).not.toContain('originating_brief_id');
       expect(source).not.toContain('Recent Mastery Checks');

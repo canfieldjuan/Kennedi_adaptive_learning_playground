@@ -297,7 +297,7 @@ Still not changing:
 
 ## Phase 3.5: Transfer Coverage + Content Gap Engine
 
-Status: Phase 3.5 continued in v0.2.1, added targeted transfer variants in v0.2.2, added parent-approved transfer launch in v0.2.3, added transfer quality/context strength rules in v0.2.4, added coverage-driven activity briefs in v0.2.5, added durable parent brief decisions in v0.2.6, and added parent-visible mastery snapshots plus review schedule records in v0.2.7.
+Status: Phase 3.5 continued in v0.2.1, added targeted transfer variants in v0.2.2, added parent-approved transfer launch in v0.2.3, added transfer quality/context strength rules in v0.2.4, added coverage-driven activity briefs in v0.2.5, added durable parent brief decisions in v0.2.6, added parent-visible mastery snapshots plus review schedule records in v0.2.7, and added a parent-only activity brief design queue in v0.2.8.
 
 Completed:
 
@@ -313,6 +313,7 @@ Completed:
 * Let the parent start or hold a concrete approved transfer activity from Parent Guidance.
 * Generate coverage-driven activity variant briefs for richer missing transfer contexts.
 * Store parent approve/hold/archive activity brief decisions locally.
+* Derive a parent-only activity brief design queue from the latest decision per skill and brief.
 * Include parent activity brief decisions in export and clear-data behavior.
 * Store parent-visible mastery snapshots locally when the Parent Panel reviews a skill.
 * Store parent-visible review schedule records locally from mastery snapshots.

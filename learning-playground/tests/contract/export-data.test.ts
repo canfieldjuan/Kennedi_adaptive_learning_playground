@@ -82,7 +82,7 @@ describe('progress export contract', () => {
     expect(exported.exported_at).toBe(exported.export_metadata.export_timestamp);
     expect(exported.export_metadata).toMatchObject({
       export_version: '1',
-      app_baseline: 'v0.2.7',
+      app_baseline: 'v0.2.8',
     });
     expect(exported.export_metadata.data_sections_included).toEqual([
       'settings',

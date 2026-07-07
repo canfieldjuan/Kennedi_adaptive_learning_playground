@@ -58,6 +58,10 @@ import {
   getParentDifficultyOverrideTypeForRecommendation,
   type ParentDifficultyOverrideHistoryItem,
 } from '../../core/parent-difficulty-overrides';
+import {
+  buildActivityBriefDesignQueue,
+  type ActivityBriefDesignQueueItem,
+} from '../../core/activity-brief-design-queue';
 import { buildLocalDataHealth } from '../../core/export-data';
 import { scheduleReview } from '../../core/review-scheduler';
 import {
@@ -776,6 +780,9 @@ function createParentGuidanceSection(
     section.appendChild(createAppliedFitReviewSection(appliedFitReviews));
     section.appendChild(createParentActionHistory(actions));
     section.appendChild(createParentTransferDecisionHistory(transferDecisions));
+    section.appendChild(createParentActivityBriefDesignQueueSection(
+      activityBriefDecisions
+    ));
     section.appendChild(createParentActivityBriefDecisionHistory(
       activityBriefDecisions
     ));
@@ -860,6 +867,9 @@ function createParentGuidanceSection(
   section.appendChild(createAppliedFitReviewSection(appliedFitReviews));
   section.appendChild(createParentActionHistory(actions));
   section.appendChild(createParentTransferDecisionHistory(transferDecisions));
+  section.appendChild(createParentActivityBriefDesignQueueSection(
+    activityBriefDecisions
+  ));
   section.appendChild(createParentActivityBriefDecisionHistory(
     activityBriefDecisions
   ));
@@ -1545,6 +1555,117 @@ function createParentActivityBriefDecisionHistoryItem(
   item.appendChild(reason);
 
   return item;
+}
+
+function createParentActivityBriefDesignQueueSection(
+  decisions: ParentActivityBriefDecision[]
+): HTMLElement {
+  const queue = buildActivityBriefDesignQueue(decisions);
+  const wrapper = document.createElement('div');
+  wrapper.className = 'parent-action-history';
+
+  const title = document.createElement('h3');
+  title.className = 'parent-review-accuracy__title';
+  title.textContent = 'Activity Brief Design Queue';
+  wrapper.appendChild(title);
+
+  if (queue.total_count === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-section__placeholder';
+    empty.textContent = 'No activity briefs are queued yet.';
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+
+  wrapper.appendChild(createActivityBriefDesignQueueGroup(
+    'Approved Briefs',
+    queue.approved,
+    'No approved briefs waiting for design.'
+  ));
+  wrapper.appendChild(createActivityBriefDesignQueueGroup(
+    'Held Briefs',
+    queue.held,
+    'No held briefs.'
+  ));
+  wrapper.appendChild(createActivityBriefDesignQueueGroup(
+    'Archived Briefs',
+    queue.archived,
+    'No archived briefs.'
+  ));
+
+  return wrapper;
+}
+
+function createActivityBriefDesignQueueGroup(
+  titleText: string,
+  items: ActivityBriefDesignQueueItem[],
+  emptyText: string
+): HTMLElement {
+  const group = document.createElement('div');
+  group.className = 'parent-action-history__list';
+
+  const title = document.createElement('strong');
+  title.className = 'parent-action-history__choice';
+  title.textContent = titleText;
+  group.appendChild(title);
+
+  if (items.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-section__placeholder';
+    empty.textContent = emptyText;
+    group.appendChild(empty);
+    return group;
+  }
+
+  for (const item of items) {
+    group.appendChild(createActivityBriefDesignQueueItem(item));
+  }
+
+  return group;
+}
+
+function createActivityBriefDesignQueueItem(
+  item: ActivityBriefDesignQueueItem
+): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'parent-action-history__item';
+
+  const meta = document.createElement('span');
+  meta.className = 'parent-action-history__meta';
+  meta.textContent = `${formatParentTimestamp(item.decided_at)} · ${item.skill_label}`;
+  row.appendChild(meta);
+
+  const pattern = document.createElement('strong');
+  pattern.className = 'parent-action-history__choice';
+  pattern.textContent = item.suggested_activity_pattern;
+  row.appendChild(pattern);
+
+  const reason = document.createElement('p');
+  reason.className = 'parent-action-history__reason';
+  reason.textContent = item.reason;
+  row.appendChild(reason);
+
+  const metrics = document.createElement('div');
+  metrics.className = 'parent-applied-fit__metrics';
+  metrics.appendChild(createProgressMetric(
+    'Status',
+    formatInternalMasteryLabel(item.status)
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Context',
+    formatTransferContextType(item.required_context_type)
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Strength',
+    formatTransferStrength(item.required_strength)
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Game Family',
+    formatInternalMasteryLabel(item.suggested_game_family)
+  ));
+  row.appendChild(metrics);
+
+  return row;
 }
 
 function createParentMasterySnapshotHistory(

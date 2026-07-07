@@ -12,6 +12,9 @@ Activity variant briefs turn transfer coverage gaps into design-ready work. A br
 - Parent approval is required before a brief can be treated as approved design work.
 - Parent brief decisions must support `approve_brief`, `hold_brief`, and `archive_brief`.
 - Parent brief decisions must be stored locally, included in local export, shown only in the parent panel, and cleared by clear progress.
+- The Parent Panel must derive a design queue from the latest decision for each `skill_id` plus `brief_id`.
+- The design queue must group briefs as approved, held, or archived without changing raw decision history.
+- The design queue must stay parent-only and must not create child-visible activities automatically.
 - Later implemented activities may reference a brief with `originating_brief_id` without requiring existing activity JSON to migrate.
 - Briefs must not contain external links.
 
@@ -76,6 +79,17 @@ export interface ParentActivityBriefDecision {
   reason: string;
   status_at_decision: ActivityVariantBrief["status"];
   created_at: string;
+}
+```
+
+## Parent Design Queue
+
+```ts
+export interface ActivityBriefDesignQueue {
+  approved: ActivityBriefDesignQueueItem[];
+  held: ActivityBriefDesignQueueItem[];
+  archived: ActivityBriefDesignQueueItem[];
+  total_count: number;
 }
 ```
 
