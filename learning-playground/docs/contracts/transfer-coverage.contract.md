@@ -19,6 +19,8 @@ Transfer coverage is the bridge between mastery evidence and approved content br
 - `mastered` requires transfer evidence plus later retention evidence.
 - Content gap recommendations must cite the missing context type and missing context strength.
 - When only weak transfer evidence exists, content gap recommendations must prefer richer missing contexts before more weak variants.
+- Weak-only transfer coverage must generate activity variant briefs for richer missing contexts.
+- Activity variant briefs must stay parent/build-side and must not become child-visible activities automatically.
 - Parent approval is required before a transfer recommendation is treated as approved.
 
 ## Non-Scope

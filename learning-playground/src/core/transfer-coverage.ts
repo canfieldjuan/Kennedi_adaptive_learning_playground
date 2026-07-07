@@ -97,6 +97,12 @@ export function evaluateTransferCoverage(
     approved_context_count: approvedContextTypes.length,
     required_context_count: requiredContextCount,
     current_strongest_context_strength: strongestContextStrength,
+    current_transfer_state: formatCurrentTransferState({
+      status,
+      successfulContextTypes,
+      successfulStrengths,
+      strongestContextStrength,
+    }),
   });
 
   return {
@@ -194,6 +200,10 @@ function getRecommendedMissingContextTypes(params: {
 }): TransferContextType[] {
   if (params.missingContextTypes.length === 0) return [];
 
+  if (hasWeakOnlySuccessfulTransfer(params.successfulContextTypes)) {
+    return sortRichMissingContextTypes(params.missingContextTypes);
+  }
+
   if (params.approvedContextTypes.length < params.requiredContextCount) {
     return params.missingContextTypes;
   }
@@ -207,6 +217,16 @@ function getRecommendedMissingContextTypes(params: {
   }
 
   return [];
+}
+
+function hasWeakOnlySuccessfulTransfer(
+  contextTypes: TransferContextType[]
+): boolean {
+  if (contextTypes.length === 0) return false;
+
+  return contextTypes
+    .map(getTransferContextStrength)
+    .every((strength) => strength === 'weak');
 }
 
 function sortRichMissingContextTypes(
@@ -246,4 +266,23 @@ function getStrongestTransferStrength(
   values: TransferContextStrength[]
 ): TransferContextStrength | undefined {
   return values[values.length - 1];
+}
+
+function formatCurrentTransferState(params: {
+  status: TransferCoverageStatus;
+  successfulContextTypes: TransferContextType[];
+  successfulStrengths: TransferContextStrength[];
+  strongestContextStrength?: TransferContextStrength;
+}): string {
+  const strengths = params.successfulStrengths.length > 0
+    ? params.successfulStrengths.join(', ')
+    : 'none';
+  const strongest = params.strongestContextStrength ?? 'none';
+
+  return [
+    `status=${params.status}`,
+    `successful_contexts=${params.successfulContextTypes.length}`,
+    `successful_strengths=${strengths}`,
+    `strongest=${strongest}`,
+  ].join('; ');
 }

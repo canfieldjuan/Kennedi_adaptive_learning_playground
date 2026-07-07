@@ -43,8 +43,31 @@ describe('parent approval boundary contract', () => {
     expect(source).toContain('Hold transfer activity');
     expect(source).toContain('Transfer Quality');
     expect(source).toContain('Suggested Strength');
+    expect(source).toContain('Recommended Brief');
+    expect(source).toContain('Approve brief');
+    expect(source).toContain('Hold brief');
+    expect(source).toContain('Archive brief');
     expect(source).toContain('window.location.hash = `#activity/${transferActivityId}`');
     expect(source).toContain('saveParentDifficultyOverride');
     expect(source).toContain('saveParentTransferDecision');
+  });
+
+  test('activity briefs are not rendered by child-facing modules', () => {
+    const sources = import.meta.glob(
+      '../../src/modules/{home,tap-choice,coloring-book,video-vault}/**/*.{ts,tsx}',
+      {
+        eager: true,
+        import: 'default',
+        query: '?raw',
+      }
+    ) as Record<string, string>;
+
+    expect(Object.keys(sources).length).toBeGreaterThan(0);
+    for (const source of Object.values(sources)) {
+      expect(source).not.toContain('Recommended Brief');
+      expect(source).not.toContain('Activity brief');
+      expect(source).not.toContain('Approve brief');
+      expect(source).not.toContain('originating_brief_id');
+    }
   });
 });

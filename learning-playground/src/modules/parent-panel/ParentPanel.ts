@@ -54,6 +54,7 @@ import { buildLocalDataHealth } from '../../core/export-data';
 import {
   formatTransferContextType,
   formatTransferStrength,
+  type ActivityVariantBrief,
 } from '../../core/content-gap-engine';
 import {
   formatParentDataHealth,
@@ -1042,6 +1043,12 @@ function createTransferCoverageGroup(
   }
   evidenceGroup.appendChild(metrics);
 
+  const activityVariantBrief =
+    interpretation.transfer_content_recommendation?.activity_variant_brief;
+  if (activityVariantBrief) {
+    evidenceGroup.appendChild(createActivityVariantBriefGroup(activityVariantBrief));
+  }
+
   if (
     interpretation.transfer_content_recommendation ||
     interpretation.transfer_activity_recommendation
@@ -1083,6 +1090,60 @@ function createTransferCoverageGroup(
   }
 
   return evidenceGroup;
+}
+
+function createActivityVariantBriefGroup(
+  brief: ActivityVariantBrief
+): HTMLElement {
+  const briefGroup = document.createElement('div');
+  briefGroup.className = 'parent-guidance-row__actions';
+  briefGroup.appendChild(createGuidanceLabel('Activity brief'));
+
+  const metrics = document.createElement('div');
+  metrics.className = 'parent-guidance-row__evidence';
+  metrics.appendChild(createProgressMetric(
+    'Recommended Brief',
+    brief.suggested_activity_pattern
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Required Context',
+    formatTransferContextType(brief.required_context_type)
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Required Strength',
+    formatTransferStrength(brief.required_strength)
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Game Family',
+    formatInternalMasteryLabel(brief.suggested_game_family)
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Required Evidence',
+    formatRequiredBriefEvidence(brief)
+  ));
+  metrics.appendChild(createProgressMetric('Why', brief.reason));
+  briefGroup.appendChild(metrics);
+
+  const controls = document.createElement('div');
+  controls.className = 'parent-guidance-row__action-buttons';
+  const status = document.createElement('p');
+  status.className = 'parent-section__placeholder';
+  status.textContent = 'No brief choice recorded in this view.';
+
+  for (const choice of ['Approve brief', 'Hold brief', 'Archive brief']) {
+    const button = document.createElement('button');
+    button.className = 'parent-guidance-action';
+    button.type = 'button';
+    button.textContent = choice;
+    button.addEventListener('click', () => {
+      status.textContent = `Brief choice recorded: ${choice}.`;
+    });
+    controls.appendChild(button);
+  }
+
+  briefGroup.appendChild(controls);
+  briefGroup.appendChild(status);
+  return briefGroup;
 }
 
 function createActiveParentGuidanceSection(
@@ -1680,6 +1741,26 @@ function formatTransferQuality(
   return strongest
     ? `${strengthList}; strongest: ${formatInternalMasteryLabel(strongest)}`
     : strengthList;
+}
+
+function formatRequiredBriefEvidence(brief: ActivityVariantBrief): string {
+  const evidence = brief.required_evidence;
+  const parts: string[] = [];
+
+  if (evidence.minimum_accuracy !== undefined) {
+    parts.push(`${formatPercent(evidence.minimum_accuracy)} accuracy`);
+  }
+  if (evidence.max_hint_rate !== undefined) {
+    parts.push(`${formatPercent(evidence.max_hint_rate)} max hint rate`);
+  }
+  if (evidence.min_successful_attempts !== undefined) {
+    parts.push(`${evidence.min_successful_attempts} successful attempt(s)`);
+  }
+  if (evidence.requires_retention_gap_hours !== undefined) {
+    parts.push(`${evidence.requires_retention_gap_hours}h retention gap`);
+  }
+
+  return parts.length > 0 ? parts.join(', ') : 'Evidence threshold not set';
 }
 
 function formatTransferDecisionLabel(

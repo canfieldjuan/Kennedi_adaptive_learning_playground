@@ -80,4 +80,14 @@ describe('activity schema contract', () => {
       expect(activity.transfer.skill_ids).toEqual(activity.skill_ids);
     }
   });
+
+  test('implemented activities can reference an originating brief without schema migration', () => {
+    const implementedFromBrief = {
+      ...allActivities[0],
+      id: 'brief-origin-test-activity',
+      originating_brief_id: 'brief-initial_sound-category_sort',
+    };
+
+    expect(validate(implementedFromBrief)).toBe(true);
+  });
 });

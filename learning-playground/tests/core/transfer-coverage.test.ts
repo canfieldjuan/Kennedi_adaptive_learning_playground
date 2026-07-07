@@ -86,12 +86,20 @@ describe('transfer coverage', () => {
     expect(recommendation).toMatchObject({
       skill_id: 'counting',
       recommendation_type: 'create_transfer_variant',
-      suggested_context_type: 'same_format_new_examples',
-      missing_context_strength: 'weak',
+      suggested_context_type: 'different_prompt_mode',
+      missing_context_strength: 'medium',
       current_strongest_context_strength: 'weak',
     });
-    expect(recommendation.reason).toContain('Same Format New Examples');
-    expect(recommendation.reason).toContain('Missing Weak context');
+    expect(recommendation.reason).toContain('Different Prompt Mode');
+    expect(recommendation.reason).toContain('Missing Medium context');
+    expect(recommendation.activity_variant_brief).toMatchObject({
+      skill_id: 'counting',
+      required_context_type: 'different_prompt_mode',
+      required_strength: 'medium',
+      suggested_game_family: 'delivery_race',
+      suggested_activity_pattern: 'Picture Quantity Order Card',
+      status: 'ready_for_design',
+    });
   });
 
   test('weak-only transfer recommends richer missing context before likely mastery', () => {
@@ -130,9 +138,128 @@ describe('transfer coverage', () => {
       missing_context_strength: 'medium',
       current_strongest_context_strength: 'weak',
     });
+    expect(coverage.recommended_content_actions[0].activity_variant_brief).toMatchObject({
+      brief_id: 'brief-counting-different_prompt_mode',
+      skill_id: 'counting',
+      required_context_type: 'different_prompt_mode',
+      required_strength: 'medium',
+      suggested_game_family: 'delivery_race',
+      required_evidence: {
+        minimum_accuracy: 0.8,
+        min_successful_attempts: 2,
+      },
+    });
     expect(coverage.recommended_content_actions[0].reason).toContain(
       'Current strongest evidence is Weak'
     );
+  });
+
+  test('weak-only phonics transfer prioritizes category sort before same-format variants', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('initial_sound');
+    expect(skill).toBeDefined();
+    const activities = [
+      makeActivity('phonics-find-b', 'same_format_same_examples', 'initial_sound', 'phonics'),
+      makeActivity('phonics-find-b-ball', 'same_format_new_examples', 'initial_sound', 'phonics'),
+    ];
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1', 'phonics-find-b', 'initial_sound', {
+          correctChoiceId: 'bear',
+          promptText: 'Find the word that starts with b.',
+          answer: 'bear',
+        }),
+        makeEvent('event-2', 'phonics-find-b-ball', 'initial_sound', {
+          correctChoiceId: 'ball',
+          promptText: 'Find another word that starts with b.',
+          answer: 'ball',
+        }),
+        makeEvent('event-3', 'phonics-find-b', 'initial_sound', {
+          correctChoiceId: 'bear',
+          promptText: 'Find the word that starts with b.',
+          answer: 'bear',
+        }),
+      ],
+      activities,
+    });
+
+    const coverage = evaluateTransferCoverage(
+      'initial_sound',
+      activities,
+      evidence,
+      graph
+    );
+
+    expect(coverage.recommended_content_actions.map((item) => (
+      item.suggested_context_type
+    ))).toEqual([
+      'category_sort',
+      'reverse_mapping',
+      'delayed_review',
+    ]);
+    expect(coverage.recommended_content_actions[0].suggested_context_type).not.toBe(
+      'same_format_new_examples'
+    );
+    expect(coverage.recommended_content_actions[0].activity_variant_brief).toMatchObject({
+      brief_id: 'brief-initial_sound-category_sort',
+      skill_id: 'initial_sound',
+      domain: 'phonics',
+      current_transfer_state: expect.stringContaining('successful_strengths=weak'),
+      required_context_type: 'category_sort',
+      required_strength: 'strong',
+      suggested_game_family: 'kennedis_orders',
+      suggested_activity_pattern: 'B Food Basket',
+      required_evidence: {
+        minimum_accuracy: 0.8,
+        max_hint_rate: 0.2,
+        min_successful_attempts: 2,
+      },
+      status: 'ready_for_design',
+    });
+    expect(
+      coverage.recommended_content_actions[0].activity_variant_brief?.reason
+    ).toContain('Current transfer state');
+    expect(JSON.stringify(
+      coverage.recommended_content_actions[0].activity_variant_brief
+    )).not.toMatch(/https?:\/\//);
+  });
+
+  test('delayed review brief declares retention evidence threshold', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('initial_sound');
+    expect(skill).toBeDefined();
+    const activities = [
+      makeActivity('phonics-find-b', 'same_format_same_examples', 'initial_sound', 'phonics'),
+      makeActivity('phonics-find-b-ball', 'same_format_new_examples', 'initial_sound', 'phonics'),
+    ];
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1', 'phonics-find-b', 'initial_sound'),
+        makeEvent('event-2', 'phonics-find-b-ball', 'initial_sound'),
+        makeEvent('event-3', 'phonics-find-b', 'initial_sound'),
+      ],
+      activities,
+    });
+
+    const delayedReviewBrief = evaluateTransferCoverage(
+      'initial_sound',
+      activities,
+      evidence,
+      graph
+    ).recommended_content_actions.find((item) => (
+      item.suggested_context_type === 'delayed_review'
+    ))?.activity_variant_brief;
+
+    expect(delayedReviewBrief).toMatchObject({
+      required_context_type: 'delayed_review',
+      required_strength: 'retention',
+      required_evidence: {
+        min_successful_attempts: 1,
+        requires_retention_gap_hours: 24,
+      },
+    });
   });
 
   test('two approved and successful context types are covered when one is medium or stronger', () => {
@@ -239,23 +366,33 @@ describe('transfer coverage', () => {
       );
       expect(coverage.successful_context_count).toBe(1);
       expect(coverage.status).toBe('ready_for_transfer');
-      expect(coverage.recommended_content_actions).toEqual([]);
+      expect(coverage.recommended_content_actions.length).toBeGreaterThan(0);
+      expect(
+        coverage.recommended_content_actions.every((item) => (
+          item.activity_variant_brief &&
+          ['medium', 'strong', 'retention'].includes(
+            item.activity_variant_brief.required_strength
+          )
+        ))
+      ).toBe(true);
     }
   });
 });
 
 function makeActivity(
   activityId: string,
-  contextType: TransferContextType
+  contextType: TransferContextType,
+  skillId = 'counting',
+  domain: LearningActivity['domain'] = 'math'
 ): LearningActivity {
   return {
     id: activityId,
     version: 1,
     title: activityId,
-    domain: 'math',
-    skill_ids: ['counting'],
+    domain,
+    skill_ids: [skillId],
     transfer: {
-      skill_ids: ['counting'],
+      skill_ids: [skillId],
       context_type: contextType,
       context_id: activityId,
       example_set_id: activityId,
