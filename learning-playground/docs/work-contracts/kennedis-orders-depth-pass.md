@@ -174,6 +174,26 @@ The plate rendering replaces the tray chip list, orphaning
 `.bear-cafe-tray__items` / `.bear-cafe-tray__chip` rules. Removing those
 two dead rules is part of the tray→plate change, not unrelated cleanup.
 
+### Amendment 3: reduced-motion guard completeness (PR #1 review)
+
+Review of PR #1 found the `prefers-reduced-motion` block guarded seven
+bear-cafe elements but omitted the selected food/swatch/decoration
+controls, which run `cafePop` (child-ui.css). That animation predates
+the depth pass (baseline `1a6b913`), but this pass added the guard and
+the "all cafe animations" claim, so completing the guard is in scope.
+Added the three `[data-selected="true"]` selectors to the existing
+reduced-motion block. No other bear-cafe animation is unguarded
+(audited: cafeRing, cafePop x4, cafeBellSwing x2, cafeSlideIn, popIn).
+
+### Out of scope (deferred): Nature Camera Safari P2
+
+Codex flagged `NatureCameraSafariActivity.ts` completing a round when a
+distractor is deselected (emitting a `correct` event for the
+distractor) — the same defect class as the Kennedi extra-food fix
+(Amendment 1). Safari is named in Must Not Change and is not on the
+child home grid; the finding is deferred to the Safari depth pass and
+tracked as a GitHub issue, not fixed in this Kennedi PR.
+
 ## Cold Diff Audit
 
 Diff audited cold against baseline commit `1a6b913`.

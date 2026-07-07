@@ -1061,7 +1061,10 @@
   .bear-cafe-ready__bell,
   .bear-cafe-plate__food,
   .bear-cafe-delivery__basket,
-  .bear-cafe-complete__bear {
+  .bear-cafe-complete__bear,
+  .bear-cafe-food[data-selected="true"],
+  .bear-cafe-swatch[data-selected="true"],
+  .bear-cafe-decoration[data-selected="true"] {
     animation: none;
   }
 }
