@@ -20,6 +20,8 @@ describe('parent approval boundary contract', () => {
       expect(source).not.toContain('saveParentDifficultyOverride');
       expect(source).not.toContain('saveParentTransferDecision');
       expect(source).not.toContain('saveParentActivityBriefDecision');
+      expect(source).not.toContain('saveParentMasterySnapshot');
+      expect(source).not.toContain('saveParentReviewScheduleRecord');
       expect(source).not.toContain('StorageService');
       expect(source).not.toContain('localStorage');
     }
@@ -50,6 +52,10 @@ describe('parent approval boundary contract', () => {
     expect(source).toContain('Archive brief');
     expect(source).toContain('saveParentActivityBriefDecision');
     expect(source).toContain('Recent Activity Brief Choices');
+    expect(source).toContain('saveParentMasterySnapshot');
+    expect(source).toContain('saveParentReviewScheduleRecord');
+    expect(source).toContain('Recent Mastery Checks');
+    expect(source).toContain('Review Schedule');
     expect(source).toContain('window.location.hash = `#activity/${transferActivityId}`');
     expect(source).toContain('saveParentDifficultyOverride');
     expect(source).toContain('saveParentTransferDecision');
@@ -71,6 +77,8 @@ describe('parent approval boundary contract', () => {
       expect(source).not.toContain('Activity brief');
       expect(source).not.toContain('Approve brief');
       expect(source).not.toContain('originating_brief_id');
+      expect(source).not.toContain('Recent Mastery Checks');
+      expect(source).not.toContain('Review Schedule');
     }
   });
 });

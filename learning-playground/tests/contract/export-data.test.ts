@@ -11,6 +11,10 @@ import type {
 } from '../../src/types/parent-actions';
 import type { ParentTransferDecision } from '../../src/types/transfer';
 import type { ParentActivityBriefDecision } from '../../src/types/activity-briefs';
+import type {
+  ParentMasterySnapshot,
+  ParentReviewScheduleRecord,
+} from '../../src/types/mastery-records';
 
 class MemoryKeyValueStorage implements KeyValueStorage {
   private readonly data = new Map<string, string>();
@@ -41,6 +45,8 @@ describe('progress export contract', () => {
     storage.saveParentDifficultyOverride(makeOverride());
     storage.saveParentTransferDecision(makeTransferDecision());
     storage.saveParentActivityBriefDecision(makeBriefDecision());
+    storage.saveParentMasterySnapshot(makeMasterySnapshot());
+    storage.saveParentReviewScheduleRecord(makeReviewScheduleRecord());
 
     const exported = JSON.parse(storage.exportProgressData(events)) as {
       exported_at: string;
@@ -57,6 +63,8 @@ describe('progress export contract', () => {
         total_parent_actions: number;
         total_transfer_decisions: number;
         total_activity_brief_decisions: number;
+        total_mastery_snapshots: number;
+        total_review_schedule_records: number;
         first_event_timestamp: string;
         latest_event_timestamp: string;
         migrated_event_count: number;
@@ -67,12 +75,14 @@ describe('progress export contract', () => {
       parent_difficulty_overrides: ParentDifficultyOverride[];
       parent_transfer_decisions: ParentTransferDecision[];
       parent_activity_brief_decisions: ParentActivityBriefDecision[];
+      parent_mastery_snapshots: ParentMasterySnapshot[];
+      parent_review_schedule_records: ParentReviewScheduleRecord[];
     };
 
     expect(exported.exported_at).toBe(exported.export_metadata.export_timestamp);
     expect(exported.export_metadata).toMatchObject({
       export_version: '1',
-      app_baseline: 'v0.2.6',
+      app_baseline: 'v0.2.7',
     });
     expect(exported.export_metadata.data_sections_included).toEqual([
       'settings',
@@ -83,6 +93,8 @@ describe('progress export contract', () => {
       'parent_difficulty_overrides',
       'parent_transfer_decisions',
       'parent_activity_brief_decisions',
+      'parent_mastery_snapshots',
+      'parent_review_schedule_records',
     ]);
     expect(exported.data_health).toMatchObject({
       total_events: 2,
@@ -91,6 +103,8 @@ describe('progress export contract', () => {
       total_parent_actions: 1,
       total_transfer_decisions: 1,
       total_activity_brief_decisions: 1,
+      total_mastery_snapshots: 1,
+      total_review_schedule_records: 1,
       first_event_timestamp: '2026-01-01T12:00:00.000Z',
       latest_event_timestamp: '2026-01-01T12:05:00.000Z',
       migrated_event_count: 1,
@@ -112,11 +126,25 @@ describe('progress export contract', () => {
       brief_id: 'brief-counting-different_prompt_mode',
       suggested_activity_pattern: 'Picture Quantity Order Card',
     });
+    expect(exported.parent_mastery_snapshots[0]).toMatchObject({
+      skill_id: 'counting',
+      next_status: 'likely_mastered',
+      recommended_action: 'schedule_review',
+    });
+    expect(exported.parent_review_schedule_records[0]).toMatchObject({
+      skill_id: 'counting',
+      interval_label: 'Review after 24 hours',
+      next_review_at: '2026-01-02T12:12:00.000Z',
+    });
 
     storage.clearParentTransferDecisions();
     expect(storage.getParentTransferDecisions()).toHaveLength(0);
     storage.clearParentActivityBriefDecisions();
     expect(storage.getParentActivityBriefDecisions()).toHaveLength(0);
+    storage.clearParentMasterySnapshots();
+    expect(storage.getParentMasterySnapshots()).toHaveLength(0);
+    storage.clearParentReviewScheduleRecords();
+    expect(storage.getParentReviewScheduleRecords()).toHaveLength(0);
   });
 });
 
@@ -216,5 +244,48 @@ function makeBriefDecision(): ParentActivityBriefDecision {
     reason: 'Counting needs medium transfer evidence.',
     status_at_decision: 'ready_for_design',
     created_at: '2026-01-01T12:11:00.000Z',
+  };
+}
+
+function makeMasterySnapshot(): ParentMasterySnapshot {
+  return {
+    snapshot_id: 'mastery-snapshot-1',
+    session_id: 'session-1',
+    child_id: 'local-child',
+    skill_id: 'counting',
+    skill_label: 'Counting',
+    previous_status: 'practicing',
+    next_status: 'likely_mastered',
+    confidence: 0.85,
+    recommended_action: 'schedule_review',
+    reason: 'Counting has enough transfer evidence for likely mastery.',
+    evidence_summary: '3/3 counted attempt(s) correct; transfer evidence present',
+    skill_graph_rule: 'Counting requires transfer and retention.',
+    source_event_ids: ['event-1', 'event-2'],
+    source_observation_ids: [],
+    transfer_status: 'covered',
+    transfer_required_context_count: 2,
+    transfer_approved_context_count: 2,
+    transfer_successful_context_count: 2,
+    transfer_successful_strengths: ['weak', 'medium'],
+    transfer_strongest_context_strength: 'medium',
+    created_at: '2026-01-01T12:12:00.000Z',
+  };
+}
+
+function makeReviewScheduleRecord(): ParentReviewScheduleRecord {
+  return {
+    schedule_id: 'review-schedule-1',
+    snapshot_id: 'mastery-snapshot-1',
+    session_id: 'session-1',
+    child_id: 'local-child',
+    skill_id: 'counting',
+    skill_label: 'Counting',
+    mastery_status: 'likely_mastered',
+    interval_label: 'Review after 24 hours',
+    next_review_at: '2026-01-02T12:12:00.000Z',
+    status_after_review: 'likely_mastered',
+    recommended_action: 'schedule_review',
+    created_at: '2026-01-01T12:12:00.000Z',
   };
 }

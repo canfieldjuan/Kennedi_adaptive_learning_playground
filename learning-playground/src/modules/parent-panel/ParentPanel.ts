@@ -19,6 +19,10 @@ import type {
   ParentActivityBriefDecision,
   ParentActivityBriefDecisionType,
 } from '../../types/activity-briefs';
+import type {
+  ParentMasterySnapshot,
+  ParentReviewScheduleRecord,
+} from '../../types/mastery-records';
 import type { SkillMasteryState } from '../../types/progress';
 import {
   buildParentSessionReview,
@@ -55,6 +59,7 @@ import {
   type ParentDifficultyOverrideHistoryItem,
 } from '../../core/parent-difficulty-overrides';
 import { buildLocalDataHealth } from '../../core/export-data';
+import { scheduleReview } from '../../core/review-scheduler';
 import {
   formatTransferContextType,
   formatTransferStrength,
@@ -117,6 +122,8 @@ export function renderParentPanel(
   const difficultyOverrides = storage.getParentDifficultyOverrides();
   const transferDecisions = storage.getParentTransferDecisions();
   const activityBriefDecisions = storage.getParentActivityBriefDecisions();
+  const existingMasterySnapshots = storage.getParentMasterySnapshots();
+  const existingReviewScheduleRecords = storage.getParentReviewScheduleRecords();
   const sessionReview = buildParentSessionReview(
     events,
     observations,
@@ -133,6 +140,15 @@ export function renderParentPanel(
     sessionReview,
     sessionEvents
   );
+  syncParentMasteryRecords(
+    storage,
+    context,
+    skillInterpretations,
+    existingMasterySnapshots,
+    existingReviewScheduleRecords
+  );
+  const masterySnapshots = storage.getParentMasterySnapshots();
+  const reviewScheduleRecords = storage.getParentReviewScheduleRecords();
   const appliedFitReviews = buildParentAppliedFitReviews(
     events,
     difficultyOverrides,
@@ -143,7 +159,9 @@ export function renderParentPanel(
     observations,
     difficultyActions,
     transferDecisions,
-    activityBriefDecisions
+    activityBriefDecisions,
+    masterySnapshots,
+    reviewScheduleRecords
   );
   const dataHealthSummary = formatParentDataHealth(
     localDataHealth
@@ -213,6 +231,8 @@ export function renderParentPanel(
     difficultyOverrides,
     transferDecisions,
     activityBriefDecisions,
+    masterySnapshots,
+    reviewScheduleRecords,
     appliedFitReviews,
     storage,
     context,
@@ -526,6 +546,8 @@ function createDataManagementSection(
       storage.clearParentDifficultyOverrides();
       storage.clearParentTransferDecisions();
       storage.clearParentActivityBriefDecisions();
+      storage.clearParentMasterySnapshots();
+      storage.clearParentReviewScheduleRecords();
       alert('Progress data cleared.');
       destroyParentPanel();
       renderParentPanel(parent, storage, context);
@@ -725,6 +747,8 @@ function createParentGuidanceSection(
   overrides: ParentDifficultyOverride[],
   transferDecisions: ParentTransferDecision[],
   activityBriefDecisions: ParentActivityBriefDecision[],
+  masterySnapshots: ParentMasterySnapshot[],
+  reviewScheduleRecords: ParentReviewScheduleRecord[],
   appliedFitReviews: ParentAppliedFitReview[],
   storage: StorageServiceInterface,
   context: ParentPanelContext,
@@ -755,6 +779,8 @@ function createParentGuidanceSection(
     section.appendChild(createParentActivityBriefDecisionHistory(
       activityBriefDecisions
     ));
+    section.appendChild(createParentMasterySnapshotHistory(masterySnapshots));
+    section.appendChild(createParentReviewScheduleHistory(reviewScheduleRecords));
     return section;
   }
 
@@ -837,6 +863,8 @@ function createParentGuidanceSection(
   section.appendChild(createParentActivityBriefDecisionHistory(
     activityBriefDecisions
   ));
+  section.appendChild(createParentMasterySnapshotHistory(masterySnapshots));
+  section.appendChild(createParentReviewScheduleHistory(reviewScheduleRecords));
   return section;
 
   function deactivateParentDifficultyOverride(overrideId: string): void {
@@ -1519,6 +1547,173 @@ function createParentActivityBriefDecisionHistoryItem(
   return item;
 }
 
+function createParentMasterySnapshotHistory(
+  snapshots: ParentMasterySnapshot[]
+): HTMLElement {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'parent-action-history';
+
+  const title = document.createElement('h3');
+  title.className = 'parent-review-accuracy__title';
+  title.textContent = 'Recent Mastery Checks';
+  wrapper.appendChild(title);
+
+  const history = [...snapshots]
+    .sort((a, b) => (
+      b.created_at.localeCompare(a.created_at) ||
+      a.skill_label.localeCompare(b.skill_label)
+    ))
+    .slice(0, 5);
+
+  if (history.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-section__placeholder';
+    empty.textContent = 'No mastery checks recorded yet.';
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'parent-action-history__list';
+  for (const snapshot of history) {
+    list.appendChild(createParentMasterySnapshotHistoryItem(snapshot));
+  }
+  wrapper.appendChild(list);
+
+  return wrapper;
+}
+
+function createParentMasterySnapshotHistoryItem(
+  snapshot: ParentMasterySnapshot
+): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'parent-action-history__item';
+
+  const meta = document.createElement('span');
+  meta.className = 'parent-action-history__meta';
+  meta.textContent = `${formatParentTimestamp(snapshot.created_at)} · ${snapshot.skill_label}`;
+  item.appendChild(meta);
+
+  const status = document.createElement('strong');
+  status.className = 'parent-action-history__choice';
+  status.textContent = [
+    'Status:',
+    formatInternalMasteryLabel(snapshot.previous_status),
+    '->',
+    formatInternalMasteryLabel(snapshot.next_status),
+  ].join(' ');
+  item.appendChild(status);
+
+  const reason = document.createElement('p');
+  reason.className = 'parent-action-history__reason';
+  reason.textContent = snapshot.reason;
+  item.appendChild(reason);
+
+  const metrics = document.createElement('div');
+  metrics.className = 'parent-applied-fit__metrics';
+  metrics.appendChild(createProgressMetric('Confidence', formatPercent(snapshot.confidence)));
+  metrics.appendChild(createProgressMetric(
+    'Next Action',
+    formatInternalMasteryLabel(snapshot.recommended_action)
+  ));
+  metrics.appendChild(createProgressMetric('Evidence', snapshot.evidence_summary));
+  metrics.appendChild(createProgressMetric(
+    'Transfer',
+    snapshot.transfer_successful_context_count !== undefined &&
+      snapshot.transfer_required_context_count !== undefined
+      ? `${snapshot.transfer_successful_context_count}/${snapshot.transfer_required_context_count}`
+      : 'Not evaluated'
+  ));
+  item.appendChild(metrics);
+
+  return item;
+}
+
+function createParentReviewScheduleHistory(
+  records: ParentReviewScheduleRecord[]
+): HTMLElement {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'parent-action-history';
+
+  const title = document.createElement('h3');
+  title.className = 'parent-review-accuracy__title';
+  title.textContent = 'Review Schedule';
+  wrapper.appendChild(title);
+
+  const history = [...records]
+    .sort((a, b) => (
+      b.created_at.localeCompare(a.created_at) ||
+      a.skill_label.localeCompare(b.skill_label)
+    ))
+    .slice(0, 5);
+
+  if (history.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-section__placeholder';
+    empty.textContent = 'No review plans recorded yet.';
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'parent-action-history__list';
+  for (const record of history) {
+    list.appendChild(createParentReviewScheduleHistoryItem(record));
+  }
+  wrapper.appendChild(list);
+
+  return wrapper;
+}
+
+function createParentReviewScheduleHistoryItem(
+  record: ParentReviewScheduleRecord
+): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'parent-action-history__item';
+
+  const meta = document.createElement('span');
+  meta.className = 'parent-action-history__meta';
+  meta.textContent = `${formatParentTimestamp(record.created_at)} · ${record.skill_label}`;
+  item.appendChild(meta);
+
+  const interval = document.createElement('strong');
+  interval.className = 'parent-action-history__choice';
+  interval.textContent = record.interval_label;
+  item.appendChild(interval);
+
+  const detail = document.createElement('p');
+  detail.className = 'parent-action-history__reason';
+  detail.textContent = record.next_review_at
+    ? `Next parent review: ${formatParentTimestamp(record.next_review_at)}.`
+    : 'No timed review is scheduled yet.';
+  item.appendChild(detail);
+
+  return item;
+}
+
+function syncParentMasteryRecords(
+  storage: StorageServiceInterface,
+  context: ParentPanelContext,
+  interpretations: ParentSkillInterpretation[],
+  existingSnapshots: ParentMasterySnapshot[],
+  existingScheduleRecords: ParentReviewScheduleRecord[]
+): void {
+  for (const interpretation of interpretations) {
+    if (!interpretation.mastery_status) continue;
+
+    const snapshot = createParentMasterySnapshot(
+      interpretation,
+      context,
+      existingSnapshots
+    );
+    storage.saveParentMasterySnapshot(snapshot);
+    storage.saveParentReviewScheduleRecord(createParentReviewScheduleRecord(
+      snapshot,
+      existingScheduleRecords
+    ));
+  }
+}
+
 function createParentDifficultyAction(
   actionType: ParentDifficultyActionType,
   interpretation: ParentSkillInterpretation,
@@ -1600,6 +1795,89 @@ function createParentActivityBriefDecision(
     status_at_decision: brief.status,
     created_at: createdAt,
   };
+}
+
+function createParentMasterySnapshot(
+  interpretation: ParentSkillInterpretation,
+  context: ParentPanelContext,
+  existingSnapshots: ParentMasterySnapshot[]
+): ParentMasterySnapshot {
+  const snapshotId = createMasterySnapshotId(interpretation, context);
+  const existing = existingSnapshots.find((snapshot) => (
+    snapshot.snapshot_id === snapshotId
+  ));
+
+  return {
+    snapshot_id: snapshotId,
+    session_id: context.sessionId,
+    child_id: context.childId,
+    skill_id: interpretation.skill_id,
+    skill_label: interpretation.skill_label,
+    previous_status: interpretation.mastery_previous_status ?? 'not_started',
+    next_status: interpretation.mastery_status ?? 'not_started',
+    confidence: interpretation.mastery_confidence ?? 0,
+    recommended_action: interpretation.mastery_recommended_action ?? 'practice',
+    reason: interpretation.mastery_reason ?? interpretation.recommendation_reason,
+    evidence_summary: interpretation.mastery_evidence_summary ?? 'No mastery evidence yet.',
+    skill_graph_rule: interpretation.skill_graph_rule ?? 'No skill graph rule available.',
+    source_event_ids: interpretation.mastery_source_event_ids ?? [],
+    source_observation_ids: interpretation.mastery_source_observation_ids ?? [],
+    transfer_status: interpretation.transfer_coverage_status,
+    transfer_required_context_count: interpretation.transfer_required_context_count,
+    transfer_approved_context_count: interpretation.transfer_approved_context_count,
+    transfer_successful_context_count: interpretation.transfer_successful_context_count,
+    transfer_successful_strengths: interpretation.transfer_successful_strengths,
+    transfer_strongest_context_strength:
+      interpretation.transfer_strongest_context_strength,
+    created_at: existing?.created_at ?? new Date().toISOString(),
+  };
+}
+
+function createParentReviewScheduleRecord(
+  snapshot: ParentMasterySnapshot,
+  existingRecords: ParentReviewScheduleRecord[]
+): ParentReviewScheduleRecord {
+  const scheduleId = `review-schedule-${snapshot.snapshot_id}`;
+  const existing = existingRecords.find((record) => (
+    record.schedule_id === scheduleId
+  ));
+  const schedule = scheduleReview({
+    skill_id: snapshot.skill_id,
+    status: snapshot.next_status,
+    now_iso: snapshot.created_at,
+  });
+
+  return {
+    schedule_id: scheduleId,
+    snapshot_id: snapshot.snapshot_id,
+    session_id: snapshot.session_id,
+    child_id: snapshot.child_id,
+    skill_id: snapshot.skill_id,
+    skill_label: snapshot.skill_label,
+    mastery_status: snapshot.next_status,
+    interval_label: schedule.interval_label,
+    next_review_at: schedule.next_review_at,
+    status_after_review: schedule.status_after_review,
+    recommended_action: schedule.recommended_action,
+    created_at: existing?.created_at ?? snapshot.created_at,
+  };
+}
+
+function createMasterySnapshotId(
+  interpretation: ParentSkillInterpretation,
+  context: ParentPanelContext
+): string {
+  const source = [
+    context.childId,
+    context.sessionId,
+    interpretation.skill_id,
+    interpretation.mastery_previous_status ?? 'not_started',
+    interpretation.mastery_status ?? 'not_started',
+    ...(interpretation.mastery_source_event_ids ?? []),
+    ...(interpretation.mastery_source_observation_ids ?? []),
+  ].join('|');
+
+  return `mastery-snapshot-${createStableHash(source)}`;
 }
 
 function getLatestBriefDecisionForInterpretation(
@@ -1976,6 +2254,15 @@ function createActivityBriefDecisionId(): string {
   }
 
   return `activity-brief-decision-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createStableHash(value: string): string {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(31, hash) + value.charCodeAt(index);
+  }
+
+  return (hash >>> 0).toString(36);
 }
 
 export function destroyParentPanel(): void {

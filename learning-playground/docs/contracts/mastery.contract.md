@@ -15,6 +15,10 @@ Mastery is evidence-based fit information for the parent. It is not a ranking, s
 - Regression can lower a previously stronger status.
 - Recommendations must stay parent-controlled and must not auto-apply difficulty changes.
 - Evidence language must avoid comparison, shame, rankings, streaks, gifted labels, or age-equivalent labels.
+- Parent-visible mastery snapshots must be stored locally when the Parent Panel reviews a skill.
+- A mastery snapshot must cite source event IDs or parent observation IDs.
+- Mastery snapshots must be included in local export and cleared by clear progress.
+- Persisting a mastery snapshot must not change child routing or apply a recommendation.
 
 ## Statuses
 
@@ -38,3 +42,25 @@ Mastery is evidence-based fit information for the parent. It is not a ranking, s
 - `schedule_review`
 - `add_support`
 - `pause_skill`
+
+## Parent Snapshot Interface
+
+```ts
+export interface ParentMasterySnapshot {
+  snapshot_id: string;
+  session_id: string;
+  child_id: string;
+  skill_id: string;
+  skill_label: string;
+  previous_status: MasteryStatus;
+  next_status: MasteryStatus;
+  confidence: number;
+  recommended_action: RecommendedMasteryAction;
+  reason: string;
+  evidence_summary: string;
+  skill_graph_rule: string;
+  source_event_ids: string[];
+  source_observation_ids: string[];
+  created_at: string;
+}
+```

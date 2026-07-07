@@ -12,6 +12,10 @@ import type {
 } from './parent-actions';
 import type { ParentTransferDecision } from './transfer';
 import type { ParentActivityBriefDecision } from './activity-briefs';
+import type {
+  ParentMasterySnapshot,
+  ParentReviewScheduleRecord,
+} from './mastery-records';
 import type { ParentSettings } from './storage';
 import type { ChildProgressProfile, SkillMasteryState } from './progress';
 
@@ -59,6 +63,12 @@ export interface StorageServiceInterface {
   getParentActivityBriefDecisions(): ParentActivityBriefDecision[];
   saveParentActivityBriefDecision(decision: ParentActivityBriefDecision): void;
   clearParentActivityBriefDecisions(): void;
+  getParentMasterySnapshots(): ParentMasterySnapshot[];
+  saveParentMasterySnapshot(snapshot: ParentMasterySnapshot): void;
+  clearParentMasterySnapshots(): void;
+  getParentReviewScheduleRecords(): ParentReviewScheduleRecord[];
+  saveParentReviewScheduleRecord(record: ParentReviewScheduleRecord): void;
+  clearParentReviewScheduleRecords(): void;
   exportProgressData(events: ActivityAttemptEvent[]): string;
 }
 

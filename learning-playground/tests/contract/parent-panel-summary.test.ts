@@ -49,6 +49,8 @@ describe('parent panel summary contract', () => {
       total_parent_actions: 1,
       total_transfer_decisions: 1,
       total_activity_brief_decisions: 1,
+      total_mastery_snapshots: 1,
+      total_review_schedule_records: 1,
       first_event_timestamp: '2026-01-01T12:00:00.000Z',
       latest_event_timestamp: '2026-01-01T12:05:00.000Z',
       migrated_event_count: 1,
@@ -63,6 +65,8 @@ describe('parent panel summary contract', () => {
       { label: 'Parent Actions', value: '1' },
       { label: 'Transfer Choices', value: '1' },
       { label: 'Brief Choices', value: '1' },
+      { label: 'Mastery Checks', value: '1' },
+      { label: 'Review Plans', value: '1' },
       { label: 'Latest Event', value: '2026-01-01 12:05 UTC' },
     ]);
     expect(summary.metrics).toEqual([
@@ -72,6 +76,8 @@ describe('parent panel summary contract', () => {
       { label: 'Parent Actions', value: '1' },
       { label: 'Transfer Choices', value: '1' },
       { label: 'Brief Choices', value: '1' },
+      { label: 'Mastery Checks', value: '1' },
+      { label: 'Review Plans', value: '1' },
       { label: 'First Event', value: '2026-01-01 12:00 UTC' },
       { label: 'Latest Event', value: '2026-01-01 12:05 UTC' },
       { label: 'Migrated Events', value: '1' },
@@ -86,6 +92,8 @@ describe('parent panel summary contract', () => {
       total_parent_actions: 0,
       total_transfer_decisions: 0,
       total_activity_brief_decisions: 0,
+      total_mastery_snapshots: 0,
+      total_review_schedule_records: 0,
       migrated_event_count: 0,
     });
 

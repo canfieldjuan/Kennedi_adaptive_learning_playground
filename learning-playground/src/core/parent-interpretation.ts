@@ -40,6 +40,7 @@ export interface ParentSkillInterpretation {
   hints_used: number;
   abandoned_count: number;
   repeated_error_pattern?: string;
+  mastery_previous_status?: MasteryEvaluation['previous_status'];
   mastery_status?: MasteryEvaluation['next_status'];
   mastery_confidence?: number;
   mastery_reason?: string;
@@ -129,6 +130,7 @@ export function buildParentSkillInterpretations(
         hints_used: signal.hintsUsed,
         abandoned_count: signal.abandonedCount,
         repeated_error_pattern: signal.repeatedErrorPattern,
+        mastery_previous_status: mastery?.previous_status,
         mastery_status: mastery?.next_status,
         mastery_confidence: mastery?.confidence,
         mastery_reason: mastery?.reason,
