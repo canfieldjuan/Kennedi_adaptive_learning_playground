@@ -32,7 +32,7 @@ const HOME_OPTIONS: HomeOption[] = [
     label: 'Cafe',
     color: 'blue',
     speechLabel: 'Bear Cafe',
-    route: '#activity/kennedis-orders-free-make-001',
+    route: '#activity/kennedis-orders-banana-001',
   },
   {
     id: 'home-math',

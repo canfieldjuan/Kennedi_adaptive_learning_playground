@@ -30,12 +30,13 @@ describe('v0.3.0 game maturity contract', () => {
   });
 
   test('multi-round chains complete without loops or missing catalog entries', () => {
-    expect(followNextActivityIds('kennedis-orders-free-make-001')).toEqual([
-      'kennedis-orders-free-make-001',
-      'kennedis-orders-pink-cupcake-001',
-      'kennedis-orders-three-berries-001',
+    expect(followNextActivityIds('kennedis-orders-banana-001')).toEqual([
+      'kennedis-orders-banana-001',
+      'kennedis-orders-two-cookies-001',
+      'kennedis-orders-pink-berries-001',
       'kennedis-orders-b-foods-001',
       'kennedis-orders-fix-berries-001',
+      'kennedis-orders-free-make-001',
     ]);
 
     expect(followNextActivityIds('nature-camera-free-picture-walk')).toEqual([

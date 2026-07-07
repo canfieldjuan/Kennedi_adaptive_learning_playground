@@ -25,21 +25,37 @@ const cafeActivities = APPROVED_ACTIVITIES.filter((activity) => (
 describe('Kennedi’s Orders maturity contract', () => {
   test('registers the mature Bear Cafe shift activities', () => {
     expect(cafeActivities.map((activity) => activity.id)).toEqual([
-      'kennedis-orders-free-make-001',
-      'kennedis-orders-pink-cupcake-001',
-      'kennedis-orders-three-berries-001',
+      'kennedis-orders-banana-001',
+      'kennedis-orders-two-cookies-001',
+      'kennedis-orders-pink-berries-001',
       'kennedis-orders-b-foods-001',
       'kennedis-orders-fix-berries-001',
+      'kennedis-orders-free-make-001',
     ]);
   });
 
   test('covers the requested progression variants', () => {
     expect(cafeActivities.map((activity) => getRequiredContent(activity).mode)).toEqual([
-      'free_make',
       'single_attribute',
       'quantity',
+      'two_part',
       'first_sound_sort',
       'fix_order',
+      'free_make',
+    ]);
+  });
+
+  test('the shift follows the requested five-round caller order', () => {
+    const rounds = cafeActivities
+      .map((activity) => getRequiredContent(activity))
+      .filter((content) => typeof content.round_index === 'number');
+
+    expect(rounds.map((content) => [content.round_index, content.character.id])).toEqual([
+      [1, 'baby-polar-bear'],
+      [2, 'daddy-bear'],
+      [3, 'mama-bear'],
+      [4, 'baby-polar-bear'],
+      [5, 'daddy-bear'],
     ]);
   });
 
@@ -76,10 +92,10 @@ describe('Kennedi’s Orders maturity contract', () => {
   });
 
   test('emits valid correct and completion events through the existing logger', () => {
-    const activity = getActivity('kennedis-orders-pink-cupcake-001');
+    const activity = getActivity('kennedis-orders-pink-berries-001');
     const content = getRequiredContent(activity);
     const tray: TrayState = {
-      foodCounts: { cupcake: 1 },
+      foodCounts: { berry: 3 },
       colorId: 'pink',
     };
     const correctEvent = createKennedisOrdersEvent({
@@ -120,23 +136,116 @@ describe('Kennedi’s Orders maturity contract', () => {
     expect(stored).toHaveLength(2);
     expect(stored[0]).toMatchObject({
       outcome: 'correct',
-      selected_answer: 'cupcake, pink',
-      correct_answer: 'pink cupcake',
+      selected_answer: '3 berry, pink',
+      correct_answer: '3 pink berry',
     });
     expect(stored[1]).toMatchObject({
       outcome: 'completed',
-      selected_answer: 'cupcake, pink',
+      selected_answer: '3 berry, pink',
     });
     expect(stored[1]?.metadata.event_name).toBe('order_delivered');
   });
 
-  test('incorrect choices do not evaluate as completion', () => {
-    const content = getRequiredContent(getActivity('kennedis-orders-pink-cupcake-001'));
+  test('events carry round, caller, correction, and replay evidence metadata', () => {
+    const activity = getActivity('kennedis-orders-two-cookies-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { cookie: 2 } },
+      attemptNumber: 2,
+      responseTimeMs: 4200,
+      hintShown: true,
+      replayCount: 1,
+      eventName: 'tray_checked',
+    });
 
-    expect(evaluateTray(content, { foodCounts: { cookie: 1 }, colorId: 'pink' })).toMatchObject({
+    expect(event.metadata).toMatchObject({
+      game_mode: 'quantity',
+      caller_id: 'daddy-bear',
+      round_index: 2,
+      round_total: 5,
+      required_quantity: 2,
+      corrected: true,
+      replay_count: 1,
+    });
+  });
+
+  test('first-attempt success is not marked as corrected', () => {
+    const activity = getActivity('kennedis-orders-banana-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { banana: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 1000,
+      hintShown: false,
+      eventName: 'tray_checked',
+    });
+
+    expect(event.metadata?.corrected).toBe(false);
+    expect(event.metadata?.replay_count).toBe(0);
+  });
+
+  test('incorrect choices do not evaluate as completion', () => {
+    const content = getRequiredContent(getActivity('kennedis-orders-banana-001'));
+
+    expect(evaluateTray(content, { foodCounts: { cookie: 1 } })).toMatchObject({
       correct: false,
       issue: 'food',
     });
+  });
+
+  test('two-part order requires food, quantity, and color together', () => {
+    const content = getRequiredContent(getActivity('kennedis-orders-pink-berries-001'));
+
+    expect(evaluateTray(content, { foodCounts: { berry: 3 }, colorId: 'pink' })).toMatchObject({
+      correct: true,
+      issue: 'none',
+    });
+    expect(evaluateTray(content, { foodCounts: { berry: 2 }, colorId: 'pink' })).toMatchObject({
+      correct: false,
+      issue: 'quantity_under',
+    });
+    expect(evaluateTray(content, { foodCounts: { berry: 4 }, colorId: 'pink' })).toMatchObject({
+      correct: false,
+      issue: 'quantity_over',
+    });
+    expect(evaluateTray(content, { foodCounts: { berry: 3 }, colorId: 'yellow' })).toMatchObject({
+      correct: false,
+      issue: 'color',
+    });
+    expect(evaluateTray(content, { foodCounts: { cupcake: 3 }, colorId: 'pink' })).toMatchObject({
+      correct: false,
+      issue: 'food',
+    });
+  });
+
+  test('extra foods on the tray fail a specific order', () => {
+    const content = getRequiredContent(getActivity('kennedis-orders-two-cookies-001'));
+
+    expect(evaluateTray(content, { foodCounts: { cookie: 2, banana: 1 } })).toMatchObject({
+      correct: false,
+      issue: 'food',
+    });
+    expect(evaluateTray(content, { foodCounts: { cookie: 2 } })).toMatchObject({
+      correct: true,
+      issue: 'none',
+    });
+  });
+
+  test('bake time finale offers a new shift instead of chaining on', () => {
+    const content = getRequiredContent(getActivity('kennedis-orders-free-make-001'));
+
+    expect(content.next_activity_id).toBeUndefined();
+    expect(content.shift_restart_activity_id).toBe('kennedis-orders-banana-001');
   });
 
   test('fix round starts mismatched and completes after correction', () => {
@@ -154,12 +263,13 @@ describe('Kennedi’s Orders maturity contract', () => {
   });
 
   test('multi-round shift chains safely to completion', () => {
-    expect(followNextActivityIds('kennedis-orders-free-make-001')).toEqual([
-      'kennedis-orders-free-make-001',
-      'kennedis-orders-pink-cupcake-001',
-      'kennedis-orders-three-berries-001',
+    expect(followNextActivityIds('kennedis-orders-banana-001')).toEqual([
+      'kennedis-orders-banana-001',
+      'kennedis-orders-two-cookies-001',
+      'kennedis-orders-pink-berries-001',
       'kennedis-orders-b-foods-001',
       'kennedis-orders-fix-berries-001',
+      'kennedis-orders-free-make-001',
     ]);
   });
 });

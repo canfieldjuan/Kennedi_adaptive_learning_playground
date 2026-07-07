@@ -2,6 +2,7 @@ export type KennedisOrdersMode =
   | 'free_make'
   | 'single_attribute'
   | 'quantity'
+  | 'two_part'
   | 'first_sound_sort'
   | 'fix_order';
 
@@ -63,4 +64,6 @@ export interface BearCafeContent {
   starting_tray?: BearCafeStartingTray;
   parent_evidence_summary?: string;
   next_activity_id?: string;
+  next_label?: string;
+  shift_restart_activity_id?: string;
 }

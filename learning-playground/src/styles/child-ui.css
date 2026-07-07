@@ -731,32 +731,60 @@
   background: rgba(255, 255, 255, 0.72);
 }
 
-.bear-cafe-tray__items {
+.bear-cafe-plate {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-sm);
-  margin-top: var(--space-sm);
-}
-
-.bear-cafe-tray__chip {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-sm);
-  min-height: 64px;
-  padding: var(--space-sm) var(--space-md);
-  border: 3px solid rgba(58, 36, 97, 0.12);
-  border-radius: var(--radius-lg);
-  background: #ffffff;
-  color: #3a2461;
-  font-size: 1rem;
-  font-weight: 900;
+  align-content: center;
+  gap: var(--space-xs);
+  width: min(64vw, 240px);
+  aspect-ratio: 1;
+  margin: var(--space-sm) auto 0;
+  padding: var(--space-md);
+  border: 8px solid #e2e8f0;
+  border-radius: var(--radius-round);
+  background:
+    radial-gradient(circle at 50% 42%, #ffffff 58%, #f1f5f9 100%);
+  box-shadow:
+    inset 0 0 0 6px rgba(148, 163, 184, 0.16),
+    0 12px 30px rgba(58, 36, 97, 0.14);
+}
+
+.bear-cafe-plate[data-colored="true"] {
+  border-color: var(--bear-cafe-plate-ring);
+}
+
+.bear-cafe-plate__food {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  aspect-ratio: 1;
+  border: 3px solid rgba(96, 165, 250, 0.35);
+  border-radius: var(--radius-round);
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 1.9rem;
+  animation: cafePop 260ms ease-out;
+}
+
+.bear-cafe-plate__decoration {
+  position: absolute;
+  top: -14px;
+  right: 10%;
+  font-size: 1.9rem;
+  filter: drop-shadow(0 3px 5px rgba(58, 36, 97, 0.25));
 }
 
 .bear-cafe-kitchen {
   display: grid;
   gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  border-top: 12px solid rgba(217, 119, 6, 0.4);
+  background:
+    linear-gradient(180deg, rgba(254, 243, 199, 0.6), rgba(255, 255, 255, 0.85));
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.1);
 }
 
 @media (min-width: 720px) {
@@ -959,6 +987,83 @@
   font-size: 1.45rem;
   font-weight: 900;
   text-align: center;
+}
+
+.bear-cafe-role {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  border: 3px solid rgba(244, 114, 182, 0.4);
+  border-radius: var(--radius-round);
+  background: rgba(255, 255, 255, 0.85);
+  color: #3a2461;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.bear-cafe-phone__icon--ringing {
+  transform-origin: 50% 8%;
+  animation: cafeBellSwing 1100ms ease-in-out infinite;
+}
+
+.bear-cafe-phone__portrait {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  aspect-ratio: 1;
+  border: 4px solid rgba(250, 204, 21, 0.75);
+  border-radius: var(--radius-round);
+  background: #fde68a;
+  font-size: 2.6rem;
+}
+
+.bear-cafe-phone__answer {
+  color: #674188;
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.bear-cafe-ready {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border: 4px solid rgba(250, 204, 21, 0.8);
+  border-radius: var(--radius-lg);
+  background: #fffbeb;
+  color: #3a2461;
+  font-size: 1.25rem;
+  font-weight: 900;
+  animation: cafePop 360ms ease-out;
+}
+
+.bear-cafe-ready__bell {
+  font-size: 1.7rem;
+  transform-origin: 50% 8%;
+  animation: cafeBellSwing 1100ms ease-in-out 2;
+}
+
+.bear-cafe-delivery__basket {
+  animation: cafeSlideIn 420ms ease-out;
+}
+
+.bear-cafe-complete__bear {
+  animation: popIn 420ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bear-cafe-phone__button,
+  .bear-cafe-phone__icon--ringing,
+  .bear-cafe-ready,
+  .bear-cafe-ready__bell,
+  .bear-cafe-plate__food,
+  .bear-cafe-delivery__basket,
+  .bear-cafe-complete__bear {
+    animation: none;
+  }
 }
 
 /* — Nature Camera Safari — */
@@ -1294,6 +1399,23 @@
   0% { transform: scale(0.92); }
   70% { transform: scale(1.04); }
   100% { transform: scale(1); }
+}
+
+@keyframes cafeBellSwing {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-12deg); }
+  75% { transform: rotate(12deg); }
+}
+
+@keyframes cafeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes cameraFlash {

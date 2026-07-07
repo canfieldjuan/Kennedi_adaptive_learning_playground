@@ -22,13 +22,13 @@
     "game": "kennedis-orders",
     "mode": "fix_order",
     "character": {
-      "id": "baby-polar-bear",
-      "name": "Baby Polar Bear",
-      "icon": "🐻‍❄️",
-      "callLine": "Baby Polar Bear needs the cafe boss.",
+      "id": "daddy-bear",
+      "name": "Daddy Bear",
+      "icon": "🐻",
+      "callLine": "Daddy Bear needs the cafe boss.",
       "happyLine": "You fixed it."
     },
-    "prompt_audio": "Oops. Baby Polar Bear ordered berries, but the tray has soup. Fix the order.",
+    "prompt_audio": "Oops. Daddy Bear ordered berries, but the tray has soup. Fix the order.",
     "order_ticket": "Fix it: berry order",
     "shift_label": "Bear Cafe morning shift",
     "round_label": "Round 5: Fix the Order",
@@ -47,7 +47,9 @@
         "soup": 1
       }
     },
-    "parent_evidence_summary": "Fix order captures mismatch detection, food vocabulary, correction, attempts, hint use, and executive function in a boss role."
+    "parent_evidence_summary": "Fix order captures mismatch detection, food vocabulary, correction, attempts, hint use, and executive function in a boss role.",
+    "next_activity_id": "kennedis-orders-free-make-001",
+    "next_label": "Bake time"
   },
   "success_rules": {
     "completion": "required_order_delivered",
@@ -65,7 +67,7 @@
       "sound": "soft_boing"
     },
     "hint": {
-      "speech": "Baby Polar Bear asked for berries.",
+      "speech": "Daddy Bear asked for berries.",
       "highlight_target": true
     }
   },

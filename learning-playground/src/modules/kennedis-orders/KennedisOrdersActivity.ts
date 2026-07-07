@@ -53,6 +53,8 @@ export function renderKennedisOrdersActivity(
   let stage: ViewStage = 'phone';
   let attemptNumber = 0;
   let hintShown = false;
+  let replayCount = 0;
+  let phoneIntroSpoken = false;
   let roundStartedAt = Date.now();
   let attemptStartedAt = roundStartedAt;
   let feedbackTone: 'success' | 'support' | 'hint' = 'support';
@@ -66,9 +68,11 @@ export function renderKennedisOrdersActivity(
     if (!container) return;
     container.innerHTML = '';
 
-    const topBar = createTopBar(content, options, () => {
+    const topBar = createTopBar(() => {
+      replayCount += 1;
       attemptStartedAt = Date.now();
       options.speech.speak(content.prompt_audio);
+      emitPromptReplayEvent(options, content, replayCount);
     });
     container.appendChild(topBar);
 
@@ -77,8 +81,15 @@ export function renderKennedisOrdersActivity(
     title.textContent = 'Bear Cafe';
     container.appendChild(title);
     renderShiftPanel(container, content);
+    renderRoleBadge(container, stage);
 
     if (stage === 'phone') {
+      if (!phoneIntroSpoken) {
+        phoneIntroSpoken = true;
+        options.speech.speak(
+          `${content.character.name} is calling. You're the order taker.`
+        );
+      }
       renderPhoneStage(container, content, () => {
         stage = 'make';
         roundStartedAt = Date.now();
@@ -101,6 +112,7 @@ export function renderKennedisOrdersActivity(
           attemptNumber: Math.max(1, attemptNumber),
           responseTimeMs: Date.now() - roundStartedAt,
           hintShown,
+          replayCount,
         });
         render();
       });
@@ -148,6 +160,7 @@ export function renderKennedisOrdersActivity(
           attemptNumber,
           responseTimeMs,
           hintShown,
+          replayCount,
           issue: result.issue,
         });
 
@@ -177,6 +190,7 @@ export function renderKennedisOrdersActivity(
             attemptNumber,
             responseTimeMs,
             hintShown,
+            replayCount,
             issue: result.issue,
           });
         }
@@ -215,11 +229,7 @@ export function destroyKennedisOrdersActivity(): void {
   }
 }
 
-function createTopBar(
-  content: BearCafeContent,
-  options: KennedisOrdersOptions,
-  onRepeat: () => void
-): HTMLElement {
+function createTopBar(onRepeat: () => void): HTMLElement {
   const topBar = document.createElement('div');
   topBar.className = 'activity-topbar';
 
@@ -238,13 +248,38 @@ function createTopBar(
   repeatButton.type = 'button';
   repeatButton.textContent = 'Repeat';
   repeatButton.setAttribute('aria-label', 'Repeat order');
-  repeatButton.addEventListener('click', () => {
-    onRepeat();
-    emitPromptReplayEvent(options, content);
-  });
+  repeatButton.addEventListener('click', onRepeat);
   topBar.appendChild(repeatButton);
 
   return topBar;
+}
+
+function renderRoleBadge(parent: HTMLElement, stage: ViewStage): void {
+  const role = getStageRole(stage);
+  if (!role) return;
+
+  const badge = document.createElement('p');
+  badge.className = 'bear-cafe-role';
+  badge.innerHTML = `
+    <span aria-hidden="true">${role.icon}</span>
+    <span>You're the ${role.label}</span>
+  `;
+  parent.appendChild(badge);
+}
+
+function getStageRole(stage: ViewStage): { icon: string; label: string } | null {
+  switch (stage) {
+    case 'phone':
+      return { icon: '📞', label: 'order taker' };
+    case 'make':
+      return { icon: '🧑‍🍳', label: 'chef' };
+    case 'fix':
+      return { icon: '🔍', label: 'order checker' };
+    case 'delivery':
+      return { icon: '🛎️', label: 'delivery boss' };
+    default:
+      return null;
+  }
 }
 
 function renderPhoneStage(
@@ -260,10 +295,12 @@ function renderPhoneStage(
   phone.type = 'button';
   phone.setAttribute('aria-label', `${content.character.name} is calling`);
   phone.innerHTML = `
-    <span class="bear-cafe-phone__icon" aria-hidden="true">☎</span>
+    <span class="bear-cafe-phone__icon bear-cafe-phone__icon--ringing" aria-hidden="true">☎</span>
+    <span class="bear-cafe-phone__portrait" aria-hidden="true">${content.character.icon}</span>
     <span class="bear-cafe-phone__caller">${content.character.name} is calling</span>
     <span class="bear-cafe-phone__shift">${content.round_label ?? 'Order time'}</span>
     <span class="bear-cafe-phone__line">${content.character.callLine}</span>
+    <span class="bear-cafe-phone__answer">Tap to answer</span>
   `;
   phone.addEventListener('click', onAnswer);
 
@@ -332,6 +369,14 @@ function renderTray(
   trayTitle.textContent = 'Tray';
   trayArea.appendChild(trayTitle);
 
+  const plate = document.createElement('div');
+  plate.className = 'bear-cafe-plate';
+  const trayColor = content.colors?.find((color) => color.id === tray.colorId);
+  if (trayColor) {
+    plate.style.setProperty('--bear-cafe-plate-ring', trayColor.value);
+    plate.dataset.colored = 'true';
+  }
+
   const foodEntries = Object.entries(tray.foodCounts)
     .filter(([, count]) => count > 0);
 
@@ -339,26 +384,35 @@ function renderTray(
     const empty = document.createElement('p');
     empty.className = 'bear-cafe-tray__empty';
     empty.textContent = 'Pick food for the order.';
-    trayArea.appendChild(empty);
+    plate.appendChild(empty);
   } else {
-    const list = document.createElement('div');
-    list.className = 'bear-cafe-tray__items';
     for (const [foodId, count] of foodEntries) {
       const food = content.foods.find((entry) => entry.id === foodId);
       if (!food) continue;
-      const chip = document.createElement('button');
-      chip.className = 'bear-cafe-tray__chip';
-      chip.type = 'button';
-      chip.setAttribute('aria-label', `Remove one ${food.label}`);
-      chip.innerHTML = `
-        <span aria-hidden="true">${food.icon}</span>
-        <span>${food.label}${count > 1 ? ` x${count}` : ''}</span>
-      `;
-      chip.addEventListener('click', () => onFoodRemove(foodId));
-      list.appendChild(chip);
+      for (let index = 0; index < count; index += 1) {
+        const item = document.createElement('button');
+        item.className = 'bear-cafe-plate__food';
+        item.type = 'button';
+        item.setAttribute('aria-label', `Remove one ${food.label}`);
+        item.textContent = food.icon;
+        item.addEventListener('click', () => onFoodRemove(foodId));
+        plate.appendChild(item);
+      }
     }
-    trayArea.appendChild(list);
   }
+
+  const decoration = content.decorations?.find((entry) => (
+    entry.id === tray.decorationId
+  ));
+  if (decoration) {
+    const decorationBadge = document.createElement('span');
+    decorationBadge.className = 'bear-cafe-plate__decoration';
+    decorationBadge.setAttribute('aria-hidden', 'true');
+    decorationBadge.textContent = decoration.icon;
+    plate.appendChild(decorationBadge);
+  }
+
+  trayArea.appendChild(plate);
 
   const details = document.createElement('p');
   details.className = 'bear-cafe-tray__details';
@@ -479,9 +533,13 @@ function renderDeliveryStage(
   const delivery = document.createElement('section');
   delivery.className = 'bear-cafe-delivery';
   delivery.innerHTML = `
+    <div class="bear-cafe-ready" role="status">
+      <span class="bear-cafe-ready__bell" aria-hidden="true">🔔</span>
+      <span>Order ready!</span>
+    </div>
     <div class="bear-cafe-delivery__basket" aria-hidden="true">
       <span>🧺</span>
-      <span>Order ready</span>
+      <span>To the window</span>
     </div>
     <div class="bear-cafe-delivery__window" aria-hidden="true">
       <span>${content.character.icon}</span>
@@ -518,11 +576,22 @@ function renderCompleteStage(
     const nextButton = document.createElement('button');
     nextButton.className = 'child-button';
     nextButton.type = 'button';
-    nextButton.textContent = 'Next order';
+    nextButton.textContent = content.next_label ?? 'Next order';
     nextButton.addEventListener('click', () => {
       window.location.hash = `#activity/${content.next_activity_id}`;
     });
     actions.appendChild(nextButton);
+  }
+
+  if (content.shift_restart_activity_id) {
+    const restartButton = document.createElement('button');
+    restartButton.className = 'child-button';
+    restartButton.type = 'button';
+    restartButton.textContent = 'New shift';
+    restartButton.addEventListener('click', () => {
+      window.location.hash = `#activity/${content.shift_restart_activity_id}`;
+    });
+    actions.appendChild(restartButton);
   }
 
   const homeButton = document.createElement('button');
@@ -585,7 +654,7 @@ function updateFoodSelection(
     return;
   }
 
-  if (content.mode === 'quantity') {
+  if (content.mode === 'quantity' || content.mode === 'two_part') {
     tray.foodCounts[foodId] = Math.min((tray.foodCounts[foodId] ?? 0) + 1, 5);
     return;
   }
@@ -629,8 +698,16 @@ export function evaluateTray(
     };
   }
 
-  if (required.food_id && !tray.foodCounts[required.food_id]) {
-    return { correct: false, issue: 'food' };
+  if (required.food_id) {
+    if (!tray.foodCounts[required.food_id]) {
+      return { correct: false, issue: 'food' };
+    }
+    const hasOtherFood = getSelectedFoodIds(tray).some((foodId) => (
+      foodId !== required.food_id
+    ));
+    if (hasOtherFood) {
+      return { correct: false, issue: 'food' };
+    }
   }
 
   if (typeof required.quantity === 'number') {
@@ -665,9 +742,13 @@ function getFixFeedback(
   switch (issue) {
     case 'quantity_under':
     case 'quantity_over':
-      return `Daddy Bear asked for ${required?.quantity ?? 'more'}. Let’s count.`;
-    case 'color':
-      return `${content.character.name} wanted ${required?.color_id ?? 'that color'}.`;
+      return `${content.character.name} asked for ${required?.quantity ?? 'more'}. Let’s count.`;
+    case 'color': {
+      const colorLabel = content.colors?.find((color) => (
+        color.id === required?.color_id
+      ))?.label ?? 'that color';
+      return `${content.character.name} wanted ${colorLabel}.`;
+    }
     case 'first_sound_sort':
       return 'Bear starts with b-b-b. Banana starts with b-b-b.';
     case 'food':
@@ -744,7 +825,8 @@ function getFoodLabel(content: BearCafeContent, foodId: string | undefined): str
 
 function emitPromptReplayEvent(
   options: KennedisOrdersOptions,
-  content: BearCafeContent
+  content: BearCafeContent,
+  replayCount: number
 ): void {
   options.onEvent({
     ...createBaseEvent(options, content, {
@@ -757,8 +839,9 @@ function emitPromptReplayEvent(
     }),
     metadata: {
       ...createTransferMetadata(options.activity),
+      ...createEvidenceMetadata(content),
       event_name: 'order_prompt_replayed',
-      game_mode: content.mode,
+      replay_count: replayCount,
     },
   });
 }
@@ -771,6 +854,7 @@ function emitAttemptEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  replayCount: number;
   issue: string;
 }): void {
   const event = createKennedisOrdersEvent({
@@ -783,6 +867,7 @@ function emitAttemptEvent(params: {
     attemptNumber: params.attemptNumber,
     responseTimeMs: params.responseTimeMs,
     hintShown: params.hintShown,
+    replayCount: params.replayCount,
     eventName: params.outcome === 'hint_used' ? 'hint_shown' : 'tray_checked',
     issue: params.issue,
   });
@@ -797,6 +882,7 @@ function emitCompletedEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  replayCount: number;
 }): void {
   const event = createKennedisOrdersEvent({
     activity: params.options.activity,
@@ -808,6 +894,7 @@ function emitCompletedEvent(params: {
     attemptNumber: params.attemptNumber,
     responseTimeMs: params.responseTimeMs,
     hintShown: params.hintShown,
+    replayCount: params.replayCount,
     eventName: 'order_delivered',
   });
 
@@ -824,6 +911,7 @@ export function createKennedisOrdersEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  replayCount?: number;
   eventName: string;
   issue?: string;
 }): ActivityAttemptEvent {
@@ -852,15 +940,41 @@ export function createKennedisOrdersEvent(params: {
     hint_shown: params.hintShown,
     metadata: {
       ...createTransferMetadata(params.activity),
+      ...createEvidenceMetadata(params.content),
       event_name: params.eventName,
-      game_mode: params.content.mode,
       issue: params.issue ?? 'none',
+      corrected: (
+        (params.outcome === 'correct' || params.outcome === 'completed') &&
+        params.attemptNumber > 1
+      ),
+      replay_count: params.replayCount ?? 0,
       selected_food_ids: selectedFoodIds.join(','),
       selected_quantity: getTotalFoodCount(params.tray),
       selected_color_id: params.tray.colorId ?? '',
       selected_decoration_id: params.tray.decorationId ?? '',
       parent_evidence_summary: params.content.parent_evidence_summary ?? '',
     },
+  };
+}
+
+function createEvidenceMetadata(
+  content: BearCafeContent
+): Record<string, string | number | boolean> {
+  return {
+    game_mode: content.mode,
+    caller_id: content.character.id,
+    ...(typeof content.round_index === 'number'
+      ? { round_index: content.round_index }
+      : {}),
+    ...(typeof content.round_total === 'number'
+      ? { round_total: content.round_total }
+      : {}),
+    ...(typeof content.required_order?.quantity === 'number'
+      ? { required_quantity: content.required_order.quantity }
+      : {}),
+    ...(content.required_order?.color_id
+      ? { required_color_id: content.required_order.color_id }
+      : {}),
   };
 }
 

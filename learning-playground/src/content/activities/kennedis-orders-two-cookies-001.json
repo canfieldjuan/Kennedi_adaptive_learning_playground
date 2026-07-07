@@ -1,20 +1,20 @@
 {
-  "id": "kennedis-orders-three-berries-001",
+  "id": "kennedis-orders-two-cookies-001",
   "version": 1,
-  "title": "Three Berries Order",
+  "title": "Two Cookies Order",
   "domain": "math",
   "skill_ids": ["counting"],
   "transfer": {
     "skill_ids": ["counting"],
     "context_type": "same_format_new_examples",
     "context_id": "quantity-in-pretend-play",
-    "example_set_id": "counting-foods-to-5-1",
+    "example_set_id": "counting-foods-to-5-2",
     "prompt_mode": "spoken"
   },
   "difficulty": {
-    "level": 3,
-    "choice_count": 2,
-    "distractor_strength": "none"
+    "level": 2,
+    "choice_count": 3,
+    "distractor_strength": "easy"
   },
   "interaction_model": "tap_then_place",
   "estimated_duration_seconds": 75,
@@ -22,27 +22,29 @@
     "game": "kennedis-orders",
     "mode": "quantity",
     "character": {
-      "id": "baby-polar-bear",
-      "name": "Baby Polar Bear",
-      "icon": "🐻‍❄️",
-      "callLine": "Baby Polar Bear has a berry order.",
-      "happyLine": "You delivered it."
+      "id": "daddy-bear",
+      "name": "Daddy Bear",
+      "icon": "🐻",
+      "callLine": "Daddy Bear is calling the cafe.",
+      "happyLine": "Two cookies! Thank you."
     },
-    "prompt_audio": "Baby Polar Bear wants 3 berries.",
-    "order_ticket": "3 berries",
+    "prompt_audio": "Daddy Bear wants 2 cookies.",
+    "order_ticket": "2 cookies",
     "shift_label": "Bear Cafe morning shift",
-    "round_label": "Round 3: Quantity Order",
-    "round_index": 3,
+    "round_label": "Round 2: Quantity Order",
+    "round_index": 2,
     "round_total": 5,
     "foods": [
+      { "id": "cookie", "label": "cookie", "icon": "🍪", "first_sound": "c" },
+      { "id": "banana", "label": "banana", "icon": "🍌", "first_sound": "b" },
       { "id": "berry", "label": "berry", "icon": "🫐", "first_sound": "b" }
     ],
     "required_order": {
-      "food_id": "berry",
-      "quantity": 3
+      "food_id": "cookie",
+      "quantity": 2
     },
-    "parent_evidence_summary": "Quantity order captures counting objects, one-to-one berry taps, over/under count patterns, and correction.",
-    "next_activity_id": "kennedis-orders-b-foods-001"
+    "parent_evidence_summary": "Quantity order captures counting to 2 with distractor foods present, over/under count patterns, one-to-one taps, and correction.",
+    "next_activity_id": "kennedis-orders-pink-berries-001"
   },
   "success_rules": {
     "completion": "required_order_delivered",
@@ -60,7 +62,7 @@
       "sound": "soft_boing"
     },
     "hint": {
-      "speech": "Baby Polar Bear asked for 3. Let’s count.",
+      "speech": "Daddy Bear asked for 2. Let’s count.",
       "highlight_target": true
     }
   },

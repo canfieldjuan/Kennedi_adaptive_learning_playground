@@ -1,7 +1,7 @@
 {
   "id": "kennedis-orders-free-make-001",
-  "version": 1,
-  "title": "Bear Cafe",
+  "version": 2,
+  "title": "Bake Time",
   "domain": "language",
   "skill_ids": ["vocabulary"],
   "transfer": {
@@ -25,15 +25,13 @@
       "id": "baby-polar-bear",
       "name": "Baby Polar Bear",
       "icon": "🐻‍❄️",
-      "callLine": "Baby Polar Bear needs the chef.",
-      "happyLine": "You delivered it."
+      "callLine": "The bear family says thank you, chef.",
+      "happyLine": "What a treat! Great shift, chef."
     },
-    "prompt_audio": "Make Baby Polar Bear a snack. Pick something yummy. Decorate it.",
-    "order_ticket": "Make a snack",
-    "shift_label": "Bear Cafe morning shift",
-    "round_label": "Round 1: Free Make",
-    "round_index": 1,
-    "round_total": 5,
+    "prompt_audio": "The shift is done. Now bake any treat you like. Decorate it too.",
+    "order_ticket": "Bake anything",
+    "shift_label": "Bear Cafe playtime",
+    "round_label": "Bake time",
     "foods": [
       { "id": "cupcake", "label": "cupcake", "icon": "🧁", "first_sound": "c" },
       { "id": "berry", "label": "berry", "icon": "🫐", "first_sound": "b" },
@@ -53,8 +51,8 @@
       { "id": "hearts", "label": "hearts", "icon": "💗" },
       { "id": "bubbles", "label": "bubbles", "icon": "🫧" }
     ],
-    "parent_evidence_summary": "Free make captures food vocabulary, choice making, decoration choice, and completed delivery in a pretend cafe context.",
-    "next_activity_id": "kennedis-orders-pink-cupcake-001"
+    "parent_evidence_summary": "Bake time free make captures food vocabulary, choice making, decoration choice, and completed delivery as the creative finish after the cafe shift.",
+    "shift_restart_activity_id": "kennedis-orders-banana-001"
   },
   "success_rules": {
     "completion": "any_food_delivered",
