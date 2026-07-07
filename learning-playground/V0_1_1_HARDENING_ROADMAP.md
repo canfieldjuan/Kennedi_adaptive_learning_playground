@@ -297,7 +297,7 @@ Still not changing:
 
 ## Phase 3.5: Transfer Coverage + Content Gap Engine
 
-Status: Phase 3.5 continues in v0.2.1.
+Status: Phase 3.5 continued in v0.2.1 and added targeted transfer variants in v0.2.2.
 
 Completed:
 
@@ -308,6 +308,8 @@ Completed:
 * Keep single-context fluency separate from likely mastery.
 * Store parent approve/hold transfer-content choices locally.
 * Include parent transfer decisions in export and clear-data behavior.
+* Add same-format/new-example transfer variants for core evidence-bearing MVP skills using existing runtimes.
+* Keep the child home grid unchanged while variants become approved local contexts.
 
 Still not changing:
 

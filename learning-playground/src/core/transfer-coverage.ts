@@ -62,9 +62,12 @@ export function evaluateTransferCoverage(
     approvedContextCount: approvedContextTypes.length,
     successfulContextCount: successfulContextTypes.length,
   });
+  const blockingMissingContextTypes = approvedContextTypes.length >= requiredContextCount
+    ? []
+    : missingContextTypes;
   const recommendations = buildContentGapRecommendations({
     skill,
-    missing_context_types: missingContextTypes,
+    missing_context_types: blockingMissingContextTypes,
     approved_context_count: approvedContextTypes.length,
     required_context_count: requiredContextCount,
   });

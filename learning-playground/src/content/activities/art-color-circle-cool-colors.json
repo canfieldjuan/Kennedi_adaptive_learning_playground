@@ -1,0 +1,74 @@
+{
+  "id": "art-color-circle-cool-colors",
+  "version": 1,
+  "title": "Color the Circle Again",
+  "domain": "art",
+  "skill_ids": ["color_fill"],
+  "transfer": {
+    "skill_ids": ["color_fill"],
+    "context_type": "same_format_new_examples",
+    "context_id": "tap-color-fill-shape",
+    "example_set_id": "circle-cool-colors",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 1,
+    "choice_count": 4,
+    "distractor_strength": "none"
+  },
+  "interaction_model": "color_fill",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "prompt_audio": "Pick a new color for the circle.",
+    "shape": "circle",
+    "default_color": "#ffffff",
+    "colors": [
+      {
+        "id": "apple-red",
+        "label": "Red",
+        "value": "#ff7675"
+      },
+      {
+        "id": "grape-purple",
+        "label": "Purple",
+        "value": "#a29bfe"
+      },
+      {
+        "id": "mint-green",
+        "label": "Mint",
+        "value": "#55efc4"
+      },
+      {
+        "id": "cloud-gray",
+        "label": "Gray",
+        "value": "#b2bec3"
+      }
+    ]
+  },
+  "success_rules": {
+    "required_fills": 1,
+    "completion_action": "fill_shape"
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You colored the circle.",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Pick a color first.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Tap a color, then tap the circle.",
+      "highlight_target": false
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

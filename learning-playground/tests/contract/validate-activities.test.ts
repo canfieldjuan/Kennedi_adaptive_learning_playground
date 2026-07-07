@@ -13,11 +13,7 @@ import type { AnySchema } from 'ajv';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import activitySchema from '../../src/contracts/activity.schema.json';
-import artColorCircle from '../../src/content/activities/art-color-circle.json';
-import mathCountStarsThree from '../../src/content/activities/math-count-stars-three.json';
-import phonicsFindB from '../../src/content/activities/phonics-find-b.json';
-import shapesFindCircle from '../../src/content/activities/shapes-find-circle.json';
-import videoVault from '../../src/content/activities/video-vault.json';
+import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import type { TransferContextType, TransferPromptMode } from '../../src/types/activity';
 
 const ajv = new Ajv2020({ strict: false });
@@ -44,13 +40,7 @@ interface ActivityJson {
   [key: string]: unknown;
 }
 
-const allActivities: ActivityJson[] = [
-  phonicsFindB as unknown as ActivityJson,
-  shapesFindCircle as unknown as ActivityJson,
-  mathCountStarsThree as unknown as ActivityJson,
-  artColorCircle as unknown as ActivityJson,
-  videoVault as unknown as ActivityJson,
-];
+const allActivities = APPROVED_ACTIVITIES as unknown as ActivityJson[];
 
 describe('activity schema contract', () => {
   test('all activities match the activity schema', () => {

@@ -3,6 +3,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
+import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import { evaluateSkillMastery } from '../../src/core/mastery-engine';
 import type { LearningActivity, TransferContextType } from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
@@ -68,6 +69,22 @@ describe('mastery engine', () => {
     });
 
     expect(evaluation.next_status).toBe('transfer_ready');
+    expect(evaluation.transfer_coverage.status).toBe('ready_for_transfer');
+  });
+
+  test('approved catalog transfer variant makes one-context counting transfer ready', () => {
+    const evaluation = evaluateSkillMastery({
+      skill_id: 'counting',
+      events: [
+        makeEvent('event-1', 'correct', '2026-01-01T12:00:00.000Z'),
+        makeEvent('event-2', 'correct', '2026-01-01T12:01:00.000Z'),
+        makeEvent('event-3', 'correct', '2026-01-01T12:02:00.000Z'),
+      ],
+      activities: APPROVED_ACTIVITIES,
+    });
+
+    expect(evaluation.next_status).toBe('transfer_ready');
+    expect(evaluation.next_status).not.toBe('likely_mastered');
     expect(evaluation.transfer_coverage.status).toBe('ready_for_transfer');
   });
 

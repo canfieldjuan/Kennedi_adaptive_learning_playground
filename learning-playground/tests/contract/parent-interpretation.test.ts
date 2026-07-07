@@ -11,7 +11,7 @@ import type { ParentSessionReview } from '../../src/core/session-review';
 import type { ActivityAttemptEvent } from '../../src/types/events';
 
 describe('parent interpretation contract', () => {
-  test('requires transfer before recommending promotion when signals are strong', () => {
+  test('recommends transfer practice when approved variants exist and signals are strong', () => {
     const events = [
       makeEvent('event-1', 'correct'),
       makeEvent('event-2', 'correct'),
@@ -29,17 +29,17 @@ describe('parent interpretation contract', () => {
     expect(interpretation).toMatchObject({
       skill_label: 'Counting',
       status: 'Ready for next challenge',
-      recommendation: 'Add transfer activity',
+      recommendation: 'Try transfer activity',
       attempts: 4,
       recent_accuracy: 1,
-      mastery_status: 'single_context_fluent',
+      mastery_status: 'transfer_ready',
       mastery_recommended_action: 'test_transfer',
-      transfer_coverage_status: 'blocked_by_content_gap',
+      transfer_coverage_status: 'ready_for_transfer',
     });
-    expect(interpretation.recommendation_reason).toContain('transfer');
+    expect(interpretation.recommendation_reason).toContain('approved context');
     expect(interpretation.skill_graph_rule).toContain('Counting requires');
     expect(interpretation.transfer_missing_context_types).toContain(
-      'same_format_new_examples'
+      'different_prompt_mode'
     );
   });
 

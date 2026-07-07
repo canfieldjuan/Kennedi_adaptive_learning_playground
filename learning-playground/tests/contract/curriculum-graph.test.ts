@@ -4,11 +4,7 @@
 
 import { describe, expect, test } from 'vitest';
 import curriculumData from '../../src/content/curriculum/curriculum.v1.json';
-import artColorCircle from '../../src/content/activities/art-color-circle.json';
-import mathCountStarsThree from '../../src/content/activities/math-count-stars-three.json';
-import phonicsFindB from '../../src/content/activities/phonics-find-b.json';
-import shapesFindCircle from '../../src/content/activities/shapes-find-circle.json';
-import videoVault from '../../src/content/activities/video-vault.json';
+import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import {
   loadCurriculumGraph,
   validateCurriculumGraph,
@@ -16,13 +12,7 @@ import {
 } from '../../src/core/curriculum-graph';
 import type { LearningActivity } from '../../src/types/activity';
 
-const activities = [
-  artColorCircle,
-  mathCountStarsThree,
-  phonicsFindB,
-  shapesFindCircle,
-  videoVault,
-] as LearningActivity[];
+const activities = APPROVED_ACTIVITIES as LearningActivity[];
 
 describe('curriculum graph contract', () => {
   test('every existing activity skill exists in the curriculum graph', () => {
@@ -41,6 +31,18 @@ describe('curriculum graph contract', () => {
     for (const activity of activities) {
       for (const skillId of activity.skill_ids) {
         expect(graph.getSkill(skillId)?.planned_transfer_contexts.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  test('every activity transfer context is planned for its skills', () => {
+    const graph = loadCurriculumGraph();
+
+    for (const activity of activities) {
+      for (const skillId of activity.transfer.skill_ids) {
+        expect(graph.getSkill(skillId)?.planned_transfer_contexts).toContain(
+          activity.transfer.context_type
+        );
       }
     }
   });

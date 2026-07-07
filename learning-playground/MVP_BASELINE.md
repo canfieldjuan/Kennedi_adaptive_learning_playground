@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.2.1 Phase 3.5 transfer coverage baseline
+Version: v0.2.2 Phase 3 targeted transfer variant baseline
 
 ## Current Working MVP
 
@@ -13,6 +13,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Math activity: tap-choice counting/subitizing activity.
 - Art activity: tap-fill coloring activity.
 - Video Vault: parent-approved local video shell, currently empty until local video assets are added.
+- Targeted transfer variants for Words, Math, Art, and shape/spatial practice use the same existing runtimes.
 - Puzzle activity remains registered and reachable by direct route, but is not currently on the four-slot home grid.
 
 ## Parent Modules
@@ -29,6 +30,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Applied Guidance Review summarizes local attempts after active guidance affects a supported activity.
 - Curriculum graph and mastery engine reason over prerequisites, transfer, retention, and review timing.
 - Transfer Coverage shows when a skill is fluent in one context, ready for transfer, or blocked by missing approved transfer content.
+- Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant.
 - Parent transfer content decisions are stored locally and included in export.
 
 ## Local Data
@@ -63,6 +65,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 
 - Existing game types only: tap choice, coloring, and local video vault shell.
 - Activities conform to the existing activity schema.
+- Approved transfer variants are content-only additions, not new game types.
 - Supported tap-choice activities can receive a bounded runtime copy from active parent-approved guidance; source activity JSON is not mutated.
 - Wrong answers guide gently and do not remove progress.
 - Completion remains short and returns control to the child or parent.

@@ -1,0 +1,72 @@
+{
+  "id": "shapes-find-circle-heart",
+  "version": 1,
+  "title": "Find the Circle Again",
+  "domain": "spatial",
+  "skill_ids": ["shape_match"],
+  "transfer": {
+    "skill_ids": ["shape_match"],
+    "context_type": "same_format_new_examples",
+    "context_id": "tap-shape-recognition",
+    "example_set_id": "circle-heart-triangle",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 1,
+    "choice_count": 3,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_to_match",
+  "estimated_duration_seconds": 45,
+  "content": {
+    "prompt_audio": "Find the circle.",
+    "target_shape": "circle",
+    "choices": [
+      {
+        "id": "circle",
+        "label": "circle",
+        "image": "/assets/images/circle.svg",
+        "correct": true
+      },
+      {
+        "id": "heart",
+        "label": "heart",
+        "image": "/assets/images/heart.svg",
+        "correct": false
+      },
+      {
+        "id": "triangle",
+        "label": "triangle",
+        "image": "/assets/images/triangle.svg",
+        "correct": false
+      }
+    ]
+  },
+  "success_rules": {
+    "correct_choice_id": "circle",
+    "required_correct_count": 1,
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You found the circle!",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "That is not a circle. Try again.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "A circle is round, with no corners.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}
