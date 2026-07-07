@@ -12,7 +12,7 @@ import type { LearningActivity, TransferContextType } from '../../src/types/acti
 import type { ActivityAttemptEvent } from '../../src/types/events';
 
 describe('transfer activity recommendation', () => {
-  test('recommends an approved unsucceeded transfer activity when coverage is ready', () => {
+  test('recommends an approved richer math transfer activity when coverage is ready', () => {
     const graph = loadCurriculumGraph();
     const skill = graph.getSkill('counting');
     expect(skill).toBeDefined();
@@ -38,9 +38,42 @@ describe('transfer activity recommendation', () => {
       coverage,
     })).toMatchObject({
       skill_id: 'counting',
-      activity_id: 'math-count-hearts-three',
-      activity_title: 'Count the Hearts',
-      context_type: 'same_format_new_examples',
+      activity_id: 'math-dot-card-three',
+      activity_title: 'Dot Card Number Match',
+      context_type: 'different_prompt_mode',
+    });
+  });
+
+  test('recommends the approved rich phonics transfer activity when it is unsucceeded', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('initial_sound');
+    expect(skill).toBeDefined();
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makePhonicsEvent('event-1'),
+        makePhonicsEvent('event-2'),
+        makePhonicsEvent('event-3'),
+      ],
+      activities: APPROVED_ACTIVITIES,
+    });
+    const coverage = evaluateTransferCoverage(
+      'initial_sound',
+      APPROVED_ACTIVITIES,
+      evidence,
+      graph
+    );
+
+    expect(coverage.status).toBe('ready_for_transfer');
+    expect(getTransferActivityRecommendation({
+      skillId: 'initial_sound',
+      activities: APPROVED_ACTIVITIES,
+      coverage,
+    })).toMatchObject({
+      skill_id: 'initial_sound',
+      activity_id: 'phonics-banana-starting-letter',
+      activity_title: 'Banana Starting Letter',
+      context_type: 'reverse_mapping',
     });
   });
 
@@ -129,6 +162,31 @@ function makeActivity(
       requires_parent_approval: true,
       external_links_allowed: false,
     },
+  };
+}
+
+function makePhonicsEvent(eventId: string): ActivityAttemptEvent {
+  return {
+    event_id: eventId,
+    session_id: 'session-1',
+    child_id: 'local-child',
+    activity_id: 'phonics-find-b',
+    activity_version: 1,
+    skill_ids: ['initial_sound'],
+    timestamp: `2026-01-01T12:00:0${eventId.slice(-1)}.000Z`,
+    prompt_text: 'Find the word that starts with b.',
+    outcome: 'correct',
+    selected_choice_id: 'bear',
+    correct_choice_id: 'bear',
+    selected_answer: 'bear',
+    correct_answer: 'bear',
+    attempt_number: 1,
+    response_time_ms: 900,
+    difficulty_level: 2,
+    choice_count: 3,
+    distractor_strength: 'easy',
+    input_type: 'tap',
+    hint_shown: false,
   };
 }
 

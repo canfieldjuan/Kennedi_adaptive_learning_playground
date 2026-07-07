@@ -110,6 +110,73 @@ describe('mastery engine', () => {
     expect(evaluation.evidence.map((item) => item.type)).not.toContain('retention');
   });
 
+  test('approved reverse-mapping phonics evidence can support likely mastery', () => {
+    const evaluation = evaluateSkillMastery({
+      skill_id: 'initial_sound',
+      prerequisite_statuses: {
+        vocabulary: 'likely_mastered',
+      },
+      events: [
+        makePhonicsEvent('event-1', 'phonics-find-b', {
+          correctChoiceId: 'bear',
+          promptText: 'Find the word that starts with b.',
+          answer: 'bear',
+        }),
+        makePhonicsEvent('event-2', 'phonics-banana-starting-letter', {
+          correctChoiceId: 'letter-b',
+          promptText: 'Banana starts with what letter?',
+          answer: 'B',
+        }),
+        makePhonicsEvent('event-3', 'phonics-banana-starting-letter', {
+          correctChoiceId: 'letter-b',
+          promptText: 'Banana starts with what letter?',
+          answer: 'B',
+        }),
+      ],
+      activities: APPROVED_ACTIVITIES,
+    });
+
+    expect(evaluation.next_status).toBe('likely_mastered');
+    expect(evaluation.next_status).not.toBe('mastered');
+    expect(evaluation.transfer_coverage.successful_context_types).toEqual([
+      'same_format_same_examples',
+      'reverse_mapping',
+    ]);
+    expect(evaluation.transfer_coverage.successful_strengths).toEqual([
+      'weak',
+      'strong',
+    ]);
+    expect(evaluation.evidence.map((item) => item.type)).toContain('transfer');
+  });
+
+  test('approved different-prompt math evidence can support likely mastery', () => {
+    const evaluation = evaluateSkillMastery({
+      skill_id: 'counting',
+      events: [
+        makeEvent('event-1', 'correct', '2026-01-01T12:00:00.000Z'),
+        makeEvent('event-2', 'correct', '2026-01-01T12:01:00.000Z', {
+          activityId: 'math-dot-card-three',
+        }),
+        makeEvent('event-3', 'correct', '2026-01-01T12:02:00.000Z', {
+          activityId: 'math-dot-card-three',
+        }),
+      ],
+      activities: APPROVED_ACTIVITIES,
+    });
+
+    expect(evaluation.next_status).toBe('likely_mastered');
+    expect(evaluation.next_status).not.toBe('mastered');
+    expect(evaluation.transfer_coverage.successful_context_types).toEqual([
+      'same_format_same_examples',
+      'different_prompt_mode',
+    ]);
+    expect(evaluation.transfer_coverage.successful_strengths).toEqual([
+      'weak',
+      'medium',
+    ]);
+    expect(evaluation.evidence.map((item) => item.type)).toContain('transfer');
+  });
+
   test('weak-only transfer cannot produce likely mastery', () => {
     const evaluation = evaluateSkillMastery({
       skill_id: 'counting',
@@ -232,6 +299,39 @@ describe('mastery engine', () => {
     expect(evaluation.skill_graph_rule).toContain('Counting requires');
   });
 });
+
+function makePhonicsEvent(
+  eventId: string,
+  activityId: string,
+  overrides: {
+    correctChoiceId: string;
+    promptText: string;
+    answer: string;
+  }
+): ActivityAttemptEvent {
+  return {
+    event_id: eventId,
+    session_id: 'session-1',
+    child_id: 'local-child',
+    activity_id: activityId,
+    activity_version: 1,
+    skill_ids: ['initial_sound'],
+    timestamp: `2026-01-01T12:00:0${eventId.slice(-1)}.000Z`,
+    prompt_text: overrides.promptText,
+    outcome: 'correct',
+    selected_choice_id: overrides.correctChoiceId,
+    correct_choice_id: overrides.correctChoiceId,
+    selected_answer: overrides.answer,
+    correct_answer: overrides.answer,
+    attempt_number: 1,
+    response_time_ms: 900,
+    difficulty_level: 2,
+    choice_count: 3,
+    distractor_strength: 'easy',
+    input_type: 'tap',
+    hint_shown: false,
+  };
+}
 
 function makeEvent(
   eventId: string,

@@ -1,0 +1,71 @@
+{
+  "id": "phonics-banana-starting-letter",
+  "version": 1,
+  "title": "Banana Starting Letter",
+  "domain": "phonics",
+  "skill_ids": ["initial_sound", "letter_sound_match"],
+  "originating_brief_id": "brief-initial_sound-reverse_mapping",
+  "transfer": {
+    "skill_ids": ["initial_sound", "letter_sound_match"],
+    "context_type": "reverse_mapping",
+    "context_id": "tap-letter-from-word",
+    "example_set_id": "banana-letter-b",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": {
+    "level": 2,
+    "choice_count": 3,
+    "distractor_strength": "medium"
+  },
+  "interaction_model": "tap_to_match",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "prompt_audio": "Banana starts with what letter?",
+    "source_word": "banana",
+    "target_letter": "b",
+    "choices": [
+      {
+        "id": "letter-b",
+        "label": "B",
+        "correct": true
+      },
+      {
+        "id": "letter-m",
+        "label": "M",
+        "correct": false
+      },
+      {
+        "id": "letter-s",
+        "label": "S",
+        "correct": false
+      }
+    ]
+  },
+  "success_rules": {
+    "correct_choice_id": "letter-b",
+    "required_correct_count": 1,
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "Yes. Banana starts with b!",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Try again. Listen to banana.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Buh, buh, banana starts with b.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

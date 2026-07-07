@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.2.8 Phase 3 activity brief design queue baseline
+Version: v0.2.10 Phase 3 math prompt-mode transfer baseline
 
 ## Current Working MVP
 
@@ -14,6 +14,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Art activity: tap-fill coloring activity.
 - Video Vault: parent-approved local video shell, currently empty until local video assets are added.
 - Targeted transfer variants for Words, Math, Art, and shape/spatial practice use the same existing runtimes.
+- The first rich transfer variant is a phonics reverse-mapping activity that asks from a word back to its starting letter.
+- Math now has a medium transfer activity that asks from a visual dot card to the matching numeral.
 - Puzzle activity remains registered and reachable by direct route, but is not currently on the four-slot home grid.
 
 ## Parent Modules
@@ -36,6 +38,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Transfer Coverage shows when a skill is fluent in one context, ready for transfer, or blocked by missing approved transfer content.
 - Transfer Coverage assigns strength tiers to transfer contexts and prevents weak-only transfer from becoming likely mastery.
 - Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant.
+- Phonics now has one approved reverse-mapping transfer variant that references its originating brief.
+- Math now has one approved different-prompt-mode transfer variant that references its originating brief.
 - Parent transfer content decisions are stored locally and included in export.
 - Parent activity brief decisions are stored locally and included in export.
 - Parent mastery snapshots are stored locally when the Parent Panel reviews a skill.
@@ -76,6 +80,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Existing game types only: tap choice, coloring, and local video vault shell.
 - Activities conform to the existing activity schema.
 - Approved transfer variants are content-only additions, not new game types.
+- Rich transfer variants must pass truth checks that verify the activity content matches the declared transfer context.
+- Math prompt-mode transfer variants must prove a visual quantity-card prompt with numeral choices.
 - Supported tap-choice activities can receive a bounded runtime copy from active parent-approved guidance; source activity JSON is not mutated.
 - Wrong answers guide gently and do not remove progress.
 - Completion remains short and returns control to the child or parent.

@@ -1,0 +1,81 @@
+{
+  "id": "math-dot-card-three",
+  "version": 1,
+  "title": "Dot Card Number Match",
+  "domain": "math",
+  "skill_ids": ["counting", "subitizing"],
+  "originating_brief_id": "brief-counting-different_prompt_mode",
+  "transfer": {
+    "skill_ids": ["counting", "subitizing"],
+    "context_type": "different_prompt_mode",
+    "context_id": "tap-number-from-dot-card",
+    "example_set_id": "three-dot-card",
+    "prompt_mode": "visual"
+  },
+  "difficulty": {
+    "level": 1,
+    "choice_count": 3,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_to_match",
+  "estimated_duration_seconds": 45,
+  "content": {
+    "prompt_audio": "Look at the dot card. Which number matches?",
+    "prompt_card": {
+      "type": "quantity_card",
+      "quantity": 3,
+      "layout": "triangle",
+      "symbol": "dot"
+    },
+    "target_quantity": 3,
+    "prompt_images": [
+      "/assets/images/circle.svg",
+      "/assets/images/circle.svg",
+      "/assets/images/circle.svg"
+    ],
+    "choices": [
+      {
+        "id": "two",
+        "label": "2",
+        "correct": false
+      },
+      {
+        "id": "three",
+        "label": "3",
+        "correct": true
+      },
+      {
+        "id": "four",
+        "label": "4",
+        "correct": false
+      }
+    ]
+  },
+  "success_rules": {
+    "correct_choice_id": "three",
+    "required_correct_count": 1,
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "Yes. That card shows three.",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Look at each dot and try again.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "One, two, three dots.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

@@ -14,7 +14,11 @@ import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import activitySchema from '../../src/contracts/activity.schema.json';
 import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
-import type { TransferContextType, TransferPromptMode } from '../../src/types/activity';
+import {
+  getTransferContextStrength,
+  type TransferContextType,
+  type TransferPromptMode,
+} from '../../src/types/activity';
 
 const ajv = new Ajv2020({ strict: false });
 addFormats(ajv);
@@ -22,8 +26,11 @@ const validate = ajv.compile(activitySchema as AnySchema);
 
 interface ActivityJson {
   id: string;
+  title: string;
+  domain: string;
   estimated_duration_seconds: number;
   skill_ids: string[];
+  originating_brief_id?: string;
   transfer: {
     skill_ids: string[];
     context_type: TransferContextType;
@@ -37,7 +44,16 @@ interface ActivityJson {
     contains_video?: boolean;
     contains_audio?: boolean;
   };
+  interaction_model: string;
+  content: Record<string, unknown>;
+  success_rules: Record<string, unknown>;
   [key: string]: unknown;
+}
+
+interface ChoiceJson {
+  id: string;
+  label: string;
+  correct?: boolean;
 }
 
 const allActivities = APPROVED_ACTIVITIES as unknown as ActivityJson[];
@@ -90,4 +106,172 @@ describe('activity schema contract', () => {
 
     expect(validate(implementedFromBrief)).toBe(true);
   });
+
+  test('implemented rich transfer activities reference originating briefs', () => {
+    const richActivities = allActivities.filter((activity) => (
+      getTransferContextStrength(activity.transfer.context_type) !== 'weak'
+    ));
+
+    expect(richActivities.length).toBeGreaterThan(0);
+
+    for (const activity of richActivities) {
+      expect(activity.originating_brief_id).toMatch(
+        new RegExp(`^brief-.+-${activity.transfer.context_type}$`)
+      );
+    }
+  });
+
+  test('rich transfer metadata matches detectable activity content', () => {
+    for (const activity of allActivities) {
+      if (getTransferContextStrength(activity.transfer.context_type) === 'weak') {
+        continue;
+      }
+
+      if (activity.transfer.context_type === 'reverse_mapping') {
+        expect(hasReverseMappingContent(activity)).toBe(true);
+        continue;
+      }
+
+      if (activity.transfer.context_type === 'different_prompt_mode') {
+        expect(hasDifferentPromptModeContent(activity)).toBe(true);
+        continue;
+      }
+
+      expect([
+        'different_interaction_model',
+        'category_sort',
+        'delayed_review',
+        'parent_observed_real_world',
+      ]).not.toContain(activity.transfer.context_type);
+    }
+  });
+
+  test('approved phonics reverse-mapping activity implements its brief honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'phonics-banana-starting-letter'
+    ));
+
+    expect(activity).toMatchObject({
+      title: 'Banana Starting Letter',
+      originating_brief_id: 'brief-initial_sound-reverse_mapping',
+      transfer: {
+        context_type: 'reverse_mapping',
+        context_id: 'tap-letter-from-word',
+        example_set_id: 'banana-letter-b',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasReverseMappingContent(activity!)).toBe(true);
+  });
+
+  test('approved math different-prompt activity implements its brief honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'math-dot-card-three'
+    ));
+
+    expect(activity).toMatchObject({
+      title: 'Dot Card Number Match',
+      originating_brief_id: 'brief-counting-different_prompt_mode',
+      transfer: {
+        context_type: 'different_prompt_mode',
+        context_id: 'tap-number-from-dot-card',
+        example_set_id: 'three-dot-card',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasDifferentPromptModeContent(activity!)).toBe(true);
+  });
 });
+
+function hasReverseMappingContent(activity: ActivityJson): boolean {
+  const sourceWord = getString(activity.content.source_word).toLowerCase();
+  const targetLetter = getString(activity.content.target_letter).toLowerCase();
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const choices = getChoices(activity);
+  const correctChoiceId = getString(activity.success_rules.correct_choice_id);
+  const correctChoice = choices.find((choice) => (
+    choice.id === correctChoiceId || choice.correct === true
+  ));
+
+  return (
+    activity.interaction_model === 'tap_to_match' &&
+    sourceWord.length > 0 &&
+    targetLetter.length === 1 &&
+    sourceWord.startsWith(targetLetter) &&
+    promptAudio.includes(sourceWord) &&
+    promptAudio.includes('letter') &&
+    correctChoice?.label.toLowerCase() === targetLetter &&
+    choices.length >= 2 &&
+    choices.every((choice) => /^[a-z]$/i.test(choice.label)) &&
+    choices.every((choice) => choice.label.toLowerCase() !== sourceWord)
+  );
+}
+
+function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
+  if (activity.domain !== 'math') return false;
+
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const targetQuantity = getNumber(activity.content.target_quantity);
+  const promptCard = isRecord(activity.content.prompt_card)
+    ? activity.content.prompt_card
+    : {};
+  const promptCardType = getString(promptCard.type);
+  const promptCardQuantity = getNumber(promptCard.quantity);
+  const promptImages = getStringArray(activity.content.prompt_images);
+  const choices = getChoices(activity);
+  const correctChoiceId = getString(activity.success_rules.correct_choice_id);
+  const correctChoice = choices.find((choice) => (
+    choice.id === correctChoiceId || choice.correct === true
+  ));
+
+  return (
+    activity.interaction_model === 'tap_to_match' &&
+    activity.transfer.prompt_mode === 'visual' &&
+    promptAudio.includes('card') &&
+    !promptAudio.includes('how many') &&
+    promptCardType === 'quantity_card' &&
+    Number.isInteger(targetQuantity) &&
+    targetQuantity > 0 &&
+    targetQuantity === promptCardQuantity &&
+    promptImages.length === targetQuantity &&
+    correctChoice?.label === String(targetQuantity) &&
+    choices.length >= 2 &&
+    choices.every((choice) => /^\d+$/.test(choice.label))
+  );
+}
+
+function getChoices(activity: ActivityJson): ChoiceJson[] {
+  const choices = activity.content.choices;
+  if (!Array.isArray(choices)) return [];
+
+  return choices.filter((choice): choice is ChoiceJson => {
+    if (!isRecord(choice)) return false;
+
+    return (
+      typeof choice.id === 'string' &&
+      typeof choice.label === 'string' &&
+      (
+        choice.correct === undefined ||
+        typeof choice.correct === 'boolean'
+      )
+    );
+  });
+}
+
+function getString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function getNumber(value: unknown): number {
+  return typeof value === 'number' ? value : Number.NaN;
+}
+
+function getStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.filter((item): item is string => typeof item === 'string');
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}

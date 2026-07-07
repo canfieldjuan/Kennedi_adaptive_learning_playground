@@ -38,15 +38,18 @@ describe('parent interpretation contract', () => {
       transfer_successful_strengths: ['weak'],
       transfer_strongest_context_strength: 'weak',
       transfer_activity_recommendation: {
-        activity_id: 'math-count-hearts-three',
-        activity_title: 'Count the Hearts',
-        context_type: 'same_format_new_examples',
+        activity_id: 'math-dot-card-three',
+        activity_title: 'Dot Card Number Match',
+        context_type: 'different_prompt_mode',
       },
     });
     expect(interpretation.recommendation_reason).toContain('approved context');
     expect(interpretation.skill_graph_rule).toContain('Counting requires');
-    expect(interpretation.transfer_missing_context_types).toContain(
+    expect(interpretation.transfer_missing_context_types).not.toContain(
       'different_prompt_mode'
+    );
+    expect(interpretation.transfer_missing_context_types).toContain(
+      'different_interaction_model'
     );
   });
 

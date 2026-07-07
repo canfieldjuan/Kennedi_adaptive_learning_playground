@@ -16,6 +16,7 @@ Activity variant briefs turn transfer coverage gaps into design-ready work. A br
 - The design queue must group briefs as approved, held, or archived without changing raw decision history.
 - The design queue must stay parent-only and must not create child-visible activities automatically.
 - Later implemented activities may reference a brief with `originating_brief_id` without requiring existing activity JSON to migrate.
+- A later implemented rich transfer activity must satisfy `docs/contracts/transfer-context-truth.contract.md` before its context can count as stronger transfer evidence.
 - Briefs must not contain external links.
 
 ## Interface

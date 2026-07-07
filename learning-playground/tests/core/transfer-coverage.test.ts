@@ -294,6 +294,94 @@ describe('transfer coverage', () => {
     });
   });
 
+  test('approved catalog different-prompt evidence counts as medium math transfer', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('counting');
+    expect(skill).toBeDefined();
+
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1', 'math-count-stars-three', 'counting', {
+          correctChoiceId: 'three',
+          promptText: 'How many stars do you see?',
+          answer: '3',
+        }),
+        makeEvent('event-2', 'math-dot-card-three', 'counting', {
+          correctChoiceId: 'three',
+          promptText: 'Look at the dot card. Which number matches?',
+          answer: '3',
+        }),
+        makeEvent('event-3', 'math-dot-card-three', 'counting', {
+          correctChoiceId: 'three',
+          promptText: 'Look at the dot card. Which number matches?',
+          answer: '3',
+        }),
+      ],
+      activities: APPROVED_ACTIVITIES,
+    });
+
+    const coverage = evaluateTransferCoverage(
+      'counting',
+      APPROVED_ACTIVITIES,
+      evidence,
+      graph
+    );
+
+    expect(coverage.approved_context_types).toContain('different_prompt_mode');
+    expect(coverage.successful_context_types).toEqual([
+      'same_format_same_examples',
+      'different_prompt_mode',
+    ]);
+    expect(coverage.successful_strengths).toEqual(['weak', 'medium']);
+    expect(coverage.strongest_context_strength).toBe('medium');
+    expect(coverage.status).toBe('covered');
+  });
+
+  test('approved catalog reverse-mapping evidence counts as strong phonics transfer', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('initial_sound');
+    expect(skill).toBeDefined();
+
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1', 'phonics-find-b', 'initial_sound', {
+          correctChoiceId: 'bear',
+          promptText: 'Find the word that starts with b.',
+          answer: 'bear',
+        }),
+        makeEvent('event-2', 'phonics-banana-starting-letter', 'initial_sound', {
+          correctChoiceId: 'letter-b',
+          promptText: 'Banana starts with what letter?',
+          answer: 'B',
+        }),
+        makeEvent('event-3', 'phonics-banana-starting-letter', 'initial_sound', {
+          correctChoiceId: 'letter-b',
+          promptText: 'Banana starts with what letter?',
+          answer: 'B',
+        }),
+      ],
+      activities: APPROVED_ACTIVITIES,
+    });
+
+    const coverage = evaluateTransferCoverage(
+      'initial_sound',
+      APPROVED_ACTIVITIES,
+      evidence,
+      graph
+    );
+
+    expect(coverage.approved_context_types).toContain('reverse_mapping');
+    expect(coverage.successful_context_types).toEqual([
+      'same_format_same_examples',
+      'reverse_mapping',
+    ]);
+    expect(coverage.successful_strengths).toEqual(['weak', 'strong']);
+    expect(coverage.strongest_context_strength).toBe('strong');
+    expect(coverage.status).toBe('covered');
+  });
+
   test('approved catalog gives evidence-bearing MVP skills a transfer context to try', () => {
     const graph = loadCurriculumGraph();
     const checks = [
