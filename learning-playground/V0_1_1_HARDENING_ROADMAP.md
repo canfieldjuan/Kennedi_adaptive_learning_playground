@@ -23,7 +23,7 @@ Protect the working child experience. Improve the parent's ability to understand
 * No adaptive child routing
 * No activity schema expansion unless required for review readability
 
-## Slice 1: Parent Review Readability
+## Phase 2.1: Parent Review Readability
 
 Status: complete.
 
@@ -55,7 +55,7 @@ Make the Parent Panel readable to a non-debugging adult.
 * Tests cover title resolution and fallback behavior.
 * Tests cover recent-attempt formatting.
 
-## Slice 2: Parent Interpretation Layer
+## Phase 2.2: Parent Interpretation Layer
 
 Status: complete.
 
@@ -89,7 +89,7 @@ Allowed statuses:
 * Recommendations do not mention streaks, ranking, or performance pressure.
 * Parent can understand what to offer next.
 
-## Slice 3: Export Polish
+## Phase 2.3: Export Polish
 
 Status: complete.
 
@@ -123,7 +123,7 @@ Add local data health summary:
 * Export does not send data anywhere.
 * Clear progress still clears events, progress, and observations.
 
-## Slice 4: Adaptive Recommendation v1
+## Phase 2.4: Adaptive Recommendation v1
 
 Status: complete for parent-visible recommendation only.
 
@@ -176,7 +176,7 @@ Parent can answer:
 
 Only after the checklist is satisfied should the app add new activities or automatic adaptation.
 
-## Completed Slice: Parent Review UX Polish
+## Completed Phase Work: Parent Review UX Polish
 
 Status: Parent Review UX Polish is complete in v0.1.2.
 
@@ -187,7 +187,7 @@ Completed:
 * Easier scanning of guidance rows.
 * Focused tests for empty-state and data-health formatting.
 
-## Completed Slice: Parent-Approved Difficulty Actions
+## Completed Phase Work: Parent-Approved Difficulty Actions
 
 Status: Parent-Approved Difficulty Actions are complete in v0.1.3.
 
@@ -200,7 +200,7 @@ Completed:
 * Clear Progress Data clears action records.
 * Focused tests for action storage, export, clear behavior, and labels.
 
-## Completed Slice: Parent Gate Hardening
+## Completed Phase Work: Parent Gate Hardening
 
 Status: Parent Gate Hardening is complete in v0.1.4.
 
@@ -212,7 +212,7 @@ Completed:
 * Do not add accounts, backend auth, or cloud sync.
 * Add focused tests for route gating and local-only gate behavior.
 
-## Completed Slice: Parent Gate Settings Polish
+## Completed Phase Work: Parent Gate Settings Polish
 
 Status: Parent Gate Settings Polish is complete in v0.1.5.
 
@@ -228,9 +228,9 @@ Completed:
 
 The v0.1.1 hardening lane is complete enough for next-phase planning.
 
-## Phase 3.1: Parent-Approved Difficulty Override Model
+## Phase 2 Work: Parent-Approved Difficulty Override Model
 
-Status: Phase 3.1 is complete in v0.1.6.
+Status: Phase 2 parent-approved guidance state is complete in v0.1.6.
 
 Completed:
 
@@ -240,9 +240,9 @@ Completed:
 * Clear active guidance with local progress data.
 * Stage active guidance before child activity runtime application.
 
-## Completed Slice: Parent-Approved Difficulty Application v1
+## Completed Phase Work: Parent-Approved Difficulty Application v1
 
-Status: Phase 3.2 is complete in v0.1.7.
+Status: Phase 2 parent-approved guidance application is complete in v0.1.7.
 
 Completed:
 
@@ -250,11 +250,11 @@ Completed:
 * Keep source activity JSON and the existing activity schema unchanged.
 * Record applied guidance in local attempt event metadata.
 * Show applied guidance in parent Recent Attempts.
-* Leave coloring and Video Vault unsupported for difficulty application in this slice.
+* Leave coloring and Video Vault unsupported for difficulty application in this phase work.
 
-## Completed Slice: Applied Guidance Fit Review
+## Completed Phase Work: Applied Guidance Fit Review
 
-Status: Phase 3.3 is complete in v0.1.8.
+Status: Phase 2 applied fit review is complete in v0.1.8.
 
 Completed:
 
@@ -272,3 +272,25 @@ Still not changing:
 * No automatic child-facing routing.
 * No hidden or automatic difficulty changes without parent approval.
 * No rewards, streaks, rankings, or pressure loops.
+
+## Phase 3: Skill Graph + Mastery Engine
+
+Status: Phase 3 starts in v0.2.0.
+
+Completed:
+
+* Add curriculum graph contracts.
+* Add a local curriculum graph for existing MVP skills only.
+* Add graph validation for missing references, self-unlocks, and circular prerequisites.
+* Add source-cited mastery evidence.
+* Add mastery evaluation with transfer required before `mastered`.
+* Add deterministic review scheduling.
+* Add graph-backed evidence to Parent Guidance without auto-applying recommendations.
+
+Still not changing:
+
+* No new games.
+* No backend.
+* No accounts or cloud sync.
+* No automatic child-facing routing.
+* No reward system, streaks, rankings, or pressure loops.

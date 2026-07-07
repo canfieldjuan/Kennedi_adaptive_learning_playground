@@ -1,0 +1,33 @@
+# Mastery Contract
+
+Mastery is evidence-based fit information for the parent. It is not a ranking, score, age label, or permanent judgement of the child.
+
+## Requirements
+
+- Mastery evaluation must cite local evidence sources.
+- Repeated success in only one activity context may reach `likely_mastered`, but must not become `mastered`.
+- Mastery requires transfer evidence before `mastered`.
+- Regression can lower a previously stronger status.
+- Recommendations must stay parent-controlled and must not auto-apply difficulty changes.
+- Evidence language must avoid comparison, shame, rankings, streaks, gifted labels, or age-equivalent labels.
+
+## Statuses
+
+- `not_started`
+- `introduced`
+- `practicing`
+- `likely_mastered`
+- `mastered`
+- `needs_review`
+- `regressed`
+
+## Recommended Actions
+
+- `introduce`
+- `practice`
+- `increase_difficulty`
+- `test_transfer`
+- `schedule_review`
+- `add_support`
+- `pause_skill`
+

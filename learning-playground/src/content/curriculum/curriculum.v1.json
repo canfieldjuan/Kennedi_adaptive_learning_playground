@@ -1,0 +1,270 @@
+{
+  "version": 1,
+  "domains": [
+    {
+      "id": "phonics",
+      "label": "Phonics"
+    },
+    {
+      "id": "math",
+      "label": "Math"
+    },
+    {
+      "id": "spatial",
+      "label": "Spatial Reasoning"
+    },
+    {
+      "id": "art",
+      "label": "Art"
+    },
+    {
+      "id": "language",
+      "label": "Language"
+    }
+  ],
+  "skills": [
+    {
+      "id": "vocabulary",
+      "label": "Vocabulary",
+      "domain": "language",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Shared attention"
+        },
+        {
+          "level": 1,
+          "label": "Names familiar objects"
+        }
+      ],
+      "prerequisites": [],
+      "unlocks": [
+        "initial_sound"
+      ],
+      "activity_contexts": [
+        "video-vault"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 2,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 6000,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "initial_sound",
+      "label": "Initial Sound",
+      "domain": "phonics",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Hears first sound"
+        },
+        {
+          "level": 1,
+          "label": "Matches first sound"
+        }
+      ],
+      "prerequisites": [
+        "vocabulary"
+      ],
+      "unlocks": [
+        "letter_sound_match"
+      ],
+      "activity_contexts": [
+        "phonics-find-b"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 3,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 5000,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "letter_sound_match",
+      "label": "Letter Sound Match",
+      "domain": "phonics",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Recognizes target sound"
+        },
+        {
+          "level": 1,
+          "label": "Selects matching word"
+        }
+      ],
+      "prerequisites": [
+        "initial_sound"
+      ],
+      "unlocks": [],
+      "activity_contexts": [
+        "phonics-find-b"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 3,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 5000,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "counting",
+      "label": "Counting",
+      "domain": "math",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Counts objects with support"
+        },
+        {
+          "level": 1,
+          "label": "Counts small sets"
+        }
+      ],
+      "prerequisites": [],
+      "unlocks": [
+        "subitizing"
+      ],
+      "activity_contexts": [
+        "math-count-stars-three"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 3,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 5000,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "subitizing",
+      "label": "Subitizing",
+      "domain": "math",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Notices small quantities"
+        },
+        {
+          "level": 1,
+          "label": "Recognizes small sets"
+        }
+      ],
+      "prerequisites": [
+        "counting"
+      ],
+      "unlocks": [],
+      "activity_contexts": [
+        "math-count-stars-three"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 3,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 4500,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "shape_match",
+      "label": "Shape Match",
+      "domain": "spatial",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Names common shapes"
+        },
+        {
+          "level": 1,
+          "label": "Finds target shape"
+        }
+      ],
+      "prerequisites": [],
+      "unlocks": [],
+      "activity_contexts": [
+        "shapes-find-circle"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 3,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 5000,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "color_fill",
+      "label": "Color Fill",
+      "domain": "art",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Chooses a color"
+        },
+        {
+          "level": 1,
+          "label": "Completes a fill"
+        }
+      ],
+      "prerequisites": [],
+      "unlocks": [],
+      "activity_contexts": [
+        "art-color-circle"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 2,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.5,
+        "max_average_response_ms": 8000,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    }
+  ]
+}

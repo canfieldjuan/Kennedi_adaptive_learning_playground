@@ -882,7 +882,55 @@ function createParentGuidanceRow(
 
   evidenceGroup.appendChild(metrics);
   row.appendChild(evidenceGroup);
+
+  if (interpretation.mastery_status) {
+    row.appendChild(createMasteryEvidenceGroup(interpretation));
+  }
+
   return row;
+}
+
+function createMasteryEvidenceGroup(
+  interpretation: ParentSkillInterpretation
+): HTMLElement {
+  const evidenceGroup = document.createElement('div');
+  evidenceGroup.className = 'parent-guidance-row__evidence-group';
+  evidenceGroup.appendChild(createGuidanceLabel('Skill Graph Evidence'));
+
+  const metrics = document.createElement('div');
+  metrics.className = 'parent-guidance-row__evidence';
+  metrics.appendChild(createProgressMetric(
+    'Current Status',
+    formatInternalMasteryLabel(interpretation.mastery_status ?? 'not_started')
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Next Action',
+    formatInternalMasteryLabel(
+      interpretation.mastery_recommended_action ?? 'practice'
+    )
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Confidence',
+    formatPercent(interpretation.mastery_confidence ?? 0)
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Evidence',
+    interpretation.mastery_evidence_summary ?? 'No evidence yet'
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Graph Rule',
+    interpretation.skill_graph_rule ?? 'No graph rule'
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Source Refs',
+    formatSourceRefs(
+      interpretation.mastery_source_event_ids ?? [],
+      interpretation.mastery_source_observation_ids ?? []
+    )
+  ));
+
+  evidenceGroup.appendChild(metrics);
+  return evidenceGroup;
 }
 
 function createActiveParentGuidanceSection(
@@ -1321,6 +1369,26 @@ function createSection(titleText: string, rows: SettingRow[]): HTMLElement {
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function formatInternalMasteryLabel(value: string): string {
+  return value
+    .split('_')
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function formatSourceRefs(
+  eventIds: string[],
+  observationIds: string[]
+): string {
+  const refs = [
+    ...eventIds.map((eventId) => `event:${eventId}`),
+    ...observationIds.map((observationId) => `observation:${observationId}`),
+  ];
+
+  return refs.length > 0 ? refs.join(', ') : 'None';
 }
 
 function formatParentTimestamp(timestamp: string): string {

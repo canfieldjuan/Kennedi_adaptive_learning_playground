@@ -11,7 +11,7 @@ import type { ParentSessionReview } from '../../src/core/session-review';
 import type { ActivityAttemptEvent } from '../../src/types/events';
 
 describe('parent interpretation contract', () => {
-  test('recommends a gentle parent-approved challenge when signals are strong', () => {
+  test('requires transfer before recommending promotion when signals are strong', () => {
     const events = [
       makeEvent('event-1', 'correct'),
       makeEvent('event-2', 'correct'),
@@ -29,11 +29,14 @@ describe('parent interpretation contract', () => {
     expect(interpretation).toMatchObject({
       skill_label: 'Counting',
       status: 'Ready for next challenge',
-      recommendation: 'Promote gently',
+      recommendation: 'Review later',
       attempts: 4,
       recent_accuracy: 1,
+      mastery_status: 'likely_mastered',
+      mastery_recommended_action: 'test_transfer',
     });
-    expect(interpretation.recommendation_reason).toContain('parent chooses it');
+    expect(interpretation.recommendation_reason).toContain('transfer');
+    expect(interpretation.skill_graph_rule).toContain('Counting requires');
   });
 
   test('detects repeated incorrect answers and recommends support', () => {

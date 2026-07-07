@@ -3,6 +3,12 @@ import type {
   ParentSessionReview,
   SkillAccuracySummary,
 } from './session-review';
+import { loadCurriculumGraph } from './curriculum-graph';
+import {
+  evaluateSkillMastery,
+  type MasteryEvaluation,
+  type RecommendedMasteryAction,
+} from './mastery-engine';
 import { formatSkillLabel } from './parent-review-format';
 
 export type ParentSkillStatus =
@@ -30,6 +36,14 @@ export interface ParentSkillInterpretation {
   hints_used: number;
   abandoned_count: number;
   repeated_error_pattern?: string;
+  mastery_status?: MasteryEvaluation['next_status'];
+  mastery_confidence?: number;
+  mastery_reason?: string;
+  mastery_recommended_action?: RecommendedMasteryAction;
+  mastery_evidence_summary?: string;
+  skill_graph_rule?: string;
+  mastery_source_event_ids?: string[];
+  mastery_source_observation_ids?: string[];
 }
 
 interface SkillSignal {
@@ -45,6 +59,7 @@ export function buildParentSkillInterpretations(
   review: ParentSessionReview,
   sessionEvents: ActivityAttemptEvent[]
 ): ParentSkillInterpretation[] {
+  const graph = loadCurriculumGraph();
   const summariesBySkill = new Map(
     review.accuracy_by_skill.map((summary) => [summary.skill_id, summary])
   );
@@ -65,7 +80,15 @@ export function buildParentSkillInterpretations(
     .map((summary) => {
       const signal = buildSkillSignal(summary, review, sessionEvents);
       const status = getStatus(signal);
-      const recommendation = getRecommendation(signal);
+      const mastery = graph.getSkill(summary.skill_id)
+        ? evaluateSkillMastery({
+          skill_id: summary.skill_id,
+          events: sessionEvents,
+          observations: review.parent_notes,
+          graph,
+        })
+        : undefined;
+      const recommendation = getRecommendation(signal, mastery);
 
       return {
         skill_id: summary.skill_id,
@@ -73,12 +96,24 @@ export function buildParentSkillInterpretations(
         status,
         status_reason: getStatusReason(status, signal),
         recommendation,
-        recommendation_reason: getRecommendationReason(recommendation, signal),
+        recommendation_reason: getRecommendationReason(
+          recommendation,
+          signal,
+          mastery
+        ),
         attempts: summary.total_attempts,
         recent_accuracy: summary.accuracy,
         hints_used: signal.hintsUsed,
         abandoned_count: signal.abandonedCount,
         repeated_error_pattern: signal.repeatedErrorPattern,
+        mastery_status: mastery?.next_status,
+        mastery_confidence: mastery?.confidence,
+        mastery_reason: mastery?.reason,
+        mastery_recommended_action: mastery?.recommended_action,
+        mastery_evidence_summary: mastery?.evidence_summary,
+        skill_graph_rule: mastery?.skill_graph_rule,
+        mastery_source_event_ids: mastery?.source_event_ids,
+        mastery_source_observation_ids: mastery?.source_observation_ids,
       };
     });
 }
@@ -120,7 +155,20 @@ function getStatus(signal: SkillSignal): ParentSkillStatus {
   return 'Keep practicing here';
 }
 
-function getRecommendation(signal: SkillSignal): ParentAdaptiveRecommendation {
+function getRecommendation(
+  signal: SkillSignal,
+  mastery?: MasteryEvaluation
+): ParentAdaptiveRecommendation {
+  if (mastery?.recommended_action === 'add_support') return 'Add support';
+  if (mastery?.recommended_action === 'increase_difficulty') return 'Promote gently';
+  if (
+    mastery?.recommended_action === 'test_transfer' ||
+    mastery?.recommended_action === 'schedule_review' ||
+    mastery?.recommended_action === 'pause_skill'
+  ) {
+    return 'Review later';
+  }
+
   const { summary, hintsUsed, abandonedCount, repeatedErrorPattern } = signal;
 
   if (summary.total_attempts < 3) return 'Not enough data';
@@ -164,8 +212,13 @@ function getStatusReason(
 
 function getRecommendationReason(
   recommendation: ParentAdaptiveRecommendation,
-  signal: SkillSignal
+  signal: SkillSignal,
+  mastery?: MasteryEvaluation
 ): string {
+  if (mastery) {
+    return `${mastery.reason} Suggested next action: ${formatRecommendedAction(mastery.recommended_action)}.`;
+  }
+
   const { summary, hintsUsed, abandonedCount, repeatedErrorPattern } = signal;
   const accuracyLabel = formatPercent(summary.accuracy);
 
@@ -191,6 +244,13 @@ function getRecommendationReason(
   }
 
   return 'Stay with this level and watch the next few attempts.';
+}
+
+function formatRecommendedAction(action: RecommendedMasteryAction): string {
+  return action
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function getRepeatedErrorPattern(
