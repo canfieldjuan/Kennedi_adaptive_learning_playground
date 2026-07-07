@@ -22,6 +22,7 @@ Transfer coverage is the bridge between mastery evidence and approved content br
 - Weak-only transfer coverage must generate activity variant briefs for richer missing contexts.
 - Activity variant briefs must stay parent/build-side and must not become child-visible activities automatically.
 - Parent approval is required before a transfer recommendation is treated as approved.
+- Parent activity brief decisions must be local-only parent records and must not alter child routing automatically.
 
 ## Non-Scope
 

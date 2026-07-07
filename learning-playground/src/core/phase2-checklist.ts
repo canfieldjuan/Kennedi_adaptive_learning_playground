@@ -231,12 +231,13 @@ function buildExportQuestion(
 ): Phase2ChecklistItem {
   return answered(
     'Can I export everything?',
-    'Yes. Export Progress Data downloads local settings, progress, activity events, parent observations, parent difficulty actions, active parent guidance, and parent transfer decisions.',
+    'Yes. Export Progress Data downloads local settings, progress, activity events, parent observations, parent difficulty actions, active parent guidance, parent transfer decisions, and parent activity brief decisions.',
     [
       `${dataHealth.total_events} event(s).`,
       `${dataHealth.total_observations} parent note(s).`,
       `${dataHealth.total_parent_actions} parent action(s).`,
       `${dataHealth.total_transfer_decisions} transfer choice(s).`,
+      `${dataHealth.total_activity_brief_decisions} brief choice(s).`,
     ],
     ['Data Management']
   );
@@ -245,7 +246,7 @@ function buildExportQuestion(
 function buildDeleteQuestion(): Phase2ChecklistItem {
   return answered(
     'Can I delete everything?',
-    'Yes. Clear Progress Data removes local events, progress, parent observations, parent actions, active guidance, and parent transfer decisions.',
+    'Yes. Clear Progress Data removes local events, progress, parent observations, parent actions, active guidance, parent transfer decisions, and parent activity brief decisions.',
     ['Data Management includes the clear action.'],
     ['Data Management']
   );

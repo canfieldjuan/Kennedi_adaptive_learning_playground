@@ -10,6 +10,8 @@ Activity variant briefs turn transfer coverage gaps into design-ready work. A br
 - Weak-only transfer coverage must recommend richer briefs before more same-format variants.
 - Briefs must be parent/build-side only and must not create child-visible activities automatically.
 - Parent approval is required before a brief can be treated as approved design work.
+- Parent brief decisions must support `approve_brief`, `hold_brief`, and `archive_brief`.
+- Parent brief decisions must be stored locally, included in local export, shown only in the parent panel, and cleared by clear progress.
 - Later implemented activities may reference a brief with `originating_brief_id` without requiring existing activity JSON to migrate.
 - Briefs must not contain external links.
 
@@ -53,6 +55,27 @@ export interface ActivityVariantBrief {
     | "approved"
     | "implemented"
     | "archived";
+}
+```
+
+## Parent Decision Interface
+
+```ts
+export interface ParentActivityBriefDecision {
+  decision_id: string;
+  session_id: string;
+  child_id: string;
+  skill_id: string;
+  skill_label: string;
+  decision_type: "approve_brief" | "hold_brief" | "archive_brief";
+  brief_id: string;
+  required_context_type: ActivityVariantBrief["required_context_type"];
+  required_strength: ActivityVariantBrief["required_strength"];
+  suggested_game_family: ActivityVariantBrief["suggested_game_family"];
+  suggested_activity_pattern: string;
+  reason: string;
+  status_at_decision: ActivityVariantBrief["status"];
+  created_at: string;
 }
 ```
 

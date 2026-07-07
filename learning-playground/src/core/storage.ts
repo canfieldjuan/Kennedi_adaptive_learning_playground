@@ -11,6 +11,7 @@ import type {
   ParentDifficultyOverride,
 } from '../types/parent-actions';
 import type { ParentTransferDecision } from '../types/transfer';
+import type { ParentActivityBriefDecision } from '../types/activity-briefs';
 import type { ChildProgressProfile } from '../types/progress';
 import {
   buildProgressProfileFromEvents,
@@ -24,6 +25,7 @@ const OBSERVATIONS_KEY = 'lp_parent_observations';
 const DIFFICULTY_ACTIONS_KEY = 'lp_parent_difficulty_actions';
 const DIFFICULTY_OVERRIDES_KEY = 'lp_parent_difficulty_overrides';
 const TRANSFER_DECISIONS_KEY = 'lp_parent_transfer_decisions';
+const ACTIVITY_BRIEF_DECISIONS_KEY = 'lp_parent_activity_brief_decisions';
 const DEFAULT_CHILD_ID = 'local-child';
 
 export interface KeyValueStorage {
@@ -281,6 +283,45 @@ export class StorageService implements StorageServiceInterface {
     this.localStore.removeItem(TRANSFER_DECISIONS_KEY);
   }
 
+  getParentActivityBriefDecisions(): ParentActivityBriefDecision[] {
+    try {
+      const raw = this.localStore.getItem(ACTIVITY_BRIEF_DECISIONS_KEY);
+      if (!raw) return [];
+
+      const decisions = JSON.parse(raw) as ParentActivityBriefDecision[];
+      return decisions.filter(isParentActivityBriefDecision);
+    } catch {
+      return [];
+    }
+  }
+
+  saveParentActivityBriefDecision(decision: ParentActivityBriefDecision): void {
+    const decisions = this.getParentActivityBriefDecisions();
+    const index = decisions.findIndex((stored) => (
+      stored.decision_id === decision.decision_id
+    ));
+
+    const nextDecisions = [...decisions];
+    if (index >= 0) {
+      nextDecisions[index] = decision;
+    } else {
+      nextDecisions.push(decision);
+    }
+
+    try {
+      this.localStore.setItem(
+        ACTIVITY_BRIEF_DECISIONS_KEY,
+        JSON.stringify(nextDecisions)
+      );
+    } catch (err) {
+      console.error('[Storage] Failed to save parent activity brief decision:', err);
+    }
+  }
+
+  clearParentActivityBriefDecisions(): void {
+    this.localStore.removeItem(ACTIVITY_BRIEF_DECISIONS_KEY);
+  }
+
   exportProgressData(events: ActivityAttemptEvent[]): string {
     return buildProgressExportJson({
       settings: this.getSettings(),
@@ -290,6 +331,7 @@ export class StorageService implements StorageServiceInterface {
       actions: this.getParentDifficultyActions(),
       overrides: this.getParentDifficultyOverrides(),
       transferDecisions: this.getParentTransferDecisions(),
+      activityBriefDecisions: this.getParentActivityBriefDecisions(),
     });
   }
 }
@@ -409,5 +451,45 @@ function isParentTransferDecisionType(value: unknown): boolean {
   return (
     value === 'approve_transfer_activity' ||
     value === 'hold_transfer_activity'
+  );
+}
+
+function isParentActivityBriefDecision(
+  value: unknown
+): value is ParentActivityBriefDecision {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const decision = value as Record<string, unknown>;
+  return (
+    typeof decision.decision_id === 'string' &&
+    typeof decision.session_id === 'string' &&
+    typeof decision.child_id === 'string' &&
+    typeof decision.skill_id === 'string' &&
+    typeof decision.skill_label === 'string' &&
+    isParentActivityBriefDecisionType(decision.decision_type) &&
+    typeof decision.brief_id === 'string' &&
+    typeof decision.required_context_type === 'string' &&
+    isParentActivityBriefStrength(decision.required_strength) &&
+    typeof decision.suggested_game_family === 'string' &&
+    typeof decision.suggested_activity_pattern === 'string' &&
+    typeof decision.reason === 'string' &&
+    typeof decision.status_at_decision === 'string' &&
+    typeof decision.created_at === 'string'
+  );
+}
+
+function isParentActivityBriefDecisionType(value: unknown): boolean {
+  return (
+    value === 'approve_brief' ||
+    value === 'hold_brief' ||
+    value === 'archive_brief'
+  );
+}
+
+function isParentActivityBriefStrength(value: unknown): boolean {
+  return (
+    value === 'medium' ||
+    value === 'strong' ||
+    value === 'retention'
   );
 }

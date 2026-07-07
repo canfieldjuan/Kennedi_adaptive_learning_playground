@@ -19,6 +19,7 @@ describe('parent approval boundary contract', () => {
     for (const source of Object.values(sources)) {
       expect(source).not.toContain('saveParentDifficultyOverride');
       expect(source).not.toContain('saveParentTransferDecision');
+      expect(source).not.toContain('saveParentActivityBriefDecision');
       expect(source).not.toContain('StorageService');
       expect(source).not.toContain('localStorage');
     }
@@ -47,6 +48,8 @@ describe('parent approval boundary contract', () => {
     expect(source).toContain('Approve brief');
     expect(source).toContain('Hold brief');
     expect(source).toContain('Archive brief');
+    expect(source).toContain('saveParentActivityBriefDecision');
+    expect(source).toContain('Recent Activity Brief Choices');
     expect(source).toContain('window.location.hash = `#activity/${transferActivityId}`');
     expect(source).toContain('saveParentDifficultyOverride');
     expect(source).toContain('saveParentTransferDecision');

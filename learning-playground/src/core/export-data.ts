@@ -5,11 +5,12 @@ import type {
   ParentDifficultyOverride,
 } from '../types/parent-actions';
 import type { ParentTransferDecision } from '../types/transfer';
+import type { ParentActivityBriefDecision } from '../types/activity-briefs';
 import type { ChildProgressProfile } from '../types/progress';
 import type { ParentSettings } from '../types/storage';
 
 const EXPORT_VERSION = '1';
-const APP_BASELINE = 'v0.2.4';
+const APP_BASELINE = 'v0.2.6';
 
 export interface LocalDataHealth {
   total_events: number;
@@ -17,6 +18,7 @@ export interface LocalDataHealth {
   total_observations: number;
   total_parent_actions: number;
   total_transfer_decisions: number;
+  total_activity_brief_decisions: number;
   first_event_timestamp?: string;
   latest_event_timestamp?: string;
   migrated_event_count: number;
@@ -38,6 +40,7 @@ export interface ProgressExportPayload {
   parent_difficulty_actions: ParentDifficultyAction[];
   parent_difficulty_overrides: ParentDifficultyOverride[];
   parent_transfer_decisions: ParentTransferDecision[];
+  parent_activity_brief_decisions: ParentActivityBriefDecision[];
 }
 
 export function buildProgressExportPayload(params: {
@@ -48,12 +51,14 @@ export function buildProgressExportPayload(params: {
   actions?: ParentDifficultyAction[];
   overrides?: ParentDifficultyOverride[];
   transferDecisions?: ParentTransferDecision[];
+  activityBriefDecisions?: ParentActivityBriefDecision[];
   exportedAt?: string;
 }): ProgressExportPayload {
   const exportedAt = params.exportedAt ?? new Date().toISOString();
   const actions = params.actions ?? [];
   const overrides = params.overrides ?? [];
   const transferDecisions = params.transferDecisions ?? [];
+  const activityBriefDecisions = params.activityBriefDecisions ?? [];
 
   return {
     exported_at: exportedAt,
@@ -69,13 +74,15 @@ export function buildProgressExportPayload(params: {
         'parent_difficulty_actions',
         'parent_difficulty_overrides',
         'parent_transfer_decisions',
+        'parent_activity_brief_decisions',
       ],
     },
     data_health: buildLocalDataHealth(
       params.events,
       params.observations,
       actions,
-      transferDecisions
+      transferDecisions,
+      activityBriefDecisions
     ),
     settings: params.settings,
     child_profile: params.childProfile,
@@ -84,6 +91,7 @@ export function buildProgressExportPayload(params: {
     parent_difficulty_actions: actions,
     parent_difficulty_overrides: overrides,
     parent_transfer_decisions: transferDecisions,
+    parent_activity_brief_decisions: activityBriefDecisions,
   };
 }
 
@@ -91,7 +99,8 @@ export function buildLocalDataHealth(
   events: ActivityAttemptEvent[],
   observations: ParentObservation[],
   actions: ParentDifficultyAction[] = [],
-  transferDecisions: ParentTransferDecision[] = []
+  transferDecisions: ParentTransferDecision[] = [],
+  activityBriefDecisions: ParentActivityBriefDecision[] = []
 ): LocalDataHealth {
   const eventTimestamps = events
     .map((event) => event.timestamp)
@@ -103,6 +112,7 @@ export function buildLocalDataHealth(
     total_observations: observations.length,
     total_parent_actions: actions.length,
     total_transfer_decisions: transferDecisions.length,
+    total_activity_brief_decisions: activityBriefDecisions.length,
     first_event_timestamp: eventTimestamps[0],
     latest_event_timestamp: eventTimestamps[eventTimestamps.length - 1],
     migrated_event_count: events.filter((event) => (
@@ -119,6 +129,7 @@ export function buildProgressExportJson(params: {
   actions?: ParentDifficultyAction[];
   overrides?: ParentDifficultyOverride[];
   transferDecisions?: ParentTransferDecision[];
+  activityBriefDecisions?: ParentActivityBriefDecision[];
   exportedAt?: string;
 }): string {
   return JSON.stringify(buildProgressExportPayload(params), null, 2);

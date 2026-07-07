@@ -10,6 +10,7 @@ import type {
   ParentDifficultyOverride,
 } from '../../src/types/parent-actions';
 import type { ParentTransferDecision } from '../../src/types/transfer';
+import type { ParentActivityBriefDecision } from '../../src/types/activity-briefs';
 
 class MemoryKeyValueStorage implements KeyValueStorage {
   private readonly data = new Map<string, string>();
@@ -39,6 +40,7 @@ describe('progress export contract', () => {
     storage.saveParentDifficultyAction(makeAction());
     storage.saveParentDifficultyOverride(makeOverride());
     storage.saveParentTransferDecision(makeTransferDecision());
+    storage.saveParentActivityBriefDecision(makeBriefDecision());
 
     const exported = JSON.parse(storage.exportProgressData(events)) as {
       exported_at: string;
@@ -54,6 +56,7 @@ describe('progress export contract', () => {
         total_observations: number;
         total_parent_actions: number;
         total_transfer_decisions: number;
+        total_activity_brief_decisions: number;
         first_event_timestamp: string;
         latest_event_timestamp: string;
         migrated_event_count: number;
@@ -63,12 +66,13 @@ describe('progress export contract', () => {
       parent_difficulty_actions: ParentDifficultyAction[];
       parent_difficulty_overrides: ParentDifficultyOverride[];
       parent_transfer_decisions: ParentTransferDecision[];
+      parent_activity_brief_decisions: ParentActivityBriefDecision[];
     };
 
     expect(exported.exported_at).toBe(exported.export_metadata.export_timestamp);
     expect(exported.export_metadata).toMatchObject({
       export_version: '1',
-      app_baseline: 'v0.2.4',
+      app_baseline: 'v0.2.6',
     });
     expect(exported.export_metadata.data_sections_included).toEqual([
       'settings',
@@ -78,6 +82,7 @@ describe('progress export contract', () => {
       'parent_difficulty_actions',
       'parent_difficulty_overrides',
       'parent_transfer_decisions',
+      'parent_activity_brief_decisions',
     ]);
     expect(exported.data_health).toMatchObject({
       total_events: 2,
@@ -85,6 +90,7 @@ describe('progress export contract', () => {
       total_observations: 0,
       total_parent_actions: 1,
       total_transfer_decisions: 1,
+      total_activity_brief_decisions: 1,
       first_event_timestamp: '2026-01-01T12:00:00.000Z',
       latest_event_timestamp: '2026-01-01T12:05:00.000Z',
       migrated_event_count: 1,
@@ -101,9 +107,16 @@ describe('progress export contract', () => {
     expect(exported.parent_transfer_decisions[0].transfer_activity_id).toBe(
       'math-count-hearts-three'
     );
+    expect(exported.parent_activity_brief_decisions[0]).toMatchObject({
+      decision_type: 'approve_brief',
+      brief_id: 'brief-counting-different_prompt_mode',
+      suggested_activity_pattern: 'Picture Quantity Order Card',
+    });
 
     storage.clearParentTransferDecisions();
     expect(storage.getParentTransferDecisions()).toHaveLength(0);
+    storage.clearParentActivityBriefDecisions();
+    expect(storage.getParentActivityBriefDecisions()).toHaveLength(0);
   });
 });
 
@@ -184,5 +197,24 @@ function makeTransferDecision(): ParentTransferDecision {
     transfer_activity_id: 'math-count-hearts-three',
     transfer_activity_title: 'Count the Hearts',
     created_at: '2026-01-01T12:10:00.000Z',
+  };
+}
+
+function makeBriefDecision(): ParentActivityBriefDecision {
+  return {
+    decision_id: 'brief-decision-1',
+    session_id: 'session-1',
+    child_id: 'local-child',
+    skill_id: 'counting',
+    skill_label: 'Counting',
+    decision_type: 'approve_brief',
+    brief_id: 'brief-counting-different_prompt_mode',
+    required_context_type: 'different_prompt_mode',
+    required_strength: 'medium',
+    suggested_game_family: 'delivery_race',
+    suggested_activity_pattern: 'Picture Quantity Order Card',
+    reason: 'Counting needs medium transfer evidence.',
+    status_at_decision: 'ready_for_design',
+    created_at: '2026-01-01T12:11:00.000Z',
   };
 }

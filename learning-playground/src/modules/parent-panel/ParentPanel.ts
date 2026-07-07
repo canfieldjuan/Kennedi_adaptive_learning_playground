@@ -15,6 +15,10 @@ import type {
   ParentTransferDecision,
   ParentTransferDecisionType,
 } from '../../types/transfer';
+import type {
+  ParentActivityBriefDecision,
+  ParentActivityBriefDecisionType,
+} from '../../types/activity-briefs';
 import type { SkillMasteryState } from '../../types/progress';
 import {
   buildParentSessionReview,
@@ -112,6 +116,7 @@ export function renderParentPanel(
   const difficultyActions = storage.getParentDifficultyActions();
   const difficultyOverrides = storage.getParentDifficultyOverrides();
   const transferDecisions = storage.getParentTransferDecisions();
+  const activityBriefDecisions = storage.getParentActivityBriefDecisions();
   const sessionReview = buildParentSessionReview(
     events,
     observations,
@@ -137,7 +142,8 @@ export function renderParentPanel(
     events,
     observations,
     difficultyActions,
-    transferDecisions
+    transferDecisions,
+    activityBriefDecisions
   );
   const dataHealthSummary = formatParentDataHealth(
     localDataHealth
@@ -206,6 +212,7 @@ export function renderParentPanel(
     difficultyActions,
     difficultyOverrides,
     transferDecisions,
+    activityBriefDecisions,
     appliedFitReviews,
     storage,
     context,
@@ -518,6 +525,7 @@ function createDataManagementSection(
       storage.clearParentDifficultyActions();
       storage.clearParentDifficultyOverrides();
       storage.clearParentTransferDecisions();
+      storage.clearParentActivityBriefDecisions();
       alert('Progress data cleared.');
       destroyParentPanel();
       renderParentPanel(parent, storage, context);
@@ -716,6 +724,7 @@ function createParentGuidanceSection(
   actions: ParentDifficultyAction[],
   overrides: ParentDifficultyOverride[],
   transferDecisions: ParentTransferDecision[],
+  activityBriefDecisions: ParentActivityBriefDecision[],
   appliedFitReviews: ParentAppliedFitReview[],
   storage: StorageServiceInterface,
   context: ParentPanelContext,
@@ -743,6 +752,9 @@ function createParentGuidanceSection(
     section.appendChild(createAppliedFitReviewSection(appliedFitReviews));
     section.appendChild(createParentActionHistory(actions));
     section.appendChild(createParentTransferDecisionHistory(transferDecisions));
+    section.appendChild(createParentActivityBriefDecisionHistory(
+      activityBriefDecisions
+    ));
     return section;
   }
 
@@ -795,7 +807,20 @@ function createParentGuidanceSection(
 
         destroyParentPanel();
         renderParentPanel(parent, storage, context);
-      }
+      },
+      (decisionType) => {
+        storage.saveParentActivityBriefDecision(createParentActivityBriefDecision(
+          decisionType,
+          interpretation,
+          context
+        ));
+        destroyParentPanel();
+        renderParentPanel(parent, storage, context);
+      },
+      getLatestBriefDecisionForInterpretation(
+        interpretation,
+        activityBriefDecisions
+      )
     ));
   }
 
@@ -809,6 +834,9 @@ function createParentGuidanceSection(
   section.appendChild(createAppliedFitReviewSection(appliedFitReviews));
   section.appendChild(createParentActionHistory(actions));
   section.appendChild(createParentTransferDecisionHistory(transferDecisions));
+  section.appendChild(createParentActivityBriefDecisionHistory(
+    activityBriefDecisions
+  ));
   return section;
 
   function deactivateParentDifficultyOverride(overrideId: string): void {
@@ -832,7 +860,9 @@ function createParentGuidanceRow(
   onTransferDecision: (
     decisionType: ParentTransferDecisionType,
     transferActivityId?: string
-  ) => void
+  ) => void,
+  onBriefDecision: (decisionType: ParentActivityBriefDecisionType) => void,
+  latestBriefDecision?: ParentActivityBriefDecision
 ): HTMLElement {
   const row = document.createElement('div');
   row.className = 'parent-guidance-row';
@@ -925,7 +955,9 @@ function createParentGuidanceRow(
   if (interpretation.transfer_coverage_status) {
     row.appendChild(createTransferCoverageGroup(
       interpretation,
-      onTransferDecision
+      onTransferDecision,
+      onBriefDecision,
+      latestBriefDecision
     ));
   }
 
@@ -980,7 +1012,9 @@ function createTransferCoverageGroup(
   onTransferDecision: (
     decisionType: ParentTransferDecisionType,
     transferActivityId?: string
-  ) => void
+  ) => void,
+  onBriefDecision: (decisionType: ParentActivityBriefDecisionType) => void,
+  latestBriefDecision?: ParentActivityBriefDecision
 ): HTMLElement {
   const evidenceGroup = document.createElement('div');
   evidenceGroup.className = 'parent-guidance-row__evidence-group';
@@ -1046,7 +1080,11 @@ function createTransferCoverageGroup(
   const activityVariantBrief =
     interpretation.transfer_content_recommendation?.activity_variant_brief;
   if (activityVariantBrief) {
-    evidenceGroup.appendChild(createActivityVariantBriefGroup(activityVariantBrief));
+    evidenceGroup.appendChild(createActivityVariantBriefGroup(
+      activityVariantBrief,
+      onBriefDecision,
+      latestBriefDecision
+    ));
   }
 
   if (
@@ -1093,7 +1131,9 @@ function createTransferCoverageGroup(
 }
 
 function createActivityVariantBriefGroup(
-  brief: ActivityVariantBrief
+  brief: ActivityVariantBrief,
+  onBriefDecision: (decisionType: ParentActivityBriefDecisionType) => void,
+  latestBriefDecision?: ParentActivityBriefDecision
 ): HTMLElement {
   const briefGroup = document.createElement('div');
   briefGroup.className = 'parent-guidance-row__actions';
@@ -1121,28 +1161,38 @@ function createActivityVariantBriefGroup(
     'Required Evidence',
     formatRequiredBriefEvidence(brief)
   ));
+  metrics.appendChild(createProgressMetric(
+    'Brief Decision',
+    latestBriefDecision
+      ? formatBriefDecisionLabel(latestBriefDecision.decision_type)
+      : 'No decision yet'
+  ));
   metrics.appendChild(createProgressMetric('Why', brief.reason));
   briefGroup.appendChild(metrics);
 
   const controls = document.createElement('div');
   controls.className = 'parent-guidance-row__action-buttons';
-  const status = document.createElement('p');
-  status.className = 'parent-section__placeholder';
-  status.textContent = 'No brief choice recorded in this view.';
+  const choices: Array<{
+    decisionType: ParentActivityBriefDecisionType;
+    label: string;
+  }> = [
+    { decisionType: 'approve_brief', label: 'Approve brief' },
+    { decisionType: 'hold_brief', label: 'Hold brief' },
+    { decisionType: 'archive_brief', label: 'Archive brief' },
+  ];
 
-  for (const choice of ['Approve brief', 'Hold brief', 'Archive brief']) {
+  for (const choice of choices) {
     const button = document.createElement('button');
     button.className = 'parent-guidance-action';
     button.type = 'button';
-    button.textContent = choice;
+    button.textContent = choice.label;
     button.addEventListener('click', () => {
-      status.textContent = `Brief choice recorded: ${choice}.`;
+      onBriefDecision(choice.decisionType);
     });
     controls.appendChild(button);
   }
 
   briefGroup.appendChild(controls);
-  briefGroup.appendChild(status);
   return briefGroup;
 }
 
@@ -1405,6 +1455,70 @@ function createParentTransferDecisionHistoryItem(
   return item;
 }
 
+function createParentActivityBriefDecisionHistory(
+  decisions: ParentActivityBriefDecision[]
+): HTMLElement {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'parent-action-history';
+
+  const title = document.createElement('h3');
+  title.className = 'parent-review-accuracy__title';
+  title.textContent = 'Recent Activity Brief Choices';
+  wrapper.appendChild(title);
+
+  const history = [...decisions]
+    .sort((a, b) => (
+      b.created_at.localeCompare(a.created_at) ||
+      a.skill_label.localeCompare(b.skill_label)
+    ))
+    .slice(0, 5);
+
+  if (history.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-section__placeholder';
+    empty.textContent = 'No activity brief choices recorded yet.';
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'parent-action-history__list';
+  for (const decision of history) {
+    list.appendChild(createParentActivityBriefDecisionHistoryItem(decision));
+  }
+  wrapper.appendChild(list);
+
+  return wrapper;
+}
+
+function createParentActivityBriefDecisionHistoryItem(
+  decision: ParentActivityBriefDecision
+): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'parent-action-history__item';
+
+  const meta = document.createElement('span');
+  meta.className = 'parent-action-history__meta';
+  meta.textContent = `${formatParentTimestamp(decision.created_at)} · ${decision.skill_label}`;
+  item.appendChild(meta);
+
+  const choice = document.createElement('strong');
+  choice.className = 'parent-action-history__choice';
+  choice.textContent = `Choice: ${formatBriefDecisionLabel(decision.decision_type)}`;
+  item.appendChild(choice);
+
+  const reason = document.createElement('p');
+  reason.className = 'parent-action-history__reason';
+  reason.textContent = [
+    `Brief: ${decision.suggested_activity_pattern}.`,
+    `Context: ${formatTransferContextType(decision.required_context_type)}.`,
+    `Strength: ${formatTransferStrength(decision.required_strength)}.`,
+  ].join(' ');
+  item.appendChild(reason);
+
+  return item;
+}
+
 function createParentDifficultyAction(
   actionType: ParentDifficultyActionType,
   interpretation: ParentSkillInterpretation,
@@ -1457,6 +1571,51 @@ function createParentTransferDecision(
     transfer_activity_title: activityRecommendation?.activity_title,
     created_at: createdAt,
   };
+}
+
+function createParentActivityBriefDecision(
+  decisionType: ParentActivityBriefDecisionType,
+  interpretation: ParentSkillInterpretation,
+  context: ParentPanelContext,
+  createdAt = new Date().toISOString()
+): ParentActivityBriefDecision {
+  const brief = interpretation.transfer_content_recommendation?.activity_variant_brief;
+  if (!brief) {
+    throw new Error('Cannot save activity brief decision without a generated brief.');
+  }
+
+  return {
+    decision_id: createActivityBriefDecisionId(),
+    session_id: context.sessionId,
+    child_id: context.childId,
+    skill_id: interpretation.skill_id,
+    skill_label: interpretation.skill_label,
+    decision_type: decisionType,
+    brief_id: brief.brief_id,
+    required_context_type: brief.required_context_type,
+    required_strength: brief.required_strength,
+    suggested_game_family: brief.suggested_game_family,
+    suggested_activity_pattern: brief.suggested_activity_pattern,
+    reason: brief.reason,
+    status_at_decision: brief.status,
+    created_at: createdAt,
+  };
+}
+
+function getLatestBriefDecisionForInterpretation(
+  interpretation: ParentSkillInterpretation,
+  decisions: ParentActivityBriefDecision[]
+): ParentActivityBriefDecision | undefined {
+  const briefId = interpretation.transfer_content_recommendation
+    ?.activity_variant_brief?.brief_id;
+  if (!briefId) return undefined;
+
+  return decisions
+    .filter((decision) => (
+      decision.brief_id === briefId &&
+      decision.skill_id === interpretation.skill_id
+    ))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 }
 
 function createParentDifficultyOverride(
@@ -1771,6 +1930,14 @@ function formatTransferDecisionLabel(
     : 'Hold transfer plan';
 }
 
+function formatBriefDecisionLabel(
+  decisionType: ParentActivityBriefDecisionType
+): string {
+  if (decisionType === 'approve_brief') return 'Approve brief';
+  if (decisionType === 'hold_brief') return 'Hold brief';
+  return 'Archive brief';
+}
+
 function createObservationId(): string {
   if (globalThis.crypto?.randomUUID) {
     return globalThis.crypto.randomUUID();
@@ -1801,6 +1968,14 @@ function createTransferDecisionId(): string {
   }
 
   return `transfer-decision-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createActivityBriefDecisionId(): string {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `activity-brief-decision-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function destroyParentPanel(): void {
