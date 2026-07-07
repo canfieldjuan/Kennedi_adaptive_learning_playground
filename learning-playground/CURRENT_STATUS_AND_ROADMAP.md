@@ -67,8 +67,9 @@ The important shift is that the app is no longer just a set of playable screens.
 - Shows Parent Guidance by reviewed skill.
 - Parent Guidance includes recent accuracy, attempts, hint use, abandoned activity count, repeated error pattern when present, plain-language status, and parent-controlled recommendation.
 - Parent notes are stored locally as `ParentObservation` records.
-- Export now includes settings, progress profile, raw activity events, parent observations, export metadata, and local data health.
-- Clear progress clears events, progress, and observations.
+- Shows Parent Gate Settings for changing the local adult gate phrase.
+- Export now includes settings, progress profile, raw activity events, parent observations, parent difficulty actions, export metadata, and local data health.
+- Clear progress clears events, progress, observations, and parent difficulty actions.
 
 ### Documentation and Process
 
@@ -87,14 +88,16 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 15 test files passing
-- 47 tests passing
+- 16 test files passing
+- 51 tests passing
 
 Browser smoke checks confirmed:
 
 - Home screen renders with the four primary choices.
 - Parent Check renders before the Parent Panel.
+- Parent Check uses the configured local gate phrase after reload.
 - Parent Panel renders.
+- Parent Gate Settings renders with the current phrase and can apply/reset the local phrase.
 - Session Review renders.
 - Recent Attempts renders.
 - Parent Guidance renders.
@@ -163,20 +166,23 @@ Parent can answer:
 - Parent Review UX Polish: compact local data snapshot, clearer empty states, and easier-to-scan guidance rows.
 - Parent-Approved Difficulty Actions: local action records, recent action history, export inclusion, and clear-data support.
 - Parent Gate Hardening: visible parent access button, local-only challenge, and direct `#parent` route gating.
+- Parent Gate Settings Polish: configurable local gate phrase, default fallback, export preservation, and focused tests.
 
-### Next Slice: Parent Gate Settings Polish
+### Current Lane Status
 
-Goal: make the local parent gate configurable without turning it into account security.
+The parent understanding and local-control lane is complete enough to plan the next phase after v0.1.5 verification.
 
-Planned work:
+What this lane now covers:
 
-- Let the parent choose a local gate phrase or PIN from the Parent Panel.
-- Keep the default simple challenge for first-run use.
-- Explain that the gate is local adult friction, not a cloud account login.
-- Do not add accounts, backend auth, or cloud sync.
-- Add tests for saving, exporting, clearing, and applying the local gate setting.
+- What the child did.
+- What skills were practiced.
+- What seemed easy or difficult.
+- What the app recommends next, with reasons.
+- Local export and local delete.
+- Parent notes and parent action records.
+- Local-only parent access friction.
 
-Not in scope:
+Still protected:
 
 - No new games.
 - No backend.
@@ -185,11 +191,11 @@ Not in scope:
 - No automatic difficulty changes or routing.
 - No rewards, streaks, rankings, or pressure loops.
 
-### Later: Parent-Controlled Difficulty Application
+### Next Phase Planning
 
-Goal: after parent action records are trustworthy, decide whether any approved action should affect future activity difficulty.
+The next phase should be planned before implementation. Strong candidates are parent-controlled difficulty application, larger local storage durability, or a carefully scoped new activity lane.
 
-Possible work:
+Parent-controlled difficulty application remains the nearest product continuation if we stay in the adaptation lane:
 
 - Parent sees the recommendation first.
 - Parent can ignore it.
@@ -202,6 +208,6 @@ Possible work:
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, local parent gate friction, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, configurable local parent gate friction, and a parent session review layer.
 
-The current v0.1.4 base has parent review usability polish, parent-approved difficulty action records, and local parent route gating in place. The next smart move is parent gate settings polish, still without accounts, backend auth, or child-facing automatic adaptation.
+The current v0.1.5 base has parent review usability polish, parent-approved difficulty action records, local parent route gating, and configurable local gate settings in place. The next smart move is phase planning, still without accounts, backend auth, or child-facing automatic adaptation.

@@ -3,6 +3,7 @@
  */
 
 import type { StorageServiceInterface } from '../../types/runtime';
+import type { ParentSettings } from '../../types/storage';
 import type { ParentObservation } from '../../types/observations';
 import type {
   ParentDifficultyAction,
@@ -47,6 +48,10 @@ import {
   resolveActivityTitle,
   type ParentRecentAttempt,
 } from '../../core/parent-review-format';
+import {
+  DEFAULT_PARENT_GATE_PHRASE,
+  getParentGatePhrase,
+} from '../../core/parent-gate';
 import { ACTIVITY_TITLE_LOOKUP } from '../../content/activity-title-lookup';
 
 let _container: HTMLElement | null = null;
@@ -152,6 +157,12 @@ export function renderParentPanel(
     ])
   );
 
+  _container.appendChild(createParentGateSettingsSection(
+    settings,
+    storage,
+    parent,
+    context
+  ));
   _container.appendChild(createLocalDataSnapshotSection(dataHealthSummary));
   _container.appendChild(createPhase2ReviewSection(phase2ChecklistCoverage));
   _container.appendChild(createProgressSection(skillStates));
@@ -345,6 +356,87 @@ function createPhase2ReviewItem(item: Phase2ChecklistItem): HTMLElement {
   }
 
   return row;
+}
+
+function createParentGateSettingsSection(
+  settings: ParentSettings,
+  storage: StorageServiceInterface,
+  parent: HTMLElement,
+  context: ParentPanelContext
+): HTMLElement {
+  const section = document.createElement('div');
+  section.className = 'parent-section parent-gate-settings';
+
+  const title = document.createElement('h2');
+  title.className = 'parent-section__title';
+  title.textContent = 'Parent Gate Settings';
+  section.appendChild(title);
+
+  const summary = document.createElement('p');
+  summary.className = 'parent-gate-settings__summary';
+  summary.textContent = 'Local adult friction only. This is not an account login or cloud password.';
+  section.appendChild(summary);
+
+  const form = document.createElement('form');
+  form.className = 'parent-gate-settings__form';
+
+  const label = document.createElement('label');
+  label.className = 'parent-gate-settings__label';
+  label.htmlFor = 'parent-gate-phrase-setting';
+  label.textContent = 'Gate Phrase';
+  form.appendChild(label);
+
+  const input = document.createElement('input');
+  input.className = 'parent-gate-settings__input';
+  input.id = 'parent-gate-phrase-setting';
+  input.type = 'text';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.value = getParentGatePhrase(settings);
+  input.placeholder = DEFAULT_PARENT_GATE_PHRASE;
+  form.appendChild(input);
+
+  const note = document.createElement('p');
+  note.className = 'parent-gate-settings__note';
+  note.textContent = `Blank saves the default phrase: ${DEFAULT_PARENT_GATE_PHRASE}.`;
+  form.appendChild(note);
+
+  const actions = document.createElement('div');
+  actions.className = 'parent-gate-settings__actions';
+
+  const saveButton = document.createElement('button');
+  saveButton.className = 'parent-panel__back';
+  saveButton.type = 'submit';
+  saveButton.textContent = 'Save Gate Phrase';
+  actions.appendChild(saveButton);
+
+  const resetButton = document.createElement('button');
+  resetButton.className = 'parent-gate-settings__reset';
+  resetButton.type = 'button';
+  resetButton.textContent = 'Use Default';
+  resetButton.addEventListener('click', () => {
+    saveParentGatePhrase(DEFAULT_PARENT_GATE_PHRASE);
+  });
+  actions.appendChild(resetButton);
+  form.appendChild(actions);
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    saveParentGatePhrase(input.value);
+  });
+
+  section.appendChild(form);
+  return section;
+
+  function saveParentGatePhrase(rawPhrase: string): void {
+    const parentGatePhrase = rawPhrase.trim() || DEFAULT_PARENT_GATE_PHRASE;
+    storage.saveSettings({
+      ...settings,
+      parent_gate_phrase: parentGatePhrase,
+    });
+    destroyParentPanel();
+    renderParentPanel(parent, storage, context);
+  }
 }
 
 function createDataManagementSection(

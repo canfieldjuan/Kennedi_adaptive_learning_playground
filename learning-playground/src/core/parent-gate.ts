@@ -1,6 +1,7 @@
 import type { ParentSettings } from '../types/storage';
 
-export const PARENT_GATE_CHALLENGE = 'PARENT';
+export const DEFAULT_PARENT_GATE_PHRASE = 'PARENT';
+export const PARENT_GATE_CHALLENGE = DEFAULT_PARENT_GATE_PHRASE;
 
 export interface ParentGateState {
   unlocked: boolean;
@@ -29,8 +30,27 @@ export function shouldRequireParentGate(params: {
   );
 }
 
-export function isParentGateAnswerCorrect(answer: string): boolean {
-  return normalizeParentGateAnswer(answer) === PARENT_GATE_CHALLENGE;
+export function getParentGatePhrase(
+  settings: Pick<ParentSettings, 'parent_gate_phrase'>
+): string {
+  return resolveParentGatePhrase(settings.parent_gate_phrase);
+}
+
+export function isParentGateAnswerCorrect(
+  answer: string,
+  phrase = DEFAULT_PARENT_GATE_PHRASE
+): boolean {
+  return (
+    normalizeParentGateAnswer(answer) ===
+    normalizeParentGateAnswer(resolveParentGatePhrase(phrase))
+  );
+}
+
+function resolveParentGatePhrase(phrase: string): string {
+  const trimmedPhrase = phrase.trim();
+  return trimmedPhrase.length > 0
+    ? trimmedPhrase
+    : DEFAULT_PARENT_GATE_PHRASE;
 }
 
 function normalizeParentGateAnswer(answer: string): string {

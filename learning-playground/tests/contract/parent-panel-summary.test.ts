@@ -171,5 +171,6 @@ function makeSettings(): ParentSettings {
     difficulty_mode: 'adaptive',
     allowed_domains: ['math'],
     parent_gate_enabled: true,
+    parent_gate_phrase: 'PARENT',
   };
 }

@@ -1,11 +1,9 @@
-import {
-  isParentGateAnswerCorrect,
-  PARENT_GATE_CHALLENGE,
-} from '../../core/parent-gate';
+import { isParentGateAnswerCorrect } from '../../core/parent-gate';
 
 let _container: HTMLElement | null = null;
 
 export interface ParentGateOptions {
+  challengePhrase: string;
   errorMessage?: string;
   onUnlock: () => void;
   onCancel: () => void;
@@ -29,7 +27,7 @@ export function renderParentGate(
 
   const hint = document.createElement('p');
   hint.className = 'parent-gate-dialog__hint';
-  hint.textContent = `Type ${PARENT_GATE_CHALLENGE} to open parent tools. This is local-only and not an account login.`;
+  hint.textContent = `Type ${options.challengePhrase} to open parent tools. This is local-only and not an account login.`;
   dialog.appendChild(hint);
 
   const input = document.createElement('input');
@@ -67,7 +65,7 @@ export function renderParentGate(
   dialog.appendChild(actions);
   dialog.addEventListener('submit', (event) => {
     event.preventDefault();
-    if (isParentGateAnswerCorrect(input.value)) {
+    if (isParentGateAnswerCorrect(input.value, options.challengePhrase)) {
       options.onUnlock();
       return;
     }

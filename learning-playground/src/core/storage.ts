@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS: ParentSettings = {
     'language', 'coding_concepts',
   ],
   parent_gate_enabled: true,
+  parent_gate_phrase: 'PARENT',
 };
 
 export class StorageService implements StorageServiceInterface {

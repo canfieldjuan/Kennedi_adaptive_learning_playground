@@ -16,6 +16,7 @@ import { registerActivity, getActivity } from '../core/activity-registry';
 import { appendEvent, getEvents } from '../core/event-log';
 import {
   createParentGateState,
+  getParentGatePhrase,
   shouldRequireParentGate,
   unlockParentGate,
 } from '../core/parent-gate';
@@ -87,13 +88,15 @@ function handleRoute(route: Route): void {
     case 'home':
       renderHomeScreen(app, speech);
       break;
-    case 'parent':
+    case 'parent': {
+      const parentGateSettings = storage.getSettings();
       if (shouldRequireParentGate({
         routeView: route.view,
-        settings: storage.getSettings(),
+        settings: parentGateSettings,
         state: parentGateState,
       })) {
         renderParentGate(app, {
+          challengePhrase: getParentGatePhrase(parentGateSettings),
           onUnlock: () => {
             unlockParentGate(parentGateState);
             destroyParentGate();
@@ -108,6 +111,7 @@ function handleRoute(route: Route): void {
       }
       renderParentPanel(app, storage, { childId, sessionId });
       break;
+    }
     case 'activity':
       renderActivityRoute(route.activityId);
       break;

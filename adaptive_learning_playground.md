@@ -820,6 +820,7 @@ export interface ParentSettings {
   difficulty_mode: "fixed" | "adaptive";
   allowed_domains: LearningDomain[];
   parent_gate_enabled: boolean;
+  parent_gate_phrase: string;
 }
 
 export interface ApprovedAsset {

@@ -17,12 +17,13 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 
 ## Parent Modules
 
-- Parent Panel behind the existing hidden gesture route.
+- Parent Panel behind a visible local parent check.
 - Settings summary for display name, difficulty mode, session length, audio, speech, video, and enabled domains.
 - Local progress summary by skill.
 - Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, and parent notes.
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Local progress export and reset.
+- Local parent gate phrase setting.
 
 ## Local Data
 

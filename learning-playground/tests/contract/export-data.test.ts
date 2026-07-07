@@ -51,6 +51,7 @@ describe('progress export contract', () => {
         latest_event_timestamp: string;
         migrated_event_count: number;
       };
+      settings: { parent_gate_phrase: string };
       activity_events: ActivityAttemptEvent[];
       parent_difficulty_actions: ParentDifficultyAction[];
     };
@@ -58,7 +59,7 @@ describe('progress export contract', () => {
     expect(exported.exported_at).toBe(exported.export_metadata.export_timestamp);
     expect(exported.export_metadata).toMatchObject({
       export_version: '1',
-      app_baseline: 'v0.1.4',
+      app_baseline: 'v0.1.5',
     });
     expect(exported.export_metadata.data_sections_included).toEqual([
       'settings',
@@ -76,6 +77,7 @@ describe('progress export contract', () => {
       latest_event_timestamp: '2026-01-01T12:05:00.000Z',
       migrated_event_count: 1,
     });
+    expect(exported.settings.parent_gate_phrase).toBe('PARENT');
     expect(exported.activity_events[0].activity_id).toBe('math-count-stars-three');
     expect(exported.parent_difficulty_actions[0].action_type).toBe('keep_stable');
   });
