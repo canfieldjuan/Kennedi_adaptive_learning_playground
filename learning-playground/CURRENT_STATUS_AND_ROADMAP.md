@@ -4,7 +4,7 @@
 
 The MVP is working as a local-first adaptive learning playground. The child can open the app, choose from the home screen, play working activities, and return home. The parent can open the Parent Panel, see progress, export local data, clear progress, review session-level information, add notes, and see parent-readable guidance.
 
-The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now includes a curriculum graph, mastery engine, transfer coverage layer, transfer context strength tiers, content gap engine, local parent transfer-decision persistence, targeted transfer variants within existing game types, and parent-approved transfer launch.
+The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now includes a curriculum graph, mastery engine, transfer coverage layer, transfer context strength tiers, content gap engine, coverage-driven activity variant briefs, local parent transfer and brief-decision persistence, targeted transfer variants within existing game types, parent-approved transfer launch, parent-visible mastery snapshots, and parent-visible review schedule records.
 
 ## What We Have Built
 
@@ -58,6 +58,9 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Weak-only transfer practice cannot promote a skill to `likely_mastered`.
 - Approved transfer variants give core evidence-bearing MVP skills a second local context to try.
 - Parent transfer-content decisions are stored locally and included in parent review/export.
+- Parent activity brief decisions are stored locally and included in parent review/export.
+- Parent mastery snapshots are stored locally when the Parent Panel reviews a skill.
+- Parent review schedule records are stored locally from mastery snapshots and shown to the parent.
 
 ### Parent Panel
 
@@ -85,8 +88,8 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Applied Guidance Review summarizes the attempts after active guidance affected a supported activity and offers a keep/reset/support review.
 - Parent notes are stored locally as `ParentObservation` records.
 - Shows Parent Gate Settings for changing the local adult gate phrase.
-- Export now includes settings, progress profile, raw activity events, parent observations, parent difficulty actions, active parent guidance, parent transfer decisions, export metadata, and local data health.
-- Clear progress clears events, progress, observations, parent difficulty actions, active parent guidance, and parent transfer decisions.
+- Export now includes settings, progress profile, raw activity events, parent observations, parent difficulty actions, active parent guidance, parent transfer decisions, parent activity brief decisions, mastery snapshots, review schedule records, export metadata, and local data health.
+- Clear progress clears events, progress, observations, parent difficulty actions, active parent guidance, parent transfer decisions, parent activity brief decisions, mastery snapshots, and review schedule records.
 
 ### Documentation and Process
 
@@ -105,8 +108,8 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 24 test files passing
-- 97 tests passing
+- 27 test files passing
+- 108 tests passing
 
 Browser smoke checks confirmed:
 
@@ -122,6 +125,9 @@ Browser smoke checks confirmed:
 - Parent Guidance renders.
 - Parent Guidance shows graph-backed mastery evidence and source references.
 - Parent Guidance shows transfer coverage and content gap evidence.
+- Parent Guidance shows coverage-driven activity briefs when richer transfer content is needed.
+- Parent Guidance records parent activity brief decisions locally.
+- Parent Panel renders Recent Mastery Checks and Review Schedule from local snapshot records.
 - Parent Guidance lets a parent record local difficulty action decisions.
 - Active Parent Guidance renders, applies a parent-approved guidance choice, and can reset it.
 - Supported Math tap-choice activity used an active Counting support override with two choices and stored applied-guidance metadata.
@@ -147,7 +153,7 @@ Browser smoke checks confirmed:
 
 ### Guidance Quality
 
-Parent Guidance is deterministic and now graph-backed, but the thresholds should still be reviewed against real sessions before becoming more prominent.
+Parent Guidance is deterministic and now graph-backed, with local mastery snapshots and review schedule records. The thresholds should still be reviewed against real sessions before becoming more prominent.
 
 ### Data Growth
 
@@ -159,11 +165,11 @@ Parent notes now preserve history for the reviewed session. A later version may 
 
 ### Active Parent Guidance
 
-Parent difficulty actions remain local decision history. Active Parent Guidance is applied only to supported tap-choice activities. Applied Guidance Review summarizes local post-application evidence, but does not mutate active guidance automatically. Coloring and Video Vault remain unsupported for difficulty application in this lane.
+Parent difficulty actions, transfer decisions, activity brief decisions, mastery snapshots, and review schedules remain local parent-side records. Active Parent Guidance is applied only to supported tap-choice activities. Applied Guidance Review summarizes local post-application evidence, but does not mutate active guidance automatically. Coloring and Video Vault remain unsupported for difficulty application in this lane.
 
 ### Transfer Evidence
 
-The app no longer treats one-context fluency as likely mastery. Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant, and the parent can start an approved transfer activity from the Parent Panel. Richer transfer contexts are still future work. Video/vocabulary evidence remains limited by the empty local Video Vault shell.
+The app no longer treats one-context fluency as likely mastery. Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant, and the parent can start an approved transfer activity from the Parent Panel. Weak transfer can generate targeted activity variant briefs, and parent choices on those briefs persist locally. Richer implemented transfer contexts are still future work. Video/vocabulary evidence remains limited by the empty local Video Vault shell.
 
 ## Where We Are Headed
 
@@ -201,7 +207,7 @@ Parent can answer:
 
 ### Current Phase Status
 
-Phase 3 has continued in v0.2.4 with transfer quality and context strength requirements.
+Phase 3 has continued through v0.2.7 with transfer quality, activity variant briefs, durable parent brief decisions, mastery snapshot persistence, and parent-visible review schedule records.
 
 What this lane now covers:
 
@@ -216,6 +222,10 @@ What this lane now covers:
 - First same-format/new-example transfer variants for Words, Math, Art, and shape/spatial practice.
 - Parent-approved transfer launch from Parent Guidance into an existing activity route.
 - Local parent transfer-content decisions included in export and clear-data behavior.
+- Coverage-driven activity variant briefs that tell the parent/builder what richer context a skill needs.
+- Local parent activity brief decisions included in export and clear-data behavior.
+- Local mastery snapshots created from parent-reviewed mastery evaluations.
+- Local review schedule records derived from mastery snapshots and shown in the Parent Panel.
 
 Still protected:
 
@@ -233,18 +243,17 @@ Goal: deepen Phase 3 without breaking Phase 2.
 
 Good candidates:
 
-- Persist mastery snapshots beyond export-only transfer decisions.
-- Add stronger transfer contexts beyond same-format/new-example variants.
-- Persist mastery snapshots beyond export-only transfer decisions.
-- Add parent-facing review schedule visibility.
+- Add stronger implemented transfer contexts beyond same-format/new-example variants.
+- Add a parent-facing design queue filter for approved activity briefs.
 - Add more nuanced parent observation categories.
 - Add accessibility polish for the child activity screens.
+- Plan a future IndexedDB move for larger local histories.
 - No streaks, grind loops, hidden routing, or child-facing pressure.
 
 ## Current Product Shape
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, targeted transfer variants inside existing game types, parent-approved transfer launch, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage with context strength tiers, content gap recommendations, review scheduler, configurable local parent gate friction, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, targeted transfer variants inside existing game types, parent-approved transfer launch, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage with context strength tiers, coverage-driven activity briefs, local parent brief decisions, persisted mastery snapshots, parent-visible review schedules, configurable local parent gate friction, and a parent session review layer.
 
-The current v0.2.4 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants, and parent-clicked transfer launch while keeping accounts, backend auth, cloud sync, and automatic routing out of scope.
+The current v0.2.7 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants, parent-clicked transfer launch, durable parent decisions, mastery snapshots, and review schedules while keeping accounts, backend auth, cloud sync, and automatic routing out of scope.

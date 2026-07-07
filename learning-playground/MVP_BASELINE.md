@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.2.4 Phase 3 transfer quality baseline
+Version: v0.2.7 Phase 3 mastery snapshot baseline
 
 ## Current Working MVP
 
@@ -25,6 +25,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Parent Guidance includes skill graph evidence, mastery status, suggested next action, evidence summary, graph rule, and source references.
 - Parent Guidance shows transfer quality so weak-only coverage is visible to the adult.
+- Parent Guidance shows coverage-driven activity briefs when richer transfer evidence is missing.
 - Parent Guidance can show a concrete approved transfer activity and let the parent start or hold it.
 - Local progress export and reset.
 - Local parent gate phrase setting.
@@ -35,6 +36,9 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Transfer Coverage assigns strength tiers to transfer contexts and prevents weak-only transfer from becoming likely mastery.
 - Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant.
 - Parent transfer content decisions are stored locally and included in export.
+- Parent activity brief decisions are stored locally and included in export.
+- Parent mastery snapshots are stored locally when the Parent Panel reviews a skill.
+- Parent review schedule records are stored locally from mastery snapshots and shown in the Parent Panel.
 
 ## Local Data
 
@@ -50,6 +54,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Mastery evidence is derived from local events and parent observations, with source IDs cited.
 - Transfer coverage and parent transfer decisions are local-first and export with progress data.
 - Parent-started transfer activity decisions include the selected activity when available.
+- Parent activity brief decisions, mastery snapshots, and review schedule records are local-first and export with progress data.
 - Export includes metadata, app baseline/version, section list, and local data health.
 - Child data does not leave the device by default.
 
