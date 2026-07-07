@@ -1,10 +1,10 @@
 # Kennedi's Orders Intake Readiness
 
-Status: `ready_for_adapter`
+Status: `implemented_in_current_main`
 
 Date: 2026-07-07
 
-Current app baseline: v0.2.10 in progress on `main`
+Current app baseline: v0.3.0 on `main`
 
 Source branch: `game-designer/kennedis-orders`
 
@@ -149,7 +149,6 @@ Strategy:
 
 ## Decision
 
-Kennedi's Orders is ready for adapter work, not direct wiring.
+Kennedi's Orders was implemented through adapter work, not direct branch merging.
 
-It should become the next phase once the current transfer-truth lane is committed. The game quality looks strong enough to integrate, but the safe path is extraction plus current-main tests, not branch merge.
-
+The adapter extracted only the Bear Cafe runtime, six activities, scoped CSS, current-main route dispatch, and current-main tests. `Nature Camera Safari` and branch home-screen changes remain out of scope.

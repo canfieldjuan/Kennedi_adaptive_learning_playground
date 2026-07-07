@@ -1,10 +1,10 @@
 # MVP Baseline
 
-Version: v0.2.10 Phase 3 math prompt-mode transfer baseline
+Version: v0.3.0 Kennedi's Orders adapter baseline
 
 ## Current Working MVP
 
-The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a local Video Vault shell, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
+The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a direct-route Kennedi's Orders adapter, a local Video Vault shell, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
 
 ## Child Modules
 
@@ -16,6 +16,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Targeted transfer variants for Words, Math, Art, and shape/spatial practice use the same existing runtimes.
 - The first rich transfer variant is a phonics reverse-mapping activity that asks from a word back to its starting letter.
 - Math now has a medium transfer activity that asks from a visual dot card to the matching numeral.
+- Kennedi's Orders / Bear Cafe is registered as a six-activity local game route but is not yet on the home grid.
 - Puzzle activity remains registered and reachable by direct route, but is not currently on the four-slot home grid.
 
 ## Parent Modules
@@ -77,11 +78,12 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 
 ## Activity Runtime Baseline
 
-- Existing game types only: tap choice, coloring, and local video vault shell.
+- Existing MVP runtimes plus the scoped Kennedi's Orders adapter: tap choice, coloring, local video vault shell, and Bear Cafe.
 - Activities conform to the existing activity schema.
-- Approved transfer variants are content-only additions, not new game types.
+- Approved transfer variants and Kennedi's Orders activities conform to the same activity schema and safety rules.
 - Rich transfer variants must pass truth checks that verify the activity content matches the declared transfer context.
 - Math prompt-mode transfer variants must prove a visual quantity-card prompt with numeral choices.
+- Bear Cafe category-sort and fix-order prompt-mode activities must pass game-specific truth checks.
 - Supported tap-choice activities can receive a bounded runtime copy from active parent-approved guidance; source activity JSON is not mutated.
 - Wrong answers guide gently and do not remove progress.
 - Completion remains short and returns control to the child or parent.
@@ -101,7 +103,9 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 
 ## Intentional Non-Goals
 
-- No new game types.
+- No additional games beyond the scoped Kennedi's Orders adapter.
+- No `Nature Camera Safari`.
+- No home-screen Cafe tile yet.
 - No backend services.
 - No schema expansion unless strictly required.
 - No automatic adaptive routing.

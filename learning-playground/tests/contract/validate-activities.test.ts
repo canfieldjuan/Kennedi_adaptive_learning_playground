@@ -137,9 +137,13 @@ describe('activity schema contract', () => {
         continue;
       }
 
+      if (activity.transfer.context_type === 'category_sort') {
+        expect(hasCategorySortContent(activity)).toBe(true);
+        continue;
+      }
+
       expect([
         'different_interaction_model',
-        'category_sort',
         'delayed_review',
         'parent_observed_real_world',
       ]).not.toContain(activity.transfer.context_type);
@@ -181,6 +185,42 @@ describe('activity schema contract', () => {
     expect(activity).toBeDefined();
     expect(hasDifferentPromptModeContent(activity!)).toBe(true);
   });
+
+  test('approved Bear Cafe category-sort activity implements its brief honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'kennedis-orders-b-foods-001'
+    ));
+
+    expect(activity).toMatchObject({
+      title: 'B-Food Order',
+      originating_brief_id: 'brief-initial_sound-category_sort',
+      transfer: {
+        context_type: 'category_sort',
+        context_id: 'phonics-food-sort',
+        example_set_id: 'b-foods-set-1',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasCategorySortContent(activity!)).toBe(true);
+  });
+
+  test('approved Bear Cafe fix-order activity implements different prompt mode honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'kennedis-orders-fix-berries-001'
+    ));
+
+    expect(activity).toMatchObject({
+      title: 'Fix the Berry Order',
+      originating_brief_id: 'brief-vocabulary-different_prompt_mode',
+      transfer: {
+        context_type: 'different_prompt_mode',
+        context_id: 'error-correction-order-fix',
+        example_set_id: 'bear-cafe-starter-foods',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasDifferentPromptModeContent(activity!)).toBe(true);
+  });
 });
 
 function hasReverseMappingContent(activity: ActivityJson): boolean {
@@ -208,6 +248,7 @@ function hasReverseMappingContent(activity: ActivityJson): boolean {
 }
 
 function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
+  if (isKennedisOrdersFixOrder(activity)) return true;
   if (activity.domain !== 'math') return false;
 
   const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
@@ -237,6 +278,78 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
     correctChoice?.label === String(targetQuantity) &&
     choices.length >= 2 &&
     choices.every((choice) => /^\d+$/.test(choice.label))
+  );
+}
+
+function hasCategorySortContent(activity: ActivityJson): boolean {
+  if (
+    activity.interaction_model !== 'tap_then_place' ||
+    activity.content.game !== 'kennedis-orders' ||
+    activity.content.mode !== 'first_sound_sort'
+  ) {
+    return false;
+  }
+
+  const foods = getRecordArray(activity.content.foods);
+  const requiredOrder = isRecord(activity.content.required_order)
+    ? activity.content.required_order
+    : {};
+  const requiredFoodIds = getStringArray(requiredOrder.food_ids);
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+
+  if (
+    foods.length < 4 ||
+    requiredFoodIds.length < 2 ||
+    !promptAudio.includes('start') ||
+    !promptAudio.includes('b')
+  ) {
+    return false;
+  }
+
+  const requiredFoods = foods.filter((food) => (
+    requiredFoodIds.includes(getString(food.id))
+  ));
+  const distractorFoods = foods.filter((food) => (
+    !requiredFoodIds.includes(getString(food.id))
+  ));
+
+  return (
+    requiredFoods.length === requiredFoodIds.length &&
+    requiredFoods.every((food) => getString(food.first_sound).toLowerCase() === 'b') &&
+    distractorFoods.length > 0 &&
+    distractorFoods.every((food) => getString(food.first_sound).toLowerCase() !== 'b')
+  );
+}
+
+function isKennedisOrdersFixOrder(activity: ActivityJson): boolean {
+  if (
+    activity.interaction_model !== 'tap_then_place' ||
+    activity.content.game !== 'kennedis-orders' ||
+    activity.content.mode !== 'fix_order'
+  ) {
+    return false;
+  }
+
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const startingTray = isRecord(activity.content.starting_tray)
+    ? activity.content.starting_tray
+    : {};
+  const foodCounts = isRecord(startingTray.foodCounts) ? startingTray.foodCounts : {};
+  const requiredOrder = isRecord(activity.content.required_order)
+    ? activity.content.required_order
+    : {};
+  const requiredFoodId = getString(requiredOrder.food_id);
+  const selectedFoodIds = Object.entries(foodCounts)
+    .filter(([, count]) => typeof count === 'number' && count > 0)
+    .map(([foodId]) => foodId);
+
+  return (
+    activity.transfer.prompt_mode === 'spoken' &&
+    promptAudio.includes('oops') &&
+    promptAudio.includes('fix') &&
+    requiredFoodId.length > 0 &&
+    selectedFoodIds.length > 0 &&
+    !selectedFoodIds.includes(requiredFoodId)
   );
 }
 
@@ -270,6 +383,12 @@ function getStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
 
   return value.filter((item): item is string => typeof item === 'string');
+}
+
+function getRecordArray(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) return [];
+
+  return value.filter((item): item is Record<string, unknown> => isRecord(item));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

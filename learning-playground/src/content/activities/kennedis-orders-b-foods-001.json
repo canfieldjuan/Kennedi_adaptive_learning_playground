@@ -1,0 +1,78 @@
+{
+  "id": "kennedis-orders-b-foods-001",
+  "version": 1,
+  "title": "B-Food Order",
+  "domain": "phonics",
+  "skill_ids": ["initial_sound"],
+  "originating_brief_id": "brief-initial_sound-category_sort",
+  "transfer": {
+    "skill_ids": ["initial_sound"],
+    "context_type": "category_sort",
+    "context_id": "phonics-food-sort",
+    "example_set_id": "b-foods-set-1",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": {
+    "level": 5,
+    "choice_count": 6,
+    "distractor_strength": "medium"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 90,
+  "content": {
+    "game": "kennedis-orders",
+    "mode": "first_sound_sort",
+    "character": {
+      "id": "baby-polar-bear",
+      "name": "Baby Polar Bear",
+      "icon": "🐻‍❄️",
+      "callLine": "Baby Polar Bear needs the sound chef.",
+      "happyLine": "You found the B foods."
+    },
+    "prompt_audio": "Baby Polar Bear wants foods that start with B. Pick foods that start like bear.",
+    "order_ticket": "Foods that start with B",
+    "shift_label": "Bear Cafe morning shift",
+    "round_label": "Round 4: First Sound Order",
+    "round_index": 4,
+    "round_total": 5,
+    "foods": [
+      { "id": "banana", "label": "banana", "icon": "🍌", "first_sound": "b" },
+      { "id": "berry", "label": "berry", "icon": "🫐", "first_sound": "b" },
+      { "id": "bread", "label": "bread", "icon": "🍞", "first_sound": "b" },
+      { "id": "apple", "label": "apple", "icon": "🍎", "first_sound": "a" },
+      { "id": "cookie", "label": "cookie", "icon": "🍪", "first_sound": "c" },
+      { "id": "soup", "label": "soup", "icon": "🥣", "first_sound": "s" }
+    ],
+    "required_order": {
+      "food_ids": ["banana", "berry", "bread"]
+    },
+    "parent_evidence_summary": "First sound order captures B-sound category sorting, distractor choices, hint use, and successful transfer into pretend play.",
+    "next_activity_id": "kennedis-orders-fix-berries-001"
+  },
+  "success_rules": {
+    "completion": "required_order_delivered",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You made the order.",
+      "animation": "gentle_sparkle",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let's check the order.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Bear starts with b-b-b. Banana starts with b-b-b.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

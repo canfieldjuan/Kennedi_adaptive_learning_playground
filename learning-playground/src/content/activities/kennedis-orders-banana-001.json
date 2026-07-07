@@ -1,0 +1,75 @@
+{
+  "id": "kennedis-orders-banana-001",
+  "version": 1,
+  "title": "Banana Order",
+  "domain": "language",
+  "skill_ids": ["vocabulary"],
+  "transfer": {
+    "skill_ids": ["vocabulary"],
+    "context_type": "same_format_new_examples",
+    "context_id": "role-play-order-matching",
+    "example_set_id": "bear-cafe-starter-foods",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": {
+    "level": 1,
+    "choice_count": 4,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "game": "kennedis-orders",
+    "mode": "single_attribute",
+    "character": {
+      "id": "baby-polar-bear",
+      "name": "Baby Polar Bear",
+      "icon": "🐻‍❄️",
+      "callLine": "Baby Polar Bear needs the chef.",
+      "happyLine": "Yummy! Thank you."
+    },
+    "prompt_audio": "Baby Polar Bear wants a banana.",
+    "order_ticket": "1 banana",
+    "shift_label": "Bear Cafe morning shift",
+    "round_label": "Round 1: Single Item Order",
+    "round_index": 1,
+    "round_total": 5,
+    "foods": [
+      { "id": "banana", "label": "banana", "icon": "🍌", "first_sound": "b" },
+      { "id": "berry", "label": "berry", "icon": "🫐", "first_sound": "b" },
+      { "id": "cookie", "label": "cookie", "icon": "🍪", "first_sound": "c" },
+      { "id": "soup", "label": "soup", "icon": "🥣", "first_sound": "s" }
+    ],
+    "required_order": {
+      "food_id": "banana"
+    },
+    "parent_evidence_summary": "Single item order captures food vocabulary, listening comprehension, first-try accuracy, and safe correction in the cafe role-play context.",
+    "next_activity_id": "kennedis-orders-two-cookies-001"
+  },
+  "success_rules": {
+    "completion": "required_order_delivered",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You made the order.",
+      "animation": "gentle_sparkle",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let's check the order.",
+      "animation": "gentle_wiggle",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Baby Polar Bear asked for a banana.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

@@ -4,7 +4,7 @@
 
 The MVP is working as a local-first adaptive learning playground. The child can open the app, choose from the home screen, play working activities, and return home. The parent can open the Parent Panel, see progress, export local data, clear progress, review session-level information, add notes, and see parent-readable guidance.
 
-The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now includes a curriculum graph, mastery engine, transfer coverage layer, transfer context strength tiers, content gap engine, coverage-driven activity variant briefs, a parent-only activity brief design queue, local parent transfer and brief-decision persistence, targeted transfer variants within existing game types, implemented rich phonics and math transfer variants, parent-approved transfer launch, parent-visible mastery snapshots, parent-visible review schedule records, and a game-intake checkpoint for future integration work.
+The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now includes a curriculum graph, mastery engine, transfer coverage layer, transfer context strength tiers, content gap engine, coverage-driven activity variant briefs, a parent-only activity brief design queue, local parent transfer and brief-decision persistence, targeted transfer variants, implemented rich phonics and math transfer variants, parent-approved transfer launch, parent-visible mastery snapshots, parent-visible review schedule records, and a current-main Kennedi's Orders adapter.
 
 ## What We Have Built
 
@@ -18,6 +18,7 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Approved transfer variants for Words, Math, Art, and the registered shape/spatial activity, using existing runtimes only.
 - A phonics reverse-mapping transfer variant asks from a word back to its starting letter, using the existing tap-choice runtime.
 - A math different-prompt-mode transfer variant asks from a visual dot card to the matching numeral, using the existing tap-choice runtime.
+- Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, but is not yet exposed on the four-slot home grid.
 - Existing puzzle activity remains registered and reachable directly, but is not currently on the four-slot home grid.
 - Home navigation waits for the spoken menu label before changing screens, so speech is not cut off.
 
@@ -27,9 +28,10 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Supported tap-choice activities can receive a bounded runtime copy from active parent-approved guidance.
 - Coloring runtime for Art.
 - Video Vault runtime for local, parent-approved media only.
+- Kennedi's Orders runtime for the Bear Cafe `tap_then_place` activities.
 - Activity schema includes required transfer metadata for approved local activities.
 - Rich transfer context labels are guarded by content-shape tests so same-format clones cannot be mislabeled as stronger evidence.
-- No new game types have been added after the MVP became playable.
+- No additional game branch payloads have been imported beyond the scoped Kennedi's Orders adapter.
 
 ### Safety Baseline
 
@@ -103,7 +105,7 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Workflow contracts were added so future changes begin with root cause, correct fix surface, and protected surface.
 - Finding-verification docs were added to keep future issue review grounded in code.
 - Game intake docs were added so branch-built games are audited before they are wired into the child experience.
-- `Kennedi's Orders` has a readiness audit and is marked ready for adapter work, not direct old-base branch merging.
+- `Kennedi's Orders` has a readiness audit and a current-main adapter implementation record.
 - Contract tests enforce activity schema, safety rules, progress behavior, event logging, parent observations, session review, curriculum graph integrity, transfer coverage, content gaps, mastery rules, review scheduling, persistence, and parent approval boundaries.
 
 ## Current Verification State
@@ -116,8 +118,8 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 28 test files passing
-- 120 tests passing
+- 29 test files passing
+- 139 tests passing
 
 Browser smoke checks confirmed:
 
@@ -147,7 +149,8 @@ Browser smoke checks confirmed:
 
 ## What We Intentionally Have Not Built
 
-- No new game types.
+- No `Nature Camera Safari` integration.
+- No home-screen Cafe tile yet.
 - No adaptive activity routing yet.
 - No backend.
 - No user accounts.
@@ -180,13 +183,13 @@ Parent difficulty actions, transfer decisions, activity brief decisions, the act
 
 The app no longer treats one-context fluency as likely mastery. Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant, phonics has one approved reverse-mapping transfer variant tied to an originating brief, and math has one approved different-prompt-mode transfer variant tied to an originating brief. The parent can start an approved transfer activity from the Parent Panel. Weak transfer can generate targeted activity variant briefs, and parent choices on those briefs persist locally. Richer implemented transfer contexts for art, spatial, and video/vocabulary are still future work. Video/vocabulary evidence remains limited by the empty local Video Vault shell.
 
-### Game Intake
+### Game Adapter
 
-`Kennedi's Orders` exists on a separate game-designer branch and has been audited for current-main integration readiness. It should be extracted through a v0.3 adapter slice after the v0.2.10 transfer-truth work is committed. It should not be direct-merged because the branch is based on v0.2.2 and includes out-of-scope `Nature Camera Safari` work.
+`Kennedi's Orders` has been extracted manually into current main as a v0.3 adapter. It adds only the Bear Cafe runtime, six local activities, scoped styles, routing for `content.game === "kennedis-orders"`, and current-main tests. `Nature Camera Safari` remains out of scope. Cafe is still not exposed on the home grid; child entry should be decided in a separate slice.
 
 ## Where We Are Headed
 
-Phase 2 is complete. Phase 3 is skill graph, mastery, transfer coverage, and content gap work, still without adding games.
+Phase 2 is complete. Phase 3 established skill graph, mastery, transfer coverage, and content gap work. The first v0.3 adapter work has begun by integrating Kennedi's Orders without changing the home grid.
 
 ### MVP Phase 2 Definition of Done
 
@@ -220,7 +223,7 @@ Parent can answer:
 
 ### Current Phase Status
 
-Phase 3 has continued through v0.2.10 with transfer quality, activity variant briefs, durable parent brief decisions, the parent-only activity brief design queue, mastery snapshot persistence, parent-visible review schedule records, one truth-checked rich phonics transfer variant, one truth-checked medium math transfer variant, and a game-intake checkpoint for `Kennedi's Orders`.
+Phase 3 has continued through v0.3.0 with transfer quality, activity variant briefs, durable parent brief decisions, the parent-only activity brief design queue, mastery snapshot persistence, parent-visible review schedule records, one truth-checked rich phonics transfer variant, one truth-checked medium math transfer variant, and a current-main Kennedi's Orders adapter.
 
 What this lane now covers:
 
@@ -242,13 +245,14 @@ What this lane now covers:
 - Parent-only activity brief design queue grouped by approved, held, and archived latest decisions.
 - Local mastery snapshots created from parent-reviewed mastery evaluations.
 - Local review schedule records derived from mastery snapshots and shown in the Parent Panel.
-- A game-intake contract and `Kennedi's Orders` readiness audit that protect current main from old-base direct merges.
+- A game-intake contract, `Kennedi's Orders` readiness audit, and v0.3 adapter contract that protect current main from old-base direct merges.
+- Kennedi's Orders / Bear Cafe as a registered direct-route game with six safe local activities.
 
 Still protected:
 
-- No new games.
 - No backend.
-- No new child activity UI concepts.
+- No `Nature Camera Safari`.
+- No home-screen Cafe entry yet.
 - Activity schema changes are limited to required transfer metadata for existing approved activities.
 - No hidden automatic difficulty changes or routing.
 - No coloring or Video Vault difficulty application yet.
@@ -260,7 +264,7 @@ Goal: deepen Phase 3 without breaking Phase 2.
 
 Good candidates:
 
-- Extract `Kennedi's Orders` into current main as a v0.3 adapter slice, with current-main tests and no `Nature Camera Safari` import.
+- Decide how Kennedi's Orders should be exposed: replace Videos on the child grid, add a parent-approved launch path, or keep direct-route only for more testing.
 - Add stronger implemented transfer contexts beyond same-format/new-example variants.
 - Add more nuanced parent observation categories.
 - Add accessibility polish for the child activity screens.
@@ -271,6 +275,6 @@ Good candidates:
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, targeted transfer variants inside existing game types, truth-checked phonics and math transfer variants, parent-approved transfer launch, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage with context strength tiers, coverage-driven activity briefs, a parent-only activity brief design queue, local parent brief decisions, persisted mastery snapshots, parent-visible review schedules, configurable local parent gate friction, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, targeted transfer variants, truth-checked phonics and math transfer variants, a direct-route Kennedi's Orders adapter, parent-approved transfer launch, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage with context strength tiers, coverage-driven activity briefs, a parent-only activity brief design queue, local parent brief decisions, persisted mastery snapshots, parent-visible review schedules, configurable local parent gate friction, and a parent session review layer.
 
-The current v0.2.10 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants, two implemented transfer briefs, parent-clicked transfer launch, durable parent decisions, an activity brief design queue, mastery snapshots, and review schedules while keeping accounts, backend auth, cloud sync, and automatic routing out of scope.
+The current v0.3.0 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants, two implemented transfer briefs, parent-clicked transfer launch, durable parent decisions, an activity brief design queue, mastery snapshots, review schedules, and the first scoped game adapter while keeping accounts, backend auth, cloud sync, and automatic routing out of scope.

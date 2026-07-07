@@ -12,13 +12,15 @@ Rich transfer metadata must describe what the activity actually asks the child t
 - `different_prompt_mode` activities must change the prompt framing, not just swap examples.
 - A tap-choice math `different_prompt_mode` activity must include a visual quantity card, a target quantity, rendered prompt images matching that quantity, and numeral choices.
 - The correct choice in a math `different_prompt_mode` activity must match the declared target quantity.
+- A Bear Cafe `category_sort` activity must require a category set and include distractors that do not belong to that category.
+- A Bear Cafe `different_prompt_mode` fix-order activity must begin from an incorrect tray state and ask the child to repair the mismatch.
 - Implemented rich transfer activities must reference an originating brief with `originating_brief_id`.
 - Rich transfer activities must remain local, parent-approved, and free of external child-facing links.
 - A rich transfer label must not be used to make a same-format/new-example clone look stronger than it is.
 
 ## Non-Scope
 
-- No new game modules.
+- No unrelated game modules.
 - No backend content validation service.
 - No automatic child routing.
 - No rewards, streaks, rankings, or pressure loops.
