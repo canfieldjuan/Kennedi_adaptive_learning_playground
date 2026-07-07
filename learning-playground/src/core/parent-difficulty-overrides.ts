@@ -2,7 +2,7 @@ import type {
   ParentDifficultyOverride,
   ParentDifficultyOverrideType,
 } from '../types/parent-actions';
-import type { ParentAdaptiveRecommendation } from './parent-interpretation';
+import type { ParentAdaptiveRecommendation } from './recommendation-engine';
 
 export interface ParentDifficultyOverrideHistoryItem {
   override_id: string;

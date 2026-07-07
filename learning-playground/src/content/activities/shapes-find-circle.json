@@ -4,6 +4,13 @@
   "title": "Find the Circle",
   "domain": "spatial",
   "skill_ids": ["shape_match"],
+  "transfer": {
+    "skill_ids": ["shape_match"],
+    "context_type": "same_format_same_examples",
+    "context_id": "tap-shape-recognition",
+    "example_set_id": "circle-square-triangle",
+    "prompt_mode": "mixed"
+  },
   "difficulty": {
     "level": 1,
     "choice_count": 3,

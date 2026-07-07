@@ -10,6 +10,7 @@ import type {
   ParentDifficultyAction,
   ParentDifficultyOverride,
 } from '../types/parent-actions';
+import type { ParentTransferDecision } from '../types/transfer';
 import type { ChildProgressProfile } from '../types/progress';
 import {
   buildProgressProfileFromEvents,
@@ -22,6 +23,7 @@ const PROGRESS_KEY = 'lp_child_progress_profile';
 const OBSERVATIONS_KEY = 'lp_parent_observations';
 const DIFFICULTY_ACTIONS_KEY = 'lp_parent_difficulty_actions';
 const DIFFICULTY_OVERRIDES_KEY = 'lp_parent_difficulty_overrides';
+const TRANSFER_DECISIONS_KEY = 'lp_parent_transfer_decisions';
 const DEFAULT_CHILD_ID = 'local-child';
 
 export interface KeyValueStorage {
@@ -240,6 +242,45 @@ export class StorageService implements StorageServiceInterface {
     this.localStore.removeItem(DIFFICULTY_OVERRIDES_KEY);
   }
 
+  getParentTransferDecisions(): ParentTransferDecision[] {
+    try {
+      const raw = this.localStore.getItem(TRANSFER_DECISIONS_KEY);
+      if (!raw) return [];
+
+      const decisions = JSON.parse(raw) as ParentTransferDecision[];
+      return decisions.filter(isParentTransferDecision);
+    } catch {
+      return [];
+    }
+  }
+
+  saveParentTransferDecision(decision: ParentTransferDecision): void {
+    const decisions = this.getParentTransferDecisions();
+    const index = decisions.findIndex((stored) => (
+      stored.decision_id === decision.decision_id
+    ));
+
+    const nextDecisions = [...decisions];
+    if (index >= 0) {
+      nextDecisions[index] = decision;
+    } else {
+      nextDecisions.push(decision);
+    }
+
+    try {
+      this.localStore.setItem(
+        TRANSFER_DECISIONS_KEY,
+        JSON.stringify(nextDecisions)
+      );
+    } catch (err) {
+      console.error('[Storage] Failed to save parent transfer decision:', err);
+    }
+  }
+
+  clearParentTransferDecisions(): void {
+    this.localStore.removeItem(TRANSFER_DECISIONS_KEY);
+  }
+
   exportProgressData(events: ActivityAttemptEvent[]): string {
     return buildProgressExportJson({
       settings: this.getSettings(),
@@ -248,6 +289,7 @@ export class StorageService implements StorageServiceInterface {
       observations: this.getParentObservations(),
       actions: this.getParentDifficultyActions(),
       overrides: this.getParentDifficultyOverrides(),
+      transferDecisions: this.getParentTransferDecisions(),
     });
   }
 }
@@ -330,5 +372,34 @@ function isParentDifficultyOverrideType(value: unknown): boolean {
     value === 'add_support' ||
     value === 'promote_gently' ||
     value === 'review_later'
+  );
+}
+
+function isParentTransferDecision(
+  value: unknown
+): value is ParentTransferDecision {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const decision = value as Record<string, unknown>;
+  return (
+    typeof decision.decision_id === 'string' &&
+    typeof decision.session_id === 'string' &&
+    typeof decision.child_id === 'string' &&
+    typeof decision.skill_id === 'string' &&
+    typeof decision.skill_label === 'string' &&
+    isParentTransferDecisionType(decision.decision_type) &&
+    typeof decision.source_recommendation === 'string' &&
+    typeof decision.source_status === 'string' &&
+    typeof decision.source_reason === 'string' &&
+    typeof decision.missing_context_type === 'string' &&
+    typeof decision.suggested_activity_template === 'string' &&
+    typeof decision.created_at === 'string'
+  );
+}
+
+function isParentTransferDecisionType(value: unknown): boolean {
+  return (
+    value === 'approve_transfer_activity' ||
+    value === 'hold_transfer_activity'
   );
 }

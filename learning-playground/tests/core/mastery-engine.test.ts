@@ -4,10 +4,11 @@
 
 import { describe, expect, test } from 'vitest';
 import { evaluateSkillMastery } from '../../src/core/mastery-engine';
+import type { LearningActivity, TransferContextType } from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
 
 describe('mastery engine', () => {
-  test('does not grant mastery from repeated success in one activity context', () => {
+  test('single-context fluency must not equal likely mastery', () => {
     const evaluation = evaluateSkillMastery({
       skill_id: 'counting',
       events: [
@@ -16,9 +17,13 @@ describe('mastery engine', () => {
         makeEvent('event-3', 'correct', '2026-01-01T12:02:00.000Z'),
         makeEvent('event-4', 'correct', '2026-01-03T12:00:00.000Z'),
       ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
+      ],
     });
 
-    expect(evaluation.next_status).toBe('likely_mastered');
+    expect(evaluation.next_status).toBe('single_context_fluent');
+    expect(evaluation.transfer_coverage.status).toBe('blocked_by_content_gap');
     expect(evaluation.recommended_action).toBe('test_transfer');
     expect(evaluation.reason).toContain('transfer');
   });
@@ -35,13 +40,77 @@ describe('mastery engine', () => {
           activityId: 'math-count-blocks-three',
         }),
       ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
+        makeActivity('math-count-blocks-three', 'same_format_new_examples'),
+      ],
     });
 
-    expect(evaluation.next_status).toBe('likely_mastered');
+    expect(evaluation.next_status).toBe('transfer_ready');
     expect(evaluation.recommended_action).toBe('test_transfer');
     expect(evaluation.evidence.map((item) => item.type)).not.toContain(
       'transfer'
     );
+  });
+
+  test('available approved transfer variants make a fluent skill transfer ready', () => {
+    const evaluation = evaluateSkillMastery({
+      skill_id: 'counting',
+      events: [
+        makeEvent('event-1', 'correct', '2026-01-01T12:00:00.000Z'),
+        makeEvent('event-2', 'correct', '2026-01-01T12:01:00.000Z'),
+        makeEvent('event-3', 'correct', '2026-01-01T12:02:00.000Z'),
+      ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
+        makeActivity('math-count-blocks-three', 'same_format_new_examples'),
+      ],
+    });
+
+    expect(evaluation.next_status).toBe('transfer_ready');
+    expect(evaluation.transfer_coverage.status).toBe('ready_for_transfer');
+  });
+
+  test('two successful transfer context types may become likely mastered', () => {
+    const evaluation = evaluateSkillMastery({
+      skill_id: 'counting',
+      events: [
+        makeEvent('event-1', 'correct', '2026-01-01T12:00:00.000Z'),
+        makeEvent('event-2', 'correct', '2026-01-01T12:01:00.000Z', {
+          activityId: 'math-count-blocks-three',
+        }),
+        makeEvent('event-3', 'correct', '2026-01-01T12:02:00.000Z'),
+      ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
+        makeActivity('math-count-blocks-three', 'same_format_new_examples'),
+      ],
+    });
+
+    expect(evaluation.next_status).toBe('likely_mastered');
+    expect(evaluation.recommended_action).toBe('schedule_review');
+    expect(evaluation.evidence.map((item) => item.type)).toContain('transfer');
+    expect(evaluation.evidence.map((item) => item.type)).not.toContain('retention');
+  });
+
+  test('transfer without delayed review cannot become mastered', () => {
+    const evaluation = evaluateSkillMastery({
+      skill_id: 'counting',
+      events: [
+        makeEvent('event-1', 'correct', '2026-01-01T12:00:00.000Z'),
+        makeEvent('event-2', 'correct', '2026-01-01T12:01:00.000Z', {
+          activityId: 'math-count-blocks-three',
+        }),
+        makeEvent('event-3', 'correct', '2026-01-01T12:02:00.000Z'),
+      ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
+        makeActivity('math-count-blocks-three', 'same_format_new_examples'),
+      ],
+    });
+
+    expect(evaluation.next_status).not.toBe('mastered');
+    expect(evaluation.next_status).toBe('likely_mastered');
   });
 
   test('requires transfer and retention before mastery', () => {
@@ -53,6 +122,10 @@ describe('mastery engine', () => {
           activityId: 'math-count-blocks-three',
         }),
         makeEvent('event-3', 'correct', '2026-01-03T12:00:00.000Z'),
+      ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
+        makeActivity('math-count-blocks-three', 'same_format_new_examples'),
       ],
     });
 
@@ -68,6 +141,9 @@ describe('mastery engine', () => {
       skill_id: 'counting',
       events: [
         makeEvent('event-1', 'correct', '2026-01-01T12:00:00.000Z'),
+      ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
       ],
     });
 
@@ -86,6 +162,9 @@ describe('mastery engine', () => {
         makeEvent('event-1', 'incorrect', '2026-01-04T12:00:00.000Z'),
         makeEvent('event-2', 'incorrect', '2026-01-04T12:01:00.000Z'),
       ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
+      ],
     });
 
     expect(evaluation.next_status).toBe('regressed');
@@ -99,6 +178,9 @@ describe('mastery engine', () => {
         makeEvent('event-1', 'correct', '2026-01-01T12:00:00.000Z'),
         makeEvent('event-2', 'correct', '2026-01-01T12:01:00.000Z'),
         makeEvent('event-3', 'correct', '2026-01-01T12:02:00.000Z'),
+      ],
+      activities: [
+        makeActivity('math-count-stars-three', 'same_format_same_examples'),
       ],
     });
 
@@ -140,5 +222,39 @@ function makeEvent(
     distractor_strength: 'easy',
     input_type: 'tap',
     hint_shown: false,
+  };
+}
+
+function makeActivity(
+  activityId: string,
+  contextType: TransferContextType
+): LearningActivity {
+  return {
+    id: activityId,
+    version: 1,
+    title: activityId,
+    domain: 'math',
+    skill_ids: ['counting'],
+    transfer: {
+      skill_ids: ['counting'],
+      context_type: contextType,
+      context_id: activityId,
+      example_set_id: activityId,
+      prompt_mode: 'mixed',
+    },
+    difficulty: {
+      level: 1,
+      choice_count: 3,
+      distractor_strength: 'easy',
+    },
+    interaction_model: 'tap_to_match',
+    estimated_duration_seconds: 45,
+    content: {},
+    success_rules: {},
+    feedback_rules: {},
+    safety: {
+      requires_parent_approval: true,
+      external_links_allowed: false,
+    },
   };
 }

@@ -18,6 +18,7 @@ import mathCountStarsThree from '../../src/content/activities/math-count-stars-t
 import phonicsFindB from '../../src/content/activities/phonics-find-b.json';
 import shapesFindCircle from '../../src/content/activities/shapes-find-circle.json';
 import videoVault from '../../src/content/activities/video-vault.json';
+import type { TransferContextType, TransferPromptMode } from '../../src/types/activity';
 
 const ajv = new Ajv2020({ strict: false });
 addFormats(ajv);
@@ -26,6 +27,14 @@ const validate = ajv.compile(activitySchema as AnySchema);
 interface ActivityJson {
   id: string;
   estimated_duration_seconds: number;
+  skill_ids: string[];
+  transfer: {
+    skill_ids: string[];
+    context_type: TransferContextType;
+    context_id: string;
+    example_set_id: string;
+    prompt_mode: TransferPromptMode;
+  };
   safety: {
     requires_parent_approval: boolean;
     external_links_allowed: boolean;
@@ -69,6 +78,16 @@ describe('activity schema contract', () => {
   test('all child activities set external_links_allowed to false', () => {
     for (const activity of allActivities) {
       expect(activity.safety.external_links_allowed).toBe(false);
+    }
+  });
+
+  test('every activity declares aligned transfer metadata', () => {
+    for (const activity of allActivities) {
+      expect(activity.transfer.context_type).toBeTruthy();
+      expect(activity.transfer.context_id).toBeTruthy();
+      expect(activity.transfer.example_set_id).toBeTruthy();
+      expect(activity.transfer.prompt_mode).toBeTruthy();
+      expect(activity.transfer.skill_ids).toEqual(activity.skill_ids);
     }
   });
 });

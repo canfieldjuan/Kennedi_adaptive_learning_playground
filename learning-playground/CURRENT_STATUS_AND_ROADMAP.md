@@ -4,7 +4,7 @@
 
 The MVP is working as a local-first adaptive learning playground. The child can open the app, choose from the home screen, play working activities, and return home. The parent can open the Parent Panel, see progress, export local data, clear progress, review session-level information, add notes, and see parent-readable guidance.
 
-The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now adds a curriculum graph and mastery engine so recommendations can reason from prerequisites, evidence, transfer, retention, and review timing.
+The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now includes a curriculum graph, mastery engine, transfer coverage layer, content gap engine, and local parent transfer-decision persistence.
 
 ## What We Have Built
 
@@ -52,6 +52,8 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Parent observations are stored locally and included in parent review/export.
 - Curriculum graph data defines domains, skills, skill levels, prerequisites, unlocks, evidence requirements, and review policy for existing activities.
 - Mastery evidence cites local event IDs or parent observation IDs.
+- Transfer coverage distinguishes single-context fluency from likely mastery.
+- Parent transfer-content decisions are stored locally and included in parent review/export.
 
 ### Parent Panel
 
@@ -70,20 +72,22 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Shows Parent Guidance by reviewed skill.
 - Parent Guidance includes recent accuracy, attempts, hint use, abandoned activity count, repeated error pattern when present, plain-language status, and parent-controlled recommendation.
 - Parent Guidance includes skill graph evidence, mastery status, suggested next action, evidence summary, graph rule, and source references.
+- Parent Guidance includes transfer coverage status, successful/required context counts, missing context types, and targeted transfer content recommendations.
 - Parent Guidance can save an active parent-approved guidance choice per skill.
+- Parent Guidance can store parent approve/hold transfer-content choices locally.
 - Recent Attempts shows when parent-approved guidance was applied to a supported activity.
 - Applied Guidance Review summarizes the attempts after active guidance affected a supported activity and offers a keep/reset/support review.
 - Parent notes are stored locally as `ParentObservation` records.
 - Shows Parent Gate Settings for changing the local adult gate phrase.
-- Export now includes settings, progress profile, raw activity events, parent observations, parent difficulty actions, active parent guidance, export metadata, and local data health.
-- Clear progress clears events, progress, observations, parent difficulty actions, and active parent guidance.
+- Export now includes settings, progress profile, raw activity events, parent observations, parent difficulty actions, active parent guidance, parent transfer decisions, export metadata, and local data health.
+- Clear progress clears events, progress, observations, parent difficulty actions, active parent guidance, and parent transfer decisions.
 
 ### Documentation and Process
 
 - `MVP_BASELINE.md` documents the current working MVP baseline.
 - Workflow contracts were added so future changes begin with root cause, correct fix surface, and protected surface.
 - Finding-verification docs were added to keep future issue review grounded in code.
-- Contract tests enforce activity schema, safety rules, progress behavior, event logging, parent observations, session review, curriculum graph integrity, mastery rules, review scheduling, and parent approval boundaries.
+- Contract tests enforce activity schema, safety rules, progress behavior, event logging, parent observations, session review, curriculum graph integrity, transfer coverage, content gaps, mastery rules, review scheduling, persistence, and parent approval boundaries.
 
 ## Current Verification State
 
@@ -95,8 +99,8 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 23 test files passing
-- 82 tests passing
+- 24 test files passing
+- 91 tests passing
 
 Browser smoke checks confirmed:
 
@@ -111,6 +115,7 @@ Browser smoke checks confirmed:
 - Applied Guidance Review renders and summarizes post-guidance attempts.
 - Parent Guidance renders.
 - Parent Guidance shows graph-backed mastery evidence and source references.
+- Parent Guidance shows transfer coverage and content gap evidence.
 - Parent Guidance lets a parent record local difficulty action decisions.
 - Active Parent Guidance renders, applies a parent-approved guidance choice, and can reset it.
 - Supported Math tap-choice activity used an active Counting support override with two choices and stored applied-guidance metadata.
@@ -130,7 +135,7 @@ Browser smoke checks confirmed:
 - No public sharing.
 - No rewards, streaks, leaderboards, or pressure loops.
 - No child-facing AI generation.
-- No activity schema expansion beyond what was already needed for the original MVP.
+- No activity schema expansion beyond required transfer metadata for approved local activities.
 
 ## Remaining Risks
 
@@ -152,11 +157,11 @@ Parent difficulty actions remain local decision history. Active Parent Guidance 
 
 ### Transfer Evidence
 
-The graph can require transfer before mastery, but the current MVP has one activity context for most skills. That means skills can often reach `likely_mastered` before content breadth exists to prove transfer.
+The app no longer treats one-context fluency as likely mastery. Most MVP skills still need targeted transfer variants before the parent can prove transfer, but the gap is explicit and locally persisted as parent approve/hold decisions.
 
 ## Where We Are Headed
 
-Phase 2 is complete. Phase 3 is skill graph and mastery work, still without adding games.
+Phase 2 is complete. Phase 3 is skill graph, mastery, transfer coverage, and content gap work, still without adding games.
 
 ### MVP Phase 2 Definition of Done
 
@@ -190,7 +195,7 @@ Parent can answer:
 
 ### Current Phase Status
 
-Phase 3 has started in v0.2.0 with Skill Graph + Mastery Engine.
+Phase 3 has continued in v0.2.1 with Transfer Coverage + Content Gap Engine.
 
 What this lane now covers:
 
@@ -201,13 +206,15 @@ What this lane now covers:
 - Review scheduling after likely mastery, successful reviews, and regression.
 - Parent Guidance showing graph rule, mastery status, evidence summary, and suggested next action.
 - Parent approval still required before active guidance changes.
+- Transfer coverage showing single-context fluency, transfer readiness, blocked content gaps, missing context types, and targeted content recommendations.
+- Local parent transfer-content decisions included in export and clear-data behavior.
 
 Still protected:
 
 - No new games.
 - No backend.
 - No new child activity UI concepts.
-- No activity schema changes.
+- Activity schema changes are limited to required transfer metadata for existing approved activities.
 - No hidden automatic difficulty changes or routing.
 - No coloring or Video Vault difficulty application yet.
 - No rewards, streaks, rankings, or pressure loops.
@@ -219,6 +226,7 @@ Goal: deepen Phase 3 without breaking Phase 2.
 Good candidates:
 
 - Add transfer contexts within existing game types.
+- Persist mastery snapshots beyond export-only transfer decisions.
 - Add parent-facing review schedule visibility.
 - Add more nuanced parent observation categories.
 - Add accessibility polish for the child activity screens.
@@ -228,6 +236,6 @@ Good candidates:
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, review scheduler, configurable local parent gate friction, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage, content gap recommendations, review scheduler, configurable local parent gate friction, and a parent session review layer.
 
-The current v0.2.0 base grounds parent recommendations in a curriculum graph and mastery evidence while keeping accounts, backend auth, cloud sync, and automatic routing out of scope.
+The current v0.2.1 base grounds parent recommendations in a curriculum graph, mastery evidence, and transfer coverage while keeping accounts, backend auth, cloud sync, and automatic routing out of scope.

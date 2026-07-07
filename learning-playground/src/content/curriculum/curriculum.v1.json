@@ -44,6 +44,13 @@
       "activity_contexts": [
         "video-vault"
       ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "different_prompt_mode",
+        "parent_observed_real_world",
+        "delayed_review"
+      ],
       "evidence_requirements": {
         "min_attempts": 2,
         "min_accuracy": 0.8,
@@ -81,6 +88,13 @@
       "activity_contexts": [
         "phonics-find-b"
       ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "reverse_mapping",
+        "category_sort",
+        "delayed_review"
+      ],
       "evidence_requirements": {
         "min_attempts": 3,
         "min_accuracy": 0.8,
@@ -115,6 +129,13 @@
       "unlocks": [],
       "activity_contexts": [
         "phonics-find-b"
+      ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "reverse_mapping",
+        "category_sort",
+        "delayed_review"
       ],
       "evidence_requirements": {
         "min_attempts": 3,
@@ -151,6 +172,13 @@
       "activity_contexts": [
         "math-count-stars-three"
       ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "different_prompt_mode",
+        "different_interaction_model",
+        "delayed_review"
+      ],
       "evidence_requirements": {
         "min_attempts": 3,
         "min_accuracy": 0.8,
@@ -186,6 +214,13 @@
       "activity_contexts": [
         "math-count-stars-three"
       ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "different_prompt_mode",
+        "different_interaction_model",
+        "delayed_review"
+      ],
       "evidence_requirements": {
         "min_attempts": 3,
         "min_accuracy": 0.8,
@@ -219,6 +254,13 @@
       "activity_contexts": [
         "shapes-find-circle"
       ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "different_prompt_mode",
+        "different_interaction_model",
+        "delayed_review"
+      ],
       "evidence_requirements": {
         "min_attempts": 3,
         "min_accuracy": 0.8,
@@ -251,6 +293,13 @@
       "unlocks": [],
       "activity_contexts": [
         "art-color-circle"
+      ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "different_prompt_mode",
+        "parent_observed_real_world",
+        "delayed_review"
       ],
       "evidence_requirements": {
         "min_attempts": 2,

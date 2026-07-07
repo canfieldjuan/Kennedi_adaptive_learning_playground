@@ -42,18 +42,12 @@ import {
   destroyVideoVault,
 } from '../modules/video-vault/VideoVault';
 import type { VideoVaultManifest } from '../modules/video-vault/video-vault.types';
-import phonicsFindB from '../content/activities/phonics-find-b.json';
-import shapesFindCircle from '../content/activities/shapes-find-circle.json';
-import mathCountStarsThree from '../content/activities/math-count-stars-three.json';
-import artColorCircle from '../content/activities/art-color-circle.json';
-import videoVault from '../content/activities/video-vault.json';
+import { APPROVED_ACTIVITIES } from '../content/activity-catalog';
 import familySafeVideos from '../content/videos/family-safe-videos.v1.json';
 
-registerActivity(phonicsFindB as LearningActivity);
-registerActivity(shapesFindCircle as LearningActivity);
-registerActivity(mathCountStarsThree as LearningActivity);
-registerActivity(artColorCircle as LearningActivity);
-registerActivity(videoVault as LearningActivity);
+for (const activity of APPROVED_ACTIVITIES) {
+  registerActivity(activity as LearningActivity);
+}
 
 // — Services —
 const storage = new StorageService();

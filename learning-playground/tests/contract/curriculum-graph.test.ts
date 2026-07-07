@@ -35,6 +35,16 @@ describe('curriculum graph contract', () => {
     }
   });
 
+  test('every activity skill has at least one planned transfer context', () => {
+    const graph = loadCurriculumGraph();
+
+    for (const activity of activities) {
+      for (const skillId of activity.skill_ids) {
+        expect(graph.getSkill(skillId)?.planned_transfer_contexts.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
   test('current graph has valid references and no circular prerequisites', () => {
     expect(validateCurriculumGraph(curriculumData as CurriculumGraphData)).toEqual([]);
   });
@@ -65,6 +75,15 @@ describe('curriculum graph contract', () => {
 
     expect(validateCurriculumGraph(graph)).toContain(
       `Skill ${graph.skills[0].id} cannot unlock itself`
+    );
+  });
+
+  test('detects missing planned transfer contexts', () => {
+    const graph = cloneGraph();
+    graph.skills[0].planned_transfer_contexts = [];
+
+    expect(validateCurriculumGraph(graph)).toContain(
+      `Skill ${graph.skills[0].id} needs at least one planned transfer context`
     );
   });
 

@@ -10,6 +10,7 @@ import type {
   ParentDifficultyAction,
   ParentDifficultyOverride,
 } from './parent-actions';
+import type { ParentTransferDecision } from './transfer';
 import type { ParentSettings } from './storage';
 import type { ChildProgressProfile, SkillMasteryState } from './progress';
 
@@ -51,6 +52,9 @@ export interface StorageServiceInterface {
   getParentDifficultyOverrides(): ParentDifficultyOverride[];
   saveParentDifficultyOverride(override: ParentDifficultyOverride): void;
   clearParentDifficultyOverrides(): void;
+  getParentTransferDecisions(): ParentTransferDecision[];
+  saveParentTransferDecision(decision: ParentTransferDecision): void;
+  clearParentTransferDecisions(): void;
   exportProgressData(events: ActivityAttemptEvent[]): string;
 }
 

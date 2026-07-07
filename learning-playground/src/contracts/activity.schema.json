@@ -8,6 +8,7 @@
     "title",
     "domain",
     "skill_ids",
+    "transfer",
     "difficulty",
     "interaction_model",
     "estimated_duration_seconds",
@@ -49,6 +50,54 @@
       "type": "array",
       "items": { "type": "string" },
       "minItems": 1
+    },
+    "transfer": {
+      "type": "object",
+      "required": [
+        "skill_ids",
+        "context_type",
+        "context_id",
+        "example_set_id",
+        "prompt_mode"
+      ],
+      "properties": {
+        "skill_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "context_type": {
+          "type": "string",
+          "enum": [
+            "same_format_same_examples",
+            "same_format_new_examples",
+            "different_prompt_mode",
+            "different_interaction_model",
+            "reverse_mapping",
+            "category_sort",
+            "delayed_review",
+            "parent_observed_real_world"
+          ]
+        },
+        "context_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "example_set_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "prompt_mode": {
+          "type": "string",
+          "enum": [
+            "visual",
+            "spoken",
+            "mixed",
+            "symbolic",
+            "real_world"
+          ]
+        }
+      }
     },
     "difficulty": {
       "type": "object",

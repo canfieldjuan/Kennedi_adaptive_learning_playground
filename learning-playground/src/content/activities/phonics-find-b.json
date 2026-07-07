@@ -4,6 +4,13 @@
   "title": "Find the /b/ Sound",
   "domain": "phonics",
   "skill_ids": ["initial_sound", "letter_sound_match"],
+  "transfer": {
+    "skill_ids": ["initial_sound", "letter_sound_match"],
+    "context_type": "same_format_same_examples",
+    "context_id": "tap-picture-initial-sound",
+    "example_set_id": "bear-cat-sun",
+    "prompt_mode": "spoken"
+  },
   "difficulty": {
     "level": 2,
     "choice_count": 3,

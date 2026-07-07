@@ -11,6 +11,10 @@ import type {
   ParentDifficultyOverride,
   ParentDifficultyOverrideType,
 } from '../../types/parent-actions';
+import type {
+  ParentTransferDecision,
+  ParentTransferDecisionType,
+} from '../../types/transfer';
 import type { SkillMasteryState } from '../../types/progress';
 import {
   buildParentSessionReview,
@@ -47,6 +51,7 @@ import {
   type ParentDifficultyOverrideHistoryItem,
 } from '../../core/parent-difficulty-overrides';
 import { buildLocalDataHealth } from '../../core/export-data';
+import { formatTransferContextType } from '../../core/content-gap-engine';
 import {
   formatParentDataHealth,
   getParentEmptyStateMessage,
@@ -102,6 +107,7 @@ export function renderParentPanel(
   const observations = storage.getParentObservations();
   const difficultyActions = storage.getParentDifficultyActions();
   const difficultyOverrides = storage.getParentDifficultyOverrides();
+  const transferDecisions = storage.getParentTransferDecisions();
   const sessionReview = buildParentSessionReview(
     events,
     observations,
@@ -126,7 +132,8 @@ export function renderParentPanel(
   const localDataHealth = buildLocalDataHealth(
     events,
     observations,
-    difficultyActions
+    difficultyActions,
+    transferDecisions
   );
   const dataHealthSummary = formatParentDataHealth(
     localDataHealth
@@ -194,6 +201,7 @@ export function renderParentPanel(
     skillInterpretations,
     difficultyActions,
     difficultyOverrides,
+    transferDecisions,
     appliedFitReviews,
     storage,
     context,
@@ -505,6 +513,7 @@ function createDataManagementSection(
       storage.clearParentObservations();
       storage.clearParentDifficultyActions();
       storage.clearParentDifficultyOverrides();
+      storage.clearParentTransferDecisions();
       alert('Progress data cleared.');
       destroyParentPanel();
       renderParentPanel(parent, storage, context);
@@ -702,6 +711,7 @@ function createParentGuidanceSection(
   interpretations: ParentSkillInterpretation[],
   actions: ParentDifficultyAction[],
   overrides: ParentDifficultyOverride[],
+  transferDecisions: ParentTransferDecision[],
   appliedFitReviews: ParentAppliedFitReview[],
   storage: StorageServiceInterface,
   context: ParentPanelContext,
@@ -728,6 +738,7 @@ function createParentGuidanceSection(
     ));
     section.appendChild(createAppliedFitReviewSection(appliedFitReviews));
     section.appendChild(createParentActionHistory(actions));
+    section.appendChild(createParentTransferDecisionHistory(transferDecisions));
     return section;
   }
 
@@ -765,6 +776,18 @@ function createParentGuidanceSection(
         ));
         destroyParentPanel();
         renderParentPanel(parent, storage, context);
+      },
+      (decisionType) => {
+        const transferRecommendation = interpretation.transfer_content_recommendation;
+        if (!transferRecommendation) return;
+
+        storage.saveParentTransferDecision(createParentTransferDecision(
+          decisionType,
+          interpretation,
+          context
+        ));
+        destroyParentPanel();
+        renderParentPanel(parent, storage, context);
       }
     ));
   }
@@ -778,6 +801,7 @@ function createParentGuidanceSection(
   ));
   section.appendChild(createAppliedFitReviewSection(appliedFitReviews));
   section.appendChild(createParentActionHistory(actions));
+  section.appendChild(createParentTransferDecisionHistory(transferDecisions));
   return section;
 
   function deactivateParentDifficultyOverride(overrideId: string): void {
@@ -797,7 +821,8 @@ function createParentGuidanceSection(
 function createParentGuidanceRow(
   interpretation: ParentSkillInterpretation,
   onAction: (actionType: ParentDifficultyActionType) => void,
-  onApplyOverride: (overrideType: ParentDifficultyOverrideType) => void
+  onApplyOverride: (overrideType: ParentDifficultyOverrideType) => void,
+  onTransferDecision: (decisionType: ParentTransferDecisionType) => void
 ): HTMLElement {
   const row = document.createElement('div');
   row.className = 'parent-guidance-row';
@@ -887,6 +912,13 @@ function createParentGuidanceRow(
     row.appendChild(createMasteryEvidenceGroup(interpretation));
   }
 
+  if (interpretation.transfer_coverage_status) {
+    row.appendChild(createTransferCoverageGroup(
+      interpretation,
+      onTransferDecision
+    ));
+  }
+
   return row;
 }
 
@@ -930,6 +962,75 @@ function createMasteryEvidenceGroup(
   ));
 
   evidenceGroup.appendChild(metrics);
+  return evidenceGroup;
+}
+
+function createTransferCoverageGroup(
+  interpretation: ParentSkillInterpretation,
+  onTransferDecision: (decisionType: ParentTransferDecisionType) => void
+): HTMLElement {
+  const evidenceGroup = document.createElement('div');
+  evidenceGroup.className = 'parent-guidance-row__evidence-group';
+  evidenceGroup.appendChild(createGuidanceLabel('Transfer Coverage'));
+
+  const metrics = document.createElement('div');
+  metrics.className = 'parent-guidance-row__evidence';
+  metrics.appendChild(createProgressMetric(
+    'Transfer Status',
+    formatInternalMasteryLabel(
+      interpretation.transfer_coverage_status ?? 'needs_more_content'
+    )
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Successful Contexts',
+    `${interpretation.transfer_successful_context_count ?? 0}/${interpretation.transfer_required_context_count ?? 0}`
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Approved Contexts',
+    `${interpretation.transfer_approved_context_count ?? 0}/${interpretation.transfer_required_context_count ?? 0}`
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Missing Contexts',
+    formatTransferContextList(interpretation.transfer_missing_context_types ?? [])
+  ));
+  if (interpretation.transfer_content_recommendation) {
+    metrics.appendChild(createProgressMetric(
+      'Suggested Template',
+      interpretation.transfer_content_recommendation.suggested_activity_template
+    ));
+  }
+  evidenceGroup.appendChild(metrics);
+
+  if (interpretation.transfer_content_recommendation) {
+    const controls = document.createElement('div');
+    controls.className = 'parent-guidance-row__actions';
+    controls.appendChild(createGuidanceLabel('Transfer decision'));
+
+    const buttons = document.createElement('div');
+    buttons.className = 'parent-guidance-row__action-buttons';
+
+    const approveButton = document.createElement('button');
+    approveButton.className = 'parent-guidance-action';
+    approveButton.type = 'button';
+    approveButton.textContent = 'Approve transfer plan';
+    approveButton.addEventListener('click', () => {
+      onTransferDecision('approve_transfer_activity');
+    });
+    buttons.appendChild(approveButton);
+
+    const holdButton = document.createElement('button');
+    holdButton.className = 'parent-guidance-action';
+    holdButton.type = 'button';
+    holdButton.textContent = 'Hold transfer plan';
+    holdButton.addEventListener('click', () => {
+      onTransferDecision('hold_transfer_activity');
+    });
+    buttons.appendChild(holdButton);
+
+    controls.appendChild(buttons);
+    evidenceGroup.appendChild(controls);
+  }
+
   return evidenceGroup;
 }
 
@@ -1124,6 +1225,69 @@ function createParentActionHistoryItem(
   return item;
 }
 
+function createParentTransferDecisionHistory(
+  decisions: ParentTransferDecision[]
+): HTMLElement {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'parent-action-history';
+
+  const title = document.createElement('h3');
+  title.className = 'parent-review-accuracy__title';
+  title.textContent = 'Recent Transfer Choices';
+  wrapper.appendChild(title);
+
+  const history = [...decisions]
+    .sort((a, b) => (
+      b.created_at.localeCompare(a.created_at) ||
+      a.skill_label.localeCompare(b.skill_label)
+    ))
+    .slice(0, 5);
+
+  if (history.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-section__placeholder';
+    empty.textContent = 'No transfer content choices recorded yet.';
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'parent-action-history__list';
+  for (const decision of history) {
+    list.appendChild(createParentTransferDecisionHistoryItem(decision));
+  }
+  wrapper.appendChild(list);
+
+  return wrapper;
+}
+
+function createParentTransferDecisionHistoryItem(
+  decision: ParentTransferDecision
+): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'parent-action-history__item';
+
+  const meta = document.createElement('span');
+  meta.className = 'parent-action-history__meta';
+  meta.textContent = `${formatParentTimestamp(decision.created_at)} · ${decision.skill_label}`;
+  item.appendChild(meta);
+
+  const choice = document.createElement('strong');
+  choice.className = 'parent-action-history__choice';
+  choice.textContent = `Choice: ${formatTransferDecisionLabel(decision.decision_type)}`;
+  item.appendChild(choice);
+
+  const reason = document.createElement('p');
+  reason.className = 'parent-action-history__reason';
+  reason.textContent = [
+    `Context: ${formatTransferContextType(decision.missing_context_type)}.`,
+    `Template: ${decision.suggested_activity_template}.`,
+  ].join(' ');
+  item.appendChild(reason);
+
+  return item;
+}
+
 function createParentDifficultyAction(
   actionType: ParentDifficultyActionType,
   interpretation: ParentSkillInterpretation,
@@ -1140,6 +1304,33 @@ function createParentDifficultyAction(
     source_recommendation: interpretation.recommendation,
     source_status: interpretation.status,
     source_reason: `${interpretation.status_reason} ${interpretation.recommendation_reason}`,
+    created_at: createdAt,
+  };
+}
+
+function createParentTransferDecision(
+  decisionType: ParentTransferDecisionType,
+  interpretation: ParentSkillInterpretation,
+  context: ParentPanelContext,
+  createdAt = new Date().toISOString()
+): ParentTransferDecision {
+  const recommendation = interpretation.transfer_content_recommendation;
+  if (!recommendation) {
+    throw new Error('Cannot save transfer decision without a content recommendation.');
+  }
+
+  return {
+    decision_id: createTransferDecisionId(),
+    session_id: context.sessionId,
+    child_id: context.childId,
+    skill_id: interpretation.skill_id,
+    skill_label: interpretation.skill_label,
+    decision_type: decisionType,
+    source_recommendation: interpretation.recommendation,
+    source_status: interpretation.mastery_status ?? interpretation.status,
+    source_reason: `${interpretation.status_reason} ${interpretation.recommendation_reason}`,
+    missing_context_type: recommendation.suggested_context_type,
+    suggested_activity_template: recommendation.suggested_activity_template,
     created_at: createdAt,
   };
 }
@@ -1403,6 +1594,20 @@ function formatList(values: string[]): string {
   return values.length > 0 ? values.join(', ') : 'None';
 }
 
+function formatTransferContextList(values: string[]): string {
+  return values.length > 0
+    ? values.map((value) => formatInternalMasteryLabel(value)).join(', ')
+    : 'None';
+}
+
+function formatTransferDecisionLabel(
+  decisionType: ParentTransferDecisionType
+): string {
+  return decisionType === 'approve_transfer_activity'
+    ? 'Approve transfer plan'
+    : 'Hold transfer plan';
+}
+
 function createObservationId(): string {
   if (globalThis.crypto?.randomUUID) {
     return globalThis.crypto.randomUUID();
@@ -1425,6 +1630,14 @@ function createDifficultyOverrideId(): string {
   }
 
   return `difficulty-override-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createTransferDecisionId(): string {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `transfer-decision-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function destroyParentPanel(): void {

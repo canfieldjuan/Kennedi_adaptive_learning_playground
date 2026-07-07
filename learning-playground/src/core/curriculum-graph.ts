@@ -1,4 +1,5 @@
 import curriculumData from '../content/curriculum/curriculum.v1.json';
+import type { TransferContextType } from '../types/activity';
 
 export interface CurriculumDomain {
   id: string;
@@ -33,6 +34,7 @@ export interface CurriculumSkill {
   prerequisites: string[];
   unlocks: string[];
   activity_contexts: string[];
+  planned_transfer_contexts: TransferContextType[];
   evidence_requirements: CurriculumEvidenceRequirements;
   review_policy: CurriculumReviewPolicy;
 }
@@ -51,6 +53,16 @@ export interface CurriculumGraph {
 }
 
 const DEFAULT_CURRICULUM = curriculumData as CurriculumGraphData;
+const TRANSFER_CONTEXT_TYPES = new Set<string>([
+  'same_format_same_examples',
+  'same_format_new_examples',
+  'different_prompt_mode',
+  'different_interaction_model',
+  'reverse_mapping',
+  'category_sort',
+  'delayed_review',
+  'parent_observed_real_world',
+]);
 
 export function loadCurriculumGraph(
   data: CurriculumGraphData = DEFAULT_CURRICULUM
@@ -105,6 +117,16 @@ export function validateCurriculumGraph(data: CurriculumGraphData): string[] {
 
     if (skill.unlocks.includes(skill.id)) {
       errors.push(`Skill ${skill.id} cannot unlock itself`);
+    }
+
+    if (skill.planned_transfer_contexts.length === 0) {
+      errors.push(`Skill ${skill.id} needs at least one planned transfer context`);
+    }
+
+    for (const contextType of skill.planned_transfer_contexts) {
+      if (!TRANSFER_CONTEXT_TYPES.has(contextType)) {
+        errors.push(`Skill ${skill.id} has unknown transfer context ${contextType}`);
+      }
     }
 
     for (const prerequisiteId of skill.prerequisites) {

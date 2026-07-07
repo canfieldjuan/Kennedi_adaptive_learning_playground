@@ -5,8 +5,10 @@ Mastery is evidence-based fit information for the parent. It is not a ranking, s
 ## Requirements
 
 - Mastery evaluation must cite local evidence sources.
-- Repeated success in only one activity context may reach `likely_mastered`, but must not become `mastered`.
+- Single-context fluency must be represented as `single_context_fluent`, not `likely_mastered`.
+- Repeated success in only one approved transfer context may reach `single_context_fluent`, but must not become `likely_mastered` or `mastered`.
 - Mastery requires transfer evidence before `mastered`.
+- `likely_mastered` requires successful evidence from at least two approved transfer contexts.
 - Regression can lower a previously stronger status.
 - Recommendations must stay parent-controlled and must not auto-apply difficulty changes.
 - Evidence language must avoid comparison, shame, rankings, streaks, gifted labels, or age-equivalent labels.
@@ -16,10 +18,13 @@ Mastery is evidence-based fit information for the parent. It is not a ranking, s
 - `not_started`
 - `introduced`
 - `practicing`
+- `single_context_fluent`
+- `transfer_ready`
 - `likely_mastered`
 - `mastered`
 - `needs_review`
 - `regressed`
+- `blocked_by_content_gap`
 
 ## Recommended Actions
 
@@ -30,4 +35,3 @@ Mastery is evidence-based fit information for the parent. It is not a ranking, s
 - `schedule_review`
 - `add_support`
 - `pause_skill`
-

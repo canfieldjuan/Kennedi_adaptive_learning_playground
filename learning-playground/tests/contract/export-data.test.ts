@@ -9,6 +9,7 @@ import type {
   ParentDifficultyAction,
   ParentDifficultyOverride,
 } from '../../src/types/parent-actions';
+import type { ParentTransferDecision } from '../../src/types/transfer';
 
 class MemoryKeyValueStorage implements KeyValueStorage {
   private readonly data = new Map<string, string>();
@@ -37,6 +38,7 @@ describe('progress export contract', () => {
     ];
     storage.saveParentDifficultyAction(makeAction());
     storage.saveParentDifficultyOverride(makeOverride());
+    storage.saveParentTransferDecision(makeTransferDecision());
 
     const exported = JSON.parse(storage.exportProgressData(events)) as {
       exported_at: string;
@@ -51,6 +53,7 @@ describe('progress export contract', () => {
         total_sessions: number;
         total_observations: number;
         total_parent_actions: number;
+        total_transfer_decisions: number;
         first_event_timestamp: string;
         latest_event_timestamp: string;
         migrated_event_count: number;
@@ -59,12 +62,13 @@ describe('progress export contract', () => {
       activity_events: ActivityAttemptEvent[];
       parent_difficulty_actions: ParentDifficultyAction[];
       parent_difficulty_overrides: ParentDifficultyOverride[];
+      parent_transfer_decisions: ParentTransferDecision[];
     };
 
     expect(exported.exported_at).toBe(exported.export_metadata.export_timestamp);
     expect(exported.export_metadata).toMatchObject({
       export_version: '1',
-      app_baseline: 'v0.2.0',
+      app_baseline: 'v0.2.1',
     });
     expect(exported.export_metadata.data_sections_included).toEqual([
       'settings',
@@ -73,12 +77,14 @@ describe('progress export contract', () => {
       'parent_observations',
       'parent_difficulty_actions',
       'parent_difficulty_overrides',
+      'parent_transfer_decisions',
     ]);
     expect(exported.data_health).toMatchObject({
       total_events: 2,
       total_sessions: 2,
       total_observations: 0,
       total_parent_actions: 1,
+      total_transfer_decisions: 1,
       first_event_timestamp: '2026-01-01T12:00:00.000Z',
       latest_event_timestamp: '2026-01-01T12:05:00.000Z',
       migrated_event_count: 1,
@@ -89,6 +95,12 @@ describe('progress export contract', () => {
     expect(exported.parent_difficulty_overrides[0].override_type).toBe(
       'promote_gently'
     );
+    expect(exported.parent_transfer_decisions[0].decision_type).toBe(
+      'approve_transfer_activity'
+    );
+
+    storage.clearParentTransferDecisions();
+    expect(storage.getParentTransferDecisions()).toHaveLength(0);
   });
 });
 
@@ -150,5 +162,22 @@ function makeOverride(): ParentDifficultyOverride {
     source_reason: '100% accuracy with no hints or stops.',
     active: true,
     created_at: '2026-01-01T12:09:00.000Z',
+  };
+}
+
+function makeTransferDecision(): ParentTransferDecision {
+  return {
+    decision_id: 'transfer-decision-1',
+    session_id: 'session-1',
+    child_id: 'local-child',
+    skill_id: 'counting',
+    skill_label: 'Counting',
+    decision_type: 'approve_transfer_activity',
+    source_recommendation: 'Add transfer activity',
+    source_status: 'single_context_fluent',
+    source_reason: 'Single-context fluency needs transfer coverage.',
+    missing_context_type: 'same_format_new_examples',
+    suggested_activity_template: 'same_quantity_new_layout',
+    created_at: '2026-01-01T12:10:00.000Z',
   };
 }

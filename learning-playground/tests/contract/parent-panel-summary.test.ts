@@ -47,6 +47,7 @@ describe('parent panel summary contract', () => {
       total_sessions: 1,
       total_observations: 1,
       total_parent_actions: 1,
+      total_transfer_decisions: 1,
       first_event_timestamp: '2026-01-01T12:00:00.000Z',
       latest_event_timestamp: '2026-01-01T12:05:00.000Z',
       migrated_event_count: 1,
@@ -59,6 +60,7 @@ describe('parent panel summary contract', () => {
       { label: 'Sessions', value: '1' },
       { label: 'Parent Notes', value: '1' },
       { label: 'Parent Actions', value: '1' },
+      { label: 'Transfer Choices', value: '1' },
       { label: 'Latest Event', value: '2026-01-01 12:05 UTC' },
     ]);
     expect(summary.metrics).toEqual([
@@ -66,6 +68,7 @@ describe('parent panel summary contract', () => {
       { label: 'Sessions', value: '1' },
       { label: 'Parent Notes', value: '1' },
       { label: 'Parent Actions', value: '1' },
+      { label: 'Transfer Choices', value: '1' },
       { label: 'First Event', value: '2026-01-01 12:00 UTC' },
       { label: 'Latest Event', value: '2026-01-01 12:05 UTC' },
       { label: 'Migrated Events', value: '1' },
@@ -78,6 +81,7 @@ describe('parent panel summary contract', () => {
       total_sessions: 0,
       total_observations: 0,
       total_parent_actions: 0,
+      total_transfer_decisions: 0,
       migrated_event_count: 0,
     });
 

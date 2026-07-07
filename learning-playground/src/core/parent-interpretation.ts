@@ -1,4 +1,6 @@
 import type { ActivityAttemptEvent } from '../types/events';
+import type { LearningActivity } from '../types/activity';
+import { APPROVED_ACTIVITIES } from '../content/activity-catalog';
 import type {
   ParentSessionReview,
   SkillAccuracySummary,
@@ -9,6 +11,11 @@ import {
   type MasteryEvaluation,
   type RecommendedMasteryAction,
 } from './mastery-engine';
+import {
+  formatRecommendedAction,
+  getMasteryRecommendation,
+  type ParentAdaptiveRecommendation,
+} from './recommendation-engine';
 import { formatSkillLabel } from './parent-review-format';
 
 export type ParentSkillStatus =
@@ -16,13 +23,6 @@ export type ParentSkillStatus =
   | 'Keep practicing here'
   | 'Needs more support'
   | 'Not enough data yet';
-
-export type ParentAdaptiveRecommendation =
-  | 'Promote gently'
-  | 'Keep stable'
-  | 'Add support'
-  | 'Review later'
-  | 'Not enough data';
 
 export interface ParentSkillInterpretation {
   skill_id: string;
@@ -42,6 +42,12 @@ export interface ParentSkillInterpretation {
   mastery_recommended_action?: RecommendedMasteryAction;
   mastery_evidence_summary?: string;
   skill_graph_rule?: string;
+  transfer_coverage_status?: MasteryEvaluation['transfer_coverage']['status'];
+  transfer_required_context_count?: number;
+  transfer_approved_context_count?: number;
+  transfer_successful_context_count?: number;
+  transfer_missing_context_types?: string[];
+  transfer_content_recommendation?: MasteryEvaluation['transfer_coverage']['recommended_content_actions'][number];
   mastery_source_event_ids?: string[];
   mastery_source_observation_ids?: string[];
 }
@@ -57,7 +63,8 @@ interface SkillSignal {
 
 export function buildParentSkillInterpretations(
   review: ParentSessionReview,
-  sessionEvents: ActivityAttemptEvent[]
+  sessionEvents: ActivityAttemptEvent[],
+  activities: LearningActivity[] = APPROVED_ACTIVITIES
 ): ParentSkillInterpretation[] {
   const graph = loadCurriculumGraph();
   const summariesBySkill = new Map(
@@ -85,6 +92,7 @@ export function buildParentSkillInterpretations(
           skill_id: summary.skill_id,
           events: sessionEvents,
           observations: review.parent_notes,
+          activities,
           graph,
         })
         : undefined;
@@ -112,6 +120,13 @@ export function buildParentSkillInterpretations(
         mastery_recommended_action: mastery?.recommended_action,
         mastery_evidence_summary: mastery?.evidence_summary,
         skill_graph_rule: mastery?.skill_graph_rule,
+        transfer_coverage_status: mastery?.transfer_coverage.status,
+        transfer_required_context_count: mastery?.transfer_coverage.required_context_count,
+        transfer_approved_context_count: mastery?.transfer_coverage.approved_context_count,
+        transfer_successful_context_count: mastery?.transfer_coverage.successful_context_count,
+        transfer_missing_context_types: mastery?.transfer_coverage.missing_context_types,
+        transfer_content_recommendation:
+          mastery?.transfer_coverage.recommended_content_actions[0],
         mastery_source_event_ids: mastery?.source_event_ids,
         mastery_source_observation_ids: mastery?.source_observation_ids,
       };
@@ -159,14 +174,9 @@ function getRecommendation(
   signal: SkillSignal,
   mastery?: MasteryEvaluation
 ): ParentAdaptiveRecommendation {
-  if (mastery?.recommended_action === 'add_support') return 'Add support';
-  if (mastery?.recommended_action === 'increase_difficulty') return 'Promote gently';
-  if (
-    mastery?.recommended_action === 'test_transfer' ||
-    mastery?.recommended_action === 'schedule_review' ||
-    mastery?.recommended_action === 'pause_skill'
-  ) {
-    return 'Review later';
+  if (mastery) {
+    const masteryRecommendation = getMasteryRecommendation(mastery);
+    if (masteryRecommendation) return masteryRecommendation;
   }
 
   const { summary, hintsUsed, abandonedCount, repeatedErrorPattern } = signal;
@@ -215,6 +225,14 @@ function getRecommendationReason(
   signal: SkillSignal,
   mastery?: MasteryEvaluation
 ): string {
+  if (recommendation === 'Add transfer activity') {
+    return mastery?.transfer_coverage.recommended_content_actions[0]?.reason ??
+      'The skill looks fluent in one context, but approved transfer content is missing.';
+  }
+  if (recommendation === 'Try transfer activity') {
+    return 'Another approved context is available. The parent can choose when to offer it.';
+  }
+
   if (mastery) {
     return `${mastery.reason} Suggested next action: ${formatRecommendedAction(mastery.recommended_action)}.`;
   }
@@ -244,13 +262,6 @@ function getRecommendationReason(
   }
 
   return 'Stay with this level and watch the next few attempts.';
-}
-
-function formatRecommendedAction(action: RecommendedMasteryAction): string {
-  return action
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 }
 
 function getRepeatedErrorPattern(

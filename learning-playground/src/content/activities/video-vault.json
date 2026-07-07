@@ -4,6 +4,13 @@
   "title": "Video Vault",
   "domain": "language",
   "skill_ids": ["vocabulary"],
+  "transfer": {
+    "skill_ids": ["vocabulary"],
+    "context_type": "same_format_same_examples",
+    "context_id": "local-video-vocabulary-choice",
+    "example_set_id": "empty-vault-v1",
+    "prompt_mode": "mixed"
+  },
   "difficulty": {
     "level": 0,
     "choice_count": 2,

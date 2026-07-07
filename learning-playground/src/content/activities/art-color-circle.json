@@ -4,6 +4,13 @@
   "title": "Color the Circle",
   "domain": "art",
   "skill_ids": ["color_fill"],
+  "transfer": {
+    "skill_ids": ["color_fill"],
+    "context_type": "same_format_same_examples",
+    "context_id": "tap-color-fill-shape",
+    "example_set_id": "circle-basic-colors",
+    "prompt_mode": "mixed"
+  },
   "difficulty": {
     "level": 1,
     "choice_count": 4,

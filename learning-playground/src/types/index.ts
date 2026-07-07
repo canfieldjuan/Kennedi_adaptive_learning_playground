@@ -10,7 +10,12 @@ export type {
   DistractorStrength,
 } from './domains';
 
-export type { LearningActivity } from './activity';
+export type {
+  ActivityTransferMetadata,
+  LearningActivity,
+  TransferContextType,
+  TransferPromptMode,
+} from './activity';
 
 export type {
   AttemptOutcome,
@@ -32,6 +37,11 @@ export type {
   ParentDifficultyOverride,
   ParentDifficultyOverrideType,
 } from './parent-actions';
+
+export type {
+  ParentTransferDecision,
+  ParentTransferDecisionType,
+} from './transfer';
 
 export type {
   ParentSettings,

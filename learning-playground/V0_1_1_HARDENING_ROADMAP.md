@@ -294,3 +294,26 @@ Still not changing:
 * No accounts or cloud sync.
 * No automatic child-facing routing.
 * No reward system, streaks, rankings, or pressure loops.
+
+## Phase 3.5: Transfer Coverage + Content Gap Engine
+
+Status: Phase 3.5 continues in v0.2.1.
+
+Completed:
+
+* Add required transfer metadata to existing approved activities.
+* Add planned transfer context types to the curriculum graph.
+* Add transfer coverage evaluation for approved, successful, and missing contexts.
+* Add content gap recommendations that cite missing context type and suggested template.
+* Keep single-context fluency separate from likely mastery.
+* Store parent approve/hold transfer-content choices locally.
+* Include parent transfer decisions in export and clear-data behavior.
+
+Still not changing:
+
+* No new games.
+* No backend.
+* No accounts or cloud sync.
+* No automatic child-facing routing.
+* No mass-generated activities.
+* No reward system, streaks, rankings, or pressure loops.

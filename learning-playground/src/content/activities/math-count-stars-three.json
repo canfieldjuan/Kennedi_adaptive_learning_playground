@@ -4,6 +4,13 @@
   "title": "Count the Stars",
   "domain": "math",
   "skill_ids": ["counting", "subitizing"],
+  "transfer": {
+    "skill_ids": ["counting", "subitizing"],
+    "context_type": "same_format_same_examples",
+    "context_id": "tap-quantity-choice",
+    "example_set_id": "three-stars-line",
+    "prompt_mode": "mixed"
+  },
   "difficulty": {
     "level": 1,
     "choice_count": 3,

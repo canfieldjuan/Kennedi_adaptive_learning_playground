@@ -1,4 +1,5 @@
 import type { ActivityAttemptEvent } from '../types/events';
+import type { LearningActivity } from '../types/activity';
 import type { ParentObservation } from '../types/observations';
 import type { CurriculumSkill } from './curriculum-graph';
 
@@ -40,8 +41,12 @@ type CountedOutcome = 'correct' | 'incorrect' | 'abandoned';
 export function buildEvidenceForSkill(params: {
   skill: CurriculumSkill;
   events: ActivityAttemptEvent[];
+  activities?: LearningActivity[];
   observations?: ParentObservation[];
 }): EvidenceSummary {
+  const activityById = new Map(
+    (params.activities ?? []).map((activity) => [activity.id, activity])
+  );
   const skillEvents = params.events
     .filter((event) => event.skill_ids.includes(params.skill.id))
     .sort(compareEventsByTimestamp);
@@ -54,7 +59,7 @@ export function buildEvidenceForSkill(params: {
     event.outcome === 'completed'
   ));
   const activityContexts = getUniqueSorted(
-    correctEvents.map((event) => event.activity_id)
+    correctEvents.map((event) => getEvidenceContext(event, activityById))
   );
   const accuracy = countedEvents.length === 0
     ? 0
@@ -265,6 +270,13 @@ function getAverageResponseMs(events: ActivityAttemptEvent[]): number {
   return Math.round(
     events.reduce((sum, event) => sum + event.response_time_ms, 0) / events.length
   );
+}
+
+function getEvidenceContext(
+  event: ActivityAttemptEvent,
+  activityById: Map<string, LearningActivity>
+): string {
+  return activityById.get(event.activity_id)?.transfer.context_type ?? event.activity_id;
 }
 
 function getUniqueSorted(values: string[]): string[] {

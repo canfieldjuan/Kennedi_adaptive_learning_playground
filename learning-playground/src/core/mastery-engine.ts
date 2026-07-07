@@ -1,5 +1,7 @@
 import type { ActivityAttemptEvent } from '../types/events';
+import type { LearningActivity } from '../types/activity';
 import type { ParentObservation } from '../types/observations';
+import { APPROVED_ACTIVITIES } from '../content/activity-catalog';
 import {
   type CurriculumGraph,
   loadCurriculumGraph,
@@ -10,15 +12,22 @@ import {
   type EvidenceSummary,
   type MasteryEvidence,
 } from './evidence';
+import {
+  evaluateTransferCoverage,
+  type TransferCoverageEvaluation,
+} from './transfer-coverage';
 
 export type MasteryStatus =
   | 'not_started'
   | 'introduced'
   | 'practicing'
+  | 'single_context_fluent'
+  | 'transfer_ready'
   | 'likely_mastered'
   | 'mastered'
   | 'needs_review'
-  | 'regressed';
+  | 'regressed'
+  | 'blocked_by_content_gap';
 
 export type RecommendedMasteryAction =
   | 'introduce'
@@ -37,6 +46,7 @@ export interface MasteryEvaluation {
   confidence: number;
   evidence: MasteryEvidence[];
   evidence_summary: string;
+  transfer_coverage: TransferCoverageEvaluation;
   reason: string;
   recommended_action: RecommendedMasteryAction;
   skill_graph_rule: string;
@@ -50,6 +60,7 @@ export interface MasteryEvaluationInput {
   observations?: ParentObservation[];
   previous_status?: MasteryStatus;
   prerequisite_statuses?: Record<string, MasteryStatus>;
+  activities?: LearningActivity[];
   graph?: CurriculumGraph;
 }
 
@@ -57,6 +68,8 @@ const STRONG_PRIOR_STATUSES: MasteryStatus[] = [
   'likely_mastered',
   'mastered',
   'needs_review',
+  'single_context_fluent',
+  'transfer_ready',
 ];
 
 export function evaluateSkillMastery(
@@ -69,11 +82,19 @@ export function evaluateSkillMastery(
   }
 
   const previousStatus = input.previous_status ?? 'not_started';
+  const activities = input.activities ?? APPROVED_ACTIVITIES;
   const evidenceSummary = buildEvidenceForSkill({
     skill,
     events: input.events,
+    activities,
     observations: input.observations ?? [],
   });
+  const transferCoverage = evaluateTransferCoverage(
+    skill.id,
+    activities,
+    evidenceSummary,
+    graph
+  );
   const prerequisiteBlock = getPrerequisiteBlock({
     skillId: input.skill_id,
     graph,
@@ -82,11 +103,13 @@ export function evaluateSkillMastery(
   const nextStatus = getNextStatus({
     previousStatus,
     evidenceSummary,
+    transferCoverage,
     prerequisiteBlock,
   });
   const recommendedAction = getRecommendedAction({
     nextStatus,
     evidenceSummary,
+    transferCoverage,
     prerequisiteBlock,
   });
 
@@ -98,7 +121,8 @@ export function evaluateSkillMastery(
     confidence: getConfidence(nextStatus, evidenceSummary),
     evidence: evidenceSummary.evidence,
     evidence_summary: formatEvidenceSummary(evidenceSummary),
-    reason: getReason(nextStatus, evidenceSummary, prerequisiteBlock),
+    transfer_coverage: transferCoverage,
+    reason: getReason(nextStatus, transferCoverage, prerequisiteBlock),
     recommended_action: recommendedAction,
     skill_graph_rule: formatSkillGraphRule(skill),
     source_event_ids: getSourceIds(evidenceSummary.evidence, 'event'),
@@ -126,6 +150,7 @@ function getPrerequisiteBlock(params: {
 function getNextStatus(params: {
   previousStatus: MasteryStatus;
   evidenceSummary: EvidenceSummary;
+  transferCoverage: TransferCoverageEvaluation;
   prerequisiteBlock?: string;
 }): MasteryStatus {
   if (params.evidenceSummary.counted_attempts === 0) return 'not_started';
@@ -140,12 +165,37 @@ function getNextStatus(params: {
 
   const hasAccuracy = hasEvidence(params.evidenceSummary.evidence, 'accuracy');
   const hasLowHintUsage = hasEvidence(params.evidenceSummary.evidence, 'low_hint_usage');
-  const hasTransfer = hasEvidence(params.evidenceSummary.evidence, 'transfer');
   const hasRetention = hasEvidence(params.evidenceSummary.evidence, 'retention');
   const hasCoreEvidence = hasAccuracy && hasLowHintUsage;
+  const successfulContextCount = params.transferCoverage.successful_context_count;
+  const requiredContextCount = params.transferCoverage.required_context_count;
 
-  if (hasCoreEvidence && hasTransfer && hasRetention) return 'mastered';
-  if (hasCoreEvidence) return 'likely_mastered';
+  if (
+    hasCoreEvidence &&
+    successfulContextCount >= requiredContextCount &&
+    hasRetention
+  ) {
+    return 'mastered';
+  }
+
+  if (hasCoreEvidence && successfulContextCount >= requiredContextCount) {
+    return 'likely_mastered';
+  }
+
+  if (hasCoreEvidence && successfulContextCount === 1) {
+    if (params.transferCoverage.status === 'ready_for_transfer') {
+      return 'transfer_ready';
+    }
+
+    return 'single_context_fluent';
+  }
+
+  if (
+    hasCoreEvidence &&
+    params.transferCoverage.status === 'blocked_by_content_gap'
+  ) {
+    return 'blocked_by_content_gap';
+  }
 
   if (
     params.evidenceSummary.accuracy < 0.5 ||
@@ -160,6 +210,7 @@ function getNextStatus(params: {
 function getRecommendedAction(params: {
   nextStatus: MasteryStatus;
   evidenceSummary: EvidenceSummary;
+  transferCoverage: TransferCoverageEvaluation;
   prerequisiteBlock?: string;
 }): RecommendedMasteryAction {
   if (params.prerequisiteBlock) return 'practice';
@@ -169,9 +220,16 @@ function getRecommendedAction(params: {
   if (params.nextStatus === 'practicing') return 'practice';
   if (params.nextStatus === 'needs_review') return 'add_support';
   if (params.nextStatus === 'regressed') return 'add_support';
+  if (params.nextStatus === 'single_context_fluent') return 'test_transfer';
+  if (params.nextStatus === 'transfer_ready') return 'test_transfer';
+  if (params.nextStatus === 'blocked_by_content_gap') return 'test_transfer';
   if (params.nextStatus === 'mastered') return 'schedule_review';
+  if (params.nextStatus === 'likely_mastered') return 'schedule_review';
 
-  if (!hasEvidence(params.evidenceSummary.evidence, 'transfer')) {
+  if (
+    params.transferCoverage.successful_context_count <
+    params.transferCoverage.required_context_count
+  ) {
     return 'test_transfer';
   }
 
@@ -201,9 +259,10 @@ function getConfidence(
 ): number {
   if (nextStatus === 'not_started') return 0;
   if (nextStatus === 'mastered') return 0.95;
-  if (nextStatus === 'likely_mastered') {
-    return evidenceSummary.activity_contexts.length > 1 ? 0.85 : 0.72;
-  }
+  if (nextStatus === 'likely_mastered') return 0.85;
+  if (nextStatus === 'transfer_ready') return 0.78;
+  if (nextStatus === 'single_context_fluent') return 0.72;
+  if (nextStatus === 'blocked_by_content_gap') return 0.72;
   if (nextStatus === 'regressed' || nextStatus === 'needs_review') return 0.65;
 
   const attemptFactor = Math.min(1, evidenceSummary.counted_attempts / 3);
@@ -212,7 +271,7 @@ function getConfidence(
 
 function getReason(
   nextStatus: MasteryStatus,
-  evidenceSummary: EvidenceSummary,
+  transferCoverage: TransferCoverageEvaluation,
   prerequisiteBlock?: string
 ): string {
   if (nextStatus === 'not_started') {
@@ -228,10 +287,22 @@ function getReason(
   }
 
   if (nextStatus === 'likely_mastered') {
-    if (!hasEvidence(evidenceSummary.evidence, 'transfer')) {
-      return 'Accuracy is strong, but mastery still needs transfer in another activity context.';
+    return 'Accuracy is strong across enough approved transfer contexts; schedule review before durable mastery.';
+  }
+
+  if (nextStatus === 'transfer_ready') {
+    return 'Single-context fluency is strong and another approved transfer context is available.';
+  }
+
+  if (nextStatus === 'single_context_fluent') {
+    if (transferCoverage.status === 'blocked_by_content_gap') {
+      return 'Single-context fluency is strong, but transfer cannot be proven because approved content coverage is missing.';
     }
-    return 'Accuracy is strong; schedule review before marking durable mastery.';
+    return 'Single-context fluency is strong, but transfer evidence is still needed.';
+  }
+
+  if (nextStatus === 'blocked_by_content_gap') {
+    return 'Transfer is required, but approved transfer content is missing.';
   }
 
   if (nextStatus === 'regressed') {
@@ -250,7 +321,7 @@ function formatEvidenceSummary(summary: EvidenceSummary): string {
     `${summary.correct_attempts}/${summary.counted_attempts} counted attempt(s) correct`,
     `${formatPercent(summary.accuracy)} accuracy`,
     `${formatPercent(summary.hint_rate)} hint rate`,
-    `${summary.activity_contexts.length} activity context(s)`,
+    `${summary.activity_contexts.length} successful transfer context(s)`,
   ].join('; ');
 }
 

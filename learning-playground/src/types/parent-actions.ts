@@ -4,7 +4,7 @@
  * Overrides are applied only after parent approval and remain local.
  */
 
-import type { ParentAdaptiveRecommendation } from '../core/parent-interpretation';
+import type { ParentAdaptiveRecommendation } from '../core/recommendation-engine';
 
 export type ParentDifficultyActionType =
   | 'use_suggestion'

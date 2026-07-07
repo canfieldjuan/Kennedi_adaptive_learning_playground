@@ -29,14 +29,18 @@ describe('parent interpretation contract', () => {
     expect(interpretation).toMatchObject({
       skill_label: 'Counting',
       status: 'Ready for next challenge',
-      recommendation: 'Review later',
+      recommendation: 'Add transfer activity',
       attempts: 4,
       recent_accuracy: 1,
-      mastery_status: 'likely_mastered',
+      mastery_status: 'single_context_fluent',
       mastery_recommended_action: 'test_transfer',
+      transfer_coverage_status: 'blocked_by_content_gap',
     });
     expect(interpretation.recommendation_reason).toContain('transfer');
     expect(interpretation.skill_graph_rule).toContain('Counting requires');
+    expect(interpretation.transfer_missing_context_types).toContain(
+      'same_format_new_examples'
+    );
   });
 
   test('detects repeated incorrect answers and recommends support', () => {
