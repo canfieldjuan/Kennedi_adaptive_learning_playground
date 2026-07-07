@@ -38,6 +38,10 @@ import {
   type ParentDifficultyActionHistoryItem,
 } from '../../core/parent-difficulty-actions';
 import {
+  buildParentAppliedFitReviews,
+  type ParentAppliedFitReview,
+} from '../../core/parent-applied-fit-review';
+import {
   buildActiveParentDifficultyOverrideHistory,
   getParentDifficultyOverrideTypeForRecommendation,
   type ParentDifficultyOverrideHistoryItem,
@@ -114,6 +118,11 @@ export function renderParentPanel(
     sessionReview,
     sessionEvents
   );
+  const appliedFitReviews = buildParentAppliedFitReviews(
+    events,
+    difficultyOverrides,
+    ACTIVITY_TITLE_LOOKUP
+  );
   const localDataHealth = buildLocalDataHealth(
     events,
     observations,
@@ -185,6 +194,7 @@ export function renderParentPanel(
     skillInterpretations,
     difficultyActions,
     difficultyOverrides,
+    appliedFitReviews,
     storage,
     context,
     parent
@@ -692,6 +702,7 @@ function createParentGuidanceSection(
   interpretations: ParentSkillInterpretation[],
   actions: ParentDifficultyAction[],
   overrides: ParentDifficultyOverride[],
+  appliedFitReviews: ParentAppliedFitReview[],
   storage: StorageServiceInterface,
   context: ParentPanelContext,
   parent: HTMLElement
@@ -715,6 +726,7 @@ function createParentGuidanceSection(
         deactivateParentDifficultyOverride(overrideId);
       }
     ));
+    section.appendChild(createAppliedFitReviewSection(appliedFitReviews));
     section.appendChild(createParentActionHistory(actions));
     return section;
   }
@@ -764,6 +776,7 @@ function createParentGuidanceSection(
       deactivateParentDifficultyOverride(overrideId);
     }
   ));
+  section.appendChild(createAppliedFitReviewSection(appliedFitReviews));
   section.appendChild(createParentActionHistory(actions));
   return section;
 
@@ -931,6 +944,80 @@ function createActiveParentGuidanceItem(
   resetButton.textContent = 'Reset active guidance';
   resetButton.addEventListener('click', () => onReset(override.override_id));
   item.appendChild(resetButton);
+
+  return item;
+}
+
+function createAppliedFitReviewSection(
+  reviews: ParentAppliedFitReview[]
+): HTMLElement {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'parent-applied-fit';
+
+  const title = document.createElement('h3');
+  title.className = 'parent-review-accuracy__title';
+  title.textContent = 'Applied Guidance Review';
+  wrapper.appendChild(title);
+
+  if (reviews.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-section__placeholder';
+    empty.textContent = 'No active guidance is ready for review yet.';
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'parent-applied-fit__list';
+  for (const review of reviews) {
+    list.appendChild(createAppliedFitReviewItem(review));
+  }
+  wrapper.appendChild(list);
+
+  return wrapper;
+}
+
+function createAppliedFitReviewItem(
+  review: ParentAppliedFitReview
+): HTMLElement {
+  const item = document.createElement('div');
+  item.className = 'parent-applied-fit__item';
+
+  const meta = document.createElement('span');
+  meta.className = 'parent-active-guidance__meta';
+  meta.textContent = `${review.skill_label} · ${formatParentTimestamp(review.active_since)}`;
+  item.appendChild(meta);
+
+  const recommendation = document.createElement('strong');
+  recommendation.className = 'parent-active-guidance__choice';
+  recommendation.textContent = review.recommendation;
+  item.appendChild(recommendation);
+
+  const reason = document.createElement('p');
+  reason.className = 'parent-active-guidance__reason';
+  reason.textContent = review.reason;
+  item.appendChild(reason);
+
+  const metrics = document.createElement('div');
+  metrics.className = 'parent-applied-fit__metrics';
+  metrics.appendChild(createProgressMetric('Guidance', review.override_label));
+  metrics.appendChild(createProgressMetric('Attempts', `${review.correct_attempts}/${review.attempt_count}`));
+  metrics.appendChild(createProgressMetric('Accuracy', review.accuracy_label));
+  metrics.appendChild(createProgressMetric('Hints', String(review.hints_used)));
+  metrics.appendChild(createProgressMetric('Stops', String(review.abandoned_count)));
+  metrics.appendChild(createProgressMetric(
+    'Activities',
+    review.activity_titles.length > 0
+      ? formatList(review.activity_titles)
+      : 'No applied activity yet'
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Latest',
+    review.latest_attempt_at
+      ? formatParentTimestamp(review.latest_attempt_at)
+      : 'No applied attempt yet'
+  ));
+  item.appendChild(metrics);
 
   return item;
 }
@@ -1234,6 +1321,14 @@ function createSection(titleText: string, rows: SettingRow[]): HTMLElement {
 
 function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
+}
+
+function formatParentTimestamp(timestamp: string): string {
+  const [date = '', timeWithZone = ''] = timestamp.split('T');
+  const time = timeWithZone.slice(0, 5);
+  if (!date || !time) return timestamp;
+
+  return `${date} ${time} UTC`;
 }
 
 function formatList(values: string[]): string {

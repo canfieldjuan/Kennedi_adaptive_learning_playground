@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.1.7 runtime baseline
+Version: v0.1.8 applied-fit review baseline
 
 ## Current Working MVP
 
@@ -20,11 +20,12 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent Panel behind a visible local parent check.
 - Settings summary for display name, difficulty mode, session length, audio, speech, video, and enabled domains.
 - Local progress summary by skill.
-- Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, and parent notes.
+- Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and parent notes.
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Local progress export and reset.
 - Local parent gate phrase setting.
 - Active parent-approved guidance state by skill, applied only to supported tap-choice activities.
+- Applied Guidance Review summarizes local attempts after active guidance affects a supported activity.
 
 ## Local Data
 
@@ -36,6 +37,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent observations are stored in localStorage and included in export.
 - Parent difficulty action history and active guidance state are stored in localStorage and included in export.
 - Attempt event metadata records when parent-approved guidance affected a supported activity.
+- Applied-fit review is derived from local event metadata and active guidance records.
 - Export includes metadata, app baseline/version, section list, and local data health.
 - Child data does not leave the device by default.
 

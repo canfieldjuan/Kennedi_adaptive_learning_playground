@@ -542,12 +542,19 @@
   margin-top: var(--space-md);
 }
 
+.parent-applied-fit {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
 .parent-active-guidance__list {
   display: grid;
   gap: var(--space-sm);
 }
 
-.parent-active-guidance__item {
+.parent-active-guidance__item,
+.parent-applied-fit__item {
   display: grid;
   gap: 0.3rem;
   padding: var(--space-sm);
@@ -572,6 +579,17 @@
   color: var(--parent-text-soft);
   font-size: 0.88rem;
   margin: 0;
+}
+
+.parent-applied-fit__list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.parent-applied-fit__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: var(--space-sm);
 }
 
 .parent-action-history {
@@ -673,7 +691,8 @@
   .parent-recent-attempts__details,
   .parent-guidance-row__evidence,
   .parent-data-snapshot__metrics,
-  .parent-data-health__metrics {
+  .parent-data-health__metrics,
+  .parent-applied-fit__metrics {
     grid-template-columns: 1fr;
   }
 

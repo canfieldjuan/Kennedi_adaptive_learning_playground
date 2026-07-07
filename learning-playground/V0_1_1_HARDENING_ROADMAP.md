@@ -252,6 +252,18 @@ Completed:
 * Show applied guidance in parent Recent Attempts.
 * Leave coloring and Video Vault unsupported for difficulty application in this slice.
 
+## Completed Slice: Applied Guidance Fit Review
+
+Status: Phase 3.3 is complete in v0.1.8.
+
+Completed:
+
+* Summarize attempts after active parent-approved guidance affects an activity.
+* Show accuracy, hints, stops, activity titles, and a parent-safe keep/reset/support review.
+* Keep the review local and deterministic.
+* Do not mutate active guidance automatically from the review.
+* Do not add new games, backend services, accounts, cloud sync, or child-facing routing.
+
 Still not changing:
 
 * No new games.
