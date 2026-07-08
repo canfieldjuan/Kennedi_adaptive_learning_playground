@@ -27,7 +27,12 @@ export interface TrayState {
   decorationId?: string;
 }
 
-type ViewStage = 'phone' | 'make' | 'fix' | 'delivery' | 'complete';
+type ViewStage = 'phone' | 'make' | 'fix' | 'delivery' | 'handoff' | 'complete';
+
+// Duration of the delivery handoff beat (the plated food travels to the bear and
+// the bear receives it) before the round completes. Kept in sync with the
+// cafeHandoffTravel/cafeHandoffReceive CSS animations.
+const HANDOFF_DURATION_MS = 900;
 
 let container: HTMLElement | null = null;
 let cleanupHandlers: Array<() => void> = [];
@@ -98,6 +103,15 @@ export function renderKennedisOrdersActivity(
 
     if (stage === 'delivery') {
       renderDeliveryStage(container, content, options, () => {
+        stage = 'handoff';
+        render();
+      });
+      return;
+    }
+
+    if (stage === 'handoff') {
+      renderHandoffStage(container, content, tray);
+      const handoffTimer = window.setTimeout(() => {
         stage = 'complete';
         options.audio.play('soft_chime');
         options.speech.speak(content.character.happyLine);
@@ -111,7 +125,8 @@ export function renderKennedisOrdersActivity(
           replayCount,
         });
         render();
-      });
+      }, HANDOFF_DURATION_MS);
+      cleanupHandlers.push(() => window.clearTimeout(handoffTimer));
       return;
     }
 
@@ -519,6 +534,44 @@ function renderCheckAction(
   actionRow.appendChild(checkButton);
 
   parent.appendChild(actionRow);
+}
+
+function renderHandoffStage(
+  parent: HTMLElement,
+  content: BearCafeContent,
+  tray: TrayState
+): void {
+  const handoff = document.createElement('section');
+  handoff.className = 'bear-cafe-handoff';
+
+  const track = document.createElement('div');
+  track.className = 'bear-cafe-handoff__track';
+
+  const trayEl = document.createElement('div');
+  trayEl.className = 'bear-cafe-handoff__tray';
+  trayEl.setAttribute('aria-hidden', 'true');
+  const foodIcons = getSelectedFoodIds(tray)
+    .map((foodId) => content.foods.find((food) => food.id === foodId)?.icon ?? '')
+    .filter(Boolean)
+    .join(' ');
+  trayEl.textContent = foodIcons || '🧺';
+
+  const bear = document.createElement('div');
+  bear.className = 'bear-cafe-handoff__bear';
+  bear.setAttribute('aria-hidden', 'true');
+  bear.textContent = content.character.icon;
+
+  track.appendChild(trayEl);
+  track.appendChild(bear);
+
+  const text = document.createElement('p');
+  text.className = 'bear-cafe-handoff__text';
+  text.setAttribute('role', 'status');
+  text.textContent = 'Delivering…';
+
+  handoff.appendChild(track);
+  handoff.appendChild(text);
+  parent.appendChild(handoff);
 }
 
 function renderDeliveryStage(
