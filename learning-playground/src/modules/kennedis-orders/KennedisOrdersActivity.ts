@@ -584,10 +584,7 @@ function renderPlatingStage(
   const plate = document.createElement('div');
   plate.className = 'bear-cafe-plating__plate';
   plate.setAttribute('aria-hidden', 'true');
-  const foodIcons = getSelectedFoodIds(tray)
-    .map((foodId) => content.foods.find((food) => food.id === foodId)?.icon ?? '')
-    .filter(Boolean)
-    .join(' ');
+  const foodIcons = getPlatedFoodIcons(content, tray);
   plate.textContent = foodIcons || '🍽️';
 
   const text = document.createElement('p');
@@ -614,10 +611,7 @@ function renderHandoffStage(
   const trayEl = document.createElement('div');
   trayEl.className = 'bear-cafe-handoff__tray';
   trayEl.setAttribute('aria-hidden', 'true');
-  const foodIcons = getSelectedFoodIds(tray)
-    .map((foodId) => content.foods.find((food) => food.id === foodId)?.icon ?? '')
-    .filter(Boolean)
-    .join(' ');
+  const foodIcons = getPlatedFoodIcons(content, tray);
   trayEl.textContent = foodIcons || '🧺';
 
   const bear = document.createElement('div');
@@ -895,6 +889,19 @@ function getSelectedFoodIds(tray: TrayState): string[] {
   return Object.entries(tray.foodCounts)
     .filter(([, count]) => count > 0)
     .map(([foodId]) => foodId);
+}
+
+// Space-joined icons for the assembled plate, expanded by quantity so a correct
+// multi-count order (e.g. { cookie: 2 }) shows two 🍪, not one. The plating and
+// handoff beats must never contradict a correct quantity answer.
+export function getPlatedFoodIcons(content: BearCafeContent, tray: TrayState): string {
+  return Object.entries(tray.foodCounts)
+    .filter(([, count]) => count > 0)
+    .flatMap(([foodId, count]) => {
+      const icon = content.foods.find((food) => food.id === foodId)?.icon ?? '';
+      return icon ? Array.from({ length: count }, () => icon) : [];
+    })
+    .join(' ');
 }
 
 function getSelectedAnswer(content: BearCafeContent, tray: TrayState): string {

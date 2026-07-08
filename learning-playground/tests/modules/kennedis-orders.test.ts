@@ -10,6 +10,7 @@ import {
   createKennedisOrdersEvent,
   evaluateTray,
   getBearCafeContent,
+  getPlatedFoodIcons,
   type TrayState,
 } from '../../src/modules/kennedis-orders/KennedisOrdersActivity';
 import type { LearningActivity } from '../../src/types/activity';
@@ -260,6 +261,22 @@ describe("Kennedi's Orders adapter contract", () => {
       correct: true,
       issue: 'none',
     });
+  });
+
+  test('plated icons preserve quantity so a correct count is not contradicted by the beats', () => {
+    // A correct { cookie: 2 } tray must plate two cookies during the cook/plating
+    // and handoff beats — not one, which would show wrong-quantity feedback right
+    // after a correct quantity answer.
+    const twoCookies = getRequiredContent(getActivity('kennedis-orders-two-cookies-001'));
+    expect(getPlatedFoodIcons(twoCookies, { foodCounts: { cookie: 2 } })).toBe('🍪 🍪');
+
+    // A single item stays single (no false expansion).
+    const banana = getRequiredContent(getActivity('kennedis-orders-banana-001'));
+    expect(getPlatedFoodIcons(banana, { foodCounts: { banana: 1 } }).split(' ')).toHaveLength(1);
+
+    // A three-count order plates three icons.
+    const berries = getRequiredContent(getActivity('kennedis-orders-pink-berries-001'));
+    expect(getPlatedFoodIcons(berries, { foodCounts: { berry: 3 } }).split(' ')).toHaveLength(3);
   });
 
   test('bake time finale offers a new shift instead of chaining on', () => {
