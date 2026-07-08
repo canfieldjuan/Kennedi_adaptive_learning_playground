@@ -3,11 +3,17 @@
  */
 
 import { describe, expect, test } from 'vitest';
+import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import { ACTIVITY_TITLE_LOOKUP } from '../../src/content/activity-title-lookup';
 import {
   formatRecentAttempts,
   resolveActivityTitle,
 } from '../../src/core/parent-review-format';
+import {
+  createKennedisOrdersEvent,
+  getBearCafeContent,
+} from '../../src/modules/kennedis-orders/KennedisOrdersActivity';
+import type { LearningActivity } from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
 
 describe('parent review formatting contract', () => {
@@ -71,8 +77,338 @@ describe('parent review formatting contract', () => {
       parent_guidance_label: 'Applied: Promote gently',
     });
     expect(recentAttempts[1].activity_title).toBe('Count the Stars');
+    expect(recentAttempts.some((attempt) => attempt.outcome === 'completed')).toBe(false);
+  });
+
+  test('formats Bear Cafe delivered orders as parent-readable recent attempts', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'completed',
+      tray: { foodCounts: { berry: 3 }, colorId: 'pink' },
+      attemptNumber: 1,
+      responseTimeMs: 2600,
+      hintShown: false,
+      replayCount: 1,
+      eventName: 'order_delivered',
+    });
+
+    const recentAttempts = formatRecentAttempts([event], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(1);
+    expect(recentAttempts[0]).toMatchObject({
+      activity_id: 'kennedis-orders-pink-berries-001',
+      activity_title: 'Three Pink Berries Order',
+      skill_labels: ['Counting', 'Color Fill'],
+      prompt_text: 'Mama Bear wants 3 pink berries.',
+      selected_answer: '3 berry, pink',
+      correct_answer: '3 pink berry',
+      outcome_label: 'Completed',
+      hint_used: false,
+      response_time_label: '2.6 sec',
+    });
+  });
+
+  test('collapses Bear Cafe tray check success when a matching delivery is present', () => {
+    const activity = getActivity('kennedis-orders-banana-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const tray = { foodCounts: { banana: 1 } };
+    const trayChecked = {
+      ...createKennedisOrdersEvent({
+        activity,
+        content,
+        sessionId: 'session-1',
+        childId: 'local-child',
+        outcome: 'correct',
+        tray,
+        attemptNumber: 1,
+        responseTimeMs: 1800,
+        hintShown: false,
+        replayCount: 0,
+        eventName: 'tray_checked',
+      }),
+      event_id: 'bear-cafe-tray-checked',
+      timestamp: '2026-01-01T12:00:00.000Z',
+    };
+    const delivered = {
+      ...createKennedisOrdersEvent({
+        activity,
+        content,
+        sessionId: 'session-1',
+        childId: 'local-child',
+        outcome: 'completed',
+        tray,
+        attemptNumber: 1,
+        responseTimeMs: 2600,
+        hintShown: false,
+        replayCount: 0,
+        eventName: 'order_delivered',
+      }),
+      event_id: 'bear-cafe-delivered',
+      timestamp: '2026-01-01T12:00:05.000Z',
+    };
+
+    const recentAttempts = formatRecentAttempts([
+      trayChecked,
+      delivered,
+    ], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(1);
+    expect(recentAttempts[0]).toMatchObject({
+      event_id: 'bear-cafe-delivered',
+      activity_id: 'kennedis-orders-banana-001',
+      activity_title: 'Banana Order',
+      outcome_label: 'Completed',
+    });
+  });
+
+  test('keeps Bear Cafe tray check success when the order was not delivered', () => {
+    const activity = getActivity('kennedis-orders-banana-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { banana: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 1800,
+      hintShown: false,
+      replayCount: 0,
+      eventName: 'tray_checked',
+    });
+
+    const recentAttempts = formatRecentAttempts([event], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(1);
+    expect(recentAttempts[0]).toMatchObject({
+      activity_id: 'kennedis-orders-banana-001',
+      activity_title: 'Banana Order',
+      outcome_label: 'Correct',
+    });
+  });
+
+  test('keeps later identical Bear Cafe tray check success after an earlier delivery', () => {
+    const activity = getActivity('kennedis-orders-banana-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const tray = { foodCounts: { banana: 1 } };
+    const firstTrayChecked = {
+      ...createKennedisOrdersEvent({
+        activity,
+        content,
+        sessionId: 'session-1',
+        childId: 'local-child',
+        outcome: 'correct',
+        tray,
+        attemptNumber: 1,
+        responseTimeMs: 1800,
+        hintShown: false,
+        replayCount: 0,
+        eventName: 'tray_checked',
+      }),
+      event_id: 'first-banana-tray-checked',
+      timestamp: '2026-01-01T12:00:00.000Z',
+    };
+    const firstDelivered = {
+      ...createKennedisOrdersEvent({
+        activity,
+        content,
+        sessionId: 'session-1',
+        childId: 'local-child',
+        outcome: 'completed',
+        tray,
+        attemptNumber: 1,
+        responseTimeMs: 2600,
+        hintShown: false,
+        replayCount: 0,
+        eventName: 'order_delivered',
+      }),
+      event_id: 'first-banana-delivered',
+      timestamp: '2026-01-01T12:00:05.000Z',
+    };
+    const secondTrayChecked = {
+      ...createKennedisOrdersEvent({
+        activity,
+        content,
+        sessionId: 'session-1',
+        childId: 'local-child',
+        outcome: 'correct',
+        tray,
+        attemptNumber: 1,
+        responseTimeMs: 1700,
+        hintShown: false,
+        replayCount: 0,
+        eventName: 'tray_checked',
+      }),
+      event_id: 'second-banana-tray-checked',
+      timestamp: '2026-01-01T12:03:00.000Z',
+    };
+
+    const recentAttempts = formatRecentAttempts([
+      firstTrayChecked,
+      firstDelivered,
+      secondTrayChecked,
+    ], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(2);
+    expect(recentAttempts.map((attempt) => attempt.event_id)).toEqual([
+      'second-banana-tray-checked',
+      'first-banana-delivered',
+    ]);
+    expect(recentAttempts.map((attempt) => attempt.outcome_label)).toEqual([
+      'Correct',
+      'Completed',
+    ]);
+  });
+
+  test('delivered Bear Cafe orders do not crowd out earlier struggle evidence', () => {
+    const activity = getActivity('kennedis-orders-banana-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const cafeEvents = [1, 2, 3].flatMap((orderNumber) => {
+      const tray = { foodCounts: { banana: 1 } };
+      const trayChecked = {
+        ...createKennedisOrdersEvent({
+          activity,
+          content,
+          sessionId: 'session-1',
+          childId: 'local-child',
+          outcome: 'correct',
+          tray,
+          attemptNumber: 1,
+          responseTimeMs: 1800,
+          hintShown: false,
+          replayCount: 0,
+          eventName: 'tray_checked',
+        }),
+        event_id: `banana-${orderNumber}-tray-checked`,
+        timestamp: `2026-01-01T12:0${orderNumber}:00.000Z`,
+      };
+      const delivered = {
+        ...createKennedisOrdersEvent({
+          activity,
+          content,
+          sessionId: 'session-1',
+          childId: 'local-child',
+          outcome: 'completed',
+          tray,
+          attemptNumber: 1,
+          responseTimeMs: 2600,
+          hintShown: false,
+          replayCount: 0,
+          eventName: 'order_delivered',
+        }),
+        event_id: `banana-${orderNumber}-delivered`,
+        timestamp: `2026-01-01T12:0${orderNumber}:05.000Z`,
+      };
+
+      return [trayChecked, delivered];
+    });
+
+    const recentAttempts = formatRecentAttempts([
+      makeEvent({
+        eventId: 'earlier-incorrect',
+        timestamp: '2026-01-01T12:00:00.000Z',
+        outcome: 'incorrect',
+        activityId: 'phonics-find-b',
+        skillIds: ['initial_sound'],
+        promptText: 'Find the word that starts with b.',
+        selectedAnswer: 'cat',
+        correctAnswer: 'bear',
+      }),
+      ...cafeEvents,
+    ], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(4);
+    expect(recentAttempts.map((attempt) => attempt.event_id)).toEqual([
+      'banana-3-delivered',
+      'banana-2-delivered',
+      'banana-1-delivered',
+      'earlier-incorrect',
+    ]);
+    expect(recentAttempts.map((attempt) => attempt.outcome_label)).toEqual([
+      'Completed',
+      'Completed',
+      'Completed',
+      'Incorrect',
+    ]);
+  });
+
+  test('does not duplicate ordinary success with immediate completion events', () => {
+    const recentAttempts = formatRecentAttempts([
+      makeEvent({
+        eventId: 'event-1',
+        timestamp: '2026-01-01T12:00:00.000Z',
+        outcome: 'correct',
+        activityId: 'math-count-stars-three',
+        skillIds: ['counting'],
+        promptText: 'How many stars do you see?',
+        selectedAnswer: '3',
+        correctAnswer: '3',
+      }),
+      makeEvent({
+        eventId: 'event-2',
+        timestamp: '2026-01-01T12:00:01.000Z',
+        outcome: 'completed',
+        activityId: 'math-count-stars-three',
+        skillIds: ['counting'],
+        promptText: 'How many stars do you see?',
+        selectedAnswer: '3',
+        correctAnswer: '3',
+      }),
+      makeEvent({
+        eventId: 'event-3',
+        timestamp: '2026-01-01T12:01:00.000Z',
+        outcome: 'correct',
+        activityId: 'art-color-circle',
+        skillIds: ['color_fill'],
+        promptText: 'Pick a color for the circle.',
+        selectedAnswer: 'Blue',
+        correctAnswer: 'Blue',
+      }),
+      makeEvent({
+        eventId: 'event-4',
+        timestamp: '2026-01-01T12:01:01.000Z',
+        outcome: 'completed',
+        activityId: 'art-color-circle',
+        skillIds: ['color_fill'],
+        promptText: 'Pick a color for the circle.',
+        selectedAnswer: 'Blue',
+        correctAnswer: 'Blue',
+      }),
+    ], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(2);
+    expect(recentAttempts.map((attempt) => attempt.outcome_label)).toEqual([
+      'Correct',
+      'Correct',
+    ]);
+    expect(recentAttempts.map((attempt) => attempt.activity_title)).toEqual([
+      'Color the Circle',
+      'Count the Stars',
+    ]);
   });
 });
+
+function getActivity(activityId: string): LearningActivity {
+  const activity = APPROVED_ACTIVITIES.find((activity) => activity.id === activityId);
+  if (!activity) throw new Error(`Missing activity ${activityId}`);
+  return activity;
+}
 
 function makeEvent(overrides: {
   eventId: string;
