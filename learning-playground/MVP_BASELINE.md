@@ -1,10 +1,10 @@
 # MVP Baseline
 
-Version: v0.3.1 parent-started Bear Cafe baseline
+Version: v0.3.1 direct-route plus Parent Panel Bear Cafe launch baseline
 
 ## Current Working MVP
 
-The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a parent-started Kennedi's Orders adapter, a local Video Vault shell, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
+The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a direct-route Kennedi's Orders adapter with a Parent Panel launch path, a local Video Vault shell, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
 
 ## Child Modules
 
@@ -22,7 +22,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 ## Parent Modules
 
 - Parent Panel behind a visible local parent check.
-- Parent Panel includes a parent-started Bear Cafe launch button.
+- Parent Panel includes a Bear Cafe launch button for parent-led play.
 - Settings summary for display name, difficulty mode, session length, audio, speech, video, and enabled domains.
 - Local progress summary by skill.
 - Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and parent notes.
