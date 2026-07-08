@@ -27,12 +27,18 @@ export interface TrayState {
   decorationId?: string;
 }
 
-type ViewStage = 'phone' | 'make' | 'fix' | 'delivery' | 'handoff' | 'complete';
+type ViewStage = 'phone' | 'make' | 'fix' | 'plating' | 'delivery' | 'handoff' | 'complete';
 
 // Duration of the delivery handoff beat (the plated food travels to the bear and
 // the bear receives it) before the round completes. Kept in sync with the
 // cafeHandoffTravel/cafeHandoffReceive CSS animations.
 const HANDOFF_DURATION_MS = 900;
+
+// Duration of the cook/plating beat (the order assembles/plates up) between a
+// correct check and the "Order ready!" delivery stage. Cosmetic only — the
+// tray_checked event is already emitted synchronously on the check, so an
+// interrupted beat drops no evidence.
+const PLATING_DURATION_MS = 800;
 
 // Stage-appropriate bear reaction accents (issue #3 richness): the bear shows a
 // waiting cue while its order is prepared, a receiving sparkle at handoff, and a
@@ -113,6 +119,18 @@ export function renderKennedisOrdersActivity(
         options.speech.speak(content.prompt_audio);
         render();
       });
+      return;
+    }
+
+    if (stage === 'plating') {
+      renderPlatingStage(container, content, tray);
+      const platingTimer = window.setTimeout(() => {
+        options.audio.play('soft_chime');
+        options.speech.speak('Order ready.');
+        stage = 'delivery';
+        render();
+      }, PLATING_DURATION_MS);
+      cleanupHandlers.push(() => window.clearTimeout(platingTimer));
       return;
     }
 
@@ -201,9 +219,9 @@ export function renderKennedisOrdersActivity(
         if (result.correct) {
           feedbackTone = 'success';
           feedbackText = 'Order ready.';
-          options.audio.play('soft_chime');
-          options.speech.speak('Order ready.');
-          stage = 'delivery';
+          // Play the cook/plating beat first; the "Order ready" chime + speech
+          // fire when it resolves to the delivery stage.
+          stage = 'plating';
           render();
           return;
         }
@@ -555,6 +573,30 @@ function renderCheckAction(
   parent.appendChild(actionRow);
 }
 
+function renderPlatingStage(
+  parent: HTMLElement,
+  content: BearCafeContent,
+  tray: TrayState
+): void {
+  const plating = document.createElement('section');
+  plating.className = 'bear-cafe-plating';
+
+  const plate = document.createElement('div');
+  plate.className = 'bear-cafe-plating__plate';
+  plate.setAttribute('aria-hidden', 'true');
+  const foodIcons = getPlatedFoodIcons(content, tray);
+  plate.textContent = foodIcons || '🍽️';
+
+  const text = document.createElement('p');
+  text.className = 'bear-cafe-plating__text';
+  text.setAttribute('role', 'status');
+  text.textContent = 'Plating your order…';
+
+  plating.appendChild(plate);
+  plating.appendChild(text);
+  parent.appendChild(plating);
+}
+
 function renderHandoffStage(
   parent: HTMLElement,
   content: BearCafeContent,
@@ -569,10 +611,7 @@ function renderHandoffStage(
   const trayEl = document.createElement('div');
   trayEl.className = 'bear-cafe-handoff__tray';
   trayEl.setAttribute('aria-hidden', 'true');
-  const foodIcons = getSelectedFoodIds(tray)
-    .map((foodId) => content.foods.find((food) => food.id === foodId)?.icon ?? '')
-    .filter(Boolean)
-    .join(' ');
+  const foodIcons = getPlatedFoodIcons(content, tray);
   trayEl.textContent = foodIcons || '🧺';
 
   const bear = document.createElement('div');
@@ -850,6 +889,19 @@ function getSelectedFoodIds(tray: TrayState): string[] {
   return Object.entries(tray.foodCounts)
     .filter(([, count]) => count > 0)
     .map(([foodId]) => foodId);
+}
+
+// Space-joined icons for the assembled plate, expanded by quantity so a correct
+// multi-count order (e.g. { cookie: 2 }) shows two 🍪, not one. The plating and
+// handoff beats must never contradict a correct quantity answer.
+export function getPlatedFoodIcons(content: BearCafeContent, tray: TrayState): string {
+  return Object.entries(tray.foodCounts)
+    .filter(([, count]) => count > 0)
+    .flatMap(([foodId, count]) => {
+      const icon = content.foods.find((food) => food.id === foodId)?.icon ?? '';
+      return icon ? Array.from({ length: count }, () => icon) : [];
+    })
+    .join(' ');
 }
 
 function getSelectedAnswer(content: BearCafeContent, tray: TrayState): string {
