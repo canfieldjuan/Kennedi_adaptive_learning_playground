@@ -274,6 +274,80 @@ describe('parent review formatting contract', () => {
     ]);
   });
 
+  test('delivered Bear Cafe orders do not crowd out earlier struggle evidence', () => {
+    const activity = getActivity('kennedis-orders-banana-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const cafeEvents = [1, 2, 3].flatMap((orderNumber) => {
+      const tray = { foodCounts: { banana: 1 } };
+      const trayChecked = {
+        ...createKennedisOrdersEvent({
+          activity,
+          content,
+          sessionId: 'session-1',
+          childId: 'local-child',
+          outcome: 'correct',
+          tray,
+          attemptNumber: 1,
+          responseTimeMs: 1800,
+          hintShown: false,
+          replayCount: 0,
+          eventName: 'tray_checked',
+        }),
+        event_id: `banana-${orderNumber}-tray-checked`,
+        timestamp: `2026-01-01T12:0${orderNumber}:00.000Z`,
+      };
+      const delivered = {
+        ...createKennedisOrdersEvent({
+          activity,
+          content,
+          sessionId: 'session-1',
+          childId: 'local-child',
+          outcome: 'completed',
+          tray,
+          attemptNumber: 1,
+          responseTimeMs: 2600,
+          hintShown: false,
+          replayCount: 0,
+          eventName: 'order_delivered',
+        }),
+        event_id: `banana-${orderNumber}-delivered`,
+        timestamp: `2026-01-01T12:0${orderNumber}:05.000Z`,
+      };
+
+      return [trayChecked, delivered];
+    });
+
+    const recentAttempts = formatRecentAttempts([
+      makeEvent({
+        eventId: 'earlier-incorrect',
+        timestamp: '2026-01-01T12:00:00.000Z',
+        outcome: 'incorrect',
+        activityId: 'phonics-find-b',
+        skillIds: ['initial_sound'],
+        promptText: 'Find the word that starts with b.',
+        selectedAnswer: 'cat',
+        correctAnswer: 'bear',
+      }),
+      ...cafeEvents,
+    ], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(4);
+    expect(recentAttempts.map((attempt) => attempt.event_id)).toEqual([
+      'banana-3-delivered',
+      'banana-2-delivered',
+      'banana-1-delivered',
+      'earlier-incorrect',
+    ]);
+    expect(recentAttempts.map((attempt) => attempt.outcome_label)).toEqual([
+      'Completed',
+      'Completed',
+      'Completed',
+      'Incorrect',
+    ]);
+  });
+
   test('does not duplicate ordinary success with immediate completion events', () => {
     const recentAttempts = formatRecentAttempts([
       makeEvent({

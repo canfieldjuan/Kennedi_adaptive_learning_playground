@@ -94,8 +94,8 @@ function isReviewAttemptEvent(
   event: ActivityAttemptEvent,
   supersededBearCafeTrayCheckIds: Set<string>
 ): boolean {
-  if (supersededBearCafeTrayCheckIds.has(event.event_id)) {
-    return false;
+  if (isBearCafeTrayCheckSuccess(event)) {
+    return !supersededBearCafeTrayCheckIds.has(event.event_id);
   }
 
   if (REVIEW_ATTEMPT_OUTCOMES.has(event.outcome)) return true;
