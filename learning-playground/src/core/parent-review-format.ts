@@ -66,10 +66,10 @@ export function formatRecentAttempts(
   titleLookup: ActivityTitleLookup,
   limit = 6
 ): ParentRecentAttempt[] {
-  const deliveredBearCafeOrderKeys = getDeliveredBearCafeOrderKeys(events);
+  const supersededBearCafeTrayCheckIds = getSupersededBearCafeTrayCheckIds(events);
 
   return [...events]
-    .filter((event) => isReviewAttemptEvent(event, deliveredBearCafeOrderKeys))
+    .filter((event) => isReviewAttemptEvent(event, supersededBearCafeTrayCheckIds))
     .sort(compareNewestFirst)
     .slice(0, Math.max(0, limit))
     .map((event) => ({
@@ -92,9 +92,9 @@ export function formatRecentAttempts(
 
 function isReviewAttemptEvent(
   event: ActivityAttemptEvent,
-  deliveredBearCafeOrderKeys: Set<string>
+  supersededBearCafeTrayCheckIds: Set<string>
 ): boolean {
-  if (isSupersededBearCafeTrayCheck(event, deliveredBearCafeOrderKeys)) {
+  if (supersededBearCafeTrayCheckIds.has(event.event_id)) {
     return false;
   }
 
@@ -110,25 +110,39 @@ function isBearCafeDeliveredOrder(event: ActivityAttemptEvent): boolean {
   );
 }
 
-function getDeliveredBearCafeOrderKeys(
+function getSupersededBearCafeTrayCheckIds(
   events: ActivityAttemptEvent[]
 ): Set<string> {
-  return new Set(
-    events
-      .filter(isBearCafeDeliveredOrder)
-      .map(getBearCafeOrderKey)
-  );
+  const pendingTrayChecksByOrderKey = new Map<string, ActivityAttemptEvent[]>();
+  const supersededTrayCheckIds = new Set<string>();
+
+  [...events].sort(compareOldestFirst).forEach((event) => {
+    const orderKey = getBearCafeOrderKey(event);
+
+    if (isBearCafeTrayCheckSuccess(event)) {
+      const pendingTrayChecks = pendingTrayChecksByOrderKey.get(orderKey) ?? [];
+      pendingTrayChecks.push(event);
+      pendingTrayChecksByOrderKey.set(orderKey, pendingTrayChecks);
+      return;
+    }
+
+    if (!isBearCafeDeliveredOrder(event)) return;
+
+    const pendingTrayChecks = pendingTrayChecksByOrderKey.get(orderKey);
+    const supersededTrayCheck = pendingTrayChecks?.pop();
+    if (supersededTrayCheck) {
+      supersededTrayCheckIds.add(supersededTrayCheck.event_id);
+    }
+  });
+
+  return supersededTrayCheckIds;
 }
 
-function isSupersededBearCafeTrayCheck(
-  event: ActivityAttemptEvent,
-  deliveredBearCafeOrderKeys: Set<string>
-): boolean {
+function isBearCafeTrayCheckSuccess(event: ActivityAttemptEvent): boolean {
   return (
     event.outcome === 'correct' &&
     event.activity_id.startsWith('kennedis-orders-') &&
-    event.metadata?.event_name === 'tray_checked' &&
-    deliveredBearCafeOrderKeys.has(getBearCafeOrderKey(event))
+    event.metadata?.event_name === 'tray_checked'
   );
 }
 
@@ -192,5 +206,15 @@ function compareNewestFirst(
   return (
     b.timestamp.localeCompare(a.timestamp) ||
     b.event_id.localeCompare(a.event_id)
+  );
+}
+
+function compareOldestFirst(
+  a: ActivityAttemptEvent,
+  b: ActivityAttemptEvent
+): number {
+  return (
+    a.timestamp.localeCompare(b.timestamp) ||
+    a.event_id.localeCompare(b.event_id)
   );
 }

@@ -93,7 +93,7 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Parent Guidance can store parent approve/hold transfer-content choices locally.
 - Parent Guidance can show a concrete approved transfer activity and let the parent start or hold it.
 - Recent Attempts shows when parent-approved guidance was applied to a supported activity.
-- Recent Attempts includes Bear Cafe delivered-order completion events with prompt, selected tray, correct order, outcome, hint state, and response time, while collapsing the matching Bear Cafe tray-check success row.
+- Recent Attempts includes Bear Cafe delivered-order completion events with prompt, selected tray, correct order, outcome, hint state, and response time, while collapsing only the specific matching Bear Cafe tray-check success row.
 - Applied Guidance Review summarizes the attempts after active guidance affected a supported activity and offers a keep/reset/support review.
 - Parent notes are stored locally as `ParentObservation` records.
 - Shows Parent Gate Settings for changing the local adult gate phrase.
@@ -120,7 +120,7 @@ The current implementation has passed:
 The most recent test state was:
 
 - 31 test files passing
-- 147 tests passing
+- 148 tests passing
 
 Browser smoke checks confirmed:
 
@@ -131,7 +131,7 @@ Browser smoke checks confirmed:
 - Parent Gate Settings renders with the current phrase and can apply/reset the local phrase.
 - Session Review renders.
 - Recent Attempts renders.
-- Recent Attempts shows Bear Cafe delivered-order completion evidence after child-started play without duplicating the matching tray-check success.
+- Recent Attempts shows Bear Cafe delivered-order completion evidence after child-started play without duplicating its matching tray-check success or hiding a later unfinished identical order.
 - Recent Attempts shows applied parent guidance after a supported tap-choice activity uses it.
 - Applied Guidance Review renders and summarizes post-guidance attempts.
 - Parent Guidance renders.
