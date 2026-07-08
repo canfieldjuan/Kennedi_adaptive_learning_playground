@@ -1,10 +1,10 @@
 # MVP Baseline
 
-Version: v0.3.0 Kennedi's Orders adapter baseline
+Version: v0.3.1 parent-started Bear Cafe baseline
 
 ## Current Working MVP
 
-The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a direct-route Kennedi's Orders adapter, a local Video Vault shell, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
+The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a parent-started Kennedi's Orders adapter, a local Video Vault shell, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
 
 ## Child Modules
 
@@ -16,12 +16,13 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Targeted transfer variants for Words, Math, Art, and shape/spatial practice use the same existing runtimes.
 - The first rich transfer variant is a phonics reverse-mapping activity that asks from a word back to its starting letter.
 - Math now has a medium transfer activity that asks from a visual dot card to the matching numeral.
-- Kennedi's Orders / Bear Cafe is registered as a six-activity local game route but is not yet on the home grid.
+- Kennedi's Orders / Bear Cafe is registered as a six-activity local game route and can be started from the Parent Panel, but is not yet on the home grid.
 - Puzzle activity remains registered and reachable by direct route, but is not currently on the four-slot home grid.
 
 ## Parent Modules
 
 - Parent Panel behind a visible local parent check.
+- Parent Panel includes a parent-started Bear Cafe launch button.
 - Settings summary for display name, difficulty mode, session length, audio, speech, video, and enabled domains.
 - Local progress summary by skill.
 - Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and parent notes.

@@ -98,6 +98,9 @@ const PARENT_ACTION_TYPES: ParentDifficultyActionType[] = [
   'ignore_for_now',
 ];
 
+const BEAR_CAFE_FIRST_ACTIVITY_ID = 'kennedis-orders-banana-001';
+const BEAR_CAFE_ROUTE = `#activity/${BEAR_CAFE_FIRST_ACTIVITY_ID}`;
+
 interface SettingRow {
   label: string;
   value: string;
@@ -213,6 +216,7 @@ export function renderParentPanel(
     ])
   );
 
+  _container.appendChild(createParentGameLaunchSection());
   _container.appendChild(createParentGateSettingsSection(
     settings,
     storage,
@@ -318,6 +322,53 @@ function createLocalDataSnapshotSection(
   }
   section.appendChild(metrics);
 
+  return section;
+}
+
+function createParentGameLaunchSection(): HTMLElement {
+  const section = document.createElement('div');
+  section.className = 'parent-section parent-game-launch';
+
+  const title = document.createElement('h2');
+  title.className = 'parent-section__title';
+  title.textContent = 'Parent-Started Games';
+  section.appendChild(title);
+
+  const card = document.createElement('div');
+  card.className = 'parent-game-launch__card';
+
+  const details = document.createElement('div');
+  details.className = 'parent-game-launch__details';
+
+  const gameTitle = document.createElement('h3');
+  gameTitle.className = 'parent-game-launch__title';
+  gameTitle.textContent = 'Bear Cafe';
+  details.appendChild(gameTitle);
+
+  const status = document.createElement('p');
+  status.className = 'parent-game-launch__status';
+  status.textContent = 'Kennedi\'s Orders';
+  details.appendChild(status);
+
+  const meta = document.createElement('div');
+  meta.className = 'parent-game-launch__meta';
+  meta.appendChild(createProgressMetric('Entry', 'Banana Order'));
+  meta.appendChild(createProgressMetric('Home Grid', 'Hidden'));
+  details.appendChild(meta);
+
+  const launchButton = document.createElement('button');
+  launchButton.className = 'parent-panel__back parent-game-launch__button';
+  launchButton.type = 'button';
+  launchButton.textContent = 'Start Bear Cafe';
+  launchButton.setAttribute('aria-label', 'Start Bear Cafe');
+  launchButton.dataset.activityId = BEAR_CAFE_FIRST_ACTIVITY_ID;
+  launchButton.addEventListener('click', () => {
+    window.location.hash = BEAR_CAFE_ROUTE;
+  });
+
+  card.appendChild(details);
+  card.appendChild(launchButton);
+  section.appendChild(card);
   return section;
 }
 
