@@ -15,7 +15,8 @@ import type {
   SkillMasteryState,
 } from '../types/progress';
 
-const PROFILE_VERSION = 1;
+const PROFILE_VERSION = 2;
+const LEGACY_PROGRESS_MAX_LEVEL = 5;
 const RECENT_ATTEMPT_LIMIT = 5;
 const PROMOTION_ATTEMPT_MINIMUM = 5;
 
@@ -41,25 +42,28 @@ export function buildProgressProfileFromEvents(
   existingProfile?: ChildProgressProfile,
   nowIso = new Date().toISOString()
 ): ChildProgressProfile {
+  const graph = loadCurriculumGraph();
+  const normalizedExistingProfile = existingProfile
+    ? normalizeProgressProfileLevels(existingProfile, graph).profile
+    : undefined;
   const childEvents = events
     .filter((event) => event.child_id === childId)
     .sort(compareEventsByTimestamp);
 
   const createdAt =
-    existingProfile?.created_at ??
+    normalizedExistingProfile?.created_at ??
     childEvents[0]?.timestamp ??
     nowIso;
   const updatedAt =
     childEvents[childEvents.length - 1]?.timestamp ??
-    existingProfile?.updated_at ??
+    normalizedExistingProfile?.updated_at ??
     nowIso;
 
   const skillEvents = groupEventsBySkill(childEvents);
   const skillMastery: Record<string, SkillMasteryState> = {};
-  const graph = loadCurriculumGraph();
 
   for (const [skillId, eventsForSkill] of skillEvents) {
-    const existingSkill = existingProfile?.skill_mastery[skillId];
+    const existingSkill = normalizedExistingProfile?.skill_mastery[skillId];
     skillMastery[skillId] = buildSkillMasteryState(
       skillId,
       eventsForSkill,
@@ -87,14 +91,19 @@ export function normalizeProgressProfileLevels(
   profile: ChildProgressProfile,
   graph: CurriculumGraph = loadCurriculumGraph()
 ): ProgressProfileNormalizationResult {
-  let changed = false;
+  const storedProfileVersion = Number.isFinite(profile.profile_version)
+    ? profile.profile_version
+    : 0;
+  const isLegacyProfile = storedProfileVersion < PROFILE_VERSION;
+  let changed = isLegacyProfile;
   const skillMastery: Record<string, SkillMasteryState> = {};
 
   for (const [skillId, state] of Object.entries(profile.skill_mastery)) {
     const normalizedLevel = normalizeSkillLevel(
       skillId,
       state.current_level,
-      graph
+      graph,
+      isLegacyProfile
     );
     changed ||= normalizedLevel !== state.current_level;
     skillMastery[skillId] = normalizedLevel === state.current_level
@@ -109,6 +118,7 @@ export function normalizeProgressProfileLevels(
     profile: changed
       ? {
         ...profile,
+        profile_version: PROFILE_VERSION,
         skill_mastery: skillMastery,
       }
       : profile,
@@ -355,7 +365,8 @@ function clamp(value: number, minimum: number, maximum: number): number {
 function normalizeSkillLevel(
   skillId: string,
   currentLevel: number,
-  graph: CurriculumGraph
+  graph: CurriculumGraph,
+  translateLegacyLevel = false
 ): number {
   const lowestLevel = graph.getLowestSkillLevel(skillId)?.level;
   const maxLevel = graph.getMaxSkillLevel(skillId)?.level;
@@ -367,7 +378,29 @@ function normalizeSkillLevel(
   const normalizedLevel = Number.isFinite(currentLevel)
     ? Math.trunc(currentLevel)
     : lowestLevel;
-  return clamp(normalizedLevel, lowestLevel, maxLevel);
+  const level = translateLegacyLevel
+    ? translateLegacyProgressLevel(normalizedLevel, lowestLevel, maxLevel)
+    : normalizedLevel;
+  return clamp(level, lowestLevel, maxLevel);
+}
+
+function translateLegacyProgressLevel(
+  legacyLevel: number,
+  lowestLevel: number,
+  maxLevel: number
+): number {
+  const legacyRange = Math.max(0, maxLevel - lowestLevel);
+  if (legacyRange === 0) return lowestLevel;
+
+  const clampedLegacyLevel = clamp(
+    legacyLevel,
+    0,
+    LEGACY_PROGRESS_MAX_LEVEL
+  );
+  const translatedOffset = Math.floor(
+    (clampedLegacyLevel / LEGACY_PROGRESS_MAX_LEVEL) * legacyRange
+  );
+  return lowestLevel + translatedOffset;
 }
 
 function hasTwoRecentAbandons(events: ActivityAttemptEvent[]): boolean {

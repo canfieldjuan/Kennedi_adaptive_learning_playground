@@ -90,7 +90,7 @@
           "level": 1,
           "label": "Matches first sound",
           "min_difficulty_level": 3,
-          "max_difficulty_level": 4
+          "max_difficulty_level": 5
         },
         {
           "level": 2,
@@ -350,7 +350,7 @@
           "level": 1,
           "label": "Completes a fill",
           "min_difficulty_level": 2,
-          "max_difficulty_level": 3
+          "max_difficulty_level": 4
         },
         {
           "level": 2,
