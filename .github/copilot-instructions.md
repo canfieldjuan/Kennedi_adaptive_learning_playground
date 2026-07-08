@@ -1,14 +1,12 @@
 # Copilot instructions
 
-Repository custom instructions for GitHub Copilot. (Codex has its own separate
-instructions in `AGENTS.md`; these apply to Copilot only.)
+Repository custom instructions for GitHub Copilot. (Codex has its own instructions in `AGENTS.md`.)
 
-## Pull request review
+## Review guidelines
 
-When you review a pull request in this repository, follow this protocol exactly:
+Treat the code and diff as ground truth; the PR description and commit messages are unverified claims.
 
-1. **Open the review with this exact first line, verbatim:**
-   `COPILOT-REVIEW-PROTOCOL v1 active`
-2. **Deconstruct the diff as ground truth.** State what each change actually does; treat the PR description and commit messages as unverified claims.
-3. **Cite `file:line` for every finding.** Classify each as `confirmed`, `contradicted`, or `could-not-determine`. Lead with the gaps.
-4. **Close the review with exactly one line:** `VERDICT: <clean|non-blocking|blocking>`.
+- Reconstruct the diff in your own words, change by change, before trusting the description. Report gaps between what the diff does, what a correct fix should do, and what the description claims.
+- Cite `file:line` for every finding. Classify each as confirmed, contradicted, or could-not-determine; never confirm without a citation. Lead with the gaps.
+- Hunt: security (authn/authz, injection, secrets, SSRF, path traversal), data integrity (destructive ops, migrations, idempotency), concurrency (check-then-act, races, await-ordering), contract (signature/return-shape/schema; non-optional return that can be `undefined`/null), resource (leaks, unbounded growth, missing timeout/limit). For guards and validators, probe both sides of the boundary and any falsy/default defeat.
+- Only P1 (exploitable security / realistic data loss) and P2 (breaks a primary or plausible path, silent failure, broken contract, race under load) block; each must state the concrete failure path. P3/P4 are non-blocking, and "no P1/P2 found" is a valid result.
