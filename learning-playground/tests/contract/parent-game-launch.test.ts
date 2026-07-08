@@ -37,7 +37,7 @@ describe('parent game launch contract', () => {
     expect(window.location.hash).toBe('#activity/kennedis-orders-banana-001');
   });
 
-  test('Bear Cafe is not exposed on the four-slot child home grid', () => {
+  test('Bear Cafe replaces Videos on the four-slot child home grid', () => {
     const sources = import.meta.glob(
       '../../src/modules/home/HomeScreen.ts',
       {
@@ -50,14 +50,15 @@ describe('parent game launch contract', () => {
 
     expect(source.match(/id: 'home-/g) ?? []).toHaveLength(4);
     expect(source).toContain("label: 'Words'");
-    expect(source).toContain("label: 'Videos'");
+    expect(source).toContain("label: 'Cafe'");
     expect(source).toContain("label: 'Math'");
     expect(source).toContain("label: 'Art'");
-    expect(source).not.toContain('kennedis-orders');
-    expect(source).not.toContain('Bear Cafe');
+    expect(source).toContain("speechLabel: 'Bear Cafe'");
+    expect(source).toContain("route: '#activity/kennedis-orders-banana-001'");
+    expect(source).not.toContain("label: 'Videos'");
   });
 
-  test('parent launch does not add automatic child routing or new game modules', () => {
+  test('Bear Cafe launch does not add new game modules', () => {
     const parentSources = import.meta.glob(
       '../../src/modules/parent-panel/ParentPanel.ts',
       {

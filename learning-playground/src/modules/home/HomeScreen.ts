@@ -27,12 +27,12 @@ const HOME_OPTIONS: HomeOption[] = [
     route: '#activity/phonics-find-b',
   },
   {
-    id: 'home-videos',
-    icon: '▶️',
-    label: 'Videos',
+    id: 'home-cafe',
+    icon: '☎️',
+    label: 'Cafe',
     color: 'blue',
-    speechLabel: 'Videos',
-    route: '#activity/video-vault',
+    speechLabel: 'Bear Cafe',
+    route: '#activity/kennedis-orders-banana-001',
   },
   {
     id: 'home-math',
