@@ -34,6 +34,21 @@ type ViewStage = 'phone' | 'make' | 'fix' | 'delivery' | 'handoff' | 'complete';
 // cafeHandoffTravel/cafeHandoffReceive CSS animations.
 const HANDOFF_DURATION_MS = 900;
 
+// Stage-appropriate bear reaction accents (issue #3 richness): the bear shows a
+// waiting cue while its order is prepared, a receiving sparkle at handoff, and a
+// happy heart on completion — instead of the same static icon in every stage.
+type BearReaction = 'waiting' | 'receiving' | 'happy';
+
+const BEAR_REACTION_GLYPH: Record<BearReaction, string> = {
+  waiting: '💭',
+  receiving: '✨',
+  happy: '💛',
+};
+
+function bearReactionAccent(reaction: BearReaction): string {
+  return `<span class="bear-cafe-reaction bear-cafe-reaction--${reaction}" aria-hidden="true">${BEAR_REACTION_GLYPH[reaction]}</span>`;
+}
+
 let container: HTMLElement | null = null;
 let cleanupHandlers: Array<() => void> = [];
 
@@ -367,7 +382,7 @@ function renderOrderCard(parent: HTMLElement, content: BearCafeContent): void {
   const order = document.createElement('section');
   order.className = 'bear-cafe-order';
   order.innerHTML = `
-    <div class="bear-cafe-order__bear" aria-hidden="true">${content.character.icon}</div>
+    <div class="bear-cafe-order__bear" aria-hidden="true">${content.character.icon}${bearReactionAccent('waiting')}</div>
     <div>
       <p class="bear-cafe-order__caller">${content.character.name}</p>
       <p class="bear-cafe-order__meta">Order ticket</p>
@@ -563,7 +578,7 @@ function renderHandoffStage(
   const bear = document.createElement('div');
   bear.className = 'bear-cafe-handoff__bear';
   bear.setAttribute('aria-hidden', 'true');
-  bear.textContent = content.character.icon;
+  bear.innerHTML = content.character.icon + bearReactionAccent('receiving');
 
   track.appendChild(trayEl);
   track.appendChild(bear);
@@ -611,7 +626,7 @@ function renderDeliveryStage(
       <span>To the window</span>
     </div>
     <div class="bear-cafe-delivery__window" aria-hidden="true">
-      <span>${content.character.icon}</span>
+      <span>${content.character.icon}</span>${bearReactionAccent('waiting')}
     </div>
   `;
   delivery.appendChild(deliveryScene);
@@ -622,7 +637,7 @@ function renderCompleteStage(parent: HTMLElement, content: BearCafeContent): voi
   const complete = document.createElement('section');
   complete.className = 'bear-cafe-complete';
   complete.innerHTML = `
-    <div class="bear-cafe-complete__bear" aria-hidden="true">${content.character.icon}</div>
+    <div class="bear-cafe-complete__bear" aria-hidden="true">${content.character.icon}${bearReactionAccent('happy')}</div>
     <p class="bear-cafe-complete__text">Order delivered.</p>
   `;
 

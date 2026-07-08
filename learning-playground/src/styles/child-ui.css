@@ -1108,6 +1108,26 @@
   text-align: center;
 }
 
+.bear-cafe-reaction {
+  display: inline-block;
+  margin-left: 0.08em;
+  font-size: 0.62em;
+  vertical-align: super;
+  line-height: 1;
+}
+
+.bear-cafe-reaction--waiting {
+  animation: cafeReactionWait 2200ms ease-in-out infinite;
+}
+
+.bear-cafe-reaction--receiving {
+  animation: cafeReactionReceive 900ms ease-out;
+}
+
+.bear-cafe-reaction--happy {
+  animation: cafeReactionHappy 1400ms ease-in-out 3;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bear-cafe-phone__button,
   .bear-cafe-phone__icon--ringing,
@@ -1118,6 +1138,9 @@
   .bear-cafe-complete__bear,
   .bear-cafe-handoff__tray,
   .bear-cafe-handoff__bear,
+  .bear-cafe-reaction--waiting,
+  .bear-cafe-reaction--receiving,
+  .bear-cafe-reaction--happy,
   .bear-cafe-food[data-selected="true"],
   .bear-cafe-swatch[data-selected="true"],
   .bear-cafe-decoration[data-selected="true"] {
@@ -1191,6 +1214,22 @@
   0%, 65% { transform: translateY(0) scale(1); }
   80% { transform: translateY(-8px) scale(1.1); }
   100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes cafeReactionWait {
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50% { transform: translateY(-3px); opacity: 1; }
+}
+
+@keyframes cafeReactionReceive {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes cafeReactionHappy {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.28); }
 }
 
 .home-card {
