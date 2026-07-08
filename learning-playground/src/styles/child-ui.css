@@ -954,10 +954,36 @@
 
 .bear-cafe-delivery,
 .bear-cafe-complete {
+  position: relative;
   display: grid;
   place-items: center;
   gap: var(--space-md);
   min-height: 180px;
+}
+
+.bear-cafe-celebrate {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.bear-cafe-celebrate__piece {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  font-size: 1.4rem;
+  opacity: 0; /* hidden until the burst plays; stays hidden under reduced motion */
+  animation: cafeCelebrateBurst 1400ms ease-out var(--delay, 0ms);
+}
+
+@keyframes cafeCelebrateBurst {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  20% { opacity: 1; }
+  100% {
+    transform: translate(calc(-50% + var(--tx, 0px)), calc(-50% + var(--ty, 0px))) scale(1);
+    opacity: 0;
+  }
 }
 
 .bear-cafe-delivery__basket {
@@ -1168,6 +1194,7 @@
   .bear-cafe-handoff__tray,
   .bear-cafe-handoff__bear,
   .bear-cafe-plating__plate,
+  .bear-cafe-celebrate__piece,
   .bear-cafe-reaction--waiting,
   .bear-cafe-reaction--receiving,
   .bear-cafe-reaction--happy,

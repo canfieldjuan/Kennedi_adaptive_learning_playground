@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.7 real audio baseline
+Version: v0.3.8 completion celebration baseline
 
 ## Current Working MVP
 
@@ -21,6 +21,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - The Bear Cafe bear now shows stage reaction accents across the order arc — waiting while its order is prepared, receiving at the handoff, happy on completion — derived from a runtime stage→glyph map (no activity content/schema change), reduced-motion-guarded.
 - A correct Bear Cafe check now plays a short cook/plating beat (the order plates up) before "Order ready!"; `tray_checked` still emits on the check (the beat is cosmetic), reduced-motion-guarded.
 - Feedback cues (`soft_chime`, `soft_boing`) now produce real sound — synthesized in-process with the Web Audio API (no external assets/network/deps, so the local-only safety boundary holds), soft and short, gated by the parent Sound Effects setting. Shared across all game runtimes; silent no-op where Web Audio is unavailable.
+- The Bear Cafe complete screen now plays a one-time celebration burst (a consistent 12-piece confetti/star burst) — positive completion feedback, deterministic (no randomness), not a reward loop or streak; reduced-motion hides it.
 - Puzzle activity remains registered and reachable by direct route, but is not currently on the four-slot home grid.
 
 ## Parent Modules
