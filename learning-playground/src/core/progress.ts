@@ -4,6 +4,11 @@
  */
 
 import { shouldAddSupport, shouldPromoteSkill } from './adaptive-engine';
+import {
+  loadCurriculumGraph,
+  type CurriculumGraph,
+  type CurriculumSkillLevel,
+} from './curriculum-graph';
 import type { ActivityAttemptEvent } from '../types/events';
 import type {
   ChildProgressProfile,
@@ -51,13 +56,15 @@ export function buildProgressProfileFromEvents(
 
   const skillEvents = groupEventsBySkill(childEvents);
   const skillMastery: Record<string, SkillMasteryState> = {};
+  const graph = loadCurriculumGraph();
 
   for (const [skillId, eventsForSkill] of skillEvents) {
     const existingSkill = existingProfile?.skill_mastery[skillId];
     skillMastery[skillId] = buildSkillMasteryState(
       skillId,
       eventsForSkill,
-      existingSkill
+      existingSkill,
+      graph
     );
   }
 
@@ -71,10 +78,49 @@ export function buildProgressProfileFromEvents(
   };
 }
 
+export interface ProgressProfileNormalizationResult {
+  profile: ChildProgressProfile;
+  changed: boolean;
+}
+
+export function normalizeProgressProfileLevels(
+  profile: ChildProgressProfile,
+  graph: CurriculumGraph = loadCurriculumGraph()
+): ProgressProfileNormalizationResult {
+  let changed = false;
+  const skillMastery: Record<string, SkillMasteryState> = {};
+
+  for (const [skillId, state] of Object.entries(profile.skill_mastery)) {
+    const normalizedLevel = normalizeSkillLevel(
+      skillId,
+      state.current_level,
+      graph
+    );
+    changed ||= normalizedLevel !== state.current_level;
+    skillMastery[skillId] = normalizedLevel === state.current_level
+      ? state
+      : {
+        ...state,
+        current_level: normalizedLevel,
+      };
+  }
+
+  return {
+    profile: changed
+      ? {
+        ...profile,
+        skill_mastery: skillMastery,
+      }
+      : profile,
+    changed,
+  };
+}
+
 function buildSkillMasteryState(
   skillId: string,
   events: ActivityAttemptEvent[],
-  existingSkill?: SkillMasteryState
+  existingSkill: SkillMasteryState | undefined,
+  graph: CurriculumGraph
 ): SkillMasteryState {
   const countedEvents = events.filter(hasCountedOutcome);
   const latestEvent = events[events.length - 1];
@@ -92,7 +138,9 @@ function buildSkillMasteryState(
     countedEvents.length,
     recentHintCount
   );
-  const baseLevel = existingSkill?.current_level ?? latestEvent.difficulty_level;
+  const baseLevel = getBaseLevel(skillId, existingSkill, graph);
+  const maxLevel = graph.getMaxSkillLevel(skillId)?.level ?? baseLevel;
+  const currentLevel = getSkillLevelOrFallback(skillId, baseLevel, graph);
 
   const candidate: SkillMasteryState = {
     skill_id: skillId,
@@ -107,10 +155,18 @@ function buildSkillMasteryState(
     needs_review: shouldMarkNeedsReview(recentAttempts, recentHintCount),
   };
 
-  if (shouldPromoteFromEvents(candidate, countedEvents, existingSkill?.last_promoted_at)) {
+  if (
+    baseLevel < maxLevel &&
+    shouldPromoteFromEvents(
+      candidate,
+      events,
+      currentLevel,
+      existingSkill?.last_promoted_at
+    )
+  ) {
     return {
       ...candidate,
-      current_level: Math.min(baseLevel + 1, 5),
+      current_level: Math.min(baseLevel + 1, maxLevel),
       last_promoted_at: latestCountedEvent?.timestamp ?? latestEvent.timestamp,
       needs_review: false,
     };
@@ -216,19 +272,102 @@ function shouldMarkNeedsReview(
 
 function shouldPromoteFromEvents(
   state: SkillMasteryState,
-  countedEvents: ActivityAttemptEvent[],
+  events: ActivityAttemptEvent[],
+  currentLevel: CurriculumSkillLevel,
   lastPromotedAt?: string
 ): boolean {
   const eventsSincePromotion = lastPromotedAt
-    ? countedEvents.filter((event) => event.timestamp > lastPromotedAt)
-    : countedEvents;
+    ? events.filter((event) => event.timestamp > lastPromotedAt)
+    : events;
+  const eventsInCurrentBand = eventsSincePromotion.filter((event) => (
+    isWithinDifficultyBand(event, currentLevel)
+  ));
+  const eligibleAttempts = eventsInCurrentBand.filter(hasCountedOutcome);
 
-  if (eventsSincePromotion.length < PROMOTION_ATTEMPT_MINIMUM) return false;
+  if (eligibleAttempts.length < PROMOTION_ATTEMPT_MINIMUM) return false;
+
+  const recentEligibleAttempts = eligibleAttempts.slice(-RECENT_ATTEMPT_LIMIT);
+  const recentCorrectAttempts = recentEligibleAttempts.filter((event) => (
+    event.outcome === 'correct'
+  ));
+  const recentHintCount = countRecentHints(eventsInCurrentBand);
+  const recentAccuracy = calculateAccuracy(
+    recentCorrectAttempts.length,
+    recentEligibleAttempts.length
+  );
+  const confidence = calculateConfidence(
+    recentAccuracy,
+    eligibleAttempts.length,
+    recentHintCount
+  );
 
   return shouldPromoteSkill({
     ...state,
-    total_attempts: eventsSincePromotion.length,
+    total_attempts: eligibleAttempts.length,
+    correct_attempts: eligibleAttempts.filter((event) => (
+      event.outcome === 'correct'
+    )).length,
+    recent_accuracy: recentAccuracy,
+    recent_average_response_ms: calculateAverageResponseTime(recentEligibleAttempts),
+    confidence,
   });
+}
+
+function getBaseLevel(
+  skillId: string,
+  existingSkill: SkillMasteryState | undefined,
+  graph: CurriculumGraph
+): number {
+  const lowestLevel = graph.getLowestSkillLevel(skillId)?.level ?? 0;
+  if (!existingSkill) return lowestLevel;
+
+  return normalizeSkillLevel(skillId, existingSkill.current_level, graph);
+}
+
+function getSkillLevelOrFallback(
+  skillId: string,
+  level: number,
+  graph: CurriculumGraph
+): CurriculumSkillLevel {
+  return graph.getSkillLevel(skillId, level) ??
+    graph.getLowestSkillLevel(skillId) ?? {
+      level: 0,
+      label: 'Starting level',
+      min_difficulty_level: 0,
+      max_difficulty_level: 5,
+    };
+}
+
+function isWithinDifficultyBand(
+  event: ActivityAttemptEvent,
+  level: CurriculumSkillLevel
+): boolean {
+  return (
+    event.difficulty_level >= level.min_difficulty_level &&
+    event.difficulty_level <= level.max_difficulty_level
+  );
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(Math.max(value, minimum), maximum);
+}
+
+function normalizeSkillLevel(
+  skillId: string,
+  currentLevel: number,
+  graph: CurriculumGraph
+): number {
+  const lowestLevel = graph.getLowestSkillLevel(skillId)?.level;
+  const maxLevel = graph.getMaxSkillLevel(skillId)?.level;
+
+  if (lowestLevel === undefined || maxLevel === undefined) {
+    return currentLevel;
+  }
+
+  const normalizedLevel = Number.isFinite(currentLevel)
+    ? Math.trunc(currentLevel)
+    : lowestLevel;
+  return clamp(normalizedLevel, lowestLevel, maxLevel);
 }
 
 function hasTwoRecentAbandons(events: ActivityAttemptEvent[]): boolean {

@@ -30,11 +30,21 @@
       "levels": [
         {
           "level": 0,
-          "label": "Shared attention"
+          "label": "Shared attention",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 1
         },
         {
           "level": 1,
-          "label": "Names familiar objects"
+          "label": "Names familiar objects",
+          "min_difficulty_level": 2,
+          "max_difficulty_level": 3
+        },
+        {
+          "level": 2,
+          "label": "Uses words flexibly in pretend play",
+          "min_difficulty_level": 4,
+          "max_difficulty_level": 5
         }
       ],
       "prerequisites": [],
@@ -72,11 +82,21 @@
       "levels": [
         {
           "level": 0,
-          "label": "Hears first sound"
+          "label": "Hears first sound",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 2
         },
         {
           "level": 1,
-          "label": "Matches first sound"
+          "label": "Matches first sound",
+          "min_difficulty_level": 3,
+          "max_difficulty_level": 4
+        },
+        {
+          "level": 2,
+          "label": "Sorts by starting sound",
+          "min_difficulty_level": 5,
+          "max_difficulty_level": 5
         }
       ],
       "prerequisites": [
@@ -116,11 +136,21 @@
       "levels": [
         {
           "level": 0,
-          "label": "Recognizes target sound"
+          "label": "Recognizes target sound",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 2
         },
         {
           "level": 1,
-          "label": "Selects matching word"
+          "label": "Selects matching word",
+          "min_difficulty_level": 3,
+          "max_difficulty_level": 4
+        },
+        {
+          "level": 2,
+          "label": "Maps words back to letters",
+          "min_difficulty_level": 5,
+          "max_difficulty_level": 5
         }
       ],
       "prerequisites": [
@@ -158,11 +188,21 @@
       "levels": [
         {
           "level": 0,
-          "label": "Counts objects with support"
+          "label": "Counts objects with support",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 1
         },
         {
           "level": 1,
-          "label": "Counts small sets"
+          "label": "Counts small pretend-play sets",
+          "min_difficulty_level": 2,
+          "max_difficulty_level": 3
+        },
+        {
+          "level": 2,
+          "label": "Counts in combined orders",
+          "min_difficulty_level": 4,
+          "max_difficulty_level": 5
         }
       ],
       "prerequisites": [],
@@ -200,11 +240,21 @@
       "levels": [
         {
           "level": 0,
-          "label": "Notices small quantities"
+          "label": "Notices small quantities",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 1
         },
         {
           "level": 1,
-          "label": "Recognizes small sets"
+          "label": "Recognizes small sets",
+          "min_difficulty_level": 2,
+          "max_difficulty_level": 3
+        },
+        {
+          "level": 2,
+          "label": "Recognizes quantities in new layouts",
+          "min_difficulty_level": 4,
+          "max_difficulty_level": 5
         }
       ],
       "prerequisites": [
@@ -242,11 +292,21 @@
       "levels": [
         {
           "level": 0,
-          "label": "Names common shapes"
+          "label": "Names common shapes",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 1
         },
         {
           "level": 1,
-          "label": "Finds target shape"
+          "label": "Finds target shape",
+          "min_difficulty_level": 2,
+          "max_difficulty_level": 3
+        },
+        {
+          "level": 2,
+          "label": "Finds shapes across changes",
+          "min_difficulty_level": 4,
+          "max_difficulty_level": 5
         }
       ],
       "prerequisites": [],
@@ -282,11 +342,21 @@
       "levels": [
         {
           "level": 0,
-          "label": "Chooses a color"
+          "label": "Chooses a color",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 1
         },
         {
           "level": 1,
-          "label": "Completes a fill"
+          "label": "Completes a fill",
+          "min_difficulty_level": 2,
+          "max_difficulty_level": 3
+        },
+        {
+          "level": 2,
+          "label": "Uses color in combined orders",
+          "min_difficulty_level": 4,
+          "max_difficulty_level": 5
         }
       ],
       "prerequisites": [],

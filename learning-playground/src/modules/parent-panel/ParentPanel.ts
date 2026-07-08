@@ -74,6 +74,7 @@ import {
   getParentEmptyStateMessage,
   type ParentDataHealthSummary,
 } from '../../core/parent-panel-summary';
+import { loadCurriculumGraph } from '../../core/curriculum-graph';
 import {
   formatActivityTitleList,
   formatRecentAttempts,
@@ -100,6 +101,7 @@ const PARENT_ACTION_TYPES: ParentDifficultyActionType[] = [
 
 const BEAR_CAFE_FIRST_ACTIVITY_ID = 'kennedis-orders-banana-001';
 const BEAR_CAFE_ROUTE = `#activity/${BEAR_CAFE_FIRST_ACTIVITY_ID}`;
+const CURRICULUM_GRAPH = loadCurriculumGraph();
 
 interface SettingRow {
   label: string;
@@ -2236,13 +2238,24 @@ function createProgressRow(state: SkillMasteryState): HTMLElement {
   skill.textContent = formatSkillLabel(state.skill_id);
   row.appendChild(skill);
 
-  row.appendChild(createProgressMetric('Level', String(state.current_level)));
+  row.appendChild(createProgressMetric('Level', formatProgressLevel(state)));
   row.appendChild(createProgressMetric('Attempts', `${state.correct_attempts}/${state.total_attempts}`));
   row.appendChild(createProgressMetric('Accuracy', formatPercent(state.recent_accuracy)));
   row.appendChild(createProgressMetric('Confidence', formatPercent(state.confidence)));
   row.appendChild(createProgressMetric('Review', state.needs_review ? 'Yes' : 'No'));
 
   return row;
+}
+
+function formatProgressLevel(state: SkillMasteryState): string {
+  const exactLevel = CURRICULUM_GRAPH.getSkillLevel(
+    state.skill_id,
+    state.current_level
+  );
+  const level = exactLevel ?? CURRICULUM_GRAPH.getMaxSkillLevel(state.skill_id);
+
+  if (!level) return String(state.current_level);
+  return `${level.level}: ${level.label}`;
 }
 
 function createProgressMetric(labelText: string, valueText: string): HTMLElement {

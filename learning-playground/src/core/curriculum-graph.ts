@@ -9,6 +9,8 @@ export interface CurriculumDomain {
 export interface CurriculumSkillLevel {
   level: number;
   label: string;
+  min_difficulty_level: number;
+  max_difficulty_level: number;
 }
 
 export interface CurriculumEvidenceRequirements {
@@ -48,6 +50,13 @@ export interface CurriculumGraphData {
 export interface CurriculumGraph {
   data: CurriculumGraphData;
   getSkill(skillId: string): CurriculumSkill | undefined;
+  getSkillLevel(skillId: string, level: number): CurriculumSkillLevel | undefined;
+  getLowestSkillLevel(skillId: string): CurriculumSkillLevel | undefined;
+  getMaxSkillLevel(skillId: string): CurriculumSkillLevel | undefined;
+  getSkillLevelForDifficulty(
+    skillId: string,
+    difficultyLevel: number
+  ): CurriculumSkillLevel | undefined;
   getPrerequisites(skillId: string): CurriculumSkill[];
   getUnlockedSkills(skillId: string): CurriculumSkill[];
 }
@@ -78,6 +87,24 @@ export function loadCurriculumGraph(
     data,
     getSkill(skillId) {
       return skillsById.get(skillId);
+    },
+    getSkillLevel(skillId, level) {
+      return skillsById.get(skillId)?.levels.find((entry) => (
+        entry.level === level
+      ));
+    },
+    getLowestSkillLevel(skillId) {
+      return getSortedLevels(skillsById.get(skillId))[0];
+    },
+    getMaxSkillLevel(skillId) {
+      const levels = getSortedLevels(skillsById.get(skillId));
+      return levels[levels.length - 1];
+    },
+    getSkillLevelForDifficulty(skillId, difficultyLevel) {
+      return getSortedLevels(skillsById.get(skillId)).find((entry) => (
+        difficultyLevel >= entry.min_difficulty_level &&
+        difficultyLevel <= entry.max_difficulty_level
+      ));
     },
     getPrerequisites(skillId) {
       const skill = skillsById.get(skillId);
@@ -115,6 +142,8 @@ export function validateCurriculumGraph(data: CurriculumGraphData): string[] {
       errors.push(`Skill ${skill.id} references missing domain ${skill.domain}`);
     }
 
+    errors.push(...validateSkillLevels(skill));
+
     if (skill.unlocks.includes(skill.id)) {
       errors.push(`Skill ${skill.id} cannot unlock itself`);
     }
@@ -143,6 +172,36 @@ export function validateCurriculumGraph(data: CurriculumGraphData): string[] {
   }
 
   errors.push(...detectPrerequisiteCycles(data));
+  return errors;
+}
+
+function validateSkillLevels(skill: CurriculumSkill): string[] {
+  const errors: string[] = [];
+  const sortedLevels = getSortedLevels(skill);
+
+  if (sortedLevels.length === 0) {
+    errors.push(`Skill ${skill.id} needs at least one curriculum level`);
+    return errors;
+  }
+
+  for (let index = 0; index < sortedLevels.length; index += 1) {
+    const level = sortedLevels[index];
+    if (level.level !== index) {
+      errors.push(`Skill ${skill.id} levels must be contiguous from 0`);
+      break;
+    }
+
+    if (
+      !Number.isInteger(level.min_difficulty_level) ||
+      !Number.isInteger(level.max_difficulty_level) ||
+      level.min_difficulty_level < 0 ||
+      level.max_difficulty_level > 5 ||
+      level.min_difficulty_level > level.max_difficulty_level
+    ) {
+      errors.push(`Skill ${skill.id} level ${level.level} has invalid difficulty band`);
+    }
+  }
+
   return errors;
 }
 
@@ -182,4 +241,10 @@ function detectPrerequisiteCycles(data: CurriculumGraphData): string[] {
 
 function hasSkill(data: CurriculumGraphData, skillId: string): boolean {
   return data.skills.some((skill) => skill.id === skillId);
+}
+
+function getSortedLevels(
+  skill: CurriculumSkill | undefined
+): CurriculumSkillLevel[] {
+  return [...(skill?.levels ?? [])].sort((a, b) => a.level - b.level);
 }

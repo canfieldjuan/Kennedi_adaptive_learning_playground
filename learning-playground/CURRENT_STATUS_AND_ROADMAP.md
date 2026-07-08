@@ -4,7 +4,7 @@
 
 The MVP is working as a local-first adaptive learning playground. The child can open the app, choose from the home screen, play working activities, and return home. The parent can open the Parent Panel, see progress, export local data, clear progress, review session-level information, add notes, and see parent-readable guidance.
 
-The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now includes a curriculum graph, mastery engine, transfer coverage layer, transfer context strength tiers, content gap engine, coverage-driven activity variant briefs, a parent-only activity brief design queue, local parent transfer and brief-decision persistence, targeted transfer variants, implemented rich phonics and math transfer variants, parent-approved transfer launch, parent-visible mastery snapshots, parent-visible review schedule records, a current-main Kennedi's Orders adapter, a Parent Panel Bear Cafe launch path, a child home Bear Cafe entry, and parent-readable Bear Cafe delivered-order evidence.
+The important shift is that Phase 2 is complete: the app has a parent-approved fit loop: observe, recommend, approve, apply, show evidence, and review fit. Phase 3 now includes a curriculum graph, mastery engine, transfer coverage layer, transfer context strength tiers, content gap engine, coverage-driven activity variant briefs, a parent-only activity brief design queue, local parent transfer and brief-decision persistence, targeted transfer variants, implemented rich phonics and math transfer variants, parent-approved transfer launch, parent-visible mastery snapshots, parent-visible review schedule records, curriculum-grounded progress level rungs with read-time storage normalization, a current-main Kennedi's Orders adapter, a Parent Panel Bear Cafe launch path, a child home Bear Cafe entry, and parent-readable Bear Cafe delivered-order evidence.
 
 ## What We Have Built
 
@@ -57,6 +57,7 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Skill state now includes attempts, correct attempts, recent accuracy, average response time, confidence, review flag, and promotion state.
 - Parent observations are stored locally and included in parent review/export.
 - Curriculum graph data defines domains, skills, skill levels, prerequisites, unlocks, evidence requirements, and review policy for existing activities.
+- Curriculum skill levels carry difficulty bands, and local progress levels now seed, promote, cap, display, and read-migrate through those declared rungs.
 - Mastery evidence cites local event IDs or parent observation IDs.
 - Transfer coverage distinguishes single-context fluency from likely mastery.
 - Transfer quality distinguishes weak transfer from medium, strong, and retention evidence.
@@ -120,7 +121,7 @@ The current implementation has passed:
 The most recent test state was:
 
 - 31 test files passing
-- 149 tests passing
+- 162 tests passing
 
 Browser smoke checks confirmed:
 
@@ -191,7 +192,7 @@ The app no longer treats one-context fluency as likely mastery. Core evidence-be
 
 ## Where We Are Headed
 
-Phase 2 is complete. Phase 3 established skill graph, mastery, transfer coverage, and content gap work. The first v0.3 adapter work integrated Kennedi's Orders without changing the home grid, the next slice added a Parent Panel Bear Cafe launch path for testing, v0.3.2 moved Bear Cafe into the child home grid, and v0.3.3 makes Bear Cafe delivered orders visible in Recent Attempts.
+Phase 2 is complete. Phase 3 established skill graph, mastery, transfer coverage, and content gap work. The first v0.3 adapter work integrated Kennedi's Orders without changing the home grid, the next slice added a Parent Panel Bear Cafe launch path for testing, v0.3.2 moved Bear Cafe into the child home grid, v0.3.3 made Bear Cafe delivered orders visible in Recent Attempts, v0.3.4 added the delivery handoff beat, v0.3.5 added Bear Cafe reaction states, v0.3.6 aligned parent-visible progress levels to curriculum rungs, and v0.3.7 normalizes stale stored progress levels before review/export.
 
 ### MVP Phase 2 Definition of Done
 
@@ -225,11 +226,12 @@ Parent can answer:
 
 ### Current Phase Status
 
-Phase 3 has continued through v0.3.3 with transfer quality, activity variant briefs, durable parent brief decisions, the parent-only activity brief design queue, mastery snapshot persistence, parent-visible review schedule records, one truth-checked rich phonics transfer variant, one truth-checked medium math transfer variant, a current-main Kennedi's Orders adapter, a Parent Panel Bear Cafe launch path, a child home Bear Cafe entry, and parent-readable delivered-order evidence from child-started Bear Cafe play.
+Phase 3 has continued through v0.3.7 with transfer quality, activity variant briefs, durable parent brief decisions, the parent-only activity brief design queue, mastery snapshot persistence, parent-visible review schedule records, one truth-checked rich phonics transfer variant, one truth-checked medium math transfer variant, a current-main Kennedi's Orders adapter, a Parent Panel Bear Cafe launch path, a child home Bear Cafe entry, parent-readable delivered-order evidence from child-started Bear Cafe play, a delivery handoff beat, Bear Cafe reaction states, curriculum-grounded progress level rungs, and read-time storage normalization for stale progress levels.
 
 What this lane now covers:
 
 - Curriculum graph for the existing MVP skills.
+- Curriculum-grounded progress levels with rung labels, difficulty bands, and read-time storage normalization.
 - Graph validation for missing references, self-unlocks, and prerequisite cycles.
 - Evidence records with local event or observation source IDs.
 - Mastery evaluation with transfer required before `mastered`.
@@ -277,6 +279,6 @@ Good candidates:
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, targeted transfer variants, truth-checked phonics and math transfer variants, a direct-route Kennedi's Orders adapter plus Parent Panel and child home Bear Cafe launch paths, parent-approved transfer launch, parent-controlled local progress, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage with context strength tiers, coverage-driven activity briefs, a parent-only activity brief design queue, local parent brief decisions, persisted mastery snapshots, parent-visible review schedules, configurable local parent gate friction, Bear Cafe delivered-order evidence in Recent Attempts, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, targeted transfer variants, truth-checked phonics and math transfer variants, a direct-route Kennedi's Orders adapter plus Parent Panel and child home Bear Cafe launch paths, parent-approved transfer launch, parent-controlled local progress with curriculum-grounded rung labels and read-time level normalization, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage with context strength tiers, coverage-driven activity briefs, a parent-only activity brief design queue, local parent brief decisions, persisted mastery snapshots, parent-visible review schedules, configurable local parent gate friction, Bear Cafe delivered-order evidence in Recent Attempts, and a parent session review layer.
 
-The current v0.3.3 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants, two implemented transfer briefs, parent-clicked transfer launch, durable parent decisions, an activity brief design queue, mastery snapshots, review schedules, the first scoped game adapter, child-started Bear Cafe play, and delivered-order parent review evidence while keeping accounts, backend auth, cloud sync, and automatic adaptive routing out of scope.
+The current v0.3.7 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants, two implemented transfer briefs, parent-clicked transfer launch, durable parent decisions, an activity brief design queue, mastery snapshots, review schedules, curriculum-aligned progress rungs with stale-profile read migration, the first scoped game adapter, child-started Bear Cafe play, a delivery handoff beat, Bear Cafe reaction states, and delivered-order parent review evidence while keeping accounts, backend auth, cloud sync, and automatic adaptive routing out of scope.

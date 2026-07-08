@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.9 idle nudge baseline
+Version: v0.3.11 progress level storage migration baseline
 
 ## Current Working MVP
 
@@ -44,6 +44,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Active parent-approved guidance state by skill, applied only to supported tap-choice activities.
 - Applied Guidance Review summarizes local attempts after active guidance affects a supported activity.
 - Curriculum graph and mastery engine reason over prerequisites, transfer, retention, and review timing.
+- Curriculum skill levels now carry difficulty bands, so parent-visible progress levels are grounded in declared rungs instead of raw activity ordering.
 - Transfer Coverage shows when a skill is fluent in one context, ready for transfer, or blocked by missing approved transfer content.
 - Transfer Coverage assigns strength tiers to transfer contexts and prevents weak-only transfer from becoming likely mastery.
 - Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant.
@@ -61,6 +62,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Attempt events include prompt text, selected answer, correct answer, response time, hint usage, and outcome.
 - Pre-v0.1.1 local attempt events are migrated on read rather than dropped.
 - Progress profiles are derived from local activity events and stored in localStorage.
+- Progress level starts at the lowest declared curriculum rung, promotes only from evidence in the current rung's difficulty band, and clamps current-version out-of-range values to the declared max rung.
+- Stored progress profiles are normalized on read, so stale pre-v0.3.6 raw levels are translated onto the current curriculum ladder before Parent Panel review or export.
 - Parent observations are stored in localStorage and included in export.
 - Parent difficulty action history and active guidance state are stored in localStorage and included in export.
 - Attempt event metadata records when parent-approved guidance affected a supported activity.

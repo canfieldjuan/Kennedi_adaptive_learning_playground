@@ -47,6 +47,31 @@ describe('curriculum graph contract', () => {
     }
   });
 
+  test('every activity difficulty maps to a declared skill level', () => {
+    const graph = loadCurriculumGraph();
+
+    for (const activity of activities) {
+      for (const skillId of activity.skill_ids) {
+        expect(
+          graph.getSkillLevelForDifficulty(skillId, activity.difficulty.level)
+        ).toBeDefined();
+      }
+    }
+  });
+
+  test('resolves curriculum level labels and difficulty bands', () => {
+    const graph = loadCurriculumGraph();
+
+    expect(graph.getSkillLevel('counting', 1)?.label).toBe(
+      'Counts small pretend-play sets'
+    );
+    expect(graph.getSkillLevelForDifficulty('counting', 4)?.label).toBe(
+      'Counts in combined orders'
+    );
+    expect(graph.getLowestSkillLevel('counting')?.level).toBe(0);
+    expect(graph.getMaxSkillLevel('counting')?.level).toBe(2);
+  });
+
   test('current graph has valid references and no circular prerequisites', () => {
     expect(validateCurriculumGraph(curriculumData as CurriculumGraphData)).toEqual([]);
   });
@@ -86,6 +111,43 @@ describe('curriculum graph contract', () => {
 
     expect(validateCurriculumGraph(graph)).toContain(
       `Skill ${graph.skills[0].id} needs at least one planned transfer context`
+    );
+  });
+
+  test('detects missing curriculum levels', () => {
+    const graph = cloneGraph();
+    graph.skills[0].levels = [];
+
+    expect(validateCurriculumGraph(graph)).toContain(
+      `Skill ${graph.skills[0].id} needs at least one curriculum level`
+    );
+  });
+
+  test('detects curriculum levels that do not start at zero', () => {
+    const graph = cloneGraph();
+    graph.skills[0].levels[0].level = 1;
+
+    expect(validateCurriculumGraph(graph)).toContain(
+      `Skill ${graph.skills[0].id} levels must be contiguous from 0`
+    );
+  });
+
+  test('detects non-contiguous curriculum levels', () => {
+    const graph = cloneGraph();
+    graph.skills[0].levels[1].level = 3;
+
+    expect(validateCurriculumGraph(graph)).toContain(
+      `Skill ${graph.skills[0].id} levels must be contiguous from 0`
+    );
+  });
+
+  test('detects invalid curriculum level difficulty bands', () => {
+    const graph = cloneGraph();
+    graph.skills[0].levels[0].min_difficulty_level = 4;
+    graph.skills[0].levels[0].max_difficulty_level = 2;
+
+    expect(validateCurriculumGraph(graph)).toContain(
+      `Skill ${graph.skills[0].id} level 0 has invalid difficulty band`
     );
   });
 
