@@ -1066,6 +1066,35 @@
   animation: popIn 420ms ease-out;
 }
 
+.bear-cafe-plating {
+  display: grid;
+  place-items: center;
+  gap: var(--space-md);
+  min-height: 200px;
+}
+
+.bear-cafe-plating__plate {
+  display: grid;
+  place-items: center;
+  min-width: 96px;
+  min-height: 96px;
+  padding: var(--space-sm);
+  border-radius: var(--radius-round);
+  background: radial-gradient(circle at 50% 42%, #ffffff 58%, #f1f5f9 100%);
+  box-shadow:
+    inset 0 0 0 6px rgba(148, 163, 184, 0.2),
+    0 10px 24px rgba(58, 36, 97, 0.16);
+  font-size: 2.4rem;
+  animation: cafePlatingUp 800ms ease-out;
+}
+
+.bear-cafe-plating__text {
+  color: #674188;
+  font-size: 1.1rem;
+  font-weight: 900;
+  text-align: center;
+}
+
 .bear-cafe-handoff {
   display: grid;
   place-items: center;
@@ -1138,6 +1167,7 @@
   .bear-cafe-complete__bear,
   .bear-cafe-handoff__tray,
   .bear-cafe-handoff__bear,
+  .bear-cafe-plating__plate,
   .bear-cafe-reaction--waiting,
   .bear-cafe-reaction--receiving,
   .bear-cafe-reaction--happy,
@@ -1208,6 +1238,12 @@
   0% { transform: translateX(0); opacity: 1; }
   75% { transform: translateX(min(58vw, 300px)); opacity: 1; }
   100% { transform: translateX(min(58vw, 300px)); opacity: 0.15; }
+}
+
+@keyframes cafePlatingUp {
+  0% { transform: scale(0.7) translateY(8px); opacity: 0; }
+  55% { transform: scale(1.08) translateY(0); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 @keyframes cafeHandoffReceive {

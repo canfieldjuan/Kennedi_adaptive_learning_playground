@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.5 Bear Cafe reaction states baseline
+Version: v0.3.6 Bear Cafe cook/plating beat baseline
 
 ## Current Working MVP
 
@@ -19,6 +19,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
 - Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
 - The Bear Cafe bear now shows stage reaction accents across the order arc — waiting while its order is prepared, receiving at the handoff, happy on completion — derived from a runtime stage→glyph map (no activity content/schema change), reduced-motion-guarded.
+- A correct Bear Cafe check now plays a short cook/plating beat (the order plates up) before "Order ready!"; `tray_checked` still emits on the check (the beat is cosmetic), reduced-motion-guarded.
 - Puzzle activity remains registered and reachable by direct route, but is not currently on the four-slot home grid.
 
 ## Parent Modules
