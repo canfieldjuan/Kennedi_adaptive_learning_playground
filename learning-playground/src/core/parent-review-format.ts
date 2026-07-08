@@ -24,6 +24,7 @@ const REVIEW_ATTEMPT_OUTCOMES = new Set<AttemptOutcome>([
   'incorrect',
   'hint_used',
   'abandoned',
+  'completed',
 ]);
 
 export function resolveActivityTitle(

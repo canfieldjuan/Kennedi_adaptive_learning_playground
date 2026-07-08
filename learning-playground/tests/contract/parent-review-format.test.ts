@@ -3,11 +3,17 @@
  */
 
 import { describe, expect, test } from 'vitest';
+import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import { ACTIVITY_TITLE_LOOKUP } from '../../src/content/activity-title-lookup';
 import {
   formatRecentAttempts,
   resolveActivityTitle,
 } from '../../src/core/parent-review-format';
+import {
+  createKennedisOrdersEvent,
+  getBearCafeContent,
+} from '../../src/modules/kennedis-orders/KennedisOrdersActivity';
+import type { LearningActivity } from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
 
 describe('parent review formatting contract', () => {
@@ -58,7 +64,7 @@ describe('parent review formatting contract', () => {
       }),
     ], ACTIVITY_TITLE_LOOKUP);
 
-    expect(recentAttempts).toHaveLength(2);
+    expect(recentAttempts).toHaveLength(3);
     expect(recentAttempts[0]).toMatchObject({
       activity_id: 'phonics-find-b',
       activity_title: 'Find the /b/ Sound',
@@ -70,9 +76,56 @@ describe('parent review formatting contract', () => {
       response_time_label: '1.4 sec',
       parent_guidance_label: 'Applied: Promote gently',
     });
-    expect(recentAttempts[1].activity_title).toBe('Count the Stars');
+    expect(recentAttempts[1]).toMatchObject({
+      activity_id: 'math-count-stars-three',
+      activity_title: 'Count the Stars',
+      outcome_label: 'Completed',
+      response_time_label: '1.2 sec',
+    });
+    expect(recentAttempts[2].activity_title).toBe('Count the Stars');
+  });
+
+  test('formats Bear Cafe delivered orders as parent-readable recent attempts', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'completed',
+      tray: { foodCounts: { berry: 3 }, colorId: 'pink' },
+      attemptNumber: 1,
+      responseTimeMs: 2600,
+      hintShown: false,
+      replayCount: 1,
+      eventName: 'order_delivered',
+    });
+
+    const recentAttempts = formatRecentAttempts([event], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(1);
+    expect(recentAttempts[0]).toMatchObject({
+      activity_id: 'kennedis-orders-pink-berries-001',
+      activity_title: 'Three Pink Berries Order',
+      skill_labels: ['Counting', 'Color Fill'],
+      prompt_text: 'Mama Bear wants 3 pink berries.',
+      selected_answer: '3 berry, pink',
+      correct_answer: '3 pink berry',
+      outcome_label: 'Completed',
+      hint_used: false,
+      response_time_label: '2.6 sec',
+    });
   });
 });
+
+function getActivity(activityId: string): LearningActivity {
+  const activity = APPROVED_ACTIVITIES.find((activity) => activity.id === activityId);
+  if (!activity) throw new Error(`Missing activity ${activityId}`);
+  return activity;
+}
 
 function makeEvent(overrides: {
   eventId: string;
