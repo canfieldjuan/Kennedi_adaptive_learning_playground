@@ -1,22 +1,22 @@
 # MVP Baseline
 
-Version: v0.3.1 direct-route plus Parent Panel Bear Cafe launch baseline
+Version: v0.3.2 child home Bear Cafe entry baseline
 
 ## Current Working MVP
 
-The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a direct-route Kennedi's Orders adapter with a Parent Panel launch path, a local Video Vault shell, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
+The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a child home Bear Cafe entry backed by the direct-route Kennedi's Orders adapter and Parent Panel launch path, a local Video Vault shell reachable by direct route, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
 
 ## Child Modules
 
-- Home shell with exactly four primary choices: Words, Videos, Math, Art.
+- Home shell with exactly four primary choices: Words, Cafe, Math, Art.
 - Words activity: tap-choice phonics activity for initial sound recognition.
 - Math activity: tap-choice counting/subitizing activity.
 - Art activity: tap-fill coloring activity.
-- Video Vault: parent-approved local video shell, currently empty until local video assets are added.
+- Video Vault: parent-approved local video shell, currently empty until local video assets are added and reachable by direct route.
 - Targeted transfer variants for Words, Math, Art, and shape/spatial practice use the same existing runtimes.
 - The first rich transfer variant is a phonics reverse-mapping activity that asks from a word back to its starting letter.
 - Math now has a medium transfer activity that asks from a visual dot card to the matching numeral.
-- Kennedi's Orders / Bear Cafe is registered as a six-activity local game route and can be started from the Parent Panel, but is not yet on the home grid.
+- Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
 - Puzzle activity remains registered and reachable by direct route, but is not currently on the four-slot home grid.
 
 ## Parent Modules
