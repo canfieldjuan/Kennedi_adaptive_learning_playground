@@ -24,7 +24,6 @@ const REVIEW_ATTEMPT_OUTCOMES = new Set<AttemptOutcome>([
   'incorrect',
   'hint_used',
   'abandoned',
-  'completed',
 ]);
 
 export function resolveActivityTitle(
@@ -68,7 +67,7 @@ export function formatRecentAttempts(
   limit = 6
 ): ParentRecentAttempt[] {
   return [...events]
-    .filter((event) => REVIEW_ATTEMPT_OUTCOMES.has(event.outcome))
+    .filter(isReviewAttemptEvent)
     .sort(compareNewestFirst)
     .slice(0, Math.max(0, limit))
     .map((event) => ({
@@ -87,6 +86,19 @@ export function formatRecentAttempts(
       response_time_label: formatResponseTime(event.response_time_ms),
       parent_guidance_label: formatParentGuidanceLabel(event.metadata),
     }));
+}
+
+function isReviewAttemptEvent(event: ActivityAttemptEvent): boolean {
+  if (REVIEW_ATTEMPT_OUTCOMES.has(event.outcome)) return true;
+  return isBearCafeDeliveredOrder(event);
+}
+
+function isBearCafeDeliveredOrder(event: ActivityAttemptEvent): boolean {
+  return (
+    event.outcome === 'completed' &&
+    event.activity_id.startsWith('kennedis-orders-') &&
+    event.metadata?.event_name === 'order_delivered'
+  );
 }
 
 export function formatInternalName(value: string): string {

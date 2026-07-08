@@ -64,7 +64,7 @@ describe('parent review formatting contract', () => {
       }),
     ], ACTIVITY_TITLE_LOOKUP);
 
-    expect(recentAttempts).toHaveLength(3);
+    expect(recentAttempts).toHaveLength(2);
     expect(recentAttempts[0]).toMatchObject({
       activity_id: 'phonics-find-b',
       activity_title: 'Find the /b/ Sound',
@@ -76,13 +76,8 @@ describe('parent review formatting contract', () => {
       response_time_label: '1.4 sec',
       parent_guidance_label: 'Applied: Promote gently',
     });
-    expect(recentAttempts[1]).toMatchObject({
-      activity_id: 'math-count-stars-three',
-      activity_title: 'Count the Stars',
-      outcome_label: 'Completed',
-      response_time_label: '1.2 sec',
-    });
-    expect(recentAttempts[2].activity_title).toBe('Count the Stars');
+    expect(recentAttempts[1].activity_title).toBe('Count the Stars');
+    expect(recentAttempts.some((attempt) => attempt.outcome === 'completed')).toBe(false);
   });
 
   test('formats Bear Cafe delivered orders as parent-readable recent attempts', () => {
@@ -118,6 +113,61 @@ describe('parent review formatting contract', () => {
       hint_used: false,
       response_time_label: '2.6 sec',
     });
+  });
+
+  test('does not duplicate ordinary success with immediate completion events', () => {
+    const recentAttempts = formatRecentAttempts([
+      makeEvent({
+        eventId: 'event-1',
+        timestamp: '2026-01-01T12:00:00.000Z',
+        outcome: 'correct',
+        activityId: 'math-count-stars-three',
+        skillIds: ['counting'],
+        promptText: 'How many stars do you see?',
+        selectedAnswer: '3',
+        correctAnswer: '3',
+      }),
+      makeEvent({
+        eventId: 'event-2',
+        timestamp: '2026-01-01T12:00:01.000Z',
+        outcome: 'completed',
+        activityId: 'math-count-stars-three',
+        skillIds: ['counting'],
+        promptText: 'How many stars do you see?',
+        selectedAnswer: '3',
+        correctAnswer: '3',
+      }),
+      makeEvent({
+        eventId: 'event-3',
+        timestamp: '2026-01-01T12:01:00.000Z',
+        outcome: 'correct',
+        activityId: 'art-color-circle',
+        skillIds: ['color_fill'],
+        promptText: 'Pick a color for the circle.',
+        selectedAnswer: 'Blue',
+        correctAnswer: 'Blue',
+      }),
+      makeEvent({
+        eventId: 'event-4',
+        timestamp: '2026-01-01T12:01:01.000Z',
+        outcome: 'completed',
+        activityId: 'art-color-circle',
+        skillIds: ['color_fill'],
+        promptText: 'Pick a color for the circle.',
+        selectedAnswer: 'Blue',
+        correctAnswer: 'Blue',
+      }),
+    ], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(2);
+    expect(recentAttempts.map((attempt) => attempt.outcome_label)).toEqual([
+      'Correct',
+      'Correct',
+    ]);
+    expect(recentAttempts.map((attempt) => attempt.activity_title)).toEqual([
+      'Color the Circle',
+      'Count the Stars',
+    ]);
   });
 });
 
