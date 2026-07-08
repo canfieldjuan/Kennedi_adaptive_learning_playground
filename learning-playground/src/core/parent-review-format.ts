@@ -66,8 +66,10 @@ export function formatRecentAttempts(
   titleLookup: ActivityTitleLookup,
   limit = 6
 ): ParentRecentAttempt[] {
+  const supersededBearCafeTrayCheckIds = getSupersededBearCafeTrayCheckIds(events);
+
   return [...events]
-    .filter((event) => REVIEW_ATTEMPT_OUTCOMES.has(event.outcome))
+    .filter((event) => isReviewAttemptEvent(event, supersededBearCafeTrayCheckIds))
     .sort(compareNewestFirst)
     .slice(0, Math.max(0, limit))
     .map((event) => ({
@@ -86,6 +88,81 @@ export function formatRecentAttempts(
       response_time_label: formatResponseTime(event.response_time_ms),
       parent_guidance_label: formatParentGuidanceLabel(event.metadata),
     }));
+}
+
+function isReviewAttemptEvent(
+  event: ActivityAttemptEvent,
+  supersededBearCafeTrayCheckIds: Set<string>
+): boolean {
+  if (isBearCafeTrayCheckSuccess(event)) {
+    return !supersededBearCafeTrayCheckIds.has(event.event_id);
+  }
+
+  if (REVIEW_ATTEMPT_OUTCOMES.has(event.outcome)) return true;
+  return isBearCafeDeliveredOrder(event);
+}
+
+function isBearCafeDeliveredOrder(event: ActivityAttemptEvent): boolean {
+  return (
+    event.outcome === 'completed' &&
+    event.activity_id.startsWith('kennedis-orders-') &&
+    event.metadata?.event_name === 'order_delivered'
+  );
+}
+
+function getSupersededBearCafeTrayCheckIds(
+  events: ActivityAttemptEvent[]
+): Set<string> {
+  const pendingTrayChecksByOrderKey = new Map<string, ActivityAttemptEvent[]>();
+  const supersededTrayCheckIds = new Set<string>();
+
+  [...events].sort(compareOldestFirst).forEach((event) => {
+    const orderKey = getBearCafeOrderKey(event);
+
+    if (isBearCafeTrayCheckSuccess(event)) {
+      const pendingTrayChecks = pendingTrayChecksByOrderKey.get(orderKey) ?? [];
+      pendingTrayChecks.push(event);
+      pendingTrayChecksByOrderKey.set(orderKey, pendingTrayChecks);
+      return;
+    }
+
+    if (!isBearCafeDeliveredOrder(event)) return;
+
+    const pendingTrayChecks = pendingTrayChecksByOrderKey.get(orderKey);
+    const supersededTrayCheck = pendingTrayChecks?.pop();
+    if (supersededTrayCheck) {
+      supersededTrayCheckIds.add(supersededTrayCheck.event_id);
+    }
+  });
+
+  return supersededTrayCheckIds;
+}
+
+function isBearCafeTrayCheckSuccess(event: ActivityAttemptEvent): boolean {
+  return (
+    event.outcome === 'correct' &&
+    event.activity_id.startsWith('kennedis-orders-') &&
+    event.metadata?.event_name === 'tray_checked'
+  );
+}
+
+function getBearCafeOrderKey(event: ActivityAttemptEvent): string {
+  const metadata = event.metadata;
+
+  return [
+    event.session_id,
+    event.activity_id,
+    event.attempt_number,
+    event.prompt_text,
+    event.selected_choice_id ?? '',
+    event.correct_choice_id ?? '',
+    event.selected_answer,
+    event.correct_answer,
+    String(metadata?.selected_food_ids ?? ''),
+    String(metadata?.selected_quantity ?? ''),
+    String(metadata?.selected_color_id ?? ''),
+    String(metadata?.selected_decoration_id ?? ''),
+  ].join('|');
 }
 
 export function formatInternalName(value: string): string {
@@ -129,5 +206,15 @@ function compareNewestFirst(
   return (
     b.timestamp.localeCompare(a.timestamp) ||
     b.event_id.localeCompare(a.event_id)
+  );
+}
+
+function compareOldestFirst(
+  a: ActivityAttemptEvent,
+  b: ActivityAttemptEvent
+): number {
+  return (
+    a.timestamp.localeCompare(b.timestamp) ||
+    a.event_id.localeCompare(b.event_id)
   );
 }

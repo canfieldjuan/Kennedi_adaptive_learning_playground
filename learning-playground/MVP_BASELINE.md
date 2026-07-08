@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.2 child home Bear Cafe entry baseline
+Version: v0.3.3 Bear Cafe child-started play review baseline
 
 ## Current Working MVP
 
@@ -26,6 +26,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Settings summary for display name, difficulty mode, session length, audio, speech, video, and enabled domains.
 - Local progress summary by skill.
 - Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and parent notes.
+- Recent Attempts includes Bear Cafe delivered-order completion evidence so parent review can show the order prompt, selected tray, correct order, outcome, hint state, and response time after child-started Cafe play without duplicating its matching tray-check success, hiding a later unfinished identical order, or crowding out earlier struggle evidence.
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Parent Guidance includes skill graph evidence, mastery status, suggested next action, evidence summary, graph rule, and source references.
 - Parent Guidance shows transfer quality so weak-only coverage is visible to the adult.
@@ -106,7 +107,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 
 - No additional games beyond the scoped Kennedi's Orders adapter.
 - No `Nature Camera Safari`.
-- No home-screen Cafe tile yet.
+- No additional home-screen tiles beyond Words, Cafe, Math, and Art.
 - No backend services.
 - No schema expansion unless strictly required.
 - No automatic adaptive routing.
