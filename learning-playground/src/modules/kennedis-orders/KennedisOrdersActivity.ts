@@ -680,6 +680,27 @@ function renderCompleteStage(parent: HTMLElement, content: BearCafeContent): voi
     <p class="bear-cafe-complete__text">Order delivered.</p>
   `;
 
+  // A one-time celebration burst on completion (issue #3 "minimal completion
+  // payoff"). Consistent every time and deterministic by index — a positive
+  // finish cue, not a variable/random reward loop. Reduced-motion hides it.
+  const celebrate = document.createElement('div');
+  celebrate.className = 'bear-cafe-celebrate';
+  celebrate.setAttribute('aria-hidden', 'true');
+  const CELEBRATE_GLYPHS = ['🎉', '✨', '⭐', '💛', '🎊', '🌟'];
+  const CELEBRATE_PIECES = 12;
+  for (let i = 0; i < CELEBRATE_PIECES; i += 1) {
+    const piece = document.createElement('span');
+    piece.className = 'bear-cafe-celebrate__piece';
+    const angle = ((2 * Math.PI) / CELEBRATE_PIECES) * i;
+    const distance = 96;
+    piece.style.setProperty('--tx', `${Math.round(Math.cos(angle) * distance)}px`);
+    piece.style.setProperty('--ty', `${Math.round(Math.sin(angle) * distance)}px`);
+    piece.style.setProperty('--delay', `${(i % 3) * 60}ms`);
+    piece.textContent = CELEBRATE_GLYPHS[i % CELEBRATE_GLYPHS.length];
+    celebrate.appendChild(piece);
+  }
+  complete.appendChild(celebrate);
+
   const actions = document.createElement('div');
   actions.className = 'activity-complete-actions bear-cafe-complete__actions';
 
