@@ -103,6 +103,19 @@ export function renderKennedisOrdersActivity(
 
     if (stage === 'delivery') {
       renderDeliveryStage(container, content, options, () => {
+        // Emit completion synchronously on the delivery commit, before the
+        // cosmetic handoff beat. Tapping Home during the beat tears the view
+        // down and clears the handoff timer, so the order_delivered event must
+        // not depend on that timer firing.
+        emitCompletedEvent({
+          options,
+          content,
+          tray,
+          attemptNumber: Math.max(1, attemptNumber),
+          responseTimeMs: Date.now() - roundStartedAt,
+          hintShown,
+          replayCount,
+        });
         stage = 'handoff';
         render();
       });
@@ -115,15 +128,6 @@ export function renderKennedisOrdersActivity(
         stage = 'complete';
         options.audio.play('soft_chime');
         options.speech.speak(content.character.happyLine);
-        emitCompletedEvent({
-          options,
-          content,
-          tray,
-          attemptNumber: Math.max(1, attemptNumber),
-          responseTimeMs: Date.now() - roundStartedAt,
-          hintShown,
-          replayCount,
-        });
         render();
       }, HANDOFF_DURATION_MS);
       cleanupHandlers.push(() => window.clearTimeout(handoffTimer));
