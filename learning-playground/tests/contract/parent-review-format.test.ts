@@ -115,6 +115,90 @@ describe('parent review formatting contract', () => {
     });
   });
 
+  test('collapses Bear Cafe tray check success when a matching delivery is present', () => {
+    const activity = getActivity('kennedis-orders-banana-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const tray = { foodCounts: { banana: 1 } };
+    const trayChecked = {
+      ...createKennedisOrdersEvent({
+        activity,
+        content,
+        sessionId: 'session-1',
+        childId: 'local-child',
+        outcome: 'correct',
+        tray,
+        attemptNumber: 1,
+        responseTimeMs: 1800,
+        hintShown: false,
+        replayCount: 0,
+        eventName: 'tray_checked',
+      }),
+      event_id: 'bear-cafe-tray-checked',
+      timestamp: '2026-01-01T12:00:00.000Z',
+    };
+    const delivered = {
+      ...createKennedisOrdersEvent({
+        activity,
+        content,
+        sessionId: 'session-1',
+        childId: 'local-child',
+        outcome: 'completed',
+        tray,
+        attemptNumber: 1,
+        responseTimeMs: 2600,
+        hintShown: false,
+        replayCount: 0,
+        eventName: 'order_delivered',
+      }),
+      event_id: 'bear-cafe-delivered',
+      timestamp: '2026-01-01T12:00:05.000Z',
+    };
+
+    const recentAttempts = formatRecentAttempts([
+      trayChecked,
+      delivered,
+    ], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(1);
+    expect(recentAttempts[0]).toMatchObject({
+      event_id: 'bear-cafe-delivered',
+      activity_id: 'kennedis-orders-banana-001',
+      activity_title: 'Banana Order',
+      outcome_label: 'Completed',
+    });
+  });
+
+  test('keeps Bear Cafe tray check success when the order was not delivered', () => {
+    const activity = getActivity('kennedis-orders-banana-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { banana: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 1800,
+      hintShown: false,
+      replayCount: 0,
+      eventName: 'tray_checked',
+    });
+
+    const recentAttempts = formatRecentAttempts([event], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts).toHaveLength(1);
+    expect(recentAttempts[0]).toMatchObject({
+      activity_id: 'kennedis-orders-banana-001',
+      activity_title: 'Banana Order',
+      outcome_label: 'Correct',
+    });
+  });
+
   test('does not duplicate ordinary success with immediate completion events', () => {
     const recentAttempts = formatRecentAttempts([
       makeEvent({

@@ -66,8 +66,10 @@ export function formatRecentAttempts(
   titleLookup: ActivityTitleLookup,
   limit = 6
 ): ParentRecentAttempt[] {
+  const deliveredBearCafeOrderKeys = getDeliveredBearCafeOrderKeys(events);
+
   return [...events]
-    .filter(isReviewAttemptEvent)
+    .filter((event) => isReviewAttemptEvent(event, deliveredBearCafeOrderKeys))
     .sort(compareNewestFirst)
     .slice(0, Math.max(0, limit))
     .map((event) => ({
@@ -88,7 +90,14 @@ export function formatRecentAttempts(
     }));
 }
 
-function isReviewAttemptEvent(event: ActivityAttemptEvent): boolean {
+function isReviewAttemptEvent(
+  event: ActivityAttemptEvent,
+  deliveredBearCafeOrderKeys: Set<string>
+): boolean {
+  if (isSupersededBearCafeTrayCheck(event, deliveredBearCafeOrderKeys)) {
+    return false;
+  }
+
   if (REVIEW_ATTEMPT_OUTCOMES.has(event.outcome)) return true;
   return isBearCafeDeliveredOrder(event);
 }
@@ -99,6 +108,47 @@ function isBearCafeDeliveredOrder(event: ActivityAttemptEvent): boolean {
     event.activity_id.startsWith('kennedis-orders-') &&
     event.metadata?.event_name === 'order_delivered'
   );
+}
+
+function getDeliveredBearCafeOrderKeys(
+  events: ActivityAttemptEvent[]
+): Set<string> {
+  return new Set(
+    events
+      .filter(isBearCafeDeliveredOrder)
+      .map(getBearCafeOrderKey)
+  );
+}
+
+function isSupersededBearCafeTrayCheck(
+  event: ActivityAttemptEvent,
+  deliveredBearCafeOrderKeys: Set<string>
+): boolean {
+  return (
+    event.outcome === 'correct' &&
+    event.activity_id.startsWith('kennedis-orders-') &&
+    event.metadata?.event_name === 'tray_checked' &&
+    deliveredBearCafeOrderKeys.has(getBearCafeOrderKey(event))
+  );
+}
+
+function getBearCafeOrderKey(event: ActivityAttemptEvent): string {
+  const metadata = event.metadata;
+
+  return [
+    event.session_id,
+    event.activity_id,
+    event.attempt_number,
+    event.prompt_text,
+    event.selected_choice_id ?? '',
+    event.correct_choice_id ?? '',
+    event.selected_answer,
+    event.correct_answer,
+    String(metadata?.selected_food_ids ?? ''),
+    String(metadata?.selected_quantity ?? ''),
+    String(metadata?.selected_color_id ?? ''),
+    String(metadata?.selected_decoration_id ?? ''),
+  ].join('|');
 }
 
 export function formatInternalName(value: string): string {
