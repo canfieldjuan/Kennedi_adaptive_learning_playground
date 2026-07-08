@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.3 Bear Cafe child-started play review baseline
+Version: v0.3.4 Bear Cafe delivery handoff baseline
 
 ## Current Working MVP
 
@@ -17,6 +17,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - The first rich transfer variant is a phonics reverse-mapping activity that asks from a word back to its starting letter.
 - Math now has a medium transfer activity that asks from a visual dot card to the matching numeral.
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
+- Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
 - Puzzle activity remains registered and reachable by direct route, but is not currently on the four-slot home grid.
 
 ## Parent Modules
