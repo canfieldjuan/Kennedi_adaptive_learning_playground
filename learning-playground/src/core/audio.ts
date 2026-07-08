@@ -18,6 +18,25 @@ export class AudioService implements AudioServiceInterface {
 
   constructor(enabled: boolean = true) {
     this._enabled = enabled;
+    if (this._enabled) this.installGestureUnlock();
+  }
+
+  // Autoplay policy: a suspended AudioContext can only be resumed from inside a
+  // user gesture. Some success cues (the order-ready / delivery chime) fire from
+  // a setTimeout, not the tap itself, so resuming lazily in play() would run
+  // after the handler returned — outside a gesture — and could stay silent.
+  // Unlock once on the first pointer/key gesture so the context is already live
+  // before any timer-delayed cue plays.
+  private installGestureUnlock(): void {
+    if (typeof window === 'undefined') return;
+    const unlock = (): void => {
+      const ctx = this.ensureContext();
+      if (ctx && ctx.state === 'suspended') void ctx.resume();
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
   }
 
   play(soundId: string): void {
@@ -25,8 +44,8 @@ export class AudioService implements AudioServiceInterface {
     const ctx = this.ensureContext();
     if (!ctx) return; // No Web Audio (tests/SSR): stay silent.
 
-    // Autoplay policy: the context may start suspended until a user gesture.
-    // Cues fire on taps, so resuming here runs inside the gesture.
+    // Belt-and-suspenders: also resume here for cues that DO fire inside a tap
+    // (e.g. soft_boing). The gesture-unlock above covers timer-delayed cues.
     if (ctx.state === 'suspended') {
       void ctx.resume();
     }
