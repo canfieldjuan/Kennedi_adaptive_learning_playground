@@ -72,6 +72,19 @@ describe('curriculum graph contract', () => {
     expect(graph.getMaxSkillLevel('counting')?.level).toBe(2);
   });
 
+  test('blending maps each difficulty to a reachable level (top level not shadowed)', () => {
+    const graph = loadCurriculumGraph();
+
+    // Bands are non-overlapping (0-2 / 3-4 / 5-5), so difficulty 5 resolves to
+    // the top "fluent" level 2 rather than being eclipsed by level 1's band.
+    const expected: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 2 };
+    for (let difficulty = 0; difficulty <= 5; difficulty += 1) {
+      expect(graph.getSkillLevelForDifficulty('blending', difficulty)?.level).toBe(
+        expected[difficulty]
+      );
+    }
+  });
+
   test('current graph has valid references and no circular prerequisites', () => {
     expect(validateCurriculumGraph(curriculumData as CurriculumGraphData)).toEqual([]);
   });

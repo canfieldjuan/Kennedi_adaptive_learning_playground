@@ -146,6 +146,9 @@ export function renderPhonicsMatchActivity(
   if (segments.length > 0) {
     const soundout = document.createElement('div');
     soundout.className = 'phonics-soundout';
+    // role="img" makes the aria-label authoritative (a plain div has a generic
+    // role that many screen readers ignore aria-label on); the chips stay hidden.
+    soundout.setAttribute('role', 'img');
     soundout.setAttribute('aria-label', `Sound it out: ${segments.join(', ')}`);
     for (const segment of segments) {
       const chip = document.createElement('span');
@@ -391,7 +394,11 @@ function getTargetSound(activity: LearningActivity): string | undefined {
 function getSegments(activity: LearningActivity): string[] {
   const segments = activity.content.segments;
   if (!Array.isArray(segments)) return [];
-  return segments.filter((segment): segment is string => typeof segment === 'string');
+  // Drop non-strings and blank/whitespace entries so the strip never renders an
+  // empty chip and Pip never rests on an empty "sound".
+  return segments.filter((segment): segment is string => (
+    typeof segment === 'string' && segment.trim().length > 0
+  ));
 }
 
 function getPromptImages(activity: LearningActivity): string[] {
