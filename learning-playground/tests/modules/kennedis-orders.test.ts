@@ -10,7 +10,9 @@ import {
   createKennedisOrdersEvent,
   evaluateTray,
   getBearCafeContent,
+  getFoodChoiceAccessibilityState,
   getPlatedFoodIcons,
+  getToggleChoiceAccessibilityState,
   type TrayState,
 } from '../../src/modules/kennedis-orders/KennedisOrdersActivity';
 import type { LearningActivity } from '../../src/types/activity';
@@ -419,6 +421,28 @@ describe("Kennedi's Orders adapter contract", () => {
     // A three-count order plates three icons.
     const berries = getRequiredContent(getActivity('kennedis-orders-pink-berries-001'));
     expect(svgCount(getPlatedFoodIcons(berries, { foodCounts: { berry: 3 } }))).toBe(3);
+  });
+
+  test('food choices expose tray count and pressed state to assistive tech', () => {
+    expect(getFoodChoiceAccessibilityState('Banana', 0)).toEqual({
+      ariaLabel: 'Choose Banana, none on tray',
+      ariaPressed: 'false',
+    });
+    expect(getFoodChoiceAccessibilityState('Cookie', 2)).toEqual({
+      ariaLabel: 'Choose Cookie, 2 on tray',
+      ariaPressed: 'true',
+    });
+  });
+
+  test('color and decoration choices expose selected state to assistive tech', () => {
+    expect(getToggleChoiceAccessibilityState('Pink', true)).toEqual({
+      ariaLabel: 'Choose Pink, selected',
+      ariaPressed: 'true',
+    });
+    expect(getToggleChoiceAccessibilityState('Sprinkles', false)).toEqual({
+      ariaLabel: 'Choose Sprinkles, not selected',
+      ariaPressed: 'false',
+    });
   });
 
   test('bake time finale offers a new shift instead of chaining on', () => {

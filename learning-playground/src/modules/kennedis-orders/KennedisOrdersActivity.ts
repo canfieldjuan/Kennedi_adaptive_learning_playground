@@ -30,6 +30,11 @@ export interface TrayState {
   decorationId?: string;
 }
 
+export interface ChoiceAccessibilityState {
+  ariaLabel: string;
+  ariaPressed: 'true' | 'false';
+}
+
 type ViewStage = 'phone' | 'make' | 'fix' | 'plating' | 'delivery' | 'handoff' | 'complete';
 
 // Duration of the delivery handoff beat (the plated food travels to the bear and
@@ -519,15 +524,18 @@ function renderKitchenStage(
   foodGrid.setAttribute('aria-label', 'Food choices');
 
   for (const food of content.foods) {
+    const count = tray.foodCounts[food.id] ?? 0;
+    const accessibility = getFoodChoiceAccessibilityState(food.label, count);
     const button = document.createElement('button');
     button.className = 'bear-cafe-food';
     button.type = 'button';
-    button.dataset.selected = tray.foodCounts[food.id] ? 'true' : 'false';
-    button.setAttribute('aria-label', `Choose ${food.label}`);
+    button.dataset.selected = count > 0 ? 'true' : 'false';
+    button.setAttribute('aria-label', accessibility.ariaLabel);
+    button.setAttribute('aria-pressed', accessibility.ariaPressed);
     button.innerHTML = `
       <span class="bear-cafe-food__icon" aria-hidden="true">${renderFoodArt(food.id)}</span>
       <span class="bear-cafe-food__label">${food.label}</span>
-      ${tray.foodCounts[food.id] ? `<span class="bear-cafe-food__count">${tray.foodCounts[food.id]}</span>` : ''}
+      ${count > 0 ? `<span class="bear-cafe-food__count">${count}</span>` : ''}
     `;
     button.addEventListener('click', () => handlers.onFoodTap(food));
     foodGrid.appendChild(button);
@@ -540,13 +548,18 @@ function renderKitchenStage(
     colorGrid.className = 'bear-cafe-swatches';
     colorGrid.setAttribute('aria-label', 'Color choices');
     for (const color of content.colors ?? []) {
+      const accessibility = getToggleChoiceAccessibilityState(
+        color.label,
+        tray.colorId === color.id
+      );
       const button = document.createElement('button');
       button.className = 'bear-cafe-swatch';
       button.type = 'button';
       button.style.setProperty('--bear-cafe-swatch', color.value);
       button.dataset.selected = tray.colorId === color.id ? 'true' : 'false';
       button.textContent = color.label;
-      button.setAttribute('aria-label', `Choose ${color.label}`);
+      button.setAttribute('aria-label', accessibility.ariaLabel);
+      button.setAttribute('aria-pressed', accessibility.ariaPressed);
       button.addEventListener('click', () => handlers.onColorTap(color));
       colorGrid.appendChild(button);
     }
@@ -558,11 +571,16 @@ function renderKitchenStage(
     decorationGrid.className = 'bear-cafe-decorations';
     decorationGrid.setAttribute('aria-label', 'Decoration choices');
     for (const decoration of content.decorations ?? []) {
+      const accessibility = getToggleChoiceAccessibilityState(
+        decoration.label,
+        tray.decorationId === decoration.id
+      );
       const button = document.createElement('button');
       button.className = 'bear-cafe-decoration';
       button.type = 'button';
       button.dataset.selected = tray.decorationId === decoration.id ? 'true' : 'false';
-      button.setAttribute('aria-label', `Choose ${decoration.label}`);
+      button.setAttribute('aria-label', accessibility.ariaLabel);
+      button.setAttribute('aria-pressed', accessibility.ariaPressed);
       button.innerHTML = `
         <span aria-hidden="true">${renderDecorationArt(decoration.id)}</span>
         <span>${decoration.label}</span>
@@ -574,6 +592,33 @@ function renderKitchenStage(
   }
 
   parent.appendChild(kitchen);
+}
+
+export function getFoodChoiceAccessibilityState(
+  foodLabel: string,
+  count: number
+): ChoiceAccessibilityState {
+  if (count <= 0) {
+    return {
+      ariaLabel: `Choose ${foodLabel}, none on tray`,
+      ariaPressed: 'false',
+    };
+  }
+
+  return {
+    ariaLabel: `Choose ${foodLabel}, ${count} on tray`,
+    ariaPressed: 'true',
+  };
+}
+
+export function getToggleChoiceAccessibilityState(
+  label: string,
+  selected: boolean
+): ChoiceAccessibilityState {
+  return {
+    ariaLabel: `Choose ${label}, ${selected ? 'selected' : 'not selected'}`,
+    ariaPressed: selected ? 'true' : 'false',
+  };
 }
 
 function renderCheckAction(
