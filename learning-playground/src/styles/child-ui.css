@@ -20,6 +20,30 @@
   );
 }
 
+/* — Home cafe backdrop — the environment behind the four choices — */
+#home-screen {
+  position: relative;
+  isolation: isolate;
+  background: #fcefdd;
+}
+
+.cafe-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.cafe-backdrop svg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+}
+
 /* — Home Grid — */
 .home-grid {
   display: grid;
