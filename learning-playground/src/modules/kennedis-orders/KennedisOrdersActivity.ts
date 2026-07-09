@@ -1132,7 +1132,8 @@ function createSkillOutcomesForEvent(params: {
     params.activity.skill_ids.includes('counting') &&
     typeof required.quantity === 'number'
   ) {
-    const quantityMatches = getTotalFoodCount(params.tray) === required.quantity;
+    const selectedCount = getSelectedCountForRequiredQuantity(params.tray, required);
+    const quantityMatches = selectedCount === required.quantity;
     outcomes.push({
       skill_id: 'counting',
       outcome: quantityMatches ? 'correct' : 'incorrect',
@@ -1153,6 +1154,15 @@ function createSkillOutcomesForEvent(params: {
   }
 
   return outcomes;
+}
+
+function getSelectedCountForRequiredQuantity(
+  tray: TrayState,
+  required: BearCafeRequiredOrder
+): number {
+  return required.food_id
+    ? tray.foodCounts[required.food_id] ?? 0
+    : getTotalFoodCount(tray);
 }
 
 function createTwoPartHintSkillOutcomes(

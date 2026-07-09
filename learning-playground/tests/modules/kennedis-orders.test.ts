@@ -231,6 +231,43 @@ describe("Kennedi's Orders adapter contract", () => {
     ]);
   });
 
+  test('two-part quantity evidence counts the required food, not tray total', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'incorrect',
+      tray: {
+        foodCounts: {
+          berry: 2,
+          cupcake: 1,
+        },
+        colorId: 'pink',
+      },
+      attemptNumber: 1,
+      responseTimeMs: 1400,
+      hintShown: false,
+      eventName: 'tray_checked',
+      issue: 'food',
+    });
+
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'incorrect',
+        reason: 'quantity_mismatch',
+      },
+      {
+        skill_id: 'color_fill',
+        outcome: 'correct',
+        reason: 'color_match',
+      },
+    ]);
+  });
+
   test('two-part hint events attach only to the hinted skill', () => {
     const activity = getActivity('kennedis-orders-pink-berries-001');
     const content = getRequiredContent(activity);

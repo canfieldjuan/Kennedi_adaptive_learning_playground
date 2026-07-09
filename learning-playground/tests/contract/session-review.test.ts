@@ -49,12 +49,52 @@ describe('parent session review contract', () => {
       },
     ]);
   });
+
+  test('uses per-skill outcomes for compound activity accuracy', () => {
+    const events: ActivityAttemptEvent[] = [
+      makeEvent({
+        activityId: 'kennedis-orders-pink-berries-001',
+        outcome: 'incorrect',
+        skillIds: ['counting', 'color_fill'],
+        skillOutcomes: [
+          {
+            skill_id: 'counting',
+            outcome: 'correct',
+            reason: 'quantity_match',
+          },
+          {
+            skill_id: 'color_fill',
+            outcome: 'incorrect',
+            reason: 'color_mismatch',
+          },
+        ],
+      }),
+    ];
+
+    const review = buildParentSessionReview(events, [], 'session-1');
+
+    expect(review.accuracy_by_skill).toEqual([
+      {
+        skill_id: 'color_fill',
+        correct_attempts: 0,
+        total_attempts: 1,
+        accuracy: 0,
+      },
+      {
+        skill_id: 'counting',
+        correct_attempts: 1,
+        total_attempts: 1,
+        accuracy: 1,
+      },
+    ]);
+  });
 });
 
 function makeEvent(params: {
   activityId: string;
   outcome: ActivityAttemptEvent['outcome'];
   skillIds: string[];
+  skillOutcomes?: ActivityAttemptEvent['skill_outcomes'];
 }): ActivityAttemptEvent {
   return {
     event_id: `event-${params.activityId}-${params.outcome}`,
@@ -66,6 +106,7 @@ function makeEvent(params: {
     timestamp: '2026-01-01T12:00:00.000Z',
     prompt_text: 'Prompt',
     outcome: params.outcome,
+    skill_outcomes: params.skillOutcomes,
     selected_choice_id: 'selected',
     correct_choice_id: 'correct',
     selected_answer: 'selected',
