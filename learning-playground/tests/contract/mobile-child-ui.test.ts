@@ -44,7 +44,17 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('"tray tray"');
     expect(childUiCss).toContain('.bear-cafe-choice-grid');
     expect(childUiCss).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
-    expect(childUiCss).toContain('@media (min-width: 640px) and (max-width: 768px) and (orientation: landscape)');
-    expect(childUiCss).toContain('grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.1fr)');
+    expect(childUiCss).toContain('@media (min-width: 704px) and (max-width: 940px) and (orientation: landscape)');
+    expect(childUiCss).toContain('grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.1fr)');
+  });
+
+  test('covers phone landscape compaction and small Bear Cafe plates', () => {
+    expect(childUiCss).toContain('(max-width: 940px) and (max-height: 480px) and (orientation: landscape)');
+    expect(childUiCss).toContain('width: clamp(132px, 40vw, 156px)');
+    expect(childUiCss).toContain('width: clamp(44px, 13vw, 48px)');
+    expect(childUiCss).toContain('.phonics-character__art');
+    expect(childUiCss).toContain('width: clamp(56px, 18dvh, 72px)');
+    expect(childUiCss).toContain('.word-builder__tile');
+    expect(childUiCss).toContain('min-height: 48px');
   });
 });
