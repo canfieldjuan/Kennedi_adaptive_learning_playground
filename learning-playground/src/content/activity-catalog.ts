@@ -1,6 +1,9 @@
 import type { LearningActivity } from '../types/activity';
 import artColorCircleCoolColors from './activities/art-color-circle-cool-colors.json';
 import artColorCircle from './activities/art-color-circle.json';
+import blendBat from './activities/blend-bat.json';
+import blendCat from './activities/blend-cat.json';
+import blendHat from './activities/blend-hat.json';
 import kennedisOrdersBanana from './activities/kennedis-orders-banana-001.json';
 import kennedisOrdersBFoods from './activities/kennedis-orders-b-foods-001.json';
 import kennedisOrdersFixBerries from './activities/kennedis-orders-fix-berries-001.json';
@@ -33,6 +36,9 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   phonicsFindS,
   phonicsFindC,
   phonicsFindT,
+  blendCat,
+  blendHat,
+  blendBat,
   shapesFindCircle,
   shapesFindCircleHeart,
   mathCountStarsThree,

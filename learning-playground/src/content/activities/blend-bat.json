@@ -1,0 +1,47 @@
+{
+  "id": "blend-bat",
+  "version": 1,
+  "title": "Blend the Sounds: bat",
+  "domain": "phonics",
+  "skill_ids": ["blending"],
+  "transfer": {
+    "skill_ids": ["blending"],
+    "context_type": "same_format_same_examples",
+    "context_id": "tap-picture-blend",
+    "example_set_id": "cat-bat-hat",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": {
+    "level": 2,
+    "choice_count": 3,
+    "distractor_strength": "hard"
+  },
+  "interaction_model": "tap_to_match",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "prompt_audio": "Sound it out. Which word do these sounds make?",
+    "segments": ["b", "a", "t"],
+    "target_word": "bat",
+    "choices": [
+      { "id": "bat", "label": "bat", "image": "/assets/images/bat.svg", "correct": true },
+      { "id": "cat", "label": "cat", "image": "/assets/images/cat.svg", "correct": false },
+      { "id": "hat", "label": "hat", "image": "/assets/images/hat.svg", "correct": false }
+    ]
+  },
+  "success_rules": {
+    "correct_choice_id": "bat",
+    "required_correct_count": 1,
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": { "speech": "b-a-t. Bat!", "animation": "glow_pop", "sound": "soft_chime" },
+    "incorrect": { "speech": "Listen again. b-a-t.", "animation": "gentle_bounce", "sound": "soft_boing" },
+    "hint": { "speech": "b ... a ... t. Bat.", "highlight_target": true }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

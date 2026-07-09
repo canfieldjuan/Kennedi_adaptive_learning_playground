@@ -17,6 +17,8 @@
   "content": {
     "prompt_audio": "Find the word that starts with t.",
     "target_sound": "t",
+    "next_activity_id": "blend-cat",
+    "next_label": "Sound out words",
     "choices": [
       { "id": "top", "label": "top", "image": "/assets/images/top.svg", "correct": true },
       { "id": "ball", "label": "ball", "image": "/assets/images/ball.svg", "correct": false },
