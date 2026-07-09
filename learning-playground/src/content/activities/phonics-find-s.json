@@ -1,0 +1,35 @@
+{
+  "id": "phonics-find-s",
+  "version": 1,
+  "title": "Find the /s/ Sound",
+  "domain": "phonics",
+  "skill_ids": ["initial_sound", "letter_sound_match"],
+  "transfer": {
+    "skill_ids": ["initial_sound", "letter_sound_match"],
+    "context_type": "same_format_new_examples",
+    "context_id": "tap-picture-initial-sound",
+    "example_set_id": "sun-bear-dog",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": { "level": 2, "choice_count": 3, "distractor_strength": "easy" },
+  "interaction_model": "tap_to_match",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "prompt_audio": "Find the word that starts with s.",
+    "target_sound": "s",
+    "next_activity_id": "phonics-find-c",
+    "next_label": "Next word",
+    "choices": [
+      { "id": "sun", "label": "sun", "image": "/assets/images/sun.svg", "correct": true },
+      { "id": "bear", "label": "bear", "image": "/assets/images/bear.svg", "correct": false },
+      { "id": "dog", "label": "dog", "image": "/assets/images/dog.svg", "correct": false }
+    ]
+  },
+  "success_rules": { "correct_choice_id": "sun", "required_correct_count": 1, "max_attempts_before_hint": 2 },
+  "feedback_rules": {
+    "correct": { "speech": "Sun starts with s!", "animation": "glow_pop", "sound": "soft_chime" },
+    "incorrect": { "speech": "Try again. Listen for s.", "animation": "gentle_bounce", "sound": "soft_boing" },
+    "hint": { "speech": "Sss, sss, sun.", "highlight_target": true }
+  },
+  "safety": { "requires_parent_approval": true, "external_links_allowed": false, "contains_video": false, "contains_audio": true }
+}
