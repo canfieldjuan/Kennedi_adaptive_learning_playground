@@ -729,6 +729,14 @@
   }
 }
 
+/* Illustrated bear SVG — scales with each container's font-size, matching the
+   footprint the emoji glyph had. */
+.bear-art {
+  display: block;
+  width: 1.25em;
+  height: 1.25em;
+}
+
 .bear-cafe-order__bear {
   display: grid;
   place-items: center;
