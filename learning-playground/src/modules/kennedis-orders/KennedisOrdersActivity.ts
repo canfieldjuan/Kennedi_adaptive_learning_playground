@@ -13,6 +13,7 @@ import type {
 } from './kennedis-orders.types';
 import { renderBearArt } from './bear-art';
 import { renderFoodArt } from './food-art';
+import { renderDecorationArt } from './decoration-art';
 
 interface KennedisOrdersOptions {
   activity: LearningActivity;
@@ -474,7 +475,7 @@ function renderTray(
     const decorationBadge = document.createElement('span');
     decorationBadge.className = 'bear-cafe-plate__decoration';
     decorationBadge.setAttribute('aria-hidden', 'true');
-    decorationBadge.textContent = decoration.icon;
+    decorationBadge.innerHTML = renderDecorationArt(decoration.id);
     plate.appendChild(decorationBadge);
   }
 
@@ -555,7 +556,7 @@ function renderKitchenStage(
       button.dataset.selected = tray.decorationId === decoration.id ? 'true' : 'false';
       button.setAttribute('aria-label', `Choose ${decoration.label}`);
       button.innerHTML = `
-        <span aria-hidden="true">${decoration.icon}</span>
+        <span aria-hidden="true">${renderDecorationArt(decoration.id)}</span>
         <span>${decoration.label}</span>
       `;
       button.addEventListener('click', () => handlers.onDecorationTap(decoration));
