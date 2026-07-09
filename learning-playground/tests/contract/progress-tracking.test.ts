@@ -10,6 +10,7 @@ import {
 } from '../../src/core/progress';
 import { StorageService, type KeyValueStorage } from '../../src/core/storage';
 import type { ActivityAttemptEvent } from '../../src/types/events';
+import type { ChildProgressProfile, SkillMasteryState } from '../../src/types/progress';
 
 const CHILD_ID = 'local-child';
 
@@ -30,7 +31,7 @@ class MemoryKeyValueStorage implements KeyValueStorage {
 }
 
 describe('progress tracking contract', () => {
-  test('correct attempts update mastery and promote after five strong attempts', () => {
+  test('correct attempts promote from the curriculum starting rung', () => {
     const events = Array.from({ length: 5 }, (_, index) => (
       makeEvent({
         outcome: 'correct',
@@ -47,9 +48,300 @@ describe('progress tracking contract', () => {
     expect(state.recent_accuracy).toBe(1);
     expect(state.recent_average_response_ms).toBe(920);
     expect(state.confidence).toBe(1);
-    expect(state.current_level).toBe(2);
+    expect(state.current_level).toBe(1);
     expect(state.last_promoted_at).toBe(timestamp(4));
     expect(state.needs_review).toBe(false);
+  });
+
+  test('new skills do not seed level from high-difficulty activity order', () => {
+    const events = [
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(0),
+        difficultyLevel: 4,
+      }),
+    ];
+
+    const profile = buildProgressProfileFromEvents(CHILD_ID, events);
+    const state = profile.skill_mastery.counting;
+
+    expect(state.current_level).toBe(0);
+    expect(state.last_promoted_at).toBeUndefined();
+  });
+
+  test('attempts outside the current rung difficulty band do not promote', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 1,
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(makeSkillState({ currentLevel: 1 }))
+    );
+    const state = profile.skill_mastery.counting;
+
+    expect(state.current_level).toBe(1);
+    expect(state.last_promoted_at).toBeUndefined();
+  });
+
+  test('attempts inside the current rung difficulty band can promote', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 2,
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(makeSkillState({ currentLevel: 1 }))
+    );
+    const state = profile.skill_mastery.counting;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('promotion caps at the declared curriculum max level', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 4,
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(makeSkillState({ currentLevel: 2 }))
+    );
+    const state = profile.skill_mastery.counting;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBeUndefined();
+  });
+
+  test('current-version stored levels are clamped to the declared curriculum max', () => {
+    const events = [
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(0),
+        difficultyLevel: 4,
+      }),
+    ];
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(makeSkillState({ currentLevel: 5 }))
+    );
+    const state = profile.skill_mastery.counting;
+
+    expect(state.current_level).toBe(2);
+  });
+
+  test('legacy saved levels are translated from the old raw progress scale', () => {
+    const events = [
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(0),
+        difficultyLevel: 1,
+      }),
+    ];
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(makeSkillState({ currentLevel: 2 }), {
+        profileVersion: 1,
+      })
+    );
+    const state = profile.skill_mastery.counting;
+
+    expect(profile.profile_version).toBe(2);
+    expect(state.current_level).toBe(0);
+  });
+
+  test('approved phonics transfer activity can promote the initial sound ladder', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 5,
+        skillIds: ['initial_sound'],
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(
+        makeSkillState({
+          skillId: 'initial_sound',
+          currentLevel: 1,
+        })
+      )
+    );
+    const state = profile.skill_mastery.initial_sound;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('approved reverse-mapping activity can promote the letter sound ladder', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 2,
+        skillIds: ['letter_sound_match'],
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(
+        makeSkillState({
+          skillId: 'letter_sound_match',
+          currentLevel: 1,
+        })
+      )
+    );
+    const state = profile.skill_mastery.letter_sound_match;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('approved low-difficulty subitizing activity can promote the current rung', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 1,
+        skillIds: ['subitizing'],
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(
+        makeSkillState({
+          skillId: 'subitizing',
+          currentLevel: 1,
+        })
+      )
+    );
+    const state = profile.skill_mastery.subitizing;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('approved low-difficulty shape activity can promote the current rung', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 1,
+        skillIds: ['shape_match'],
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(
+        makeSkillState({
+          skillId: 'shape_match',
+          currentLevel: 1,
+        })
+      )
+    );
+    const state = profile.skill_mastery.shape_match;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('parent-promoted challenge attempts can count toward current-rung progress', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 2,
+        metadata: {
+          parent_guidance_applied: true,
+          parent_guidance_override_type: 'promote_gently',
+          parent_guidance_skill_id: 'counting',
+        },
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(CHILD_ID, events);
+    const state = profile.skill_mastery.counting;
+
+    expect(state.current_level).toBe(1);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('parent-promoted challenge attempts only count for the approved skill', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 2,
+        skillIds: ['counting', 'subitizing'],
+        metadata: {
+          parent_guidance_applied: true,
+          parent_guidance_override_type: 'promote_gently',
+          parent_guidance_skill_id: 'counting',
+        },
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(CHILD_ID, events);
+
+    expect(profile.skill_mastery.counting.current_level).toBe(1);
+    expect(profile.skill_mastery.counting.last_promoted_at).toBe(timestamp(4));
+    expect(profile.skill_mastery.subitizing.current_level).toBe(0);
+    expect(profile.skill_mastery.subitizing.last_promoted_at).toBeUndefined();
+  });
+
+  test('approved combined-order color activity can promote the color fill ladder', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 4,
+        skillIds: ['color_fill'],
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(
+        makeSkillState({
+          skillId: 'color_fill',
+          currentLevel: 1,
+        })
+      )
+    );
+    const state = profile.skill_mastery.color_fill;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBe(timestamp(4));
   });
 
   test('hints and completion events do not inflate attempt counts', () => {
@@ -88,7 +380,7 @@ describe('progress tracking contract', () => {
     expect(state.correct_attempts).toBe(0);
     expect(state.recent_accuracy).toBe(0);
     expect(state.confidence).toBe(0);
-    expect(state.current_level).toBe(1);
+    expect(state.current_level).toBe(0);
     expect(state.needs_review).toBe(false);
   });
 
@@ -116,6 +408,30 @@ describe('progress tracking contract', () => {
     storage.resetProgress();
     expect(Object.keys(storage.getProgressProfile(CHILD_ID).skill_mastery)).toHaveLength(0);
   });
+
+  test('storage translates legacy saved levels before parent review or export', () => {
+    const keyValueStorage = new MemoryKeyValueStorage();
+    const staleProfile = makeExistingProfile(makeSkillState({ currentLevel: 2 }), {
+      profileVersion: 1,
+    });
+    keyValueStorage.setItem('lp_child_progress_profile', JSON.stringify(staleProfile));
+    const storage = new StorageService(keyValueStorage);
+
+    const profile = storage.getProgressProfile(CHILD_ID);
+    const stored = JSON.parse(
+      keyValueStorage.getItem('lp_child_progress_profile') ?? '{}'
+    ) as ChildProgressProfile;
+    const exported = JSON.parse(storage.exportProgressData([])) as {
+      child_profile: ChildProgressProfile;
+    };
+
+    expect(profile.profile_version).toBe(2);
+    expect(profile.skill_mastery.counting.current_level).toBe(0);
+    expect(stored.profile_version).toBe(2);
+    expect(stored.skill_mastery.counting.current_level).toBe(0);
+    expect(exported.child_profile.profile_version).toBe(2);
+    expect(exported.child_profile.skill_mastery.counting.current_level).toBe(0);
+  });
 });
 
 function makeEvent(params: {
@@ -123,6 +439,9 @@ function makeEvent(params: {
   timestamp: string;
   responseTimeMs?: number;
   inputType?: ActivityAttemptEvent['input_type'];
+  difficultyLevel?: number;
+  skillIds?: string[];
+  metadata?: ActivityAttemptEvent['metadata'];
 }): ActivityAttemptEvent {
   return {
     event_id: `event-${params.timestamp}`,
@@ -130,7 +449,7 @@ function makeEvent(params: {
     child_id: CHILD_ID,
     activity_id: 'math-count-stars-three',
     activity_version: 1,
-    skill_ids: ['counting'],
+    skill_ids: params.skillIds ?? ['counting'],
     timestamp: params.timestamp,
     prompt_text: 'How many stars do you see?',
     outcome: params.outcome,
@@ -140,11 +459,47 @@ function makeEvent(params: {
     correct_answer: '3',
     attempt_number: 1,
     response_time_ms: params.responseTimeMs ?? 1000,
-    difficulty_level: 1,
+    difficulty_level: params.difficultyLevel ?? 1,
     choice_count: 3,
     distractor_strength: 'easy',
     input_type: params.inputType ?? 'tap',
     hint_shown: params.outcome === 'hint_used',
+    metadata: params.metadata,
+  };
+}
+
+function makeExistingProfile(
+  skillState: SkillMasteryState,
+  params: {
+    profileVersion?: number;
+  } = {}
+): ChildProgressProfile {
+  return {
+    child_id: CHILD_ID,
+    profile_version: params.profileVersion ?? 2,
+    created_at: timestamp(0),
+    updated_at: timestamp(0),
+    skill_mastery: {
+      [skillState.skill_id]: skillState,
+    },
+    session_summary: [],
+  };
+}
+
+function makeSkillState(params: {
+  currentLevel: number;
+  skillId?: string;
+}): SkillMasteryState {
+  return {
+    skill_id: params.skillId ?? 'counting',
+    current_level: params.currentLevel,
+    confidence: 0,
+    total_attempts: 0,
+    correct_attempts: 0,
+    recent_accuracy: 0,
+    recent_average_response_ms: 0,
+    last_seen_at: timestamp(0),
+    needs_review: false,
   };
 }
 

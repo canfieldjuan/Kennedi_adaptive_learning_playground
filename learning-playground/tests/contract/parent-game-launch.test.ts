@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderParentPanel } from '../../src/modules/parent-panel/ParentPanel';
 import type { StorageServiceInterface } from '../../src/types/runtime';
+import type { ChildProgressProfile } from '../../src/types/progress';
 
 describe('parent game launch contract', () => {
   beforeEach(() => {
@@ -35,6 +36,36 @@ describe('parent game launch contract', () => {
     expect(launchButton?.dataset.activityId).toBe('kennedis-orders-banana-001');
     launchButton?.click();
     expect(window.location.hash).toBe('#activity/kennedis-orders-banana-001');
+  });
+
+  test('parent progress renders curriculum level labels instead of bare numbers', () => {
+    const root = document.createElement('div');
+
+    renderParentPanel(root, createMockStorage({
+      child_id: 'local-child',
+      profile_version: 1,
+      created_at: '2026-07-08T00:00:00.000Z',
+      updated_at: '2026-07-08T00:00:00.000Z',
+      skill_mastery: {
+        counting: {
+          skill_id: 'counting',
+          current_level: 1,
+          confidence: 0.8,
+          total_attempts: 5,
+          correct_attempts: 5,
+          recent_accuracy: 1,
+          recent_average_response_ms: 900,
+          last_seen_at: '2026-07-08T00:00:00.000Z',
+          needs_review: false,
+        },
+      },
+      session_summary: [],
+    }), {
+      childId: 'local-child',
+      sessionId: 'session-1',
+    });
+
+    expect(collectText(root)).toContain('1: Counts small pretend-play sets');
   });
 
   test('Bear Cafe replaces Videos on the four-slot child home grid', () => {
@@ -156,16 +187,14 @@ function createMemoryLocalStorage(): Storage {
   } as Storage;
 }
 
-function createMockStorage(): StorageServiceInterface {
-  const profile = {
+function createMockStorage(profile: ChildProgressProfile = {
     child_id: 'local-child',
     profile_version: 1,
     created_at: '2026-07-08T00:00:00.000Z',
     updated_at: '2026-07-08T00:00:00.000Z',
     skill_mastery: {},
     session_summary: [],
-  };
-
+  }): StorageServiceInterface {
   return {
     getSettings: () => ({
       child_display_name: 'Explorer',

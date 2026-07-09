@@ -20,6 +20,7 @@ import type { ChildProgressProfile } from '../types/progress';
 import {
   buildProgressProfileFromEvents,
   createEmptyProgressProfile,
+  normalizeProgressProfileLevels,
 } from './progress';
 import { buildProgressExportJson } from './export-data';
 
@@ -92,7 +93,12 @@ export class StorageService implements StorageServiceInterface {
         return createEmptyProgressProfile(childId);
       }
 
-      return profile;
+      const normalization = normalizeProgressProfileLevels(profile);
+      if (normalization.changed) {
+        this.saveProgressProfile(normalization.profile);
+      }
+
+      return normalization.profile;
     } catch {
       return createEmptyProgressProfile(childId);
     }

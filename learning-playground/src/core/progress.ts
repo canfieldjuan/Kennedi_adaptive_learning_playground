@@ -4,13 +4,19 @@
  */
 
 import { shouldAddSupport, shouldPromoteSkill } from './adaptive-engine';
+import {
+  loadCurriculumGraph,
+  type CurriculumGraph,
+  type CurriculumSkillLevel,
+} from './curriculum-graph';
 import type { ActivityAttemptEvent } from '../types/events';
 import type {
   ChildProgressProfile,
   SkillMasteryState,
 } from '../types/progress';
 
-const PROFILE_VERSION = 1;
+const PROFILE_VERSION = 2;
+const LEGACY_PROGRESS_MAX_LEVEL = 5;
 const RECENT_ATTEMPT_LIMIT = 5;
 const PROMOTION_ATTEMPT_MINIMUM = 5;
 
@@ -36,28 +42,33 @@ export function buildProgressProfileFromEvents(
   existingProfile?: ChildProgressProfile,
   nowIso = new Date().toISOString()
 ): ChildProgressProfile {
+  const graph = loadCurriculumGraph();
+  const normalizedExistingProfile = existingProfile
+    ? normalizeProgressProfileLevels(existingProfile, graph).profile
+    : undefined;
   const childEvents = events
     .filter((event) => event.child_id === childId)
     .sort(compareEventsByTimestamp);
 
   const createdAt =
-    existingProfile?.created_at ??
+    normalizedExistingProfile?.created_at ??
     childEvents[0]?.timestamp ??
     nowIso;
   const updatedAt =
     childEvents[childEvents.length - 1]?.timestamp ??
-    existingProfile?.updated_at ??
+    normalizedExistingProfile?.updated_at ??
     nowIso;
 
   const skillEvents = groupEventsBySkill(childEvents);
   const skillMastery: Record<string, SkillMasteryState> = {};
 
   for (const [skillId, eventsForSkill] of skillEvents) {
-    const existingSkill = existingProfile?.skill_mastery[skillId];
+    const existingSkill = normalizedExistingProfile?.skill_mastery[skillId];
     skillMastery[skillId] = buildSkillMasteryState(
       skillId,
       eventsForSkill,
-      existingSkill
+      existingSkill,
+      graph
     );
   }
 
@@ -71,10 +82,55 @@ export function buildProgressProfileFromEvents(
   };
 }
 
+export interface ProgressProfileNormalizationResult {
+  profile: ChildProgressProfile;
+  changed: boolean;
+}
+
+export function normalizeProgressProfileLevels(
+  profile: ChildProgressProfile,
+  graph: CurriculumGraph = loadCurriculumGraph()
+): ProgressProfileNormalizationResult {
+  const storedProfileVersion = Number.isFinite(profile.profile_version)
+    ? profile.profile_version
+    : 0;
+  const isLegacyProfile = storedProfileVersion < PROFILE_VERSION;
+  let changed = isLegacyProfile;
+  const skillMastery: Record<string, SkillMasteryState> = {};
+
+  for (const [skillId, state] of Object.entries(profile.skill_mastery)) {
+    const normalizedLevel = normalizeSkillLevel(
+      skillId,
+      state.current_level,
+      graph,
+      isLegacyProfile
+    );
+    changed ||= normalizedLevel !== state.current_level;
+    skillMastery[skillId] = normalizedLevel === state.current_level
+      ? state
+      : {
+        ...state,
+        current_level: normalizedLevel,
+      };
+  }
+
+  return {
+    profile: changed
+      ? {
+        ...profile,
+        profile_version: PROFILE_VERSION,
+        skill_mastery: skillMastery,
+      }
+      : profile,
+    changed,
+  };
+}
+
 function buildSkillMasteryState(
   skillId: string,
   events: ActivityAttemptEvent[],
-  existingSkill?: SkillMasteryState
+  existingSkill: SkillMasteryState | undefined,
+  graph: CurriculumGraph
 ): SkillMasteryState {
   const countedEvents = events.filter(hasCountedOutcome);
   const latestEvent = events[events.length - 1];
@@ -92,7 +148,9 @@ function buildSkillMasteryState(
     countedEvents.length,
     recentHintCount
   );
-  const baseLevel = existingSkill?.current_level ?? latestEvent.difficulty_level;
+  const baseLevel = getBaseLevel(skillId, existingSkill, graph);
+  const maxLevel = graph.getMaxSkillLevel(skillId)?.level ?? baseLevel;
+  const currentLevel = getSkillLevelOrFallback(skillId, baseLevel, graph);
 
   const candidate: SkillMasteryState = {
     skill_id: skillId,
@@ -107,10 +165,19 @@ function buildSkillMasteryState(
     needs_review: shouldMarkNeedsReview(recentAttempts, recentHintCount),
   };
 
-  if (shouldPromoteFromEvents(candidate, countedEvents, existingSkill?.last_promoted_at)) {
+  if (
+    baseLevel < maxLevel &&
+    shouldPromoteFromEvents(
+      candidate,
+      skillId,
+      events,
+      currentLevel,
+      existingSkill?.last_promoted_at
+    )
+  ) {
     return {
       ...candidate,
-      current_level: Math.min(baseLevel + 1, 5),
+      current_level: Math.min(baseLevel + 1, maxLevel),
       last_promoted_at: latestCountedEvent?.timestamp ?? latestEvent.timestamp,
       needs_review: false,
     };
@@ -216,19 +283,140 @@ function shouldMarkNeedsReview(
 
 function shouldPromoteFromEvents(
   state: SkillMasteryState,
-  countedEvents: ActivityAttemptEvent[],
+  skillId: string,
+  events: ActivityAttemptEvent[],
+  currentLevel: CurriculumSkillLevel,
   lastPromotedAt?: string
 ): boolean {
   const eventsSincePromotion = lastPromotedAt
-    ? countedEvents.filter((event) => event.timestamp > lastPromotedAt)
-    : countedEvents;
+    ? events.filter((event) => event.timestamp > lastPromotedAt)
+    : events;
+  const promotionEvents = eventsSincePromotion.filter((event) => (
+    isPromotionEligibleEvent(event, skillId, currentLevel)
+  ));
+  const eligibleAttempts = promotionEvents.filter(hasCountedOutcome);
 
-  if (eventsSincePromotion.length < PROMOTION_ATTEMPT_MINIMUM) return false;
+  if (eligibleAttempts.length < PROMOTION_ATTEMPT_MINIMUM) return false;
+
+  const recentEligibleAttempts = eligibleAttempts.slice(-RECENT_ATTEMPT_LIMIT);
+  const recentCorrectAttempts = recentEligibleAttempts.filter((event) => (
+    event.outcome === 'correct'
+  ));
+  const recentHintCount = countRecentHints(promotionEvents);
+  const recentAccuracy = calculateAccuracy(
+    recentCorrectAttempts.length,
+    recentEligibleAttempts.length
+  );
+  const confidence = calculateConfidence(
+    recentAccuracy,
+    eligibleAttempts.length,
+    recentHintCount
+  );
 
   return shouldPromoteSkill({
     ...state,
-    total_attempts: eventsSincePromotion.length,
+    total_attempts: eligibleAttempts.length,
+    correct_attempts: eligibleAttempts.filter((event) => (
+      event.outcome === 'correct'
+    )).length,
+    recent_accuracy: recentAccuracy,
+    recent_average_response_ms: calculateAverageResponseTime(recentEligibleAttempts),
+    confidence,
   });
+}
+
+function getBaseLevel(
+  skillId: string,
+  existingSkill: SkillMasteryState | undefined,
+  graph: CurriculumGraph
+): number {
+  const lowestLevel = graph.getLowestSkillLevel(skillId)?.level ?? 0;
+  if (!existingSkill) return lowestLevel;
+
+  return normalizeSkillLevel(skillId, existingSkill.current_level, graph);
+}
+
+function getSkillLevelOrFallback(
+  skillId: string,
+  level: number,
+  graph: CurriculumGraph
+): CurriculumSkillLevel {
+  return graph.getSkillLevel(skillId, level) ??
+    graph.getLowestSkillLevel(skillId) ?? {
+      level: 0,
+      label: 'Starting level',
+      min_difficulty_level: 0,
+      max_difficulty_level: 5,
+    };
+}
+
+function isWithinDifficultyBand(
+  event: ActivityAttemptEvent,
+  level: CurriculumSkillLevel
+): boolean {
+  return (
+    event.difficulty_level >= level.min_difficulty_level &&
+    event.difficulty_level <= level.max_difficulty_level
+  );
+}
+
+function isPromotionEligibleEvent(
+  event: ActivityAttemptEvent,
+  skillId: string,
+  level: CurriculumSkillLevel
+): boolean {
+  if (isWithinDifficultyBand(event, level)) return true;
+
+  return (
+    event.metadata?.parent_guidance_override_type === 'promote_gently' &&
+    event.metadata.parent_guidance_skill_id === skillId &&
+    event.difficulty_level === level.max_difficulty_level + 1
+  );
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(Math.max(value, minimum), maximum);
+}
+
+function normalizeSkillLevel(
+  skillId: string,
+  currentLevel: number,
+  graph: CurriculumGraph,
+  translateLegacyLevel = false
+): number {
+  const lowestLevel = graph.getLowestSkillLevel(skillId)?.level;
+  const maxLevel = graph.getMaxSkillLevel(skillId)?.level;
+
+  if (lowestLevel === undefined || maxLevel === undefined) {
+    return currentLevel;
+  }
+
+  const normalizedLevel = Number.isFinite(currentLevel)
+    ? Math.trunc(currentLevel)
+    : lowestLevel;
+  const level = translateLegacyLevel
+    ? translateLegacyProgressLevel(normalizedLevel, lowestLevel, maxLevel)
+    : normalizedLevel;
+  return clamp(level, lowestLevel, maxLevel);
+}
+
+function translateLegacyProgressLevel(
+  legacyLevel: number,
+  lowestLevel: number,
+  maxLevel: number
+): number {
+  const legacyRange = Math.max(0, maxLevel - lowestLevel);
+  if (legacyRange === 0) return lowestLevel;
+
+  const clampedLegacyLevel = clamp(
+    legacyLevel,
+    0,
+    LEGACY_PROGRESS_MAX_LEVEL
+  );
+  const translatedOffset = Math.floor(
+    (clampedLegacyLevel / LEGACY_PROGRESS_MAX_LEVEL) * legacyRange
+  );
+  return lowestLevel + translatedOffset;
 }
 
 function hasTwoRecentAbandons(events: ActivityAttemptEvent[]): boolean {
