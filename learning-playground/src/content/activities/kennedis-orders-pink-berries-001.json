@@ -1,6 +1,6 @@
 {
   "id": "kennedis-orders-pink-berries-001",
-  "version": 1,
+  "version": 2,
   "title": "Banana Cookie Order",
   "domain": "math",
   "skill_ids": ["counting"],

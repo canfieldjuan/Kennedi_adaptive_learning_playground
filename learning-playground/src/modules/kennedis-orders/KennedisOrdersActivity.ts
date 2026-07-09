@@ -1283,7 +1283,7 @@ export function createKennedisOrdersEvent(params: {
     hint_shown: params.hintShown,
     metadata: {
       ...createTransferMetadata(params.activity),
-      ...createEvidenceMetadata(params.content),
+      ...createEvidenceMetadata(params.content, params.eventName),
       event_name: params.eventName,
       issue: params.issue ?? 'none',
       ...(params.hintedSkillIds?.length
@@ -1413,7 +1413,10 @@ function getUniqueSkillIds(skillIds: string[]): string[] {
   return [...new Set(skillIds)].sort((a, b) => a.localeCompare(b));
 }
 
-function createEvidenceMetadata(content: BearCafeContent): Record<string, string | number | boolean> {
+function createEvidenceMetadata(
+  content: BearCafeContent,
+  eventName: string
+): Record<string, string | number | boolean> {
   const requiredQuantity = getRequestedQuantity(content.required_order);
   const targetSound = getTargetSound(content);
 
@@ -1436,7 +1439,7 @@ function createEvidenceMetadata(content: BearCafeContent): Record<string, string
     ...(content.required_order?.color_id ? { required_color_id: content.required_order.color_id } : {}),
     ...(targetSound ? { target_sound: targetSound } : {}),
     correction_required: Boolean(content.starting_tray),
-    shift_completed: Boolean(content.shift_restart_activity_id),
+    shift_completed: eventName === 'order_delivered' && Boolean(content.shift_restart_activity_id),
   };
 }
 

@@ -86,6 +86,12 @@ describe("Kennedi's Orders adapter contract", () => {
     }
   });
 
+  test('rewritten shipped cafe orders bump their activity version', () => {
+    expect(getActivity('kennedis-orders-two-cookies-001').version).toBe(2);
+    expect(getActivity('kennedis-orders-pink-berries-001').version).toBe(2);
+    expect(getActivity('kennedis-orders-free-make-001').version).toBe(2);
+  });
+
   test('every cafe skill exists in the curriculum graph and allows its context', () => {
     const graph = loadCurriculumGraph();
 
@@ -478,7 +484,7 @@ describe("Kennedi's Orders adapter contract", () => {
   });
 
   test('food selections emit decision-level events without completing the order', () => {
-    const activity = getActivity('kennedis-orders-two-cookies-001');
+    const activity = getActivity('kennedis-orders-free-make-001');
     const content = getRequiredContent(activity);
     const event = createKennedisOrdersEvent({
       activity,
@@ -486,29 +492,29 @@ describe("Kennedi's Orders adapter contract", () => {
       sessionId: 'session-1',
       childId: 'local-child',
       outcome: 'correct',
-      tray: { foodCounts: { cookie: 1 } },
+      tray: { foodCounts: { cupcake: 1 } },
       attemptNumber: 1,
       responseTimeMs: 600,
       hintShown: false,
       eventName: 'food_selected',
-      selectedChoiceId: 'cookie',
-      selectedAnswer: 'cookie',
+      selectedChoiceId: 'cupcake',
+      selectedAnswer: 'cupcake',
       extraMetadata: {
-        selected_food_id: 'cookie',
+        selected_food_id: 'cupcake',
         selected_food_count: 1,
       },
     });
 
     expect(event.outcome).toBe('correct');
     expect(event.skill_outcomes).toEqual([]);
-    expect(event.selected_choice_id).toBe('cookie');
-    expect(event.selected_answer).toBe('cookie');
+    expect(event.selected_choice_id).toBe('cupcake');
+    expect(event.selected_answer).toBe('cupcake');
     expect(event.metadata).toMatchObject({
       event_name: 'food_selected',
-      selected_food_id: 'cookie',
+      selected_food_id: 'cupcake',
       selected_food_count: 1,
       selected_quantity: 1,
-      requested_quantity: 4,
+      shift_completed: false,
     });
   });
 

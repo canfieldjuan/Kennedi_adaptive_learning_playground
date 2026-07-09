@@ -1,6 +1,6 @@
 {
   "id": "kennedis-orders-two-cookies-001",
-  "version": 1,
+  "version": 2,
   "title": "Four Cookies Order",
   "domain": "math",
   "skill_ids": ["counting"],
