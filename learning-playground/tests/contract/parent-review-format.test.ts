@@ -91,7 +91,7 @@ describe('parent review formatting contract', () => {
       sessionId: 'session-1',
       childId: 'local-child',
       outcome: 'completed',
-      tray: { foodCounts: { berry: 3 }, colorId: 'pink' },
+      tray: { foodCounts: { banana: 2, cookie: 1 } },
       attemptNumber: 1,
       responseTimeMs: 2600,
       hintShown: false,
@@ -104,15 +104,42 @@ describe('parent review formatting contract', () => {
     expect(recentAttempts).toHaveLength(1);
     expect(recentAttempts[0]).toMatchObject({
       activity_id: 'kennedis-orders-pink-berries-001',
-      activity_title: 'Three Pink Berries Order',
-      skill_labels: ['Counting', 'Color Fill'],
-      prompt_text: 'Mama Bear wants 3 pink berries.',
-      selected_answer: '3 berry, pink',
-      correct_answer: '3 pink berry',
+      activity_title: 'Banana Cookie Order',
+      skill_labels: ['Counting'],
+      prompt_text: 'Mama Bear wants 2 bananas and 1 cookie.',
+      selected_answer: '2 banana, cookie',
+      correct_answer: '2 banana, cookie',
       outcome_label: 'Completed',
       hint_used: false,
       response_time_label: '2.6 sec',
     });
+  });
+
+  test('does not show Bear Cafe food-selection telemetry as recent attempts', () => {
+    const activity = getActivity('kennedis-orders-two-cookies-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const selectionEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { cookie: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 500,
+      hintShown: false,
+      eventName: 'food_selected',
+      selectedChoiceId: 'cookie',
+      selectedAnswer: 'cookie',
+      extraMetadata: {
+        selected_food_id: 'cookie',
+        selected_food_count: 1,
+      },
+    });
+
+    expect(formatRecentAttempts([selectionEvent], ACTIVITY_TITLE_LOOKUP)).toEqual([]);
   });
 
   test('collapses Bear Cafe tray check success when a matching delivery is present', () => {

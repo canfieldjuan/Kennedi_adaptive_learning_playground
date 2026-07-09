@@ -1,19 +1,19 @@
 {
   "id": "kennedis-orders-pink-berries-001",
   "version": 1,
-  "title": "Three Pink Berries Order",
+  "title": "Banana Cookie Order",
   "domain": "math",
-  "skill_ids": ["counting", "color_fill"],
+  "skill_ids": ["counting"],
   "transfer": {
-    "skill_ids": ["counting", "color_fill"],
+    "skill_ids": ["counting"],
     "context_type": "same_format_new_examples",
-    "context_id": "attribute-combo-order",
+    "context_id": "multi-item-quantity-order",
     "example_set_id": "two-part-orders-1",
     "prompt_mode": "spoken"
   },
   "difficulty": {
-    "level": 4,
-    "choice_count": 5,
+    "level": 5,
+    "choice_count": 4,
     "distractor_strength": "medium"
   },
   "interaction_model": "tap_then_place",
@@ -26,32 +26,27 @@
       "name": "Mama Bear",
       "icon": "🐻",
       "callLine": "Mama Bear has a big order.",
-      "happyLine": "Three pink berries! Wonderful."
+      "happyLine": "Bananas and cookie! Wonderful."
     },
-    "prompt_audio": "Mama Bear wants 3 pink berries.",
-    "order_ticket": "3 pink berries",
+    "prompt_audio": "Mama Bear wants 2 bananas and 1 cookie.",
+    "order_ticket": "2 bananas and 1 cookie",
     "shift_label": "Bear Cafe morning shift",
     "round_label": "Round 3: Two-Part Order",
     "round_index": 3,
     "round_total": 5,
     "foods": [
+      { "id": "banana", "label": "banana", "icon": "🍌", "first_sound": "b" },
+      { "id": "cookie", "label": "cookie", "icon": "🍪", "first_sound": "c" },
       { "id": "berry", "label": "berry", "icon": "🫐", "first_sound": "b" },
-      { "id": "cupcake", "label": "cupcake", "icon": "🧁", "first_sound": "c" },
-      { "id": "cookie", "label": "cookie", "icon": "🍪", "first_sound": "c" }
-    ],
-    "colors": [
-      { "id": "pink", "label": "pink", "value": "#f472b6" },
-      { "id": "yellow", "label": "yellow", "value": "#facc15" },
-      { "id": "red", "label": "red", "value": "#ef4444" },
-      { "id": "orange", "label": "orange", "value": "#fb923c" },
-      { "id": "blue", "label": "blue", "value": "#60a5fa" }
+      { "id": "soup", "label": "soup", "icon": "🥣", "first_sound": "s" }
     ],
     "required_order": {
-      "food_id": "berry",
-      "quantity": 3,
-      "color_id": "pink"
+      "food_counts": {
+        "banana": 2,
+        "cookie": 1
+      }
     },
-    "parent_evidence_summary": "Two-part order captures holding color plus quantity in mind, counting to 3, color recognition, partial matches, hint use, and correction.",
+    "parent_evidence_summary": "Two-part order captures holding two food quantities in mind, counting to 3 across items, distractor rejection, hint use, and correction.",
     "next_activity_id": "kennedis-orders-b-foods-001"
   },
   "success_rules": {
@@ -70,7 +65,7 @@
       "sound": "soft_boing"
     },
     "hint": {
-      "speech": "Count 3 berries. Then make them pink.",
+      "speech": "Count 2 bananas and 1 cookie.",
       "highlight_target": true
     }
   },

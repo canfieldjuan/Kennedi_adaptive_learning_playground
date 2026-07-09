@@ -94,6 +94,8 @@ function isReviewAttemptEvent(
   event: ActivityAttemptEvent,
   supersededBearCafeTrayCheckIds: Set<string>
 ): boolean {
+  if (event.metadata?.event_name === 'food_selected') return false;
+
   if (isBearCafeTrayCheckSuccess(event)) {
     return !supersededBearCafeTrayCheckIds.has(event.event_id);
   }

@@ -36,6 +36,7 @@ export interface BearCafeDecoration {
 export interface BearCafeRequiredOrder {
   food_id?: string;
   food_ids?: string[];
+  food_counts?: Record<string, number>;
   color_id?: string;
   quantity?: number;
   decoration_id?: string;
@@ -67,4 +68,3 @@ export interface BearCafeContent {
   next_label?: string;
   shift_restart_activity_id?: string;
 }
-
