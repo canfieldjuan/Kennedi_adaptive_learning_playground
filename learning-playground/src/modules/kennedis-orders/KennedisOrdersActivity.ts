@@ -1307,7 +1307,17 @@ function createSkillOutcomesForEvent(params: {
   eventName: string;
   issue?: string;
 }): SkillAttemptOutcome[] | undefined {
-  if (params.eventName === 'food_selected') return [];
+  if (
+    params.eventName === 'food_selected' &&
+    (params.outcome === 'correct' || params.outcome === 'incorrect')
+  ) {
+    return params.activity.skill_ids.map((skillId) => ({
+      skill_id: skillId,
+      outcome: params.outcome,
+      reason: params.issue ?? 'food_selected',
+    }));
+  }
+
   if (params.content.mode !== 'two_part') return undefined;
 
   if (params.eventName === 'hint_shown' && params.outcome === 'hint_used') {

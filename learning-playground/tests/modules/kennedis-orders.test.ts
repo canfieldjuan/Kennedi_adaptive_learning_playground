@@ -546,7 +546,13 @@ describe("Kennedi's Orders adapter contract", () => {
     });
 
     expect(event.outcome).toBe('correct');
-    expect(event.skill_outcomes).toEqual([]);
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'vocabulary',
+        outcome: 'correct',
+        reason: 'food_selected',
+      },
+    ]);
     expect(event.selected_choice_id).toBe('cupcake');
     expect(event.selected_answer).toBe('cupcake');
     expect(event.metadata).toMatchObject({
@@ -556,6 +562,38 @@ describe("Kennedi's Orders adapter contract", () => {
       selected_quantity: 1,
       shift_completed: false,
     });
+  });
+
+  test('food-selection events count incorrect first-sound choices for the touched skill', () => {
+    const activity = getActivity('kennedis-orders-b-foods-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'incorrect',
+      tray: { foodCounts: { apple: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 700,
+      hintShown: false,
+      eventName: 'food_selected',
+      issue: 'first_sound_sort',
+      selectedChoiceId: 'apple',
+      selectedAnswer: 'apple',
+      extraMetadata: {
+        selected_food_id: 'apple',
+        selected_food_count: 1,
+      },
+    });
+
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'initial_sound',
+        outcome: 'incorrect',
+        reason: 'first_sound_sort',
+      },
+    ]);
   });
 
   test('completed bake time event marks the cafe shift complete', () => {
