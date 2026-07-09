@@ -196,6 +196,104 @@ describe('progress tracking contract', () => {
     expect(state.last_promoted_at).toBe(timestamp(4));
   });
 
+  test('approved reverse-mapping activity can promote the letter sound ladder', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 2,
+        skillIds: ['letter_sound_match'],
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(
+        makeSkillState({
+          skillId: 'letter_sound_match',
+          currentLevel: 1,
+        })
+      )
+    );
+    const state = profile.skill_mastery.letter_sound_match;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('approved low-difficulty subitizing activity can promote the current rung', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 1,
+        skillIds: ['subitizing'],
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(
+        makeSkillState({
+          skillId: 'subitizing',
+          currentLevel: 1,
+        })
+      )
+    );
+    const state = profile.skill_mastery.subitizing;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('approved low-difficulty shape activity can promote the current rung', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 1,
+        skillIds: ['shape_match'],
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(
+      CHILD_ID,
+      events,
+      makeExistingProfile(
+        makeSkillState({
+          skillId: 'shape_match',
+          currentLevel: 1,
+        })
+      )
+    );
+    const state = profile.skill_mastery.shape_match;
+
+    expect(state.current_level).toBe(2);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('parent-promoted challenge attempts can count toward current-rung progress', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 2,
+        metadata: {
+          parent_guidance_applied: true,
+          parent_guidance_override_type: 'promote_gently',
+        },
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(CHILD_ID, events);
+    const state = profile.skill_mastery.counting;
+
+    expect(state.current_level).toBe(1);
+    expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
   test('approved combined-order color activity can promote the color fill ladder', () => {
     const events = Array.from({ length: 5 }, (_, index) => (
       makeEvent({
@@ -319,6 +417,7 @@ function makeEvent(params: {
   inputType?: ActivityAttemptEvent['input_type'];
   difficultyLevel?: number;
   skillIds?: string[];
+  metadata?: ActivityAttemptEvent['metadata'];
 }): ActivityAttemptEvent {
   return {
     event_id: `event-${params.timestamp}`,
@@ -341,6 +440,7 @@ function makeEvent(params: {
     distractor_strength: 'easy',
     input_type: params.inputType ?? 'tap',
     hint_shown: params.outcome === 'hint_used',
+    metadata: params.metadata,
   };
 }
 

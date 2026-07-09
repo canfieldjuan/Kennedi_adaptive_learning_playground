@@ -289,10 +289,10 @@ function shouldPromoteFromEvents(
   const eventsSincePromotion = lastPromotedAt
     ? events.filter((event) => event.timestamp > lastPromotedAt)
     : events;
-  const eventsInCurrentBand = eventsSincePromotion.filter((event) => (
-    isWithinDifficultyBand(event, currentLevel)
+  const promotionEvents = eventsSincePromotion.filter((event) => (
+    isPromotionEligibleEvent(event, currentLevel)
   ));
-  const eligibleAttempts = eventsInCurrentBand.filter(hasCountedOutcome);
+  const eligibleAttempts = promotionEvents.filter(hasCountedOutcome);
 
   if (eligibleAttempts.length < PROMOTION_ATTEMPT_MINIMUM) return false;
 
@@ -300,7 +300,7 @@ function shouldPromoteFromEvents(
   const recentCorrectAttempts = recentEligibleAttempts.filter((event) => (
     event.outcome === 'correct'
   ));
-  const recentHintCount = countRecentHints(eventsInCurrentBand);
+  const recentHintCount = countRecentHints(promotionEvents);
   const recentAccuracy = calculateAccuracy(
     recentCorrectAttempts.length,
     recentEligibleAttempts.length
@@ -355,6 +355,18 @@ function isWithinDifficultyBand(
   return (
     event.difficulty_level >= level.min_difficulty_level &&
     event.difficulty_level <= level.max_difficulty_level
+  );
+}
+
+function isPromotionEligibleEvent(
+  event: ActivityAttemptEvent,
+  level: CurriculumSkillLevel
+): boolean {
+  if (isWithinDifficultyBand(event, level)) return true;
+
+  return (
+    event.metadata?.parent_guidance_override_type === 'promote_gently' &&
+    event.difficulty_level === level.max_difficulty_level + 1
   );
 }
 
