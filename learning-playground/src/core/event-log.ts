@@ -4,7 +4,11 @@
  * Never sends data anywhere without explicit parent action.
  */
 
-import type { ActivityAttemptEvent } from '../types/events';
+import type {
+  ActivityAttemptEvent,
+  AttemptOutcome,
+  SkillAttemptOutcome,
+} from '../types/events';
 
 const STORAGE_KEY = 'lp_activity_events';
 
@@ -27,9 +31,11 @@ export function isValidEvent(event: unknown): event is ActivityAttemptEvent {
     typeof e.activity_id === 'string' &&
     typeof e.activity_version === 'number' &&
     Array.isArray(e.skill_ids) &&
+    e.skill_ids.every((skillId) => typeof skillId === 'string') &&
     typeof e.timestamp === 'string' &&
     typeof e.prompt_text === 'string' &&
-    typeof e.outcome === 'string' &&
+    isAttemptOutcome(e.outcome) &&
+    (e.skill_outcomes === undefined || isValidSkillOutcomes(e.skill_outcomes)) &&
     typeof e.selected_answer === 'string' &&
     typeof e.correct_answer === 'string' &&
     typeof e.attempt_number === 'number' &&
@@ -112,6 +118,7 @@ function normalizeStoredEvent(event: unknown): ActivityAttemptEvent | null {
   if (!isLegacyEventBase(event)) return null;
 
   const metadata = getMetadata(event.metadata);
+  const skillOutcomes = getSkillOutcomes(event.skill_outcomes);
   const selectedAnswer = getOptionalString(metadata.selected_answer) ??
     getOptionalString(metadata.selected_label) ??
     getOptionalString(metadata.choice_label) ??
@@ -137,6 +144,7 @@ function normalizeStoredEvent(event: unknown): ActivityAttemptEvent | null {
       getOptionalString(metadata.prompt) ??
       event.activity_id,
     outcome: event.outcome,
+    ...(skillOutcomes ? { skill_outcomes: skillOutcomes } : {}),
     selected_choice_id: getOptionalString(event.selected_choice_id),
     correct_choice_id: getOptionalString(event.correct_choice_id),
     selected_answer: selectedAnswer,
@@ -207,4 +215,30 @@ function getMetadata(value: unknown): Record<string, string | number | boolean> 
 
 function getOptionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function isAttemptOutcome(value: unknown): value is AttemptOutcome {
+  return (
+    value === 'correct' ||
+    value === 'incorrect' ||
+    value === 'hint_used' ||
+    value === 'abandoned' ||
+    value === 'completed'
+  );
+}
+
+function isValidSkillOutcomes(value: unknown): value is SkillAttemptOutcome[] {
+  return Array.isArray(value) && value.every((entry) => {
+    if (typeof entry !== 'object' || entry === null) return false;
+    const outcome = entry as Record<string, unknown>;
+    return (
+      typeof outcome.skill_id === 'string' &&
+      isAttemptOutcome(outcome.outcome) &&
+      (outcome.reason === undefined || typeof outcome.reason === 'string')
+    );
+  });
+}
+
+function getSkillOutcomes(value: unknown): SkillAttemptOutcome[] | undefined {
+  return isValidSkillOutcomes(value) ? value : undefined;
 }

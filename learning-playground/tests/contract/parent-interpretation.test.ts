@@ -75,6 +75,53 @@ describe('parent interpretation contract', () => {
     expect(interpretation.status_reason).toContain('Repeated answer: 2');
   });
 
+  test('uses per-skill outcomes for compound partial-match interpretation', () => {
+    const events = [
+      makeCompoundEvent('event-1', [
+        { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+        { skill_id: 'color_fill', outcome: 'incorrect', reason: 'color_mismatch' },
+      ]),
+      makeCompoundEvent('event-2', [
+        { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+        { skill_id: 'color_fill', outcome: 'incorrect', reason: 'color_mismatch' },
+      ]),
+      makeCompoundEvent('event-3', [
+        { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+        { skill_id: 'color_fill', outcome: 'incorrect', reason: 'color_mismatch' },
+      ]),
+      makeCompoundEvent('event-4', [
+        { skill_id: 'color_fill', outcome: 'hint_used', reason: 'color' },
+      ], {
+        outcome: 'hint_used',
+        hintShown: true,
+      }),
+      makeCompoundEvent('event-5', [
+        { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+        { skill_id: 'color_fill', outcome: 'correct', reason: 'color_match' },
+      ], {
+        outcome: 'correct',
+        hintShown: true,
+        hintedSkillIds: ['color_fill'],
+      }),
+    ];
+    const review = makeCompoundReview();
+
+    const interpretations = buildParentSkillInterpretations(review, events);
+    const counting = getInterpretation(interpretations, 'counting');
+    const color = getInterpretation(interpretations, 'color_fill');
+
+    expect(counting).toMatchObject({
+      status: 'Ready for next challenge',
+      hints_used: 0,
+      repeated_error_pattern: undefined,
+    });
+    expect(color).toMatchObject({
+      status: 'Needs more support',
+      hints_used: 2,
+      repeated_error_pattern: '3 yellow berries',
+    });
+  });
+
   test('uses not-enough-data when the session has too little evidence', () => {
     const events = [makeEvent('event-1', 'correct')];
     const review = makeReview({
@@ -133,6 +180,32 @@ function makeReview(params: {
   };
 }
 
+function makeCompoundReview(): ParentSessionReview {
+  return {
+    session_id: 'session-1',
+    completed_activities: [],
+    skills_touched: ['counting', 'color_fill'],
+    accuracy_by_skill: [
+      {
+        skill_id: 'color_fill',
+        correct_attempts: 1,
+        total_attempts: 4,
+        accuracy: 0.25,
+      },
+      {
+        skill_id: 'counting',
+        correct_attempts: 4,
+        total_attempts: 4,
+        accuracy: 1,
+      },
+    ],
+    hints_used: 1,
+    abandoned_activities: [],
+    most_repeated_activity: 'kennedis-orders-pink-berries-001',
+    parent_notes: [],
+  };
+}
+
 function makeEvent(
   eventId: string,
   outcome: ActivityAttemptEvent['outcome'],
@@ -163,6 +236,52 @@ function makeEvent(
     input_type: 'tap',
     hint_shown: overrides.hintShown ?? outcome === 'hint_used',
   };
+}
+
+function makeCompoundEvent(
+  eventId: string,
+  skillOutcomes: ActivityAttemptEvent['skill_outcomes'],
+  overrides: {
+    outcome?: ActivityAttemptEvent['outcome'];
+    hintShown?: boolean;
+    hintedSkillIds?: string[];
+  } = {}
+): ActivityAttemptEvent {
+  return {
+    event_id: eventId,
+    session_id: 'session-1',
+    child_id: 'local-child',
+    activity_id: 'kennedis-orders-pink-berries-001',
+    activity_version: 1,
+    skill_ids: ['counting', 'color_fill'],
+    timestamp: `2026-01-01T12:00:0${eventId.slice(-1)}.000Z`,
+    prompt_text: 'Mama Bear wants 3 pink berries.',
+    outcome: overrides.outcome ?? 'incorrect',
+    skill_outcomes: skillOutcomes,
+    selected_choice_id: 'berry',
+    correct_choice_id: 'berry',
+    selected_answer: '3 yellow berries',
+    correct_answer: '3 pink berries',
+    attempt_number: 1,
+    response_time_ms: 1000,
+    difficulty_level: 4,
+    choice_count: 5,
+    distractor_strength: 'medium',
+    input_type: 'tap',
+    hint_shown: overrides.hintShown ?? false,
+    metadata: overrides.hintedSkillIds
+      ? { hinted_skill_ids: overrides.hintedSkillIds.join(',') }
+      : undefined,
+  };
+}
+
+function getInterpretation(
+  interpretations: ParentSkillInterpretation[],
+  skillId: string
+): ParentSkillInterpretation {
+  const interpretation = interpretations.find((item) => item.skill_id === skillId);
+  expect(interpretation).toBeDefined();
+  return interpretation!;
 }
 
 function serializeInterpretation(

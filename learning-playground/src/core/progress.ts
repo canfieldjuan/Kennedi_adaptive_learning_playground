@@ -9,6 +9,12 @@ import {
   type CurriculumGraph,
   type CurriculumSkillLevel,
 } from './curriculum-graph';
+import {
+  eventAppliesToSkill,
+  getSkillOutcome,
+  hasCountedSkillOutcome,
+  isCorrectForSkill,
+} from './skill-outcomes';
 import type { ActivityAttemptEvent } from '../types/events';
 import type {
   ChildProgressProfile,
@@ -19,8 +25,6 @@ const PROFILE_VERSION = 2;
 const LEGACY_PROGRESS_MAX_LEVEL = 5;
 const RECENT_ATTEMPT_LIMIT = 5;
 const PROMOTION_ATTEMPT_MINIMUM = 5;
-
-type CountedOutcome = 'correct' | 'incorrect' | 'abandoned';
 
 export function createEmptyProgressProfile(
   childId: string,
@@ -132,13 +136,19 @@ function buildSkillMasteryState(
   existingSkill: SkillMasteryState | undefined,
   graph: CurriculumGraph
 ): SkillMasteryState {
-  const countedEvents = events.filter(hasCountedOutcome);
+  const countedEvents = events.filter((event) => (
+    hasCountedSkillOutcome(event, skillId)
+  ));
   const latestEvent = events[events.length - 1];
   const latestCountedEvent = countedEvents[countedEvents.length - 1];
   const recentAttempts = countedEvents.slice(-RECENT_ATTEMPT_LIMIT);
-  const correctAttempts = countedEvents.filter((event) => event.outcome === 'correct');
-  const recentCorrectAttempts = recentAttempts.filter((event) => event.outcome === 'correct');
-  const recentHintCount = countRecentHints(events);
+  const correctAttempts = countedEvents.filter((event) => (
+    isCorrectForSkill(event, skillId)
+  ));
+  const recentCorrectAttempts = recentAttempts.filter((event) => (
+    isCorrectForSkill(event, skillId)
+  ));
+  const recentHintCount = countRecentHints(events, skillId);
   const recentAccuracy = calculateAccuracy(
     recentCorrectAttempts.length,
     recentAttempts.length
@@ -162,7 +172,7 @@ function buildSkillMasteryState(
     recent_average_response_ms: calculateAverageResponseTime(recentAttempts),
     last_seen_at: latestEvent.timestamp,
     last_promoted_at: existingSkill?.last_promoted_at,
-    needs_review: shouldMarkNeedsReview(recentAttempts, recentHintCount),
+    needs_review: shouldMarkNeedsReview(recentAttempts, recentHintCount, skillId),
   };
 
   if (
@@ -192,7 +202,7 @@ function groupEventsBySkill(
   const grouped = new Map<string, ActivityAttemptEvent[]>();
 
   for (const event of events) {
-    for (const skillId of event.skill_ids) {
+    for (const skillId of getEventSkillIds(event)) {
       const skillEvents = grouped.get(skillId) ?? [];
       skillEvents.push(event);
       grouped.set(skillId, skillEvents);
@@ -207,16 +217,6 @@ function compareEventsByTimestamp(
   b: ActivityAttemptEvent
 ): number {
   return a.timestamp.localeCompare(b.timestamp);
-}
-
-function hasCountedOutcome(
-  event: ActivityAttemptEvent
-): event is ActivityAttemptEvent & { outcome: CountedOutcome } {
-  return (
-    event.outcome === 'correct' ||
-    event.outcome === 'incorrect' ||
-    event.outcome === 'abandoned'
-  );
 }
 
 function calculateAccuracy(correctCount: number, attemptCount: number): number {
@@ -243,17 +243,20 @@ function calculateConfidence(
   return roundToHundredths(recentAccuracy * attemptFactor * hintFactor);
 }
 
-function countRecentHints(events: ActivityAttemptEvent[]): number {
+function countRecentHints(events: ActivityAttemptEvent[], skillId: string): number {
   return events
     .slice(-RECENT_ATTEMPT_LIMIT)
-    .filter((event) => event.outcome === 'hint_used').length;
+    .filter((event) => getSkillOutcome(event, skillId) === 'hint_used').length;
 }
 
 function shouldMarkNeedsReview(
   recentAttempts: ActivityAttemptEvent[],
-  recentHintCount: number
+  recentHintCount: number,
+  skillId: string
 ): boolean {
-  const recentCorrectAttempts = recentAttempts.filter((event) => event.outcome === 'correct');
+  const recentCorrectAttempts = recentAttempts.filter((event) => (
+    isCorrectForSkill(event, skillId)
+  ));
   const recentAccuracy = calculateAccuracy(
     recentCorrectAttempts.length,
     recentAttempts.length
@@ -277,7 +280,7 @@ function shouldMarkNeedsReview(
   return (
     shouldAddSupport(candidate) ||
     recentHintCount >= 2 ||
-    hasTwoRecentAbandons(recentAttempts)
+    hasTwoRecentAbandons(recentAttempts, skillId)
   );
 }
 
@@ -294,15 +297,17 @@ function shouldPromoteFromEvents(
   const promotionEvents = eventsSincePromotion.filter((event) => (
     isPromotionEligibleEvent(event, skillId, currentLevel)
   ));
-  const eligibleAttempts = promotionEvents.filter(hasCountedOutcome);
+  const eligibleAttempts = promotionEvents.filter((event) => (
+    hasCountedSkillOutcome(event, skillId)
+  ));
 
   if (eligibleAttempts.length < PROMOTION_ATTEMPT_MINIMUM) return false;
 
   const recentEligibleAttempts = eligibleAttempts.slice(-RECENT_ATTEMPT_LIMIT);
   const recentCorrectAttempts = recentEligibleAttempts.filter((event) => (
-    event.outcome === 'correct'
+    isCorrectForSkill(event, skillId)
   ));
-  const recentHintCount = countRecentHints(promotionEvents);
+  const recentHintCount = countRecentHints(promotionEvents, skillId);
   const recentAccuracy = calculateAccuracy(
     recentCorrectAttempts.length,
     recentEligibleAttempts.length
@@ -317,7 +322,7 @@ function shouldPromoteFromEvents(
     ...state,
     total_attempts: eligibleAttempts.length,
     correct_attempts: eligibleAttempts.filter((event) => (
-      event.outcome === 'correct'
+      isCorrectForSkill(event, skillId)
     )).length,
     recent_accuracy: recentAccuracy,
     recent_average_response_ms: calculateAverageResponseTime(recentEligibleAttempts),
@@ -419,12 +424,27 @@ function translateLegacyProgressLevel(
   return lowestLevel + translatedOffset;
 }
 
-function hasTwoRecentAbandons(events: ActivityAttemptEvent[]): boolean {
+function hasTwoRecentAbandons(
+  events: ActivityAttemptEvent[],
+  skillId: string
+): boolean {
   const lastTwo = events.slice(-2);
   return (
     lastTwo.length === 2 &&
-    lastTwo.every((event) => event.outcome === 'abandoned')
+    lastTwo.every((event) => getSkillOutcome(event, skillId) === 'abandoned')
   );
+}
+
+function getEventSkillIds(event: ActivityAttemptEvent): string[] {
+  if (event.skill_outcomes) {
+    return [...new Set(
+      event.skill_outcomes
+        .map((item) => item.skill_id)
+        .filter((skillId) => eventAppliesToSkill(event, skillId))
+    )];
+  }
+
+  return event.skill_ids;
 }
 
 function roundToHundredths(value: number): number {

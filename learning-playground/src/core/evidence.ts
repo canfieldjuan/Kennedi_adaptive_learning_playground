@@ -5,6 +5,13 @@ import {
 } from '../types/activity';
 import type { ParentObservation } from '../types/observations';
 import type { CurriculumSkill } from './curriculum-graph';
+import {
+  eventAppliesToSkill,
+  getSkillOutcome,
+  hasCountedSkillOutcome,
+  isCorrectForSkill,
+  isHintForSkill,
+} from './skill-outcomes';
 import { hasLikelyMasteryTransferContext } from './transfer-coverage';
 
 export type MasteryEvidenceType =
@@ -40,8 +47,6 @@ export interface EvidenceSummary {
   evidence: MasteryEvidence[];
 }
 
-type CountedOutcome = 'correct' | 'incorrect' | 'abandoned';
-
 export function buildEvidenceForSkill(params: {
   skill: CurriculumSkill;
   events: ActivityAttemptEvent[];
@@ -52,15 +57,19 @@ export function buildEvidenceForSkill(params: {
     (params.activities ?? []).map((activity) => [activity.id, activity])
   );
   const skillEvents = params.events
-    .filter((event) => event.skill_ids.includes(params.skill.id))
+    .filter((event) => eventAppliesToSkill(event, params.skill.id))
     .sort(compareEventsByTimestamp);
-  const countedEvents = skillEvents.filter(hasCountedOutcome);
-  const correctEvents = countedEvents.filter((event) => event.outcome === 'correct');
+  const countedEvents = skillEvents.filter((event) => (
+    hasCountedSkillOutcome(event, params.skill.id)
+  ));
+  const correctEvents = countedEvents.filter((event) => (
+    isCorrectForSkill(event, params.skill.id)
+  ));
   const hintEvents = skillEvents.filter((event) => (
-    event.outcome === 'hint_used' || event.hint_shown
+    isHintForSkill(event, params.skill.id)
   ));
   const completionEvents = skillEvents.filter((event) => (
-    event.outcome === 'completed'
+    getSkillOutcome(event, params.skill.id) === 'completed'
   ));
   const activityContexts = getUniqueSorted(
     correctEvents.map((event) => getEvidenceContext(event, activityById))
@@ -250,16 +259,6 @@ function buildParentObservationEvidence(
     strength: 1,
     timestamp: matchingObservations[matchingObservations.length - 1]?.created_at,
   };
-}
-
-function hasCountedOutcome(
-  event: ActivityAttemptEvent
-): event is ActivityAttemptEvent & { outcome: CountedOutcome } {
-  return (
-    event.outcome === 'correct' ||
-    event.outcome === 'incorrect' ||
-    event.outcome === 'abandoned'
-  );
 }
 
 function compareEventsByTimestamp(

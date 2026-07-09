@@ -1,5 +1,5 @@
 import type { LearningActivity } from '../../types/activity';
-import type { ActivityAttemptEvent } from '../../types/events';
+import type { ActivityAttemptEvent, SkillAttemptOutcome } from '../../types/events';
 import type {
   AudioServiceInterface,
   SpeechServiceInterface,
@@ -73,6 +73,7 @@ export function renderKennedisOrdersActivity(
   let phoneIntroSpoken = false;
   let roundStartedAt = Date.now();
   let attemptStartedAt = roundStartedAt;
+  let hintedSkillIds: string[] = [];
   let feedbackTone: 'success' | 'support' | 'hint' = 'support';
   let feedbackText = '';
 
@@ -149,6 +150,7 @@ export function renderKennedisOrdersActivity(
           attemptNumber: Math.max(1, attemptNumber),
           responseTimeMs: Date.now() - roundStartedAt,
           hintShown,
+          hintedSkillIds,
           replayCount,
         });
         stage = 'handoff';
@@ -214,6 +216,7 @@ export function renderKennedisOrdersActivity(
           attemptNumber,
           responseTimeMs,
           hintShown,
+          hintedSkillIds,
           replayCount,
           issue: result.issue,
         });
@@ -236,6 +239,10 @@ export function renderKennedisOrdersActivity(
         options.speech.speak(feedbackText);
 
         if (hintShown) {
+          hintedSkillIds = getUniqueSkillIds([
+            ...hintedSkillIds,
+            ...getHintedSkillIdsForIssue(options.activity.skill_ids, result.issue),
+          ]);
           emitAttemptEvent({
             options,
             content,
@@ -244,6 +251,7 @@ export function renderKennedisOrdersActivity(
             attemptNumber,
             responseTimeMs,
             hintShown,
+            hintedSkillIds,
             replayCount,
             issue: result.issue,
           });
@@ -986,6 +994,7 @@ function emitAttemptEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  hintedSkillIds?: string[];
   replayCount: number;
   issue: string;
 }): void {
@@ -999,6 +1008,7 @@ function emitAttemptEvent(params: {
     attemptNumber: params.attemptNumber,
     responseTimeMs: params.responseTimeMs,
     hintShown: params.hintShown,
+    hintedSkillIds: params.hintedSkillIds,
     replayCount: params.replayCount,
     eventName: params.outcome === 'hint_used' ? 'hint_shown' : 'tray_checked',
     issue: params.issue,
@@ -1014,6 +1024,7 @@ function emitCompletedEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  hintedSkillIds?: string[];
   replayCount: number;
 }): void {
   const event = createKennedisOrdersEvent({
@@ -1026,6 +1037,7 @@ function emitCompletedEvent(params: {
     attemptNumber: params.attemptNumber,
     responseTimeMs: params.responseTimeMs,
     hintShown: params.hintShown,
+    hintedSkillIds: params.hintedSkillIds,
     replayCount: params.replayCount,
     eventName: 'order_delivered',
   });
@@ -1043,11 +1055,13 @@ export function createKennedisOrdersEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  hintedSkillIds?: string[];
   replayCount?: number;
   eventName: string;
   issue?: string;
 }): ActivityAttemptEvent {
   const selectedFoodIds = getSelectedFoodIds(params.tray);
+  const skillOutcomes = createSkillOutcomesForEvent(params);
 
   return {
     event_id: createEventId(),
@@ -1059,6 +1073,7 @@ export function createKennedisOrdersEvent(params: {
     timestamp: new Date().toISOString(),
     prompt_text: params.content.prompt_audio,
     outcome: params.outcome,
+    ...(skillOutcomes !== undefined ? { skill_outcomes: skillOutcomes } : {}),
     selected_choice_id: selectedFoodIds.join(','),
     correct_choice_id: getCorrectChoiceId(params.content.required_order),
     selected_answer: getSelectedAnswer(params.content, params.tray),
@@ -1075,6 +1090,9 @@ export function createKennedisOrdersEvent(params: {
       ...createEvidenceMetadata(params.content),
       event_name: params.eventName,
       issue: params.issue ?? 'none',
+      ...(params.hintedSkillIds?.length
+        ? { hinted_skill_ids: params.hintedSkillIds.join(',') }
+        : {}),
       corrected: (
         (params.outcome === 'correct' || params.outcome === 'completed') &&
         params.attemptNumber > 1
@@ -1087,6 +1105,113 @@ export function createKennedisOrdersEvent(params: {
       parent_evidence_summary: params.content.parent_evidence_summary ?? '',
     },
   };
+}
+
+function createSkillOutcomesForEvent(params: {
+  activity: LearningActivity;
+  content: BearCafeContent;
+  outcome: ActivityAttemptEvent['outcome'];
+  tray: TrayState;
+  eventName: string;
+  issue?: string;
+}): SkillAttemptOutcome[] | undefined {
+  if (params.content.mode !== 'two_part') return undefined;
+
+  if (params.eventName === 'hint_shown' && params.outcome === 'hint_used') {
+    return createTwoPartHintSkillOutcomes(params.activity.skill_ids, params.issue);
+  }
+
+  if (
+    params.eventName !== 'tray_checked' ||
+    (params.outcome !== 'correct' && params.outcome !== 'incorrect')
+  ) {
+    return undefined;
+  }
+
+  const required = params.content.required_order;
+  if (!required) return undefined;
+
+  const outcomes: SkillAttemptOutcome[] = [];
+  if (
+    params.activity.skill_ids.includes('counting') &&
+    typeof required.quantity === 'number'
+  ) {
+    const selectedCount = getSelectedCountForRequiredQuantity(params.tray, required);
+    const quantityMatches = selectedCount === required.quantity;
+    outcomes.push({
+      skill_id: 'counting',
+      outcome: quantityMatches ? 'correct' : 'incorrect',
+      reason: quantityMatches ? 'quantity_match' : 'quantity_mismatch',
+    });
+  }
+
+  if (
+    params.activity.skill_ids.includes('color_fill') &&
+    typeof required.color_id === 'string'
+  ) {
+    const colorMatches = params.tray.colorId === required.color_id;
+    outcomes.push({
+      skill_id: 'color_fill',
+      outcome: colorMatches ? 'correct' : 'incorrect',
+      reason: colorMatches ? 'color_match' : 'color_mismatch',
+    });
+  }
+
+  return outcomes;
+}
+
+function getSelectedCountForRequiredQuantity(
+  tray: TrayState,
+  required: BearCafeRequiredOrder
+): number {
+  return required.food_id
+    ? tray.foodCounts[required.food_id] ?? 0
+    : getTotalFoodCount(tray);
+}
+
+function createTwoPartHintSkillOutcomes(
+  skillIds: string[],
+  issue: string | undefined
+): SkillAttemptOutcome[] {
+  if (
+    skillIds.includes('counting') &&
+    (issue === 'quantity_under' || issue === 'quantity_over')
+  ) {
+    return [{
+      skill_id: 'counting',
+      outcome: 'hint_used',
+      reason: issue,
+    }];
+  }
+
+  if (skillIds.includes('color_fill') && issue === 'color') {
+    return [{
+      skill_id: 'color_fill',
+      outcome: 'hint_used',
+      reason: issue,
+    }];
+  }
+
+  return [];
+}
+
+function getHintedSkillIdsForIssue(skillIds: string[], issue: string): string[] {
+  if (
+    skillIds.includes('counting') &&
+    (issue === 'quantity_under' || issue === 'quantity_over')
+  ) {
+    return ['counting'];
+  }
+
+  if (skillIds.includes('color_fill') && issue === 'color') {
+    return ['color_fill'];
+  }
+
+  return skillIds.length === 1 ? [skillIds[0]] : [];
+}
+
+function getUniqueSkillIds(skillIds: string[]): string[] {
+  return [...new Set(skillIds)].sort((a, b) => a.localeCompare(b));
 }
 
 function createEvidenceMetadata(content: BearCafeContent): Record<string, string | number | boolean> {

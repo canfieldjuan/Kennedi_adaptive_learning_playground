@@ -5,6 +5,11 @@
 
 import type { ActivityAttemptEvent } from '../types/events';
 import type { ParentObservation } from '../types/observations';
+import {
+  eventAppliesToSkill,
+  hasCountedSkillOutcome,
+  isCorrectForSkill,
+} from './skill-outcomes';
 
 export interface SkillAccuracySummary {
   skill_id: string;
@@ -23,8 +28,6 @@ export interface ParentSessionReview {
   most_repeated_activity?: string;
   parent_notes: ParentObservation[];
 }
-
-type CountedOutcome = 'correct' | 'incorrect' | 'abandoned';
 
 export function buildParentSessionReview(
   events: ActivityAttemptEvent[],
@@ -71,8 +74,9 @@ function buildAccuracyBySkill(
 ): SkillAccuracySummary[] {
   const grouped = new Map<string, ActivityAttemptEvent[]>();
 
-  for (const event of events.filter(hasCountedOutcome)) {
-    for (const skillId of event.skill_ids) {
+  for (const event of events) {
+    for (const skillId of getEventSkillIds(event)) {
+      if (!hasCountedSkillOutcome(event, skillId)) continue;
       const skillEvents = grouped.get(skillId) ?? [];
       skillEvents.push(event);
       grouped.set(skillId, skillEvents);
@@ -82,7 +86,7 @@ function buildAccuracyBySkill(
   return [...grouped.entries()]
     .map(([skillId, skillEvents]) => {
       const correctAttempts = skillEvents.filter((event) => (
-        event.outcome === 'correct'
+        isCorrectForSkill(event, skillId)
       )).length;
 
       return {
@@ -114,12 +118,14 @@ function getUniqueValues(values: string[]): string[] {
   return [...new Set(values)].sort((a, b) => a.localeCompare(b));
 }
 
-function hasCountedOutcome(
-  event: ActivityAttemptEvent
-): event is ActivityAttemptEvent & { outcome: CountedOutcome } {
-  return (
-    event.outcome === 'correct' ||
-    event.outcome === 'incorrect' ||
-    event.outcome === 'abandoned'
-  );
+function getEventSkillIds(event: ActivityAttemptEvent): string[] {
+  if (event.skill_outcomes) {
+    return [...new Set(
+      event.skill_outcomes
+        .map((item) => item.skill_id)
+        .filter((skillId) => eventAppliesToSkill(event, skillId))
+    )];
+  }
+
+  return event.skill_ids;
 }

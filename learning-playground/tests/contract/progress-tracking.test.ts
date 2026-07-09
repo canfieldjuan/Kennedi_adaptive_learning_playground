@@ -364,6 +364,56 @@ describe('progress tracking contract', () => {
     expect(state.last_seen_at).toBe(timestamp(5));
   });
 
+  test('per-skill outcomes score a compound order without smearing the global result', () => {
+    const events = [
+      makeEvent({
+        outcome: 'incorrect',
+        timestamp: timestamp(0),
+        difficultyLevel: 4,
+        skillIds: ['counting', 'color_fill'],
+        skillOutcomes: [
+          {
+            skill_id: 'counting',
+            outcome: 'correct',
+            reason: 'quantity_match',
+          },
+          {
+            skill_id: 'color_fill',
+            outcome: 'incorrect',
+            reason: 'color_mismatch',
+          },
+        ],
+      }),
+    ];
+
+    const profile = buildProgressProfileFromEvents(CHILD_ID, events);
+
+    expect(profile.skill_mastery.counting.total_attempts).toBe(1);
+    expect(profile.skill_mastery.counting.correct_attempts).toBe(1);
+    expect(profile.skill_mastery.counting.recent_accuracy).toBe(1);
+    expect(profile.skill_mastery.color_fill.total_attempts).toBe(1);
+    expect(profile.skill_mastery.color_fill.correct_attempts).toBe(0);
+    expect(profile.skill_mastery.color_fill.recent_accuracy).toBe(0);
+  });
+
+  test('legacy compound events without per-skill outcomes keep the global fallback', () => {
+    const events = [
+      makeEvent({
+        outcome: 'incorrect',
+        timestamp: timestamp(0),
+        difficultyLevel: 4,
+        skillIds: ['counting', 'color_fill'],
+      }),
+    ];
+
+    const profile = buildProgressProfileFromEvents(CHILD_ID, events);
+
+    expect(profile.skill_mastery.counting.total_attempts).toBe(1);
+    expect(profile.skill_mastery.counting.correct_attempts).toBe(0);
+    expect(profile.skill_mastery.color_fill.total_attempts).toBe(1);
+    expect(profile.skill_mastery.color_fill.correct_attempts).toBe(0);
+  });
+
   test('completion-only media events touch the skill without counting mastery attempts', () => {
     const events = [
       makeEvent({
@@ -442,6 +492,7 @@ function makeEvent(params: {
   difficultyLevel?: number;
   skillIds?: string[];
   metadata?: ActivityAttemptEvent['metadata'];
+  skillOutcomes?: ActivityAttemptEvent['skill_outcomes'];
 }): ActivityAttemptEvent {
   return {
     event_id: `event-${params.timestamp}`,
@@ -453,6 +504,7 @@ function makeEvent(params: {
     timestamp: params.timestamp,
     prompt_text: 'How many stars do you see?',
     outcome: params.outcome,
+    skill_outcomes: params.skillOutcomes,
     selected_choice_id: 'three',
     correct_choice_id: 'three',
     selected_answer: '3',

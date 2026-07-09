@@ -21,6 +21,7 @@ export type {
   AttemptOutcome,
   InputType,
   ActivityAttemptEvent,
+  SkillAttemptOutcome,
 } from './events';
 
 export type {

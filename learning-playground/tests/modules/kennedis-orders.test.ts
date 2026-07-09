@@ -180,6 +180,7 @@ describe("Kennedi's Orders adapter contract", () => {
       attemptNumber: 2,
       responseTimeMs: 4200,
       hintShown: true,
+      hintedSkillIds: ['counting'],
       replayCount: 1,
       eventName: 'tray_checked',
     });
@@ -192,8 +193,147 @@ describe("Kennedi's Orders adapter contract", () => {
       round_total: 5,
       required_quantity: 2,
       corrected: true,
+      hinted_skill_ids: 'counting',
       replay_count: 1,
     });
+  });
+
+  test('two-part tray checks emit per-skill evidence for partial matches', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'incorrect',
+      tray: {
+        foodCounts: { berry: 3 },
+        colorId: 'yellow',
+      },
+      attemptNumber: 1,
+      responseTimeMs: 1400,
+      hintShown: false,
+      eventName: 'tray_checked',
+      issue: 'color',
+    });
+
+    expect(event.outcome).toBe('incorrect');
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'correct',
+        reason: 'quantity_match',
+      },
+      {
+        skill_id: 'color_fill',
+        outcome: 'incorrect',
+        reason: 'color_mismatch',
+      },
+    ]);
+  });
+
+  test('two-part quantity evidence counts the required food, not tray total', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'incorrect',
+      tray: {
+        foodCounts: {
+          berry: 2,
+          cupcake: 1,
+        },
+        colorId: 'pink',
+      },
+      attemptNumber: 1,
+      responseTimeMs: 1400,
+      hintShown: false,
+      eventName: 'tray_checked',
+      issue: 'food',
+    });
+
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'incorrect',
+        reason: 'quantity_mismatch',
+      },
+      {
+        skill_id: 'color_fill',
+        outcome: 'correct',
+        reason: 'color_match',
+      },
+    ]);
+  });
+
+  test('two-part hint events attach only to the hinted skill', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getRequiredContent(activity);
+
+    const colorHintEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'hint_used',
+      tray: {
+        foodCounts: { berry: 3 },
+        colorId: 'yellow',
+      },
+      attemptNumber: 2,
+      responseTimeMs: 1800,
+      hintShown: true,
+      eventName: 'hint_shown',
+      issue: 'color',
+    });
+    const foodHintEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'hint_used',
+      tray: {
+        foodCounts: { cupcake: 3 },
+        colorId: 'pink',
+      },
+      attemptNumber: 2,
+      responseTimeMs: 1800,
+      hintShown: true,
+      eventName: 'hint_shown',
+      issue: 'food',
+    });
+
+    expect(colorHintEvent.skill_outcomes).toEqual([
+      {
+        skill_id: 'color_fill',
+        outcome: 'hint_used',
+        reason: 'color',
+      },
+    ]);
+    expect(
+      createKennedisOrdersEvent({
+        activity,
+        content,
+        sessionId: 'session-1',
+        childId: 'local-child',
+        outcome: 'correct',
+        tray: {
+          foodCounts: { berry: 3 },
+          colorId: 'pink',
+        },
+        attemptNumber: 3,
+        responseTimeMs: 1600,
+        hintShown: true,
+        hintedSkillIds: ['color_fill'],
+        eventName: 'tray_checked',
+        issue: 'none',
+      }).metadata?.hinted_skill_ids
+    ).toBe('color_fill');
+    expect(foodHintEvent.skill_outcomes).toEqual([]);
   });
 
   test('first-attempt success is not marked as corrected', () => {
