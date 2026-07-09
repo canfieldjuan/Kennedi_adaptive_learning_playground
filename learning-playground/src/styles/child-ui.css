@@ -2219,8 +2219,18 @@
     min-height: 86px;
   }
 
+  .bear-cafe-kitchen {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .bear-cafe-choice-grid {
+    grid-column: 1 / -1;
     grid-template-columns: repeat(3, minmax(88px, 1fr));
+  }
+
+  .bear-cafe-swatches,
+  .bear-cafe-decorations {
+    grid-column: 1 / -1;
   }
 }
 

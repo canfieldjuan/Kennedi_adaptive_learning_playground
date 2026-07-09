@@ -46,6 +46,8 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
     expect(childUiCss).toContain('@media (min-width: 704px) and (max-width: 940px) and (orientation: landscape)');
     expect(childUiCss).toContain('grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.1fr)');
+    expect(childUiCss).toContain('grid-template-columns: minmax(0, 1fr);');
+    expect(childUiCss).toContain('grid-column: 1 / -1;');
   });
 
   test('covers phone landscape compaction and small Bear Cafe plates', () => {
