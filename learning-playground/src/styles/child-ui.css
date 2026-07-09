@@ -737,6 +737,15 @@
   height: 1.25em;
 }
 
+/* Illustrated food SVG — sizes to the container's font-size like the emoji did;
+   inline-block so multiple plated foods sit side by side. */
+.food-art {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1em;
+  height: 1em;
+}
+
 .bear-cafe-order__bear {
   display: grid;
   place-items: center;
@@ -1186,26 +1195,6 @@
   text-align: center;
 }
 
-.bear-cafe-reaction {
-  display: inline-block;
-  margin-left: 0.08em;
-  font-size: 0.62em;
-  vertical-align: super;
-  line-height: 1;
-}
-
-.bear-cafe-reaction--waiting {
-  animation: cafeReactionWait 2200ms ease-in-out infinite;
-}
-
-.bear-cafe-reaction--receiving {
-  animation: cafeReactionReceive 900ms ease-out;
-}
-
-.bear-cafe-reaction--happy {
-  animation: cafeReactionHappy 1400ms ease-in-out 3;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .bear-cafe-phone__button,
   .bear-cafe-phone__icon--ringing,
@@ -1219,9 +1208,6 @@
   .bear-cafe-plating__plate,
   .bear-cafe-celebrate__piece,
   .bear-cafe-order--nudge,
-  .bear-cafe-reaction--waiting,
-  .bear-cafe-reaction--receiving,
-  .bear-cafe-reaction--happy,
   .bear-cafe-food[data-selected="true"],
   .bear-cafe-swatch[data-selected="true"],
   .bear-cafe-decoration[data-selected="true"] {
@@ -1303,21 +1289,6 @@
   100% { transform: translateY(0) scale(1); }
 }
 
-@keyframes cafeReactionWait {
-  0%, 100% { transform: translateY(0); opacity: 0.7; }
-  50% { transform: translateY(-3px); opacity: 1; }
-}
-
-@keyframes cafeReactionReceive {
-  0% { transform: scale(0.4); opacity: 0; }
-  60% { transform: scale(1.25); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes cafeReactionHappy {
-  0%, 100% { transform: scale(1); }
-  40% { transform: scale(1.28); }
-}
 
 .home-card {
   animation: popIn 0.5s ease-out backwards;
