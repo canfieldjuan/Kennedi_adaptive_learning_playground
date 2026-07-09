@@ -42,6 +42,9 @@ describe('word-builder runtime', () => {
 
     expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
     expect(events[0]?.correct_answer).toBe('cat');
+    // A flawless build is attempt 1 (wrong taps + 1), not the total tap count —
+    // so evidence.ts does not misread it as a self-correction.
+    expect(events[0]?.attempt_number).toBe(1);
 
     // Slots filled left-to-right.
     const slots = findByClass(root, 'word-builder__slots');
@@ -66,6 +69,46 @@ describe('word-builder runtime', () => {
       'hint_used',
     ]);
     expect(findTileByLetter(root, 'c')?.classList.contains('is-hinted')).toBe(true);
+    // The hint event records the tile the child actually tapped, not the answer.
+    expect(events[2]?.selected_answer).toBe('a');
+  });
+
+  test('hint eligibility resets per slot so every letter can earn a hint', () => {
+    const { root } = setup('build-cat'); // expects c, a, t
+
+    // Slot 1: two wrong taps -> hint for c.
+    findTileByLetter(root, 'a')?.click();
+    findTileByLetter(root, 't')?.click();
+    expect(findTileByLetter(root, 'c')?.classList.contains('is-hinted')).toBe(true);
+
+    // Advance to slot 2 by placing c.
+    findTileByLetter(root, 'c')?.click();
+
+    // Slot 2: two wrong taps -> a fresh hint for a (a one-shot flag would block this).
+    findTileByLetter(root, 't')?.click();
+    findTileByLetter(root, 't')?.click();
+    expect(findTileByLetter(root, 'a')?.classList.contains('is-hinted')).toBe(true);
+  });
+
+  test('an activity whose tiles cannot spell the word shows the setup screen', () => {
+    const root = document.createElement('div') as unknown as MockElement;
+    const events: ActivityAttemptEvent[] = [];
+    const broken = {
+      ...getActivity('build-cat'),
+      content: { target_word: 'cat', tiles: ['a', 't'], picture: '/assets/images/cat.svg' },
+    } as unknown as LearningActivity;
+
+    renderWordBuilderActivity(root as unknown as HTMLElement, {
+      activity: broken,
+      childId: 'local-child',
+      sessionId: 'session-1',
+      speech: createMockSpeech(),
+      audio: createMockAudio(),
+      onEvent: (event) => events.push(event),
+    });
+
+    expect(findByClass(root, 'word-builder__tray')).toBeUndefined();
+    expect(findByClass(root, 'activity-title')?.textContent).toBe('Activity needs setup');
   });
 
   test('a placed tile is locked and cannot be re-tapped', () => {

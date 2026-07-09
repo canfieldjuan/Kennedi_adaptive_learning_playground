@@ -47,17 +47,23 @@ export function renderWordBuilderActivity(
   const targetWord = getTargetWord(options.activity);
   const tiles = getTiles(options.activity);
 
-  if (!targetWord || tiles.length === 0) {
+  // Fail closed on a misconfigured activity: the tiles must be able to spell the
+  // target word (mirrors the matcher guarding that a correct choice exists).
+  if (!targetWord || tiles.length === 0 || !tilesCanSpell(targetWord, tiles)) {
     renderActivityUnavailable(parent);
     return;
   }
 
   const letters = targetWord.split('');
   let nextIndex = 0;
-  let attemptNumber = 0;
-  let wrongStreak = 0;
-  let hintShown = false;
+  // attempt_number counts wrong taps only (+1 on completion) so a flawless build
+  // reads as attempt 1, not "self-corrected" (evidence.ts treats >1 as such).
+  let wrongTaps = 0;
+  let slotWrongStreak = 0; // wrong taps on the current slot (per-slot hint)
+  let slotHintShown = false; // reset per slot so every letter can earn a hint
+  let anyHintShown = false; // sticky: any hint during the build (event hint_shown)
   let isComplete = false;
+  const buildStartedAt = Date.now();
   let attemptStartedAt = Date.now();
 
   const maxAttemptsBeforeHint = getNumberRule(
@@ -193,7 +199,6 @@ export function renderWordBuilderActivity(
     const onTileClick = () => {
       if (isComplete || button.disabled) return;
 
-      attemptNumber += 1;
       const responseTimeMs = Date.now() - attemptStartedAt;
       const expected = letters[nextIndex];
 
@@ -204,12 +209,15 @@ export function renderWordBuilderActivity(
         slot.textContent = tileLetter;
         slot.classList.add('is-filled');
         nextIndex += 1;
-        wrongStreak = 0;
+        slotWrongStreak = 0;
+        slotHintShown = false;
         clearHint();
         attemptStartedAt = Date.now();
 
         if (nextIndex >= letters.length) {
           isComplete = true;
+          const completionAttempt = wrongTaps + 1;
+          const buildResponseMs = Date.now() - buildStartedAt;
           options.onEvent(
             createAttemptEvent({
               activity: options.activity,
@@ -221,9 +229,9 @@ export function renderWordBuilderActivity(
               selectedLabel: targetWord,
               correctId: targetWord,
               correctLabel: targetWord,
-              attemptNumber,
-              responseTimeMs,
-              hintShown,
+              attemptNumber: completionAttempt,
+              responseTimeMs: buildResponseMs,
+              hintShown: anyHintShown,
               parentGuidance: options.parentGuidance,
             })
           );
@@ -238,9 +246,9 @@ export function renderWordBuilderActivity(
               selectedLabel: targetWord,
               correctId: targetWord,
               correctLabel: targetWord,
-              attemptNumber,
-              responseTimeMs,
-              hintShown,
+              attemptNumber: completionAttempt,
+              responseTimeMs: buildResponseMs,
+              hintShown: anyHintShown,
               parentGuidance: options.parentGuidance,
             })
           );
@@ -255,7 +263,8 @@ export function renderWordBuilderActivity(
         return;
       }
 
-      wrongStreak += 1;
+      wrongTaps += 1;
+      slotWrongStreak += 1;
       button.classList.add('is-wrong');
       window.setTimeout(() => {
         button.classList.remove('is-wrong');
@@ -272,9 +281,9 @@ export function renderWordBuilderActivity(
           selectedLabel: tileLetter,
           correctId: expected,
           correctLabel: expected,
-          attemptNumber,
+          attemptNumber: wrongTaps,
           responseTimeMs,
-          hintShown,
+          hintShown: anyHintShown,
           parentGuidance: options.parentGuidance,
         })
       );
@@ -282,8 +291,9 @@ export function renderWordBuilderActivity(
       showFeedback(feedback, incorrectFeedback.speech ?? 'Try another letter.', 'support');
       speakAndPlay(options, incorrectFeedback);
 
-      if (!hintShown && wrongStreak >= maxAttemptsBeforeHint) {
-        hintShown = true;
+      if (!slotHintShown && slotWrongStreak >= maxAttemptsBeforeHint) {
+        slotHintShown = true;
+        anyHintShown = true;
         showFeedback(feedback, hintFeedback.speech ?? 'This letter comes next.', 'hint');
         speakAndPlay(options, hintFeedback);
         if (hintFeedback.highlight_target !== false) {
@@ -296,13 +306,13 @@ export function renderWordBuilderActivity(
             sessionId: options.sessionId,
             outcome: 'hint_used',
             promptText,
-            selectedId: expected,
-            selectedLabel: expected,
+            selectedId: tileLetter,
+            selectedLabel: tileLetter,
             correctId: expected,
             correctLabel: expected,
-            attemptNumber,
+            attemptNumber: wrongTaps,
             responseTimeMs,
-            hintShown,
+            hintShown: true,
             parentGuidance: options.parentGuidance,
           })
         );
@@ -369,6 +379,20 @@ function getTiles(activity: LearningActivity): string[] {
   return tiles.filter((tile): tile is string => (
     typeof tile === 'string' && tile.trim().length > 0
   ));
+}
+
+/** The tile multiset must cover every letter of the target word. */
+function tilesCanSpell(word: string, tiles: string[]): boolean {
+  const available = new Map<string, number>();
+  for (const tile of tiles) {
+    available.set(tile, (available.get(tile) ?? 0) + 1);
+  }
+  for (const letter of word.split('')) {
+    const remaining = available.get(letter) ?? 0;
+    if (remaining <= 0) return false;
+    available.set(letter, remaining - 1);
+  }
+  return true;
 }
 
 function getPicture(activity: LearningActivity): string | undefined {
