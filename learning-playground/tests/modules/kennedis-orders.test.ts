@@ -196,6 +196,88 @@ describe("Kennedi's Orders adapter contract", () => {
     });
   });
 
+  test('two-part tray checks emit per-skill evidence for partial matches', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'incorrect',
+      tray: {
+        foodCounts: { berry: 3 },
+        colorId: 'yellow',
+      },
+      attemptNumber: 1,
+      responseTimeMs: 1400,
+      hintShown: false,
+      eventName: 'tray_checked',
+      issue: 'color',
+    });
+
+    expect(event.outcome).toBe('incorrect');
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'correct',
+        reason: 'quantity_match',
+      },
+      {
+        skill_id: 'color_fill',
+        outcome: 'incorrect',
+        reason: 'color_mismatch',
+      },
+    ]);
+  });
+
+  test('two-part hint events attach only to the hinted skill', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getRequiredContent(activity);
+
+    const colorHintEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'hint_used',
+      tray: {
+        foodCounts: { berry: 3 },
+        colorId: 'yellow',
+      },
+      attemptNumber: 2,
+      responseTimeMs: 1800,
+      hintShown: true,
+      eventName: 'hint_shown',
+      issue: 'color',
+    });
+    const foodHintEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'hint_used',
+      tray: {
+        foodCounts: { cupcake: 3 },
+        colorId: 'pink',
+      },
+      attemptNumber: 2,
+      responseTimeMs: 1800,
+      hintShown: true,
+      eventName: 'hint_shown',
+      issue: 'food',
+    });
+
+    expect(colorHintEvent.skill_outcomes).toEqual([
+      {
+        skill_id: 'color_fill',
+        outcome: 'hint_used',
+        reason: 'color',
+      },
+    ]);
+    expect(foodHintEvent.skill_outcomes).toEqual([]);
+  });
+
   test('first-attempt success is not marked as corrected', () => {
     const activity = getActivity('kennedis-orders-banana-001');
     const content = getRequiredContent(activity);

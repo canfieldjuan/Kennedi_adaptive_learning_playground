@@ -14,6 +14,12 @@ export type AttemptOutcome =
 
 export type InputType = "tap" | "drag" | "draw" | "video" | "speech";
 
+export interface SkillAttemptOutcome {
+  skill_id: string;
+  outcome: AttemptOutcome;
+  reason?: string;
+}
+
 export interface ActivityAttemptEvent {
   event_id: string;
   session_id: string;
@@ -24,6 +30,7 @@ export interface ActivityAttemptEvent {
   timestamp: string;
   prompt_text: string;
   outcome: AttemptOutcome;
+  skill_outcomes?: SkillAttemptOutcome[];
   selected_choice_id?: string;
   correct_choice_id?: string;
   selected_answer: string;

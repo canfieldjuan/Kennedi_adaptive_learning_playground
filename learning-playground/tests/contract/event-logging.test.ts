@@ -69,6 +69,56 @@ describe('event logging contract', () => {
     expect(getEvents(storage)).toHaveLength(0);
   });
 
+  test('optional per-skill outcomes are validated, stored, and exported', () => {
+    const storage = new MemoryEventLogStorage();
+    const event: ActivityAttemptEvent = {
+      ...makeEvent(),
+      outcome: 'incorrect',
+      skill_outcomes: [
+        {
+          skill_id: 'counting',
+          outcome: 'correct',
+          reason: 'quantity_match',
+        },
+        {
+          skill_id: 'color_fill',
+          outcome: 'incorrect',
+          reason: 'color_mismatch',
+        },
+      ],
+    };
+
+    expect(appendEvent(event, storage)).toBe(true);
+
+    const exported = JSON.parse(exportEvents(storage)) as ActivityAttemptEvent[];
+    expect(exported[0].skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'correct',
+        reason: 'quantity_match',
+      },
+      {
+        skill_id: 'color_fill',
+        outcome: 'incorrect',
+        reason: 'color_mismatch',
+      },
+    ]);
+  });
+
+  test('invalid per-skill outcomes are rejected', () => {
+    const invalid = {
+      ...makeEvent(),
+      skill_outcomes: [
+        {
+          skill_id: 'counting',
+          outcome: 'almost',
+        },
+      ],
+    };
+
+    expect(isValidEvent(invalid)).toBe(false);
+  });
+
   test('pre-v0.1.1 tap-choice events are normalized instead of dropped', () => {
     const storage = new MemoryEventLogStorage();
     storage.setItem('lp_activity_events', JSON.stringify([

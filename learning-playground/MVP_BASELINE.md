@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.11 progress level storage migration baseline
+Version: v0.3.12 compound-round evidence modeling baseline
 
 ## Current Working MVP
 
@@ -54,14 +54,16 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent activity brief decisions are stored locally and included in export.
 - Parent mastery snapshots are stored locally when the Parent Panel reviews a skill.
 - Parent review schedule records are stored locally from mastery snapshots and shown in the Parent Panel.
+- Compound Bear Cafe rounds can record per-skill outcomes so progress and mastery evidence distinguish the quantity signal from the color signal while preserving the overall order result.
 
 ## Local Data
 
 - Parent settings are stored in localStorage.
 - Activity attempt events are stored in localStorage.
-- Attempt events include prompt text, selected answer, correct answer, response time, hint usage, and outcome.
+- Attempt events include prompt text, selected answer, correct answer, response time, hint usage, outcome, and optional per-skill outcomes for compound rounds.
 - Pre-v0.1.1 local attempt events are migrated on read rather than dropped.
 - Progress profiles are derived from local activity events and stored in localStorage.
+- Progress and mastery evidence prefer per-skill outcomes when present and fall back to the global event outcome for older local events.
 - Progress level starts at the lowest declared curriculum rung, promotes only from evidence in the current rung's difficulty band, and clamps current-version out-of-range values to the declared max rung.
 - Stored progress profiles are normalized on read, so stale pre-v0.3.10 raw levels are translated onto the current curriculum ladder before Parent Panel review or export.
 - Parent observations are stored in localStorage and included in export.

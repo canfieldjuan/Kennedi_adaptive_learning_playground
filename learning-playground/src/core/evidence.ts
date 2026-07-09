@@ -5,6 +5,12 @@ import {
 } from '../types/activity';
 import type { ParentObservation } from '../types/observations';
 import type { CurriculumSkill } from './curriculum-graph';
+import {
+  eventAppliesToSkill,
+  getSkillOutcome,
+  hasCountedSkillOutcome,
+  isCorrectForSkill,
+} from './skill-outcomes';
 import { hasLikelyMasteryTransferContext } from './transfer-coverage';
 
 export type MasteryEvidenceType =
@@ -40,8 +46,6 @@ export interface EvidenceSummary {
   evidence: MasteryEvidence[];
 }
 
-type CountedOutcome = 'correct' | 'incorrect' | 'abandoned';
-
 export function buildEvidenceForSkill(params: {
   skill: CurriculumSkill;
   events: ActivityAttemptEvent[];
@@ -52,15 +56,19 @@ export function buildEvidenceForSkill(params: {
     (params.activities ?? []).map((activity) => [activity.id, activity])
   );
   const skillEvents = params.events
-    .filter((event) => event.skill_ids.includes(params.skill.id))
+    .filter((event) => eventAppliesToSkill(event, params.skill.id))
     .sort(compareEventsByTimestamp);
-  const countedEvents = skillEvents.filter(hasCountedOutcome);
-  const correctEvents = countedEvents.filter((event) => event.outcome === 'correct');
+  const countedEvents = skillEvents.filter((event) => (
+    hasCountedSkillOutcome(event, params.skill.id)
+  ));
+  const correctEvents = countedEvents.filter((event) => (
+    isCorrectForSkill(event, params.skill.id)
+  ));
   const hintEvents = skillEvents.filter((event) => (
-    event.outcome === 'hint_used' || event.hint_shown
+    isHintForSkill(event, params.skill.id)
   ));
   const completionEvents = skillEvents.filter((event) => (
-    event.outcome === 'completed'
+    getSkillOutcome(event, params.skill.id) === 'completed'
   ));
   const activityContexts = getUniqueSorted(
     correctEvents.map((event) => getEvidenceContext(event, activityById))
@@ -252,16 +260,6 @@ function buildParentObservationEvidence(
   };
 }
 
-function hasCountedOutcome(
-  event: ActivityAttemptEvent
-): event is ActivityAttemptEvent & { outcome: CountedOutcome } {
-  return (
-    event.outcome === 'correct' ||
-    event.outcome === 'incorrect' ||
-    event.outcome === 'abandoned'
-  );
-}
-
 function compareEventsByTimestamp(
   a: ActivityAttemptEvent,
   b: ActivityAttemptEvent
@@ -296,4 +294,12 @@ function formatPercent(value: number): string {
 
 function roundToHundredths(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function isHintForSkill(event: ActivityAttemptEvent, skillId: string): boolean {
+  const outcome = getSkillOutcome(event, skillId);
+  if (!outcome) return false;
+  if (outcome === 'hint_used') return true;
+
+  return !event.skill_outcomes && event.hint_shown;
 }
