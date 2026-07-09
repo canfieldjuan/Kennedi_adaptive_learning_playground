@@ -20,6 +20,11 @@ import {
   type AppliedParentGuidance,
 } from '../../core/parent-difficulty-application';
 import type { PhonicsMatchChoice, PhonicsFeedbackRule } from './phonics-match.types';
+import {
+  renderPhonicsCharacterArt,
+  mouthForSound,
+  type CharacterMouth,
+} from './phonics-character-art';
 
 interface PhonicsMatchOptions {
   activity: LearningActivity;
@@ -86,6 +91,7 @@ export function renderPhonicsMatchActivity(
   repeatButton.setAttribute('aria-label', 'Repeat prompt');
   repeatButton.addEventListener('click', () => {
     options.speech.repeatLast();
+    pulseCharacterSpeak();
   });
   topBar.appendChild(repeatButton);
 
@@ -117,6 +123,56 @@ export function renderPhonicsMatchActivity(
 
     container.appendChild(promptVisual);
   }
+
+  // Pip — the recurring Word-game character. Pip's mouth shows how the target
+  // sound is made, and Pip "comes alive" (cheers) when the word is found. This
+  // is affect only: the same attempt events fire; there is no reward loop.
+  // For a blend, Pip rests on the first sound and a sound-out strip below shows
+  // the word broken into sounds.
+  const segments = getSegments(options.activity);
+  const primarySound = segments[0] ?? getTargetSound(options.activity);
+  const targetMouth = mouthForSound(primarySound);
+  const character = document.createElement('div');
+  character.className = 'phonics-character';
+  character.dataset.mouth = targetMouth;
+  character.setAttribute('aria-hidden', 'true');
+
+  const characterArt = document.createElement('div');
+  characterArt.className = 'phonics-character__art';
+  characterArt.innerHTML = renderPhonicsCharacterArt(targetMouth);
+  character.appendChild(characterArt);
+  container.appendChild(character);
+
+  if (segments.length > 0) {
+    const soundout = document.createElement('div');
+    soundout.className = 'phonics-soundout';
+    // role="img" makes the aria-label authoritative (a plain div has a generic
+    // role that many screen readers ignore aria-label on); the chips stay hidden.
+    soundout.setAttribute('role', 'img');
+    soundout.setAttribute('aria-label', `Sound it out: ${segments.join(', ')}`);
+    for (const segment of segments) {
+      const chip = document.createElement('span');
+      chip.className = 'phonics-soundout__chip';
+      chip.setAttribute('aria-hidden', 'true');
+      chip.textContent = segment;
+      soundout.appendChild(chip);
+    }
+    container.appendChild(soundout);
+  }
+
+  const setCharacterMouth = (mouth: CharacterMouth): void => {
+    character.dataset.mouth = mouth;
+    characterArt.innerHTML = renderPhonicsCharacterArt(mouth);
+  };
+
+  const pulseCharacterSpeak = (): void => {
+    if (isComplete) return;
+    character.classList.remove('is-speaking');
+    // Force reflow so the pulse restarts when the prompt is repeated (no-op
+    // outside a real DOM).
+    void character.offsetWidth;
+    character.classList.add('is-speaking');
+  };
 
   const grid = document.createElement('div');
   grid.className = 'activity-choice-grid';
@@ -171,6 +227,12 @@ export function renderPhonicsMatchActivity(
       if (isCorrect) {
         isComplete = true;
         button.classList.add('is-correct');
+        // The found word comes alive: the picture pops and Pip cheers. One-time,
+        // deterministic — not a reward loop.
+        button.classList.add('is-alive');
+        character.classList.remove('is-speaking');
+        setCharacterMouth('cheer');
+        character.classList.add('is-cheering');
         disableChoices(choiceButtons);
         showFeedback(feedback, correctFeedback.speech ?? 'You found it.', 'success');
         speakAndPlay(options, correctFeedback);
@@ -249,6 +311,21 @@ export function renderPhonicsMatchActivity(
   completeActions.className = 'activity-complete-actions';
   completeActions.hidden = true;
 
+  // Chain into the next word so the Word game is a multi-round session, not a
+  // single dead-end tap. The child stays parent-approved (fixed hand-authored
+  // chain), no auto-difficulty routing.
+  const nextActivityId = getNextActivityId(options.activity);
+  if (nextActivityId) {
+    const nextButton = document.createElement('button');
+    nextButton.className = 'child-button';
+    nextButton.type = 'button';
+    nextButton.textContent = getNextLabel(options.activity);
+    nextButton.addEventListener('click', () => {
+      window.location.hash = `#activity/${nextActivityId}`;
+    });
+    completeActions.appendChild(nextButton);
+  }
+
   const doneHomeButton = document.createElement('button');
   doneHomeButton.className = 'child-button';
   doneHomeButton.type = 'button';
@@ -261,6 +338,7 @@ export function renderPhonicsMatchActivity(
 
   parent.appendChild(container);
   options.speech.speak(promptText);
+  pulseCharacterSpeak();
 }
 
 export function destroyPhonicsMatchActivity(): void {
@@ -308,6 +386,21 @@ function getPrompt(activity: LearningActivity): string {
   return typeof promptAudio === 'string' ? promptAudio : activity.title;
 }
 
+function getTargetSound(activity: LearningActivity): string | undefined {
+  const sound = activity.content.target_sound;
+  return typeof sound === 'string' ? sound : undefined;
+}
+
+function getSegments(activity: LearningActivity): string[] {
+  const segments = activity.content.segments;
+  if (!Array.isArray(segments)) return [];
+  // Drop non-strings and blank/whitespace entries so the strip never renders an
+  // empty chip and Pip never rests on an empty "sound".
+  return segments.filter((segment): segment is string => (
+    typeof segment === 'string' && segment.trim().length > 0
+  ));
+}
+
 function getPromptImages(activity: LearningActivity): string[] {
   const promptImages = activity.content.prompt_images;
   if (!Array.isArray(promptImages)) return [];
@@ -315,6 +408,16 @@ function getPromptImages(activity: LearningActivity): string[] {
   return promptImages.filter((imagePath): imagePath is string => (
     typeof imagePath === 'string'
   ));
+}
+
+function getNextActivityId(activity: LearningActivity): string | undefined {
+  const nextId = activity.content.next_activity_id;
+  return typeof nextId === 'string' ? nextId : undefined;
+}
+
+function getNextLabel(activity: LearningActivity): string {
+  const label = activity.content.next_label;
+  return typeof label === 'string' ? label : 'Next word';
 }
 
 function getNumberRule(value: unknown, fallback: number): number {

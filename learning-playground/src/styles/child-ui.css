@@ -289,6 +289,65 @@
   filter: drop-shadow(0 4px 10px var(--child-shadow));
 }
 
+/* Pip — the recurring Word-game character. Sits between the prompt and the
+   choices; the mouth shows how the target sound is made and cheers on a match. */
+.phonics-character {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 520px;
+}
+
+.phonics-character__art {
+  display: grid;
+  place-items: center;
+  width: 132px;
+  height: 132px;
+  border-radius: var(--radius-round);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px var(--child-shadow);
+}
+
+.phonics-character__svg {
+  display: block;
+  width: 116px;
+  height: 116px;
+}
+
+.phonics-character.is-speaking .phonics-character__svg {
+  animation: pipSpeak 620ms ease-in-out;
+}
+
+.phonics-character.is-cheering .phonics-character__svg {
+  animation: pipCheer 640ms ease-out;
+}
+
+/* Sound-out strip — a blend word broken into its sounds (c · a · t). */
+.phonics-soundout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 520px;
+}
+
+.phonics-soundout__chip {
+  display: grid;
+  place-items: center;
+  min-width: 52px;
+  min-height: 52px;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-lg);
+  background: var(--child-bg-card);
+  box-shadow: 0 6px 18px var(--child-shadow);
+  color: var(--child-text);
+  font-size: 1.6rem;
+  font-weight: 900;
+  text-transform: lowercase;
+}
+
 .activity-choice-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -368,6 +427,12 @@
   box-shadow:
     0 0 0 8px rgba(253, 203, 110, 0.18),
     0 12px 36px var(--child-shadow);
+}
+
+/* The found word "comes alive" — the matched picture pops once (deterministic,
+   not a reward loop). */
+.activity-choice.is-alive .activity-choice__image {
+  animation: pipWordAlive 700ms ease-out;
 }
 
 .activity-feedback {
@@ -1234,7 +1299,10 @@
   .bear-cafe-order--nudge,
   .bear-cafe-food[data-selected="true"],
   .bear-cafe-swatch[data-selected="true"],
-  .bear-cafe-decoration[data-selected="true"] {
+  .bear-cafe-decoration[data-selected="true"],
+  .phonics-character.is-speaking .phonics-character__svg,
+  .phonics-character.is-cheering .phonics-character__svg,
+  .activity-choice.is-alive .activity-choice__image {
     animation: none;
   }
 }
@@ -1257,6 +1325,24 @@
     opacity: 1;
     transform: scale(1);
   }
+}
+
+@keyframes pipSpeak {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.06); }
+}
+
+@keyframes pipCheer {
+  0% { transform: scale(0.9) rotate(-4deg); }
+  45% { transform: scale(1.12) rotate(3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@keyframes pipWordAlive {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.28) rotate(-3deg); }
+  70% { transform: scale(0.96) rotate(2deg); }
+  100% { transform: scale(1) rotate(0); }
 }
 
 @keyframes gentleBounce {

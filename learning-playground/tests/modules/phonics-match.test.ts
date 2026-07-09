@@ -64,6 +64,82 @@ describe('phonics-match (Word game) runtime — parity behavior', () => {
     expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
     expect(events[1]?.correct_answer).toBe('B');
   });
+
+  test('a chained activity shows a Next button that advances the session', () => {
+    const { root } = setup('phonics-find-b');
+
+    findByChoiceId(root, 'bear')?.click();
+    const nextButton = findByText(root, 'Next word');
+    expect(nextButton).toBeDefined();
+
+    nextButton?.click();
+    expect(window.location.hash).toBe('#activity/phonics-find-m');
+  });
+
+  test('Pip shows the mouth shape for the target sound (/b/ -> bilabial)', () => {
+    const { root } = setup('phonics-find-b');
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('bilabial');
+  });
+
+  test('Pip shows a different mouth for a different sound (/s/ -> sibilant)', () => {
+    const { root } = setup('phonics-find-s');
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('sibilant');
+  });
+
+  test('a correct match makes Pip cheer and the matched word come alive', () => {
+    const { root } = setup('phonics-find-b');
+
+    findByChoiceId(root, 'bear')?.click();
+
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('cheer');
+    expect(findByChoiceId(root, 'bear')?.classList.contains('is-alive')).toBe(true);
+  });
+
+  test('a blend renders a sound-out strip and Pip rests on the first sound', () => {
+    const { root } = setup('blend-cat');
+
+    const soundout = findByClass(root, 'phonics-soundout');
+    expect(soundout?.children.map((chip) => chip.textContent)).toEqual(['c', 'a', 't']);
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('open'); // /c/
+  });
+
+  test('a correct whole-word blend completes and makes the word come alive', () => {
+    const { root, events } = setup('blend-cat');
+
+    findByChoiceId(root, 'cat')?.click();
+
+    expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('cheer');
+    expect(findByChoiceId(root, 'cat')?.classList.contains('is-alive')).toBe(true);
+  });
+
+  test('the Word-game chain is complete, ordered, and terminates', () => {
+    const visited: string[] = [];
+    const seen = new Set<string>();
+    let id: string | undefined = 'phonics-find-b';
+
+    while (id) {
+      if (seen.has(id)) throw new Error(`chain loops at ${id}`);
+      seen.add(id);
+      visited.push(id);
+      const activity = APPROVED_ACTIVITIES.find((entry) => entry.id === id) as
+        | LearningActivity
+        | undefined;
+      expect(activity).toBeDefined();
+      id = (activity?.content as { next_activity_id?: string })?.next_activity_id;
+    }
+
+    expect(visited).toEqual([
+      'phonics-find-b',
+      'phonics-find-m',
+      'phonics-find-s',
+      'phonics-find-c',
+      'phonics-find-t',
+      'blend-cat',
+      'blend-hat',
+      'blend-bat',
+    ]);
+  });
 });
 
 function setup(activityId: string): { root: MockElement; events: ActivityAttemptEvent[] } {
@@ -171,6 +247,24 @@ function findByChoiceId(element: MockElement, choiceId: string): MockElement | u
   if (element.dataset.choiceId === choiceId) return element;
   for (const child of element.children) {
     const match = findByChoiceId(child, choiceId);
+    if (match) return match;
+  }
+  return undefined;
+}
+
+function findByText(element: MockElement, text: string): MockElement | undefined {
+  if (element.tagName === 'BUTTON' && element.textContent === text) return element;
+  for (const child of element.children) {
+    const match = findByText(child, text);
+    if (match) return match;
+  }
+  return undefined;
+}
+
+function findByClass(element: MockElement, className: string): MockElement | undefined {
+  if (element.className.split(/\s+/).includes(className)) return element;
+  for (const child of element.children) {
+    const match = findByClass(child, className);
     if (match) return match;
   }
   return undefined;

@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.16 post-merge phonics-match and Bear Cafe accessibility baseline
+Version: v0.3.19 Word-game blending and Bear Cafe accessibility baseline
 
 ## Current Working MVP
 
@@ -9,7 +9,10 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 ## Child Modules
 
 - Home shell with exactly four primary choices: Words, Cafe, Math, Art.
-- Words activity: initial-sound phonics matcher. It now runs on its own `phonics-match` runtime module (the foundation of the Word-game arc), not the shared generic tap-choice grid — behavior/visual unchanged this slice; Math/Shapes still use tap-choice. First behavioral test coverage for the matcher.
+- Words activity: initial-sound phonics matcher. It runs on its own `phonics-match` runtime module (the foundation of the Word-game arc), not the shared generic tap-choice grid; Math/Shapes still use tap-choice.
+- The Word game is now a multi-word session: after a correct match the child gets a "Next word" button that advances through a fixed, parent-approved chain of initial-sound words — /b/ bear → /m/ moon → /s/ sun → /c/ cat → /t/ top — each a new illustrated card with the same tap-a-picture mechanic (`same_format_new_examples` transfer). The chain is hand-authored via `content.next_activity_id` (no auto-difficulty routing, no reward loop); the last word ends on Home only. Parent transfer recommendation is unchanged (the reverse_mapping "rich transfer" activity is still recommended first).
+- The Word game has a recurring illustrated character, **Pip** (local inline SVG in the Bear Cafe standard, distinct coral palette). Pip sits between the prompt and the choices and shows the target sound as a child-legible mouth shape (lips pressed for /b//m/, teeth for /s/, open for /c/, tongue for /t/), pulsing when the prompt is spoken or repeated. On a correct match Pip "comes alive" — cheers and the matched picture pops once. Affect only: the same attempt events fire; deterministic, not a reward loop; all motion reduced-motion-guarded.
+- The Word game teaches **sound blending** (the next ladder rung after initial sounds): the child sees a word broken into a sound-out strip (c · a · t) with Pip resting on the first sound, and taps the whole word from a rhyming `-at` set (cat / bat / hat), so success requires attending to every sound. Three chained blends (blend-cat → blend-hat → blend-bat) run on the same `phonics-match` runtime; the initial-sound chain now climbs into them (find-t's "Next" → blend-cat). New `blending` curriculum skill (prerequisite letter_sound_match); new bat/hat illustrated cards. Parent-approved, no auto-difficulty routing, no reward loop.
 - Math activity: tap-choice counting/subitizing activity.
 - Art activity: tap-fill coloring activity.
 - Video Vault: parent-approved local video shell, currently empty until local video assets are added and reachable by direct route.
