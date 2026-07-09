@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.12 illustrated bear (art-standard proof) baseline
+Version: v0.3.13 illustrated foods baseline
 
 ## Current Working MVP
 
@@ -19,6 +19,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
 - Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
 - The Bear Cafe bear is now an illustrated inline-SVG character (first slice of the chosen illustrated art standard) that expresses the order arc through its face — waiting while its order is prepared, receiving at the handoff, happy on completion — tinted per caller. Local SVG only (no external assets/network/deps); the emoji `content.character.icon` stays in the data (no schema change). This supersedes the earlier emoji reaction accents.
+- The seven Bear Cafe foods (apple, banana, berry, bread, cookie, cupcake, soup) are now illustrated inline SVG matching the bear's style — in the choice buttons, the tray, and the count-expanded plating/handoff plates. Local SVG only; `content.food.icon` stays in the data (no schema change); plate count integrity preserved. Decorations remain emoji for now.
 - A correct Bear Cafe check now plays a short cook/plating beat (the order plates up) before "Order ready!"; `tray_checked` still emits on the check (the beat is cosmetic), reduced-motion-guarded.
 - Feedback cues (`soft_chime`, `soft_boing`) now produce real sound — synthesized in-process with the Web Audio API (no external assets/network/deps, so the local-only safety boundary holds), soft and short, gated by the parent Sound Effects setting. Shared across all game runtimes; silent no-op where Web Audio is unavailable.
 - The Bear Cafe complete screen now plays a one-time celebration burst (a consistent 12-piece confetti/star burst) — positive completion feedback, deterministic (no randomness), not a reward loop or streak; reduced-motion hides it.

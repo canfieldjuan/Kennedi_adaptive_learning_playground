@@ -12,6 +12,7 @@ import type {
   BearCafeRequiredOrder,
 } from './kennedis-orders.types';
 import { renderBearArt } from './bear-art';
+import { renderFoodArt } from './food-art';
 
 interface KennedisOrdersOptions {
   activity: LearningActivity;
@@ -461,7 +462,7 @@ function renderTray(
         item.className = 'bear-cafe-plate__food';
         item.type = 'button';
         item.setAttribute('aria-label', `Remove one ${food.label}`);
-        item.textContent = food.icon;
+        item.innerHTML = renderFoodArt(food.id);
         item.addEventListener('click', () => onFoodRemove(foodId));
         plate.appendChild(item);
       }
@@ -515,7 +516,7 @@ function renderKitchenStage(
     button.dataset.selected = tray.foodCounts[food.id] ? 'true' : 'false';
     button.setAttribute('aria-label', `Choose ${food.label}`);
     button.innerHTML = `
-      <span class="bear-cafe-food__icon" aria-hidden="true">${food.icon}</span>
+      <span class="bear-cafe-food__icon" aria-hidden="true">${renderFoodArt(food.id)}</span>
       <span class="bear-cafe-food__label">${food.label}</span>
       ${tray.foodCounts[food.id] ? `<span class="bear-cafe-food__count">${tray.foodCounts[food.id]}</span>` : ''}
     `;
@@ -598,7 +599,7 @@ function renderPlatingStage(
   plate.className = 'bear-cafe-plating__plate';
   plate.setAttribute('aria-hidden', 'true');
   const foodIcons = getPlatedFoodIcons(content, tray);
-  plate.textContent = foodIcons || '🍽️';
+  plate.innerHTML = foodIcons || renderFoodArt('plate');
 
   const text = document.createElement('p');
   text.className = 'bear-cafe-plating__text';
@@ -625,7 +626,7 @@ function renderHandoffStage(
   trayEl.className = 'bear-cafe-handoff__tray';
   trayEl.setAttribute('aria-hidden', 'true');
   const foodIcons = getPlatedFoodIcons(content, tray);
-  trayEl.textContent = foodIcons || '🧺';
+  trayEl.innerHTML = foodIcons || renderFoodArt('plate');
 
   const bear = document.createElement('div');
   bear.className = 'bear-cafe-handoff__bear';
@@ -925,17 +926,17 @@ function getSelectedFoodIds(tray: TrayState): string[] {
     .map(([foodId]) => foodId);
 }
 
-// Space-joined icons for the assembled plate, expanded by quantity so a correct
-// multi-count order (e.g. { cookie: 2 }) shows two 🍪, not one. The plating and
-// handoff beats must never contradict a correct quantity answer.
+// Illustrated plate art, expanded by quantity so a correct multi-count order
+// (e.g. { cookie: 2 }) shows two cookies, not one. The plating and handoff beats
+// must never contradict a correct quantity answer.
 export function getPlatedFoodIcons(content: BearCafeContent, tray: TrayState): string {
   return Object.entries(tray.foodCounts)
     .filter(([, count]) => count > 0)
     .flatMap(([foodId, count]) => {
-      const icon = content.foods.find((food) => food.id === foodId)?.icon ?? '';
-      return icon ? Array.from({ length: count }, () => icon) : [];
+      const known = content.foods.some((food) => food.id === foodId);
+      return known ? Array.from({ length: count }, () => renderFoodArt(foodId)) : [];
     })
-    .join(' ');
+    .join('');
 }
 
 function getSelectedAnswer(content: BearCafeContent, tray: TrayState): string {
