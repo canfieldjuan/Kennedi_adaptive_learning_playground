@@ -432,12 +432,7 @@ export function renderOrderTicketVisual(content: BearCafeContent): string {
     }
   } else if (required.food_ids) {
     const sound = getTargetSound(content);
-    if (sound) {
-      parts.push(`<span class="bear-cafe-ticket-letter">${sound.toUpperCase()}</span>`);
-    }
-    for (const foodId of required.food_ids) {
-      parts.push(renderTicketFood(content, foodId));
-    }
+    parts.push(`<span class="bear-cafe-ticket-letter">${sound ? sound.toUpperCase() : '?'}</span>`);
   } else if (required.food_id) {
     parts.push(renderTicketFood(content, required.food_id, required.quantity));
   }
@@ -1334,8 +1329,7 @@ function createSkillOutcomesForEvent(params: {
     params.activity.skill_ids.includes('counting') &&
     typeof getRequestedQuantity(required) === 'number'
   ) {
-    const selectedCount = getSelectedCountForRequiredQuantity(params.tray, required);
-    const quantityMatches = selectedCount === getRequestedQuantity(required);
+    const quantityMatches = doesRequiredQuantityMatch(params.tray, required);
     outcomes.push({
       skill_id: 'counting',
       outcome: quantityMatches ? 'correct' : 'incorrect',
@@ -1358,14 +1352,29 @@ function createSkillOutcomesForEvent(params: {
   return outcomes;
 }
 
-function getSelectedCountForRequiredQuantity(
+function doesRequiredQuantityMatch(
   tray: TrayState,
   required: BearCafeRequiredOrder
-): number {
-  if (required.food_counts) return getTotalFoodCount(tray);
-  return required.food_id
+): boolean {
+  if (required.food_counts) {
+    const selectedFoodIds = getSelectedFoodIds(tray);
+    const requiredFoodIds = Object.keys(required.food_counts).filter((foodId) => (
+      (required.food_counts?.[foodId] ?? 0) > 0
+    ));
+    const hasOnlyRequiredFoods = selectedFoodIds.every((foodId) => (
+      requiredFoodIds.includes(foodId)
+    ));
+    if (!hasOnlyRequiredFoods) return false;
+
+    return requiredFoodIds.every((foodId) => (
+      (tray.foodCounts[foodId] ?? 0) === (required.food_counts?.[foodId] ?? 0)
+    ));
+  }
+
+  const selectedCount = required.food_id
     ? tray.foodCounts[required.food_id] ?? 0
     : getTotalFoodCount(tray);
+  return selectedCount === getRequestedQuantity(required);
 }
 
 function createTwoPartHintSkillOutcomes(

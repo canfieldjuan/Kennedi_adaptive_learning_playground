@@ -105,6 +105,7 @@ function getMostRepeatedActivity(
   const counts = new Map<string, number>();
 
   for (const event of events) {
+    if (event.metadata?.event_name === 'food_selected') continue;
     counts.set(event.activity_id, (counts.get(event.activity_id) ?? 0) + 1);
   }
 

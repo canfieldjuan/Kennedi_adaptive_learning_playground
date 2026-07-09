@@ -88,6 +88,35 @@ describe('parent session review contract', () => {
       },
     ]);
   });
+
+  test('excludes food-selection telemetry from most repeated activity counts', () => {
+    const events: ActivityAttemptEvent[] = [
+      makeEvent({
+        activityId: 'kennedis-orders-two-cookies-001',
+        outcome: 'correct',
+        skillIds: ['counting'],
+        metadata: { event_name: 'food_selected' },
+      }),
+      makeEvent({
+        activityId: 'kennedis-orders-two-cookies-001',
+        outcome: 'correct',
+        skillIds: ['counting'],
+        metadata: { event_name: 'food_selected' },
+      }),
+      makeEvent({
+        activityId: 'kennedis-orders-two-cookies-001',
+        outcome: 'completed',
+        skillIds: ['counting'],
+        metadata: { event_name: 'order_delivered' },
+      }),
+      makeEvent({ activityId: 'phonics-find-b', outcome: 'incorrect', skillIds: ['initial_sound'] }),
+      makeEvent({ activityId: 'phonics-find-b', outcome: 'correct', skillIds: ['initial_sound'] }),
+    ];
+
+    const review = buildParentSessionReview(events, [], 'session-1');
+
+    expect(review.most_repeated_activity).toBe('phonics-find-b');
+  });
 });
 
 function makeEvent(params: {
@@ -95,6 +124,7 @@ function makeEvent(params: {
   outcome: ActivityAttemptEvent['outcome'];
   skillIds: string[];
   skillOutcomes?: ActivityAttemptEvent['skill_outcomes'];
+  metadata?: ActivityAttemptEvent['metadata'];
 }): ActivityAttemptEvent {
   return {
     event_id: `event-${params.activityId}-${params.outcome}`,
@@ -118,5 +148,6 @@ function makeEvent(params: {
     distractor_strength: 'easy',
     input_type: 'tap',
     hint_shown: params.outcome === 'hint_used',
+    metadata: params.metadata,
   };
 }
