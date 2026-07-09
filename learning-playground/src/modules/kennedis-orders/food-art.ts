@@ -9,15 +9,18 @@
 const INK = '#3a2461';
 
 function svg(inner: string): string {
-  return `<svg class="food-art" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">${inner}</svg>`;
+  // Cropped viewBox (not 0 0 100 100): the food art is drawn with padding, so a
+  // tight box makes it fill its container like the emoji glyph it replaced.
+  return `<svg class="food-art" viewBox="13 15 74 74" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">${inner}</svg>`;
 }
 
 const FOOD_ART: Record<string, string> = {
   banana: svg(`
-    <path d="M24 40 q4 34 34 42 q20 5 26 -8 q-6 3 -12 1 q-24 -6 -34 -30 q-4 -9 -2 -16 q-9 2 -12 11 z"
-      fill="#ffd44d" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M22 39 q1 -6 8 -8" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
-    <path d="M82 76 q5 -1 6 -6" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`),
+    <path d="M33 25 C 20 45, 25 68, 48 77 C 63 82, 79 76, 83 65 C 73 70, 61 69, 51 62 C 36 52, 32 39, 39 27 C 37 24, 34 22, 33 25 Z"
+      fill="#ffd23e" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M42 30 C 35 44, 39 58, 51 66" fill="none" stroke="#ffe27a" stroke-width="3" stroke-linecap="round"/>
+    <path d="M33 25 q-2 -6 5 -7" fill="none" stroke="#8a5a34" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="82" cy="66" r="2.8" fill="#6b4a2a"/>`),
 
   apple: svg(`
     <path d="M50 34 q22 -8 26 16 q3 22 -12 32 q-8 5 -14 -1 q-6 6 -14 1 q-15 -10 -12 -32 q4 -24 26 -16 z"
