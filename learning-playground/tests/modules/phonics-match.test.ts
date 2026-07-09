@@ -138,6 +138,9 @@ describe('phonics-match (Word game) runtime — parity behavior', () => {
       'blend-cat',
       'blend-hat',
       'blend-bat',
+      'build-cat',
+      'build-dog',
+      'build-sun',
     ]);
   });
 });

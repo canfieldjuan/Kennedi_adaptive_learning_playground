@@ -22,6 +22,8 @@
     "prompt_audio": "Sound it out. Which word do these sounds make?",
     "segments": ["b", "a", "t"],
     "target_word": "bat",
+    "next_activity_id": "build-cat",
+    "next_label": "Build words",
     "choices": [
       { "id": "bat", "label": "bat", "image": "/assets/images/bat.svg", "correct": true },
       { "id": "cat", "label": "cat", "image": "/assets/images/cat.svg", "correct": false },

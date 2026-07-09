@@ -50,6 +50,10 @@ import {
   renderPhonicsMatchActivity,
   destroyPhonicsMatchActivity,
 } from '../modules/phonics-match/PhonicsMatchActivity';
+import {
+  renderWordBuilderActivity,
+  destroyWordBuilderActivity,
+} from '../modules/phonics-match/WordBuilderActivity';
 import { APPROVED_ACTIVITIES } from '../content/activity-catalog';
 import familySafeVideos from '../content/videos/family-safe-videos.v1.json';
 
@@ -87,6 +91,7 @@ function handleRoute(route: Route): void {
   destroyVideoVault();
   destroyKennedisOrdersActivity();
   destroyPhonicsMatchActivity();
+  destroyWordBuilderActivity();
   app.innerHTML = '';
 
   switch (route.view) {
@@ -169,6 +174,24 @@ function renderActivityRoute(activityId: string): void {
   ) {
     renderKennedisOrdersActivity(app, {
       activity: runtimeActivity,
+      childId,
+      sessionId,
+      speech,
+      audio,
+      onEvent: handleActivityEvent,
+    });
+    return;
+  }
+
+  // Word builder (phonics) — tap letter tiles into slots. Bear Cafe (also
+  // tap_then_place) is matched first above by its game id.
+  if (
+    runtimeActivity.interaction_model === 'tap_then_place' &&
+    runtimeActivity.domain === 'phonics'
+  ) {
+    renderWordBuilderActivity(app, {
+      activity: runtimeActivity,
+      parentGuidance: appliedDifficulty.appliedGuidance,
       childId,
       sessionId,
       speech,

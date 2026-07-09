@@ -4,6 +4,9 @@ import artColorCircle from './activities/art-color-circle.json';
 import blendBat from './activities/blend-bat.json';
 import blendCat from './activities/blend-cat.json';
 import blendHat from './activities/blend-hat.json';
+import buildCat from './activities/build-cat.json';
+import buildDog from './activities/build-dog.json';
+import buildSun from './activities/build-sun.json';
 import kennedisOrdersBanana from './activities/kennedis-orders-banana-001.json';
 import kennedisOrdersBFoods from './activities/kennedis-orders-b-foods-001.json';
 import kennedisOrdersFixBerries from './activities/kennedis-orders-fix-berries-001.json';
@@ -39,6 +42,9 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   blendCat,
   blendHat,
   blendBat,
+  buildCat,
+  buildDog,
+  buildSun,
   shapesFindCircle,
   shapesFindCircleHeart,
   mathCountStarsThree,

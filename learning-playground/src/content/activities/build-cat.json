@@ -1,0 +1,44 @@
+{
+  "id": "build-cat",
+  "version": 1,
+  "title": "Build the Word: cat",
+  "domain": "phonics",
+  "skill_ids": ["word_building"],
+  "transfer": {
+    "skill_ids": ["word_building"],
+    "context_type": "same_format_same_examples",
+    "context_id": "tap-tiles-build",
+    "example_set_id": "build-cat",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 2,
+    "choice_count": 3,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 90,
+  "content": {
+    "prompt_audio": "Build the word cat. Tap the letters in order.",
+    "target_word": "cat",
+    "picture": "/assets/images/cat.svg",
+    "tiles": ["a", "t", "c"],
+    "next_activity_id": "build-dog",
+    "next_label": "Next word"
+  },
+  "success_rules": {
+    "target_word": "cat",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": { "speech": "You built cat!", "animation": "glow_pop", "sound": "soft_chime" },
+    "incorrect": { "speech": "Not that letter. Try the next sound.", "animation": "gentle_bounce", "sound": "soft_boing" },
+    "hint": { "speech": "This letter comes next.", "highlight_target": true }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}
