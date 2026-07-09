@@ -63,7 +63,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Pre-v0.1.1 local attempt events are migrated on read rather than dropped.
 - Progress profiles are derived from local activity events and stored in localStorage.
 - Progress level starts at the lowest declared curriculum rung, promotes only from evidence in the current rung's difficulty band, and clamps current-version out-of-range values to the declared max rung.
-- Stored progress profiles are normalized on read, so stale pre-v0.3.6 raw levels are translated onto the current curriculum ladder before Parent Panel review or export.
+- Stored progress profiles are normalized on read, so stale pre-v0.3.10 raw levels are translated onto the current curriculum ladder before Parent Panel review or export.
 - Parent observations are stored in localStorage and included in export.
 - Parent difficulty action history and active guidance state are stored in localStorage and included in export.
 - Attempt event metadata records when parent-approved guidance affected a supported activity.
