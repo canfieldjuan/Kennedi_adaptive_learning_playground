@@ -16,11 +16,11 @@ function svg(inner: string): string {
 
 const FOOD_ART: Record<string, string> = {
   banana: svg(`
-    <path d="M33 25 C 20 45, 25 68, 48 77 C 63 82, 79 76, 83 65 C 73 70, 61 69, 51 62 C 36 52, 32 39, 39 27 C 37 24, 34 22, 33 25 Z"
+    <path d="M22 60 C 26 47, 45 38, 61 36 C 69 35, 77 37, 77 43 C 78 49, 70 52, 59 54 C 44 57, 31 62, 26 71 C 23 68, 20 64, 22 60 Z"
       fill="#ffd23e" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M42 30 C 35 44, 39 58, 51 66" fill="none" stroke="#ffe27a" stroke-width="3" stroke-linecap="round"/>
-    <path d="M33 25 q-2 -6 5 -7" fill="none" stroke="#8a5a34" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="82" cy="66" r="2.8" fill="#6b4a2a"/>`),
+    <path d="M31 57 C 35 48, 48 42, 60 42" fill="none" stroke="#ffe887" stroke-width="4" stroke-linecap="round"/>
+    <path d="M74 42 q5 -8 10 -4 q0 7 -7 8 z" fill="#8ac249" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M24 66 q-6 1 -6 6 q6 1 8 -4 z" fill="#8ac249" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>`),
 
   apple: svg(`
     <path d="M50 34 q22 -8 26 16 q3 22 -12 32 q-8 5 -14 -1 q-6 6 -14 1 q-15 -10 -12 -32 q4 -24 26 -16 z"
@@ -35,10 +35,12 @@ const FOOD_ART: Record<string, string> = {
     <path d="M34 51 l-3 -3 M60 42 l-3 -3 M56 62 l-3 -3" stroke="#cdd7f7" stroke-width="3" stroke-linecap="round"/>`),
 
   bread: svg(`
-    <path d="M20 60 q0 -26 30 -26 q30 0 30 26 q0 6 -6 6 h-48 q-6 0 -6 -6 z"
-      fill="#e0a86a" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
-    <rect x="18" y="60" width="64" height="14" rx="6" fill="#c98a4c" stroke="${INK}" stroke-width="3"/>
-    <path d="M36 48 q3 -5 6 0 M50 45 q3 -5 6 0 M64 48 q3 -5 6 0" fill="none" stroke="#a9702f" stroke-width="2.6" stroke-linecap="round"/>`),
+    <path d="M28 72 L28 50 C28 34 40 30 50 30 C60 30 72 34 72 50 L72 72 Q72 74 70 74 L30 74 Q28 74 28 72 Z"
+      fill="#e6a55e" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M33 69 L33 51 C33 40 42 36 50 36 C58 36 67 40 67 51 L67 69 Z" fill="#f8ecc8"/>
+    <circle cx="43" cy="54" r="1.9" fill="#e6cf9e"/>
+    <circle cx="55" cy="60" r="1.9" fill="#e6cf9e"/>
+    <circle cx="49" cy="49" r="1.6" fill="#e6cf9e"/>`),
 
   cookie: svg(`
     <circle cx="50" cy="52" r="30" fill="#d8a45e" stroke="${INK}" stroke-width="3"/>
