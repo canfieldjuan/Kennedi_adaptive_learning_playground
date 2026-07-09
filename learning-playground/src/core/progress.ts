@@ -169,6 +169,7 @@ function buildSkillMasteryState(
     baseLevel < maxLevel &&
     shouldPromoteFromEvents(
       candidate,
+      skillId,
       events,
       currentLevel,
       existingSkill?.last_promoted_at
@@ -282,6 +283,7 @@ function shouldMarkNeedsReview(
 
 function shouldPromoteFromEvents(
   state: SkillMasteryState,
+  skillId: string,
   events: ActivityAttemptEvent[],
   currentLevel: CurriculumSkillLevel,
   lastPromotedAt?: string
@@ -290,7 +292,7 @@ function shouldPromoteFromEvents(
     ? events.filter((event) => event.timestamp > lastPromotedAt)
     : events;
   const promotionEvents = eventsSincePromotion.filter((event) => (
-    isPromotionEligibleEvent(event, currentLevel)
+    isPromotionEligibleEvent(event, skillId, currentLevel)
   ));
   const eligibleAttempts = promotionEvents.filter(hasCountedOutcome);
 
@@ -360,12 +362,14 @@ function isWithinDifficultyBand(
 
 function isPromotionEligibleEvent(
   event: ActivityAttemptEvent,
+  skillId: string,
   level: CurriculumSkillLevel
 ): boolean {
   if (isWithinDifficultyBand(event, level)) return true;
 
   return (
     event.metadata?.parent_guidance_override_type === 'promote_gently' &&
+    event.metadata.parent_guidance_skill_id === skillId &&
     event.difficulty_level === level.max_difficulty_level + 1
   );
 }

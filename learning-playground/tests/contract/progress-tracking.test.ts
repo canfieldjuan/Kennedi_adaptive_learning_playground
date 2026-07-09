@@ -283,6 +283,7 @@ describe('progress tracking contract', () => {
         metadata: {
           parent_guidance_applied: true,
           parent_guidance_override_type: 'promote_gently',
+          parent_guidance_skill_id: 'counting',
         },
       })
     ));
@@ -292,6 +293,29 @@ describe('progress tracking contract', () => {
 
     expect(state.current_level).toBe(1);
     expect(state.last_promoted_at).toBe(timestamp(4));
+  });
+
+  test('parent-promoted challenge attempts only count for the approved skill', () => {
+    const events = Array.from({ length: 5 }, (_, index) => (
+      makeEvent({
+        outcome: 'correct',
+        timestamp: timestamp(index),
+        difficultyLevel: 2,
+        skillIds: ['counting', 'subitizing'],
+        metadata: {
+          parent_guidance_applied: true,
+          parent_guidance_override_type: 'promote_gently',
+          parent_guidance_skill_id: 'counting',
+        },
+      })
+    ));
+
+    const profile = buildProgressProfileFromEvents(CHILD_ID, events);
+
+    expect(profile.skill_mastery.counting.current_level).toBe(1);
+    expect(profile.skill_mastery.counting.last_promoted_at).toBe(timestamp(4));
+    expect(profile.skill_mastery.subitizing.current_level).toBe(0);
+    expect(profile.skill_mastery.subitizing.last_promoted_at).toBeUndefined();
   });
 
   test('approved combined-order color activity can promote the color fill ladder', () => {
