@@ -156,7 +156,9 @@
       "prerequisites": [
         "initial_sound"
       ],
-      "unlocks": [],
+      "unlocks": [
+        "blending"
+      ],
       "activity_contexts": [
         "phonics-find-b"
       ],
@@ -172,6 +174,57 @@
         "min_accuracy": 0.8,
         "max_hint_rate": 0.34,
         "max_average_response_ms": 5000,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "blending",
+      "label": "Blending",
+      "domain": "phonics",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Blends a short word with support",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 2
+        },
+        {
+          "level": 1,
+          "label": "Blends three sounds",
+          "min_difficulty_level": 3,
+          "max_difficulty_level": 5
+        },
+        {
+          "level": 2,
+          "label": "Blends new words fluently",
+          "min_difficulty_level": 5,
+          "max_difficulty_level": 5
+        }
+      ],
+      "prerequisites": [
+        "letter_sound_match"
+      ],
+      "unlocks": [],
+      "activity_contexts": [
+        "blend-cat"
+      ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "different_prompt_mode",
+        "delayed_review"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 3,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 6000,
         "min_contexts_for_transfer": 2,
         "requires_retention": true
       },

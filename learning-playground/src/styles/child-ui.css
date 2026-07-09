@@ -323,6 +323,31 @@
   animation: pipCheer 640ms ease-out;
 }
 
+/* Sound-out strip — a blend word broken into its sounds (c · a · t). */
+.phonics-soundout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 520px;
+}
+
+.phonics-soundout__chip {
+  display: grid;
+  place-items: center;
+  min-width: 52px;
+  min-height: 52px;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-lg);
+  background: var(--child-bg-card);
+  box-shadow: 0 6px 18px var(--child-shadow);
+  color: var(--child-text);
+  font-size: 1.6rem;
+  font-weight: 900;
+  text-transform: lowercase;
+}
+
 .activity-choice-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -127,7 +127,11 @@ export function renderPhonicsMatchActivity(
   // Pip — the recurring Word-game character. Pip's mouth shows how the target
   // sound is made, and Pip "comes alive" (cheers) when the word is found. This
   // is affect only: the same attempt events fire; there is no reward loop.
-  const targetMouth = mouthForSound(getTargetSound(options.activity));
+  // For a blend, Pip rests on the first sound and a sound-out strip below shows
+  // the word broken into sounds.
+  const segments = getSegments(options.activity);
+  const primarySound = segments[0] ?? getTargetSound(options.activity);
+  const targetMouth = mouthForSound(primarySound);
   const character = document.createElement('div');
   character.className = 'phonics-character';
   character.dataset.mouth = targetMouth;
@@ -138,6 +142,20 @@ export function renderPhonicsMatchActivity(
   characterArt.innerHTML = renderPhonicsCharacterArt(targetMouth);
   character.appendChild(characterArt);
   container.appendChild(character);
+
+  if (segments.length > 0) {
+    const soundout = document.createElement('div');
+    soundout.className = 'phonics-soundout';
+    soundout.setAttribute('aria-label', `Sound it out: ${segments.join(', ')}`);
+    for (const segment of segments) {
+      const chip = document.createElement('span');
+      chip.className = 'phonics-soundout__chip';
+      chip.setAttribute('aria-hidden', 'true');
+      chip.textContent = segment;
+      soundout.appendChild(chip);
+    }
+    container.appendChild(soundout);
+  }
 
   const setCharacterMouth = (mouth: CharacterMouth): void => {
     character.dataset.mouth = mouth;
@@ -368,6 +386,12 @@ function getPrompt(activity: LearningActivity): string {
 function getTargetSound(activity: LearningActivity): string | undefined {
   const sound = activity.content.target_sound;
   return typeof sound === 'string' ? sound : undefined;
+}
+
+function getSegments(activity: LearningActivity): string[] {
+  const segments = activity.content.segments;
+  if (!Array.isArray(segments)) return [];
+  return segments.filter((segment): segment is string => typeof segment === 'string');
 }
 
 function getPromptImages(activity: LearningActivity): string[] {

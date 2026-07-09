@@ -95,7 +95,25 @@ describe('phonics-match (Word game) runtime — parity behavior', () => {
     expect(findByChoiceId(root, 'bear')?.classList.contains('is-alive')).toBe(true);
   });
 
-  test('the initial-sound chain is complete, ordered, and terminates', () => {
+  test('a blend renders a sound-out strip and Pip rests on the first sound', () => {
+    const { root } = setup('blend-cat');
+
+    const soundout = findByClass(root, 'phonics-soundout');
+    expect(soundout?.children.map((chip) => chip.textContent)).toEqual(['c', 'a', 't']);
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('open'); // /c/
+  });
+
+  test('a correct whole-word blend completes and makes the word come alive', () => {
+    const { root, events } = setup('blend-cat');
+
+    findByChoiceId(root, 'cat')?.click();
+
+    expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('cheer');
+    expect(findByChoiceId(root, 'cat')?.classList.contains('is-alive')).toBe(true);
+  });
+
+  test('the Word-game chain is complete, ordered, and terminates', () => {
     const visited: string[] = [];
     const seen = new Set<string>();
     let id: string | undefined = 'phonics-find-b';
@@ -117,6 +135,9 @@ describe('phonics-match (Word game) runtime — parity behavior', () => {
       'phonics-find-s',
       'phonics-find-c',
       'phonics-find-t',
+      'blend-cat',
+      'blend-hat',
+      'blend-bat',
     ]);
   });
 });
