@@ -11,6 +11,7 @@ import type {
   BearCafeFood,
   BearCafeRequiredOrder,
 } from './kennedis-orders.types';
+import { renderBearArt } from './bear-art';
 
 interface KennedisOrdersOptions {
   activity: LearningActivity;
@@ -39,21 +40,6 @@ const HANDOFF_DURATION_MS = 900;
 // tray_checked event is already emitted synchronously on the check, so an
 // interrupted beat drops no evidence.
 const PLATING_DURATION_MS = 800;
-
-// Stage-appropriate bear reaction accents (issue #3 richness): the bear shows a
-// waiting cue while its order is prepared, a receiving sparkle at handoff, and a
-// happy heart on completion — instead of the same static icon in every stage.
-type BearReaction = 'waiting' | 'receiving' | 'happy';
-
-const BEAR_REACTION_GLYPH: Record<BearReaction, string> = {
-  waiting: '💭',
-  receiving: '✨',
-  happy: '💛',
-};
-
-function bearReactionAccent(reaction: BearReaction): string {
-  return `<span class="bear-cafe-reaction bear-cafe-reaction--${reaction}" aria-hidden="true">${BEAR_REACTION_GLYPH[reaction]}</span>`;
-}
 
 let container: HTMLElement | null = null;
 let cleanupHandlers: Array<() => void> = [];
@@ -379,7 +365,7 @@ function renderPhoneStage(
   phone.setAttribute('aria-label', `${content.character.name} is calling`);
   phone.innerHTML = `
     <span class="bear-cafe-phone__icon bear-cafe-phone__icon--ringing" aria-hidden="true">☎</span>
-    <span class="bear-cafe-phone__portrait" aria-hidden="true">${content.character.icon}</span>
+    <span class="bear-cafe-phone__portrait" aria-hidden="true">${renderBearArt(content.character.id, 'happy')}</span>
     <span class="bear-cafe-phone__caller">${content.character.name} is calling</span>
     <span class="bear-cafe-phone__shift">${content.round_label ?? 'Order time'}</span>
     <span class="bear-cafe-phone__line">${content.character.callLine}</span>
@@ -427,7 +413,7 @@ function renderOrderCard(parent: HTMLElement, content: BearCafeContent): void {
   const order = document.createElement('section');
   order.className = 'bear-cafe-order';
   order.innerHTML = `
-    <div class="bear-cafe-order__bear" aria-hidden="true">${content.character.icon}${bearReactionAccent('waiting')}</div>
+    <div class="bear-cafe-order__bear" aria-hidden="true">${renderBearArt(content.character.id, 'waiting')}</div>
     <div>
       <p class="bear-cafe-order__caller">${content.character.name}</p>
       <p class="bear-cafe-order__meta">Order ticket</p>
@@ -644,7 +630,7 @@ function renderHandoffStage(
   const bear = document.createElement('div');
   bear.className = 'bear-cafe-handoff__bear';
   bear.setAttribute('aria-hidden', 'true');
-  bear.innerHTML = content.character.icon + bearReactionAccent('receiving');
+  bear.innerHTML = renderBearArt(content.character.id, 'receiving');
 
   track.appendChild(trayEl);
   track.appendChild(bear);
@@ -692,7 +678,7 @@ function renderDeliveryStage(
       <span>To the window</span>
     </div>
     <div class="bear-cafe-delivery__window" aria-hidden="true">
-      <span>${content.character.icon}</span>${bearReactionAccent('waiting')}
+      ${renderBearArt(content.character.id, 'waiting')}
     </div>
   `;
   delivery.appendChild(deliveryScene);
@@ -703,7 +689,7 @@ function renderCompleteStage(parent: HTMLElement, content: BearCafeContent): voi
   const complete = document.createElement('section');
   complete.className = 'bear-cafe-complete';
   complete.innerHTML = `
-    <div class="bear-cafe-complete__bear" aria-hidden="true">${content.character.icon}${bearReactionAccent('happy')}</div>
+    <div class="bear-cafe-complete__bear" aria-hidden="true">${renderBearArt(content.character.id, 'happy')}</div>
     <p class="bear-cafe-complete__text">Order delivered.</p>
   `;
 
