@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.12 compound-round evidence modeling baseline
+Version: v0.3.12 illustrated bear + compound-round evidence modeling baseline
 
 ## Current Working MVP
 
@@ -18,7 +18,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Math now has a medium transfer activity that asks from a visual dot card to the matching numeral.
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
 - Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
-- The Bear Cafe bear now shows stage reaction accents across the order arc — waiting while its order is prepared, receiving at the handoff, happy on completion — derived from a runtime stage→glyph map (no activity content/schema change), reduced-motion-guarded.
+- The Bear Cafe bear is now an illustrated inline-SVG character (first slice of the chosen illustrated art standard) that expresses the order arc through its face — waiting while its order is prepared, receiving at the handoff, happy on completion — tinted per caller. Local SVG only (no external assets/network/deps); the emoji `content.character.icon` stays in the data (no schema change). This supersedes the earlier emoji reaction accents.
 - A correct Bear Cafe check now plays a short cook/plating beat (the order plates up) before "Order ready!"; `tray_checked` still emits on the check (the beat is cosmetic), reduced-motion-guarded.
 - Feedback cues (`soft_chime`, `soft_boing`) now produce real sound — synthesized in-process with the Web Audio API (no external assets/network/deps, so the local-only safety boundary holds), soft and short, gated by the parent Sound Effects setting. Shared across all game runtimes; silent no-op where Web Audio is unavailable.
 - The Bear Cafe complete screen now plays a one-time celebration burst (a consistent 12-piece confetti/star burst) — positive completion feedback, deterministic (no randomness), not a reward loop or streak; reduced-motion hides it.
