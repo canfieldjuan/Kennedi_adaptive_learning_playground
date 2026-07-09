@@ -21,6 +21,11 @@ import {
   type TransferActivityRecommendation,
 } from './transfer-activity-recommendation';
 import { formatSkillLabel } from './parent-review-format';
+import {
+  eventAppliesToSkill,
+  getSkillOutcome,
+  isHintForSkill,
+} from './skill-outcomes';
 
 export type ParentSkillStatus =
   | 'Ready for next challenge'
@@ -161,17 +166,19 @@ function buildSkillSignal(
   sessionEvents: ActivityAttemptEvent[]
 ): SkillSignal {
   const events = sessionEvents.filter((event) => (
-    event.skill_ids.includes(summary.skill_id)
+    eventAppliesToSkill(event, summary.skill_id)
   ));
 
   return {
     summary,
     events,
     hintsUsed: events.filter((event) => (
-      event.outcome === 'hint_used' || event.hint_shown
+      isHintForSkill(event, summary.skill_id)
     )).length,
-    abandonedCount: events.filter((event) => event.outcome === 'abandoned').length,
-    repeatedErrorPattern: getRepeatedErrorPattern(events),
+    abandonedCount: events.filter((event) => (
+      getSkillOutcome(event, summary.skill_id) === 'abandoned'
+    )).length,
+    repeatedErrorPattern: getRepeatedErrorPattern(events, summary.skill_id),
     hasParentFrustrationNote: hasFrustrationNote(
       review.parent_notes.map((observation) => observation.note)
     ),
@@ -287,12 +294,13 @@ function getRecommendationReason(
 }
 
 function getRepeatedErrorPattern(
-  events: ActivityAttemptEvent[]
+  events: ActivityAttemptEvent[],
+  skillId: string
 ): string | undefined {
   const counts = new Map<string, number>();
 
   for (const event of events) {
-    if (event.outcome !== 'incorrect') continue;
+    if (getSkillOutcome(event, skillId) !== 'incorrect') continue;
     const answer = event.selected_answer.trim();
     if (!answer) continue;
     counts.set(answer, (counts.get(answer) ?? 0) + 1);

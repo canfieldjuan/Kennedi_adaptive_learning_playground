@@ -10,6 +10,7 @@ import {
   getSkillOutcome,
   hasCountedSkillOutcome,
   isCorrectForSkill,
+  isHintForSkill,
 } from './skill-outcomes';
 import { hasLikelyMasteryTransferContext } from './transfer-coverage';
 
@@ -294,12 +295,4 @@ function formatPercent(value: number): string {
 
 function roundToHundredths(value: number): number {
   return Math.round(value * 100) / 100;
-}
-
-function isHintForSkill(event: ActivityAttemptEvent, skillId: string): boolean {
-  const outcome = getSkillOutcome(event, skillId);
-  if (!outcome) return false;
-  if (outcome === 'hint_used') return true;
-
-  return !event.skill_outcomes && event.hint_shown;
 }

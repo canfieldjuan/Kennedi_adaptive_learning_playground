@@ -62,6 +62,63 @@ describe('mastery evidence skill outcomes', () => {
     expect(colorEvidence.accuracy).toBe(0);
     expect(colorEvidence.hint_rate).toBe(1);
   });
+
+  test('counts hinted compound attempts when skill outcomes are present', () => {
+    const graph = loadCurriculumGraph();
+    const counting = graph.getSkill('counting');
+    expect(counting).toBeDefined();
+    const events = [
+      makeCompoundEvent({
+        eventId: 'event-1',
+        outcome: 'correct',
+        skillOutcomes: [
+          { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+        ],
+      }),
+      makeCompoundEvent({
+        eventId: 'event-2',
+        outcome: 'correct',
+        skillOutcomes: [
+          { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+        ],
+      }),
+      makeCompoundEvent({
+        eventId: 'event-3',
+        outcome: 'hint_used',
+        hintShown: true,
+        skillOutcomes: [
+          { skill_id: 'counting', outcome: 'hint_used', reason: 'quantity' },
+        ],
+      }),
+      makeCompoundEvent({
+        eventId: 'event-4',
+        outcome: 'correct',
+        hintShown: true,
+        skillOutcomes: [
+          { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+        ],
+      }),
+      makeCompoundEvent({
+        eventId: 'event-5',
+        outcome: 'correct',
+        skillOutcomes: [
+          { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+        ],
+      }),
+    ];
+
+    const countingEvidence = buildEvidenceForSkill({
+      skill: counting!,
+      events,
+      activities: APPROVED_ACTIVITIES,
+    });
+
+    expect(countingEvidence.counted_attempts).toBe(4);
+    expect(countingEvidence.hint_rate).toBe(0.5);
+    expect(
+      countingEvidence.evidence.some((item) => item.type === 'low_hint_usage')
+    ).toBe(false);
+  });
 });
 
 function makeCompoundEvent(params: {

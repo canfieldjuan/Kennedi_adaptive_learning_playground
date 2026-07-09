@@ -38,6 +38,14 @@ export function isCorrectForSkill(
   return getSkillOutcome(event, skillId) === 'correct';
 }
 
+export function isHintForSkill(
+  event: ActivityAttemptEvent,
+  skillId: string
+): boolean {
+  if (!eventAppliesToSkill(event, skillId)) return false;
+  return getSkillOutcome(event, skillId) === 'hint_used' || event.hint_shown;
+}
+
 export function isCountedOutcome(
   outcome: AttemptOutcome
 ): outcome is CountedSkillOutcome {
