@@ -21,6 +21,8 @@
   "content": {
     "prompt_audio": "Find the word that starts with b.",
     "target_sound": "b",
+    "next_activity_id": "phonics-find-m",
+    "next_label": "Next word",
     "choices": [
       {
         "id": "bear",

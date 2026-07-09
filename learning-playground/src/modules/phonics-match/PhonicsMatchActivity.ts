@@ -249,6 +249,21 @@ export function renderPhonicsMatchActivity(
   completeActions.className = 'activity-complete-actions';
   completeActions.hidden = true;
 
+  // Chain into the next word so the Word game is a multi-round session, not a
+  // single dead-end tap. The child stays parent-approved (fixed hand-authored
+  // chain), no auto-difficulty routing.
+  const nextActivityId = getNextActivityId(options.activity);
+  if (nextActivityId) {
+    const nextButton = document.createElement('button');
+    nextButton.className = 'child-button';
+    nextButton.type = 'button';
+    nextButton.textContent = getNextLabel(options.activity);
+    nextButton.addEventListener('click', () => {
+      window.location.hash = `#activity/${nextActivityId}`;
+    });
+    completeActions.appendChild(nextButton);
+  }
+
   const doneHomeButton = document.createElement('button');
   doneHomeButton.className = 'child-button';
   doneHomeButton.type = 'button';
@@ -315,6 +330,16 @@ function getPromptImages(activity: LearningActivity): string[] {
   return promptImages.filter((imagePath): imagePath is string => (
     typeof imagePath === 'string'
   ));
+}
+
+function getNextActivityId(activity: LearningActivity): string | undefined {
+  const nextId = activity.content.next_activity_id;
+  return typeof nextId === 'string' ? nextId : undefined;
+}
+
+function getNextLabel(activity: LearningActivity): string {
+  const label = activity.content.next_label;
+  return typeof label === 'string' ? label : 'Next word';
 }
 
 function getNumberRule(value: unknown, fallback: number): number {

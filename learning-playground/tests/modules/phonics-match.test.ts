@@ -64,6 +64,42 @@ describe('phonics-match (Word game) runtime — parity behavior', () => {
     expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
     expect(events[1]?.correct_answer).toBe('B');
   });
+
+  test('a chained activity shows a Next button that advances the session', () => {
+    const { root } = setup('phonics-find-b');
+
+    findByChoiceId(root, 'bear')?.click();
+    const nextButton = findByText(root, 'Next word');
+    expect(nextButton).toBeDefined();
+
+    nextButton?.click();
+    expect(window.location.hash).toBe('#activity/phonics-find-m');
+  });
+
+  test('the initial-sound chain is complete, ordered, and terminates', () => {
+    const visited: string[] = [];
+    const seen = new Set<string>();
+    let id: string | undefined = 'phonics-find-b';
+
+    while (id) {
+      if (seen.has(id)) throw new Error(`chain loops at ${id}`);
+      seen.add(id);
+      visited.push(id);
+      const activity = APPROVED_ACTIVITIES.find((entry) => entry.id === id) as
+        | LearningActivity
+        | undefined;
+      expect(activity).toBeDefined();
+      id = (activity?.content as { next_activity_id?: string })?.next_activity_id;
+    }
+
+    expect(visited).toEqual([
+      'phonics-find-b',
+      'phonics-find-m',
+      'phonics-find-s',
+      'phonics-find-c',
+      'phonics-find-t',
+    ]);
+  });
 });
 
 function setup(activityId: string): { root: MockElement; events: ActivityAttemptEvent[] } {
@@ -171,6 +207,15 @@ function findByChoiceId(element: MockElement, choiceId: string): MockElement | u
   if (element.dataset.choiceId === choiceId) return element;
   for (const child of element.children) {
     const match = findByChoiceId(child, choiceId);
+    if (match) return match;
+  }
+  return undefined;
+}
+
+function findByText(element: MockElement, text: string): MockElement | undefined {
+  if (element.tagName === 'BUTTON' && element.textContent === text) return element;
+  for (const child of element.children) {
+    const match = findByText(child, text);
     if (match) return match;
   }
   return undefined;
