@@ -714,6 +714,21 @@
   box-shadow: 0 8px 26px rgba(58, 36, 97, 0.12);
 }
 
+.bear-cafe-order--nudge {
+  animation: cafeIdleNudge 1000ms ease-in-out 3;
+}
+
+@keyframes cafeIdleNudge {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 26px rgba(58, 36, 97, 0.12);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 10px 30px rgba(244, 114, 182, 0.45);
+  }
+}
+
 .bear-cafe-order__bear {
   display: grid;
   place-items: center;
@@ -1195,6 +1210,7 @@
   .bear-cafe-handoff__bear,
   .bear-cafe-plating__plate,
   .bear-cafe-celebrate__piece,
+  .bear-cafe-order--nudge,
   .bear-cafe-reaction--waiting,
   .bear-cafe-reaction--receiving,
   .bear-cafe-reaction--happy,

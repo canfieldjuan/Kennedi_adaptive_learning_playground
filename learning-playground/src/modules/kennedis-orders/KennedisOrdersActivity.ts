@@ -57,6 +57,13 @@ function bearReactionAccent(reaction: BearReaction): string {
 
 let container: HTMLElement | null = null;
 let cleanupHandlers: Array<() => void> = [];
+let idleNudgeTimer: number | null = null;
+
+// After this long with no interaction on the make/fix stage, gently nudge the
+// order card to re-draw attention to the task. Bounded — fires once per idle
+// period and is re-armed on any interaction (every render clears + re-arms it),
+// so it is neither a speech nag nor an autoplay loop.
+const IDLE_NUDGE_MS = 9000;
 
 export function renderKennedisOrdersActivity(
   parent: HTMLElement,
@@ -88,6 +95,13 @@ export function renderKennedisOrdersActivity(
   const render = () => {
     if (!container) return;
     container.innerHTML = '';
+
+    // Any render means the stage changed or the child interacted — reset the
+    // idle nudge so it only fires after a genuine pause.
+    if (idleNudgeTimer !== null) {
+      window.clearTimeout(idleNudgeTimer);
+      idleNudgeTimer = null;
+    }
 
     container.appendChild(createTopBar(() => {
       // Replaying the prompt is a no-penalty repeat, not a hint or an attempt.
@@ -269,6 +283,14 @@ export function renderKennedisOrdersActivity(
       feedback.textContent = feedbackText;
       container.appendChild(feedback);
     }
+
+    // Arm the idle nudge for this make/fix render (other stages return earlier
+    // and never reach here). Cleared at the top of the next render/teardown.
+    idleNudgeTimer = window.setTimeout(() => {
+      container
+        ?.querySelector('.bear-cafe-order')
+        ?.classList.add('bear-cafe-order--nudge');
+    }, IDLE_NUDGE_MS);
   };
 
   parent.appendChild(container);
@@ -278,6 +300,11 @@ export function renderKennedisOrdersActivity(
 export function destroyKennedisOrdersActivity(): void {
   for (const cleanup of cleanupHandlers) cleanup();
   cleanupHandlers = [];
+
+  if (idleNudgeTimer !== null) {
+    window.clearTimeout(idleNudgeTimer);
+    idleNudgeTimer = null;
+  }
 
   if (container) {
     container.remove();
