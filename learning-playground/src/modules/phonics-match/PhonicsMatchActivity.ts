@@ -20,6 +20,11 @@ import {
   type AppliedParentGuidance,
 } from '../../core/parent-difficulty-application';
 import type { PhonicsMatchChoice, PhonicsFeedbackRule } from './phonics-match.types';
+import {
+  renderPhonicsCharacterArt,
+  mouthForSound,
+  type CharacterMouth,
+} from './phonics-character-art';
 
 interface PhonicsMatchOptions {
   activity: LearningActivity;
@@ -86,6 +91,7 @@ export function renderPhonicsMatchActivity(
   repeatButton.setAttribute('aria-label', 'Repeat prompt');
   repeatButton.addEventListener('click', () => {
     options.speech.repeatLast();
+    pulseCharacterSpeak();
   });
   topBar.appendChild(repeatButton);
 
@@ -117,6 +123,35 @@ export function renderPhonicsMatchActivity(
 
     container.appendChild(promptVisual);
   }
+
+  // Pip — the recurring Word-game character. Pip's mouth shows how the target
+  // sound is made, and Pip "comes alive" (cheers) when the word is found. This
+  // is affect only: the same attempt events fire; there is no reward loop.
+  const targetMouth = mouthForSound(getTargetSound(options.activity));
+  const character = document.createElement('div');
+  character.className = 'phonics-character';
+  character.dataset.mouth = targetMouth;
+  character.setAttribute('aria-hidden', 'true');
+
+  const characterArt = document.createElement('div');
+  characterArt.className = 'phonics-character__art';
+  characterArt.innerHTML = renderPhonicsCharacterArt(targetMouth);
+  character.appendChild(characterArt);
+  container.appendChild(character);
+
+  const setCharacterMouth = (mouth: CharacterMouth): void => {
+    character.dataset.mouth = mouth;
+    characterArt.innerHTML = renderPhonicsCharacterArt(mouth);
+  };
+
+  const pulseCharacterSpeak = (): void => {
+    if (isComplete) return;
+    character.classList.remove('is-speaking');
+    // Force reflow so the pulse restarts when the prompt is repeated (no-op
+    // outside a real DOM).
+    void character.offsetWidth;
+    character.classList.add('is-speaking');
+  };
 
   const grid = document.createElement('div');
   grid.className = 'activity-choice-grid';
@@ -171,6 +206,12 @@ export function renderPhonicsMatchActivity(
       if (isCorrect) {
         isComplete = true;
         button.classList.add('is-correct');
+        // The found word comes alive: the picture pops and Pip cheers. One-time,
+        // deterministic — not a reward loop.
+        button.classList.add('is-alive');
+        character.classList.remove('is-speaking');
+        setCharacterMouth('cheer');
+        character.classList.add('is-cheering');
         disableChoices(choiceButtons);
         showFeedback(feedback, correctFeedback.speech ?? 'You found it.', 'success');
         speakAndPlay(options, correctFeedback);
@@ -276,6 +317,7 @@ export function renderPhonicsMatchActivity(
 
   parent.appendChild(container);
   options.speech.speak(promptText);
+  pulseCharacterSpeak();
 }
 
 export function destroyPhonicsMatchActivity(): void {
@@ -321,6 +363,11 @@ function getCorrectChoice(
 function getPrompt(activity: LearningActivity): string {
   const promptAudio = activity.content.prompt_audio;
   return typeof promptAudio === 'string' ? promptAudio : activity.title;
+}
+
+function getTargetSound(activity: LearningActivity): string | undefined {
+  const sound = activity.content.target_sound;
+  return typeof sound === 'string' ? sound : undefined;
 }
 
 function getPromptImages(activity: LearningActivity): string[] {

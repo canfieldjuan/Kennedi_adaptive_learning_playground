@@ -76,6 +76,25 @@ describe('phonics-match (Word game) runtime — parity behavior', () => {
     expect(window.location.hash).toBe('#activity/phonics-find-m');
   });
 
+  test('Pip shows the mouth shape for the target sound (/b/ -> bilabial)', () => {
+    const { root } = setup('phonics-find-b');
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('bilabial');
+  });
+
+  test('Pip shows a different mouth for a different sound (/s/ -> sibilant)', () => {
+    const { root } = setup('phonics-find-s');
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('sibilant');
+  });
+
+  test('a correct match makes Pip cheer and the matched word come alive', () => {
+    const { root } = setup('phonics-find-b');
+
+    findByChoiceId(root, 'bear')?.click();
+
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('cheer');
+    expect(findByChoiceId(root, 'bear')?.classList.contains('is-alive')).toBe(true);
+  });
+
   test('the initial-sound chain is complete, ordered, and terminates', () => {
     const visited: string[] = [];
     const seen = new Set<string>();
@@ -216,6 +235,15 @@ function findByText(element: MockElement, text: string): MockElement | undefined
   if (element.tagName === 'BUTTON' && element.textContent === text) return element;
   for (const child of element.children) {
     const match = findByText(child, text);
+    if (match) return match;
+  }
+  return undefined;
+}
+
+function findByClass(element: MockElement, className: string): MockElement | undefined {
+  if (element.className.split(/\s+/).includes(className)) return element;
+  for (const child of element.children) {
+    const match = findByClass(child, className);
     if (match) return match;
   }
   return undefined;
