@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.19 Word-game blending baseline
+Version: v0.3.19 Word-game blending and Bear Cafe accessibility baseline
 
 ## Current Working MVP
 
@@ -29,6 +29,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Feedback cues (`soft_chime`, `soft_boing`) now produce real sound — synthesized in-process with the Web Audio API (no external assets/network/deps, so the local-only safety boundary holds), soft and short, gated by the parent Sound Effects setting. Shared across all game runtimes; silent no-op where Web Audio is unavailable.
 - The Bear Cafe complete screen now plays a one-time celebration burst (a consistent 12-piece confetti/star burst) — positive completion feedback, deterministic (no randomness), not a reward loop or streak; reduced-motion hides it.
 - If the child pauses ~9s on the make/fix stage, the order card plays a gentle bounded nudge (a 3-pulse scale/glow) to re-draw attention; it resets on any interaction and fires no speech (not a nag/loop), reduced-motion-guarded.
+- Bear Cafe food, color, and decoration choices expose selected state to assistive technology; food choices also include the current tray count in their accessible names.
 - Puzzle activity remains registered and reachable by direct route, but is not currently on the four-slot home grid.
 
 ## Parent Modules
@@ -97,7 +98,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 
 ## Activity Runtime Baseline
 
-- Existing MVP runtimes plus the scoped Kennedi's Orders adapter: tap choice, coloring, local video vault shell, and Bear Cafe.
+- Existing MVP runtimes plus the scoped Kennedi's Orders adapter: phonics-match, tap choice, coloring, local video vault shell, and Bear Cafe.
 - Activities conform to the existing activity schema.
 - Approved transfer variants and Kennedi's Orders activities conform to the same activity schema and safety rules.
 - Rich transfer variants must pass truth checks that verify the activity content matches the declared transfer context.
