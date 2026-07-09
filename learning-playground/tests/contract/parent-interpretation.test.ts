@@ -95,6 +95,14 @@ describe('parent interpretation contract', () => {
         outcome: 'hint_used',
         hintShown: true,
       }),
+      makeCompoundEvent('event-5', [
+        { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+        { skill_id: 'color_fill', outcome: 'correct', reason: 'color_match' },
+      ], {
+        outcome: 'correct',
+        hintShown: true,
+        hintedSkillIds: ['color_fill'],
+      }),
     ];
     const review = makeCompoundReview();
 
@@ -109,7 +117,7 @@ describe('parent interpretation contract', () => {
     });
     expect(color).toMatchObject({
       status: 'Needs more support',
-      hints_used: 1,
+      hints_used: 2,
       repeated_error_pattern: '3 yellow berries',
     });
   });
@@ -180,14 +188,14 @@ function makeCompoundReview(): ParentSessionReview {
     accuracy_by_skill: [
       {
         skill_id: 'color_fill',
-        correct_attempts: 0,
-        total_attempts: 3,
-        accuracy: 0,
+        correct_attempts: 1,
+        total_attempts: 4,
+        accuracy: 0.25,
       },
       {
         skill_id: 'counting',
-        correct_attempts: 3,
-        total_attempts: 3,
+        correct_attempts: 4,
+        total_attempts: 4,
         accuracy: 1,
       },
     ],
@@ -236,6 +244,7 @@ function makeCompoundEvent(
   overrides: {
     outcome?: ActivityAttemptEvent['outcome'];
     hintShown?: boolean;
+    hintedSkillIds?: string[];
   } = {}
 ): ActivityAttemptEvent {
   return {
@@ -260,6 +269,9 @@ function makeCompoundEvent(
     distractor_strength: 'medium',
     input_type: 'tap',
     hint_shown: overrides.hintShown ?? false,
+    metadata: overrides.hintedSkillIds
+      ? { hinted_skill_ids: overrides.hintedSkillIds.join(',') }
+      : undefined,
   };
 }
 

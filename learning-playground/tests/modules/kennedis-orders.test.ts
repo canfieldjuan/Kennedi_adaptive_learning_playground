@@ -180,6 +180,7 @@ describe("Kennedi's Orders adapter contract", () => {
       attemptNumber: 2,
       responseTimeMs: 4200,
       hintShown: true,
+      hintedSkillIds: ['counting'],
       replayCount: 1,
       eventName: 'tray_checked',
     });
@@ -192,6 +193,7 @@ describe("Kennedi's Orders adapter contract", () => {
       round_total: 5,
       required_quantity: 2,
       corrected: true,
+      hinted_skill_ids: 'counting',
       replay_count: 1,
     });
   });
@@ -312,6 +314,25 @@ describe("Kennedi's Orders adapter contract", () => {
         reason: 'color',
       },
     ]);
+    expect(
+      createKennedisOrdersEvent({
+        activity,
+        content,
+        sessionId: 'session-1',
+        childId: 'local-child',
+        outcome: 'correct',
+        tray: {
+          foodCounts: { berry: 3 },
+          colorId: 'pink',
+        },
+        attemptNumber: 3,
+        responseTimeMs: 1600,
+        hintShown: true,
+        hintedSkillIds: ['color_fill'],
+        eventName: 'tray_checked',
+        issue: 'none',
+      }).metadata?.hinted_skill_ids
+    ).toBe('color_fill');
     expect(foodHintEvent.skill_outcomes).toEqual([]);
   });
 

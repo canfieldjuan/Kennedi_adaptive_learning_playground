@@ -73,6 +73,7 @@ export function renderKennedisOrdersActivity(
   let phoneIntroSpoken = false;
   let roundStartedAt = Date.now();
   let attemptStartedAt = roundStartedAt;
+  let hintedSkillIds: string[] = [];
   let feedbackTone: 'success' | 'support' | 'hint' = 'support';
   let feedbackText = '';
 
@@ -149,6 +150,7 @@ export function renderKennedisOrdersActivity(
           attemptNumber: Math.max(1, attemptNumber),
           responseTimeMs: Date.now() - roundStartedAt,
           hintShown,
+          hintedSkillIds,
           replayCount,
         });
         stage = 'handoff';
@@ -214,6 +216,7 @@ export function renderKennedisOrdersActivity(
           attemptNumber,
           responseTimeMs,
           hintShown,
+          hintedSkillIds,
           replayCount,
           issue: result.issue,
         });
@@ -236,6 +239,10 @@ export function renderKennedisOrdersActivity(
         options.speech.speak(feedbackText);
 
         if (hintShown) {
+          hintedSkillIds = getUniqueSkillIds([
+            ...hintedSkillIds,
+            ...getHintedSkillIdsForIssue(options.activity.skill_ids, result.issue),
+          ]);
           emitAttemptEvent({
             options,
             content,
@@ -244,6 +251,7 @@ export function renderKennedisOrdersActivity(
             attemptNumber,
             responseTimeMs,
             hintShown,
+            hintedSkillIds,
             replayCount,
             issue: result.issue,
           });
@@ -986,6 +994,7 @@ function emitAttemptEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  hintedSkillIds?: string[];
   replayCount: number;
   issue: string;
 }): void {
@@ -999,6 +1008,7 @@ function emitAttemptEvent(params: {
     attemptNumber: params.attemptNumber,
     responseTimeMs: params.responseTimeMs,
     hintShown: params.hintShown,
+    hintedSkillIds: params.hintedSkillIds,
     replayCount: params.replayCount,
     eventName: params.outcome === 'hint_used' ? 'hint_shown' : 'tray_checked',
     issue: params.issue,
@@ -1014,6 +1024,7 @@ function emitCompletedEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  hintedSkillIds?: string[];
   replayCount: number;
 }): void {
   const event = createKennedisOrdersEvent({
@@ -1026,6 +1037,7 @@ function emitCompletedEvent(params: {
     attemptNumber: params.attemptNumber,
     responseTimeMs: params.responseTimeMs,
     hintShown: params.hintShown,
+    hintedSkillIds: params.hintedSkillIds,
     replayCount: params.replayCount,
     eventName: 'order_delivered',
   });
@@ -1043,6 +1055,7 @@ export function createKennedisOrdersEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   hintShown: boolean;
+  hintedSkillIds?: string[];
   replayCount?: number;
   eventName: string;
   issue?: string;
@@ -1077,6 +1090,9 @@ export function createKennedisOrdersEvent(params: {
       ...createEvidenceMetadata(params.content),
       event_name: params.eventName,
       issue: params.issue ?? 'none',
+      ...(params.hintedSkillIds?.length
+        ? { hinted_skill_ids: params.hintedSkillIds.join(',') }
+        : {}),
       corrected: (
         (params.outcome === 'correct' || params.outcome === 'completed') &&
         params.attemptNumber > 1
@@ -1177,6 +1193,25 @@ function createTwoPartHintSkillOutcomes(
   }
 
   return [];
+}
+
+function getHintedSkillIdsForIssue(skillIds: string[], issue: string): string[] {
+  if (
+    skillIds.includes('counting') &&
+    (issue === 'quantity_under' || issue === 'quantity_over')
+  ) {
+    return ['counting'];
+  }
+
+  if (skillIds.includes('color_fill') && issue === 'color') {
+    return ['color_fill'];
+  }
+
+  return skillIds.length === 1 ? [skillIds[0]] : [];
+}
+
+function getUniqueSkillIds(skillIds: string[]): string[] {
+  return [...new Set(skillIds)].sort((a, b) => a.localeCompare(b));
 }
 
 function createEvidenceMetadata(content: BearCafeContent): Record<string, string | number | boolean> {

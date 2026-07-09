@@ -43,11 +43,26 @@ export function isHintForSkill(
   skillId: string
 ): boolean {
   if (!eventAppliesToSkill(event, skillId)) return false;
-  return getSkillOutcome(event, skillId) === 'hint_used' || event.hint_shown;
+  if (getSkillOutcome(event, skillId) === 'hint_used') return true;
+  if (!event.hint_shown) return false;
+
+  const hintedSkillIds = getHintedSkillIds(event);
+  if (hintedSkillIds) return hintedSkillIds.includes(skillId);
+
+  return !event.skill_outcomes;
 }
 
 export function isCountedOutcome(
   outcome: AttemptOutcome
 ): outcome is CountedSkillOutcome {
   return outcome === 'correct' || outcome === 'incorrect' || outcome === 'abandoned';
+}
+
+function getHintedSkillIds(event: ActivityAttemptEvent): string[] | undefined {
+  const value = event.metadata?.hinted_skill_ids;
+  if (typeof value !== 'string') return undefined;
+  return value
+    .split(',')
+    .map((skillId) => skillId.trim())
+    .filter(Boolean);
 }

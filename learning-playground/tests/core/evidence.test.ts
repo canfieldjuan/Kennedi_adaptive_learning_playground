@@ -94,6 +94,7 @@ describe('mastery evidence skill outcomes', () => {
         eventId: 'event-4',
         outcome: 'correct',
         hintShown: true,
+        hintedSkillIds: ['counting'],
         skillOutcomes: [
           { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
         ],
@@ -119,12 +120,55 @@ describe('mastery evidence skill outcomes', () => {
       countingEvidence.evidence.some((item) => item.type === 'low_hint_usage')
     ).toBe(false);
   });
+
+  test('scopes hinted compound attempts to the hinted skill', () => {
+    const graph = loadCurriculumGraph();
+    const counting = graph.getSkill('counting');
+    const colorFill = graph.getSkill('color_fill');
+    expect(counting).toBeDefined();
+    expect(colorFill).toBeDefined();
+    const events = [
+      makeCompoundEvent({
+        eventId: 'event-1',
+        outcome: 'hint_used',
+        hintShown: true,
+        skillOutcomes: [
+          { skill_id: 'color_fill', outcome: 'hint_used', reason: 'color' },
+        ],
+      }),
+      makeCompoundEvent({
+        eventId: 'event-2',
+        outcome: 'correct',
+        hintShown: true,
+        hintedSkillIds: ['color_fill'],
+        skillOutcomes: [
+          { skill_id: 'counting', outcome: 'correct', reason: 'quantity_match' },
+          { skill_id: 'color_fill', outcome: 'correct', reason: 'color_match' },
+        ],
+      }),
+    ];
+
+    const countingEvidence = buildEvidenceForSkill({
+      skill: counting!,
+      events,
+      activities: APPROVED_ACTIVITIES,
+    });
+    const colorEvidence = buildEvidenceForSkill({
+      skill: colorFill!,
+      events,
+      activities: APPROVED_ACTIVITIES,
+    });
+
+    expect(countingEvidence.hint_rate).toBe(0);
+    expect(colorEvidence.hint_rate).toBe(2);
+  });
 });
 
 function makeCompoundEvent(params: {
   eventId: string;
   outcome: ActivityAttemptEvent['outcome'];
   hintShown?: boolean;
+  hintedSkillIds?: string[];
   skillOutcomes?: ActivityAttemptEvent['skill_outcomes'];
 }): ActivityAttemptEvent {
   return {
@@ -149,5 +193,8 @@ function makeCompoundEvent(params: {
     distractor_strength: 'medium',
     input_type: 'tap',
     hint_shown: params.hintShown ?? false,
+    metadata: params.hintedSkillIds
+      ? { hinted_skill_ids: params.hintedSkillIds.join(',') }
+      : undefined,
   };
 }
