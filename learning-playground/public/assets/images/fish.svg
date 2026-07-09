@@ -1,6 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="fish">
-  <path d="M20 66c20-29 56-29 82 0-26 29-62 29-82 0z" fill="#74b9ff" stroke="#2d3436" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M102 66 120 48v36z" fill="#55efc4" stroke="#2d3436" stroke-width="6" stroke-linejoin="round"/>
-  <circle cx="43" cy="58" r="6" fill="#2d3436"/>
-  <path d="M66 42c-5 10-5 38 0 48" fill="none" stroke="#0984e3" stroke-width="6" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <path d="M66 50 L86 32 L84 68 Z" fill="#8ec5ef" stroke="#3a2461" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="44" cy="50" rx="34" ry="21" fill="#5aa9e0" stroke="#3a2461" stroke-width="3"/>
+  <path d="M40 31 q8 -8 18 -2" fill="#8ec5ef" stroke="#3a2461" stroke-width="2.6" stroke-linejoin="round"/>
+  <circle cx="26" cy="45" r="4.5" fill="#ffffff" stroke="#3a2461" stroke-width="2"/>
+  <circle cx="25" cy="45" r="2" fill="#3a2461"/>
+  <path d="M18 56 q8 5 15 0" fill="none" stroke="#3a2461" stroke-width="2.4" stroke-linecap="round"/>
 </svg>
