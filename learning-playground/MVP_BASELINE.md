@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.15 cafe scene backdrop + compound-round evidence modeling baseline
+Version: v0.3.16 Word-game (phonics-match) module baseline
 
 ## Current Working MVP
 
@@ -9,7 +9,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 ## Child Modules
 
 - Home shell with exactly four primary choices: Words, Cafe, Math, Art.
-- Words activity: tap-choice phonics activity for initial sound recognition.
+- Words activity: initial-sound phonics matcher. It now runs on its own `phonics-match` runtime module (the foundation of the Word-game arc), not the shared generic tap-choice grid — behavior/visual unchanged this slice; Math/Shapes still use tap-choice. First behavioral test coverage for the matcher.
 - Math activity: tap-choice counting/subitizing activity.
 - Art activity: tap-fill coloring activity.
 - Video Vault: parent-approved local video shell, currently empty until local video assets are added and reachable by direct route.

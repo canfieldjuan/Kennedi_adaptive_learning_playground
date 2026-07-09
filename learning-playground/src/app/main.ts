@@ -46,6 +46,10 @@ import {
   renderKennedisOrdersActivity,
   destroyKennedisOrdersActivity,
 } from '../modules/kennedis-orders/KennedisOrdersActivity';
+import {
+  renderPhonicsMatchActivity,
+  destroyPhonicsMatchActivity,
+} from '../modules/phonics-match/PhonicsMatchActivity';
 import { APPROVED_ACTIVITIES } from '../content/activity-catalog';
 import familySafeVideos from '../content/videos/family-safe-videos.v1.json';
 
@@ -82,6 +86,7 @@ function handleRoute(route: Route): void {
   destroyColoringActivity();
   destroyVideoVault();
   destroyKennedisOrdersActivity();
+  destroyPhonicsMatchActivity();
   app.innerHTML = '';
 
   switch (route.view) {
@@ -164,6 +169,24 @@ function renderActivityRoute(activityId: string): void {
   ) {
     renderKennedisOrdersActivity(app, {
       activity: runtimeActivity,
+      childId,
+      sessionId,
+      speech,
+      audio,
+      onEvent: handleActivityEvent,
+    });
+    return;
+  }
+
+  // Word game (phonics) has its own runtime; Math/Shapes tap_to_match stay on
+  // the generic tap-choice grid below.
+  if (
+    runtimeActivity.interaction_model === 'tap_to_match' &&
+    runtimeActivity.domain === 'phonics'
+  ) {
+    renderPhonicsMatchActivity(app, {
+      activity: runtimeActivity,
+      parentGuidance: appliedDifficulty.appliedGuidance,
       childId,
       sessionId,
       speech,

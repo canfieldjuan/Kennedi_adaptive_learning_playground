@@ -1,16 +1,16 @@
 /**
- * Phonics Match — type stubs for future implementation.
+ * Word game (phonics) runtime types.
  */
 
-export interface PhonicsMatchConfig {
-  target_sound: string;
-  prompt_audio: string;
-  choices: PhonicsChoice[];
-}
-
-export interface PhonicsChoice {
+export interface PhonicsMatchChoice {
   id: string;
   label: string;
-  image: string;
-  correct: boolean;
+  image?: string;
+  correct?: boolean;
+}
+
+export interface PhonicsFeedbackRule {
+  speech?: string;
+  sound?: string;
+  highlight_target?: boolean;
 }
