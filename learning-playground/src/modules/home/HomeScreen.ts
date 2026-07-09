@@ -5,6 +5,7 @@
  */
 
 import type { SpeechServiceInterface } from '../../types/runtime';
+import { createCafeBackdrop } from './cafe-scene';
 
 let _container: HTMLElement | null = null;
 
@@ -59,6 +60,9 @@ export function renderHomeScreen(
   _container = document.createElement('div');
   _container.className = 'child-container';
   _container.id = 'home-screen';
+
+  // Cafe environment backdrop (softened, behind the cards).
+  _container.appendChild(createCafeBackdrop());
 
   // Greeting
   const greeting = document.createElement('h1');
