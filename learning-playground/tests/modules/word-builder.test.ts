@@ -30,6 +30,14 @@ describe('word-builder runtime', () => {
     vi.unstubAllGlobals();
   });
 
+  test('the Word Workshop scene renders inert behind the builder (no letters)', () => {
+    const { root } = setup('build-cat');
+    const layers = findAllByClassName(root, 'workshop-environment');
+    expect(layers).toHaveLength(1);
+    expect(layers[0].attributes['aria-hidden']).toBe('true');
+    expect(layers[0].innerHTML).not.toContain('<text');
+  });
+
   test('tapping the letters in order builds the word, cheers Pip, and pops the picture', () => {
     const { root, events } = setup('build-cat');
 
@@ -271,6 +279,14 @@ function createMockSpeech(): SpeechServiceInterface {
 
 function createMockAudio(): AudioServiceInterface {
   return { play: vi.fn(), stop: vi.fn() };
+}
+
+function findAllByClassName(element: MockElement, className: string): MockElement[] {
+  const matches = element.className.split(/\s+/).includes(className) ? [element] : [];
+  for (const child of element.children) {
+    matches.push(...findAllByClassName(child, className));
+  }
+  return matches;
 }
 
 function findByClass(element: MockElement, className: string): MockElement | undefined {
