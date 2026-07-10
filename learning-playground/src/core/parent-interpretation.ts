@@ -96,20 +96,47 @@ export function buildParentSkillInterpretations(
     }
   }
 
+  // Prerequisite-aware mastery: a skill's gate reads its prerequisites'
+  // evaluated statuses (memoized, recursive over the acyclic graph). Without
+  // this, the mastery engine treats every prerequisite as unmet and gated
+  // skills can never leave introduced/practicing in Parent Guidance.
+  const masteryCache = new Map<string, MasteryEvaluation>();
+  const evaluating = new Set<string>();
+
+  function getMasteryFor(skillId: string): MasteryEvaluation | undefined {
+    if (!graph.getSkill(skillId)) return undefined;
+    const cached = masteryCache.get(skillId);
+    if (cached) return cached;
+    if (evaluating.has(skillId)) return undefined;
+    evaluating.add(skillId);
+
+    const prerequisiteStatuses: Record<string, MasteryEvaluation['next_status']> = {};
+    for (const prerequisite of graph.getPrerequisites(skillId)) {
+      const prerequisiteMastery = getMasteryFor(prerequisite.id);
+      if (prerequisiteMastery) {
+        prerequisiteStatuses[prerequisite.id] = prerequisiteMastery.next_status;
+      }
+    }
+
+    const evaluation = evaluateSkillMastery({
+      skill_id: skillId,
+      events: sessionEvents,
+      observations: review.parent_notes,
+      activities,
+      graph,
+      prerequisite_statuses: prerequisiteStatuses,
+    });
+    evaluating.delete(skillId);
+    masteryCache.set(skillId, evaluation);
+    return evaluation;
+  }
+
   return [...summariesBySkill.values()]
     .sort((a, b) => a.skill_id.localeCompare(b.skill_id))
     .map((summary) => {
       const signal = buildSkillSignal(summary, review, sessionEvents);
       const status = getStatus(signal);
-      const mastery = graph.getSkill(summary.skill_id)
-        ? evaluateSkillMastery({
-          skill_id: summary.skill_id,
-          events: sessionEvents,
-          observations: review.parent_notes,
-          activities,
-          graph,
-        })
-        : undefined;
+      const mastery = getMasteryFor(summary.skill_id);
       const recommendation = getRecommendation(signal, mastery);
       const transferActivityRecommendation = mastery
         ? getTransferActivityRecommendation({

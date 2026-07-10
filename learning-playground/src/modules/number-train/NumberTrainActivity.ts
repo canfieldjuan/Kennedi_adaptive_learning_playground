@@ -936,6 +936,19 @@ function roundSkillIds(round: NumberTrainRound): string[] {
   return ['number_sequence', 'numeral_recognition'];
 }
 
+/**
+ * Which skills a round's structural hint actually teaches. The count hint is a
+ * count-along, the load hint teaches counting on toward the construction, and
+ * the sequence hint walks the number order — the highlighted numeral is target
+ * marking, not numeral-recognition teaching, so recognition is never marked
+ * hinted. Hint evidence attaches only to these skills.
+ */
+function hintedSkillIdsFor(round: NumberTrainRound): string[] {
+  if (round.kind === 'count_train') return ['counting'];
+  if (round.kind === 'load_train') return ['counting', 'quantity_construction'];
+  return ['number_sequence'];
+}
+
 function createAttemptEvent(params: {
   options: NumberTrainOptions;
   round: NumberTrainRound;
@@ -949,7 +962,12 @@ function createAttemptEvent(params: {
 }): ActivityAttemptEvent {
   const { options, round, plan } = params;
   const answer = correctAnswerOf(round);
-  const skillIds = roundSkillIds(round);
+  // Hint events attach only to the skills the hint teaches; other events carry
+  // the round's full skill set. Post-hint events name the hinted skills in
+  // metadata so per-skill hint attribution stays precise downstream.
+  const hintedSkillIds = hintedSkillIdsFor(round);
+  const skillIds =
+    params.outcome === 'hint_used' ? hintedSkillIds : roundSkillIds(round);
   return {
     event_id: createEventId(),
     session_id: options.sessionId,
@@ -981,6 +999,11 @@ function createAttemptEvent(params: {
       round_index: params.roundIndex + 1,
       round_total: plan.rounds.length,
       target_quantity: answer,
+      // Names the skills the hint taught so per-skill hint attribution stays
+      // precise on post-hint events (skill-outcomes.ts getHintedSkillIds).
+      ...(params.hintShown
+        ? { hinted_skill_ids: hintedSkillIds.join(',') }
+        : {}),
     },
   };
 }

@@ -316,6 +316,22 @@ describe('number train runtime', () => {
     ]);
     expect(findByClass(root, 'number-train')?.className).toContain('is-counting');
     expect(findChoice(root, String(quantity))?.classList.contains('is-hinted')).toBe(true);
+
+    // The count-along hint teaches counting, not numeral recognition: the hint
+    // event attaches to counting only, and post-hint events name the hinted
+    // skill so downstream per-skill hint attribution stays precise.
+    const hintEvent = events[2];
+    expect(hintEvent?.skill_ids).toEqual(['counting']);
+    expect(hintEvent?.skill_outcomes).toEqual([
+      { skill_id: 'counting', outcome: 'hint_used' },
+    ]);
+    expect(hintEvent?.metadata).toMatchObject({ hinted_skill_ids: 'counting' });
+
+    findChoice(root, String(quantity))?.click();
+    const postHintCorrect = events[events.length - 1];
+    expect(postHintCorrect?.outcome).toBe('correct');
+    expect(postHintCorrect?.skill_ids).toEqual(['counting', 'numeral_recognition']);
+    expect(postHintCorrect?.metadata).toMatchObject({ hinted_skill_ids: 'counting' });
   });
 
   test('a full mixed trip fills every station and emits completed exactly once', () => {
