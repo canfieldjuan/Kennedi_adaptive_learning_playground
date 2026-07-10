@@ -1318,6 +1318,14 @@ function createSkillOutcomesForEvent(params: {
     params.eventName === 'food_selected' &&
     (params.outcome === 'correct' || params.outcome === 'incorrect')
   ) {
+    const isIncompleteQuantitySelection = (
+      params.outcome === 'correct' &&
+      (params.content.mode === 'quantity' || params.content.mode === 'two_part') &&
+      params.content.required_order !== undefined &&
+      !doesRequiredQuantityMatch(params.tray, params.content.required_order)
+    );
+    if (isIncompleteQuantitySelection) return [];
+
     return params.activity.skill_ids.map((skillId) => ({
       skill_id: skillId,
       outcome: params.outcome,
