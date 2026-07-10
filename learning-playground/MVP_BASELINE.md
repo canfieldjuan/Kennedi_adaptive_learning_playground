@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.27 Number Train load-the-train baseline
+Version: v0.3.28 Number Train load-the-train baseline
 
 ## Current Working MVP
 
@@ -29,6 +29,9 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   claiming unsupported fluency.
 - Math activity: the Math tile now opens **Number Train**, the first dedicated Math game runtime (arc slice 1). The child sees a structured quantity — an illustrated engine plus train cars of ten seats in a stable 2×5 layout so fives and tens read at a glance — and taps the matching numeral (a deterministic, seeded six-round trip with a station journey strip, arrival celebration, and Play Again from the next stable seed. Rounds mix reading and building quantities: Count-the-Train rounds, plus Load-the-Train rounds mid-trip where the child seats passengers (tap seats or large Add/Remove controls, remove-before-submit) and presses Check — evaluated only on Check, never per tap, with bounded "how many more" hints that never auto-fill; Missing Station comes next). Counting-only evidence (no subitizing for structured counting), bounded structural hint (occupied seats pulse while the count is spoken), reduced-motion-guarded, local inline SVG art. The three legacy tap-choice Math activities remain registered and reachable by direct route/parent transfer lane.
 - Art activity: tap-fill coloring activity.
+- Art now has one parent-launchable medium transfer activity that shows a visual
+  color request card. A mismatched applied color remains correctable and emits
+  incorrect evidence; legacy free-choice coloring remains unchanged.
 - Video Vault: parent-approved local video shell, currently empty until local video assets are added and reachable by direct route.
 - Targeted transfer variants for Words, Math, Art, and shape/spatial practice use the same existing runtimes.
 - The first rich transfer variant is a phonics reverse-mapping activity that asks from a word back to its starting letter.
@@ -37,6 +40,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   to combine spoken sounds and choose the matching picture.
 - Word building now has a medium symbolic-prompt activity that asks the child
   to copy a printed word with shuffled letter tiles.
+- Art now has a medium visual-prompt activity that asks the child to match a
+  request-card swatch before filling the circle.
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
 - Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
 - The Bear Cafe bear is now an illustrated inline-SVG character (first slice of the chosen illustrated art standard) that expresses the order arc through its face — waiting while its order is prepared, receiving at the handoff, happy on completion — tinted per caller. Local SVG only (no external assets/network/deps); the emoji `content.character.icon` stays in the data (no schema change). This supersedes the earlier emoji reaction accents.
@@ -83,6 +88,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Math now has one approved different-prompt-mode transfer variant that references its originating brief.
 - Word building now has one approved symbolic different-prompt-mode transfer
   variant that references its originating brief.
+- Art now has one approved visual different-prompt-mode transfer variant that
+  references its originating brief.
 - Parent transfer content decisions are stored locally and included in export.
 - Parent activity brief decisions are stored locally and included in export.
 - Parent mastery snapshots are stored locally when the Parent Panel reviews a skill.

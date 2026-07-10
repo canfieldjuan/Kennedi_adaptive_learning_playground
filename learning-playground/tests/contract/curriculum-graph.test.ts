@@ -173,6 +173,23 @@ describe('curriculum graph contract', () => {
     ).toContain('different_prompt_mode');
   });
 
+  test('visual color request occupies a planned medium Art context', () => {
+    const activity = activities.find((item) => item.id === 'art-match-blue-card');
+
+    expect(activity).toMatchObject({
+      version: 1,
+      skill_ids: ['color_fill'],
+      transfer: {
+        context_type: 'different_prompt_mode',
+        prompt_mode: 'visual',
+      },
+      difficulty: { level: 2 },
+    });
+    expect(
+      loadCurriculumGraph().getSkill('color_fill')?.planned_transfer_contexts
+    ).toContain('different_prompt_mode');
+  });
+
   test('current graph has valid references and no circular prerequisites', () => {
     expect(validateCurriculumGraph(curriculumData as CurriculumGraphData)).toEqual([]);
   });

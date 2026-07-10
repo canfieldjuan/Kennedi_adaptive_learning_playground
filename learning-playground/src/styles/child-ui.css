@@ -794,6 +794,27 @@
   max-width: 680px;
 }
 
+.coloring-request-card {
+  display: grid;
+  place-items: center;
+  width: min(150px, 42vw);
+  min-height: 68px;
+  padding: var(--space-sm);
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  background: var(--child-bg-card);
+  box-shadow: 0 8px 24px var(--child-shadow);
+}
+
+.coloring-request-card__swatch {
+  width: 48px;
+  aspect-ratio: 1;
+  border: 4px solid rgba(255, 255, 255, 0.78);
+  border-radius: var(--radius-round);
+  background: var(--request-color);
+  box-shadow: 0 4px 12px var(--child-shadow);
+}
+
 .coloring-swatch {
   display: flex;
   flex-direction: column;
@@ -832,6 +853,13 @@
     0 0 0 6px rgba(255, 255, 255, 0.14),
     0 10px 30px var(--child-shadow);
   outline: none;
+}
+
+.coloring-swatch.is-hinted {
+  border-color: var(--child-accent-yellow);
+  box-shadow:
+    0 0 0 6px rgba(253, 203, 110, 0.2),
+    0 8px 24px var(--child-shadow);
 }
 
 .coloring-swatch:disabled {
@@ -873,6 +901,10 @@
   box-shadow:
     0 0 0 10px rgba(0, 184, 148, 0.16),
     0 14px 42px var(--child-shadow);
+}
+
+.coloring-shape.is-wrong {
+  animation: gentleBounce 480ms ease;
 }
 
 .coloring-shape__circle {
@@ -1678,6 +1710,7 @@
   .word-builder__tile.is-wrong,
   .word-builder__picture-image.is-alive,
   .word-builder__model.is-alive,
+  .coloring-shape.is-wrong,
   .number-train.is-counting .number-train__seat.is-occupied,
   .number-train__seat.is-next-hint,
   .number-train__stage--arrived .number-train {
@@ -2433,6 +2466,16 @@
     align-items: center;
   }
 
+  .coloring-screen--request {
+    grid-template-areas:
+      "topbar topbar"
+      "title request"
+      "prompt request"
+      "swatches shape"
+      "feedback feedback"
+      "actions actions";
+  }
+
   .coloring-screen > .activity-topbar {
     grid-area: topbar;
   }
@@ -2443,6 +2486,13 @@
 
   .coloring-screen > .activity-prompt {
     grid-area: prompt;
+  }
+
+  .coloring-screen > .coloring-request-card {
+    grid-area: request;
+    justify-self: center;
+    width: min(128px, 30vw);
+    min-height: 52px;
   }
 
   .coloring-screen > .activity-feedback {

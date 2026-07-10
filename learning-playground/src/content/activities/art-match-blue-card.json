@@ -1,0 +1,62 @@
+{
+  "id": "art-match-blue-card",
+  "version": 1,
+  "title": "Match the Color Card",
+  "domain": "art",
+  "skill_ids": ["color_fill"],
+  "originating_brief_id": "brief-color_fill-different_prompt_mode",
+  "transfer": {
+    "skill_ids": ["color_fill"],
+    "context_type": "different_prompt_mode",
+    "context_id": "match-color-request-card",
+    "example_set_id": "blue-request-1",
+    "prompt_mode": "visual"
+  },
+  "difficulty": {
+    "level": 2,
+    "choice_count": 4,
+    "distractor_strength": "medium"
+  },
+  "interaction_model": "color_fill",
+  "estimated_duration_seconds": 60,
+  "content": {
+    "prompt_audio": "Make the circle match this color card.",
+    "shape": "circle",
+    "default_color": "#ffffff",
+    "target_color_id": "sky-blue",
+    "colors": [
+      { "id": "sunny-yellow", "label": "Yellow", "value": "#fdcb6e" },
+      { "id": "sky-blue", "label": "Blue", "value": "#74b9ff" },
+      { "id": "leaf-green", "label": "Green", "value": "#00b894" },
+      { "id": "berry-pink", "label": "Pink", "value": "#fd79a8" }
+    ]
+  },
+  "success_rules": {
+    "required_fills": 1,
+    "completion_action": "fill_shape",
+    "correct_color_id": "sky-blue",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "It matches!",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Check the color card and try again.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Find the color that matches the card.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}
