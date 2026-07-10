@@ -83,7 +83,7 @@ export function renderWordBuilderActivity(
   const promptText = getPrompt(options.activity);
 
   container = document.createElement('div');
-  container.className = 'child-container activity-screen phonics-workshop';
+  container.className = 'child-container activity-screen phonics-workshop word-builder-screen';
   container.id = `activity-${options.activity.id}`;
 
   // Pip's Word Workshop: the shared decorative scene behind every Words mode

@@ -7,7 +7,10 @@
 - Every primary action must be tappable.
 
 ## Touch targets
-- Primary targets must be visually large (minimum 80px).
+- Selectable play objects must be visually large (minimum 80px by 80px).
+- Wide command buttons may be shorter than play objects, but must remain at
+  least 56px tall and 96px wide.
+- Compact Home and Repeat utility controls may be 44px minimum.
 - Primary targets must include forgiving hit zones larger than the visible asset.
 - Interactive objects must not be packed tightly together.
 - Accidental miss must never trigger punishment.
