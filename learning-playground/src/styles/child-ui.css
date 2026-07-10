@@ -478,6 +478,119 @@
     0 8px 24px var(--child-shadow);
 }
 
+/* Number Train — structured quantities: an engine plus cars of ten seats in a
+   stable 2×5 grid, so fives and tens read at a glance. */
+.number-train {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 760px;
+}
+
+.number-train__engine {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.number-train__engine-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.number-train__car {
+  position: relative;
+  padding: var(--space-sm);
+  border: 3px solid rgba(58, 36, 97, 0.85);
+  border-radius: var(--radius-lg);
+  background: #f6f0ff;
+  margin-bottom: 10px;
+}
+
+.number-train__car::before,
+.number-train__car::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(58, 36, 97, 0.85);
+  border-radius: 50%;
+  background: #6b5aa0;
+}
+
+.number-train__car::before {
+  left: 14px;
+}
+
+.number-train__car::after {
+  right: 14px;
+}
+
+.number-train__seats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.number-train__seat {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2px dashed rgba(58, 36, 97, 0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.number-train__seat.is-occupied {
+  border-style: solid;
+  border-color: rgba(58, 36, 97, 0.85);
+  background: #fdf3d0;
+}
+
+.number-train__passenger-svg {
+  display: block;
+  width: 26px;
+  height: 26px;
+}
+
+/* Structural counting hint: occupied seats pulse so the child can count along. */
+.number-train.is-counting .number-train__seat.is-occupied {
+  animation: trainCountPulse 900ms ease-in-out 2;
+}
+
+.number-train__numeral {
+  font-size: 2.4rem;
+}
+
+@media (max-width: 768px) {
+  .number-train__engine {
+    width: 72px;
+    height: 72px;
+  }
+
+  .number-train__seat {
+    width: 30px;
+    height: 30px;
+  }
+
+  .number-train__passenger-svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@keyframes trainCountPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
+}
+
 .activity-choice-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1485,7 +1598,8 @@
   .word-builder__slot.is-filled,
   .word-builder__tile.is-wrong,
   .word-builder__picture-image.is-alive,
-  .word-builder__model.is-alive {
+  .word-builder__model.is-alive,
+  .number-train.is-counting .number-train__seat.is-occupied {
     animation: none;
   }
 }

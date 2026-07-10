@@ -1,0 +1,49 @@
+{
+  "id": "number-train",
+  "version": 1,
+  "title": "Number Train",
+  "domain": "math",
+  "skill_ids": ["counting"],
+  "transfer": {
+    "skill_ids": ["counting"],
+    "context_type": "same_format_new_examples",
+    "context_id": "number-train-count",
+    "example_set_id": "train-seats-v1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 1,
+    "choice_count": 3,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 120,
+  "content": {
+    "game": "number-train",
+    "prompt_audio": "All aboard the Number Train! How many passengers are riding?",
+    "max_quantity": 20
+  },
+  "success_rules": {
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "Yes! Seven passengers. All aboard!",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let us count the passengers again.",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Count each passenger. One, two, three, four, five, six, seven.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}
