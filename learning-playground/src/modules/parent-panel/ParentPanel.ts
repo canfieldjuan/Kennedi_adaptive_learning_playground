@@ -83,6 +83,7 @@ import {
   type ParentDataHealthSummary,
 } from '../../core/parent-panel-summary';
 import { loadCurriculumGraph } from '../../core/curriculum-graph';
+import type { DifficultyCoverageLevel } from '../../core/difficulty-coverage';
 import {
   formatActivityTitleList,
   formatRecentAttempts,
@@ -156,7 +157,8 @@ export function renderParentPanel(
   );
   const skillInterpretations = buildParentSkillInterpretations(
     sessionReview,
-    sessionEvents
+    sessionEvents,
+    { skill_states: progress.skill_mastery }
   );
   syncParentMasteryRecords(
     storage,
@@ -1190,6 +1192,10 @@ function createParentGuidanceRow(
     row.appendChild(createMasteryEvidenceGroup(interpretation));
   }
 
+  if (interpretation.difficulty_coverage) {
+    row.appendChild(createDifficultyCoverageGroup(interpretation));
+  }
+
   if (interpretation.transfer_coverage_status) {
     row.appendChild(createTransferCoverageGroup(
       interpretation,
@@ -1200,6 +1206,48 @@ function createParentGuidanceRow(
   }
 
   return row;
+}
+
+function createDifficultyCoverageGroup(
+  interpretation: ParentSkillInterpretation
+): HTMLElement {
+  const coverage = interpretation.difficulty_coverage;
+  const evidenceGroup = document.createElement('div');
+  evidenceGroup.className = 'parent-guidance-row__evidence-group';
+  evidenceGroup.appendChild(createGuidanceLabel('Difficulty Coverage'));
+
+  if (!coverage) return evidenceGroup;
+
+  const metrics = document.createElement('div');
+  metrics.className = 'parent-guidance-row__evidence';
+  metrics.appendChild(createProgressMetric(
+    'Coverage Status',
+    coverage.status === 'covered' ? 'Current rung covered' : 'Blocked by content gap'
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Current Rung',
+    coverage.current_level_label
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Difficulty Band',
+    `${coverage.current_min_difficulty_level}-${coverage.current_max_difficulty_level}`
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Approved Activities',
+    String(coverage.approved_activity_ids.length)
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Playable Rungs',
+    `${coverage.covered_level_count}/${coverage.total_level_count}`
+  ));
+  metrics.appendChild(createProgressMetric(
+    'Missing Rungs',
+    formatMissingDifficultyLevels(coverage.missing_levels)
+  ));
+  metrics.appendChild(createProgressMetric('Coverage Note', coverage.reason));
+
+  evidenceGroup.appendChild(metrics);
+  return evidenceGroup;
 }
 
 function createMasteryEvidenceGroup(
@@ -2546,6 +2594,16 @@ function formatParentTimestamp(timestamp: string): string {
 
 function formatList(values: string[]): string {
   return values.length > 0 ? values.join(', ') : 'None';
+}
+
+function formatMissingDifficultyLevels(
+  levels: DifficultyCoverageLevel[]
+): string {
+  return levels.length > 0
+    ? levels.map((level) => (
+      `${level.label} (difficulty ${level.min_difficulty_level}-${level.max_difficulty_level})`
+    )).join(', ')
+    : 'None';
 }
 
 function formatTransferContextList(values: string[]): string {

@@ -9,6 +9,7 @@ import {
 } from '../../src/core/parent-interpretation';
 import type { ParentSessionReview } from '../../src/core/session-review';
 import type { ActivityAttemptEvent } from '../../src/types/events';
+import type { SkillMasteryState } from '../../src/types/progress';
 
 describe('parent interpretation contract', () => {
   test('recommends transfer practice when approved variants exist and signals are strong', () => {
@@ -139,6 +140,48 @@ describe('parent interpretation contract', () => {
 
     expect(interpretation.status).toBe('Not enough data yet');
     expect(interpretation.recommendation).toBe('Not enough data');
+  });
+
+  test('uses stored current level for difficulty coverage without changing guidance', () => {
+    const events = [
+      makeEvent('event-1', 'correct'),
+      makeEvent('event-2', 'correct'),
+      makeEvent('event-3', 'correct'),
+      makeEvent('event-4', 'correct'),
+    ];
+    const review = makeReview({
+      totalAttempts: 4,
+      correctAttempts: 4,
+      accuracy: 1,
+    });
+
+    const [entryInterpretation] = buildParentSkillInterpretations(
+      review,
+      events,
+      { skill_states: { counting: makeSkillState(0) } }
+    );
+    const [blockedInterpretation] = buildParentSkillInterpretations(
+      review,
+      events,
+      { skill_states: { counting: makeSkillState(1) } }
+    );
+
+    expect(entryInterpretation.difficulty_coverage).toMatchObject({
+      current_level: 0,
+      status: 'covered',
+    });
+    expect(blockedInterpretation.difficulty_coverage).toMatchObject({
+      current_level: 1,
+      current_min_difficulty_level: 2,
+      current_max_difficulty_level: 3,
+      status: 'blocked_by_content_gap',
+      approved_activity_ids: [],
+      covered_level_count: 2,
+      total_level_count: 3,
+    });
+    expect(blockedInterpretation.recommendation).toBe(
+      entryInterpretation.recommendation
+    );
   });
 
   test('scopes structured support observations to the tagged skill', () => {
@@ -405,4 +448,18 @@ function serializeInterpretation(
     interpretation.recommendation,
     interpretation.recommendation_reason,
   ].join(' ');
+}
+
+function makeSkillState(currentLevel: number): SkillMasteryState {
+  return {
+    skill_id: 'counting',
+    current_level: currentLevel,
+    confidence: 0.8,
+    total_attempts: 5,
+    correct_attempts: 5,
+    recent_accuracy: 1,
+    recent_average_response_ms: 1000,
+    last_seen_at: '2026-01-01T12:00:00.000Z',
+    needs_review: false,
+  };
 }

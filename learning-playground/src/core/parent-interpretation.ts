@@ -1,5 +1,6 @@
 import type { ActivityAttemptEvent } from '../types/events';
 import type { LearningActivity } from '../types/activity';
+import type { SkillMasteryState } from '../types/progress';
 import { APPROVED_ACTIVITIES } from '../content/activity-catalog';
 import type {
   ParentSessionReview,
@@ -27,6 +28,10 @@ import {
   isHintForSkill,
 } from './skill-outcomes';
 import { isParentSupportObservationForSkill } from './parent-observation-signals';
+import {
+  evaluateSkillDifficultyCoverage,
+  type SkillDifficultyCoverage,
+} from './difficulty-coverage';
 
 export type ParentSkillStatus =
   | 'Ready for next challenge'
@@ -63,8 +68,14 @@ export interface ParentSkillInterpretation {
   transfer_missing_strengths?: MasteryEvaluation['transfer_coverage']['missing_strengths'];
   transfer_content_recommendation?: MasteryEvaluation['transfer_coverage']['recommended_content_actions'][number];
   transfer_activity_recommendation?: TransferActivityRecommendation;
+  difficulty_coverage?: SkillDifficultyCoverage;
   mastery_source_event_ids?: string[];
   mastery_source_observation_ids?: string[];
+}
+
+export interface ParentSkillInterpretationOptions {
+  activities?: LearningActivity[];
+  skill_states?: Record<string, SkillMasteryState>;
 }
 
 interface SkillSignal {
@@ -79,8 +90,9 @@ interface SkillSignal {
 export function buildParentSkillInterpretations(
   review: ParentSessionReview,
   sessionEvents: ActivityAttemptEvent[],
-  activities: LearningActivity[] = APPROVED_ACTIVITIES
+  options: ParentSkillInterpretationOptions = {}
 ): ParentSkillInterpretation[] {
+  const activities = options.activities ?? APPROVED_ACTIVITIES;
   const graph = loadCurriculumGraph();
   const summariesBySkill = new Map(
     review.accuracy_by_skill.map((summary) => [summary.skill_id, summary])
@@ -138,6 +150,16 @@ export function buildParentSkillInterpretations(
       const signal = buildSkillSignal(summary, review, sessionEvents);
       const status = getStatus(signal);
       const mastery = getMasteryFor(summary.skill_id);
+      const currentLevel = options.skill_states?.[summary.skill_id]?.current_level ??
+        graph.getLowestSkillLevel(summary.skill_id)?.level;
+      const difficultyCoverage = currentLevel === undefined
+        ? undefined
+        : evaluateSkillDifficultyCoverage({
+          skill_id: summary.skill_id,
+          current_level: currentLevel,
+          activities,
+          graph,
+        });
       const recommendation = getRecommendation(signal, mastery);
       const transferActivityRecommendation = mastery
         ? getTransferActivityRecommendation({
@@ -182,6 +204,7 @@ export function buildParentSkillInterpretations(
         transfer_content_recommendation:
           mastery?.transfer_coverage.recommended_content_actions[0],
         transfer_activity_recommendation: transferActivityRecommendation,
+        difficulty_coverage: difficultyCoverage,
         mastery_source_event_ids: mastery?.source_event_ids,
         mastery_source_observation_ids: mastery?.source_observation_ids,
       };
