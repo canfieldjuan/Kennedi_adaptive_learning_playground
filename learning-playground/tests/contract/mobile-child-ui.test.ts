@@ -122,4 +122,15 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('"scene choices"');
     expect(childUiCss).toContain('repeat(3, minmax(76px, 1fr))');
   });
+
+  test('keeps the Bear Cafe environment inert and shallow on phones', () => {
+    // The decorative scene can never intercept taps, and its minor props get
+    // out of the way on small screens (game environment contract).
+    expect(childUiCss).toMatch(
+      /\.bear-cafe-environment \{[\s\S]*?pointer-events: none;[\s\S]*?\}/
+    );
+    expect(childUiCss).toMatch(
+      /\.bear-cafe-environment \.cafe-env__prop--minor \{\s*display: none;/
+    );
+  });
 });
