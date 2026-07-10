@@ -323,6 +323,104 @@ describe('bear art studio runtime', () => {
     });
   });
 
+  test('story card accepts what belongs and gently rejects what does not', () => {
+    const { root, events } = setup('art-studio-story-outside');
+
+    // The request card shows only HOW MANY belong — never which.
+    const request = findByClass(root, 'bear-art-studio__request');
+    expect(request?.innerHTML).toContain('bear-art-studio__request-slot');
+    expect(request?.innerHTML).not.toContain('studio-shape-svg');
+
+    // A distractor (moon: the story is daytime) wiggles, records honest
+    // category evidence, and fills nothing.
+    findByAria(root, 'moon sticker')?.click();
+    expect(events.map((event) => event.outcome)).toEqual(['incorrect']);
+    expect(events[0]?.metadata).toMatchObject({
+      story_theme: 'going-outside',
+      sticker_id: 'moon',
+      belongs_to_story: false,
+    });
+    expect(events[0]?.skill_ids).toEqual(['vocabulary']);
+
+    // Second miss brings a hint glow on a story sticker; nothing auto-places.
+    findByAria(root, 'star sticker')?.click();
+    expect(events.map((event) => event.outcome)).toEqual([
+      'incorrect',
+      'incorrect',
+      'hint_used',
+    ]);
+    const hinted = ['sun', 'flower'].filter((id) =>
+      findByAria(root, `${id} sticker`)?.classList.contains('is-hinted')
+    );
+    expect(hinted).toHaveLength(1);
+
+    // The story stickers pop onto the card; completing them all finishes.
+    findByAria(root, 'sun sticker')?.click();
+    findByAria(root, 'flower sticker')?.click();
+    expect(events.map((event) => event.outcome)).toEqual([
+      'incorrect',
+      'incorrect',
+      'hint_used',
+      'correct',
+      'correct',
+      'completed',
+    ]);
+    expect(events[5]?.metadata).toMatchObject({
+      story_theme: 'going-outside',
+      required_sticker_ids: 'sun,flower',
+      selected_sticker_ids: 'sun,flower',
+    });
+  });
+
+  test('a placed story sticker cannot double-place or double-log', () => {
+    const { root, events } = setup('art-studio-story-outside');
+
+    findByAria(root, 'sun sticker')?.click();
+    findByAria(root, 'sun sticker')?.click();
+    expect(events.map((event) => event.outcome)).toEqual(['correct']);
+  });
+
+  test('dress-up renders the paintable shirt and finishes on it', () => {
+    const { root, events } = setup('art-studio-dress-bear');
+
+    const shirt = findByClass(root, 'bear-art-studio__shirt');
+    expect(shirt?.innerHTML).toContain('studio-shirt-svg');
+    expect(shirt?.attributes['aria-hidden']).toBe('true');
+
+    // A swatch tap repaints the shirt itself, not a card background.
+    findByColorId(root, 'berry-pink')?.click();
+    expect(shirt?.innerHTML).toContain('#fd79a8');
+
+    findByAria(root, 'heart sticker')?.click();
+    findByAria(root, 'Art spot 2')?.click();
+    findByText(root, 'Finish art')?.click();
+
+    expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
+    expect(events[0]?.metadata).toMatchObject({
+      art_surface_id: 'bear-shirt',
+      card_color_id: 'berry-pink',
+    });
+  });
+
+  test('finished art gets the gallery frame beat', () => {
+    const { root } = setup('art-studio-pink-request');
+
+    findByColorId(root, 'berry-pink')?.click();
+    const subject = findByClass(root, 'bear-art-studio__subject');
+    subject?.click();
+
+    expect(subject?.classList.contains('is-gallery')).toBe(true);
+  });
+
+  test('the chain runs fix to story to dress-up', () => {
+    const fix = getActivity('art-studio-fix-card');
+    expect(fix.content.next_activity_id).toBe('art-studio-story-outside');
+    const story = getActivity('art-studio-story-outside');
+    expect(story.content.next_activity_id).toBe('art-studio-dress-bear');
+    const dress = getActivity('art-studio-dress-bear');
+    expect(dress.content.next_activity_id).toBeUndefined();
+  });
+
   test('malformed studio content fails closed to the setup screen', () => {
     const activity = getActivity('art-studio-pink-request');
     const broken = {

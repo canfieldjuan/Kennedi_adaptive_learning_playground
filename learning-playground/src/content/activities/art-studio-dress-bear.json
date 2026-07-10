@@ -1,0 +1,62 @@
+{
+  "id": "art-studio-dress-bear",
+  "version": 1,
+  "title": "Dress Baby Polar Bear",
+  "domain": "art",
+  "skill_ids": ["color_fill"],
+  "transfer": {
+    "skill_ids": ["color_fill"],
+    "context_type": "same_format_new_examples",
+    "context_id": "studio-dress-up",
+    "example_set_id": "bear-shirt-1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 1,
+    "choice_count": 4,
+    "distractor_strength": "none"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 90,
+  "content": {
+    "game": "bear-art-studio",
+    "art_mode": "free_decorate",
+    "surface": "shirt",
+    "character": { "id": "baby-polar-bear", "name": "Baby Polar Bear" },
+    "prompt_audio": "Dress Baby Polar Bear! Pick a color for the shirt and add stickers.",
+    "slot_count": 4,
+    "stickers": ["star", "heart", "flower", "bubble"],
+    "colors": [
+      { "id": "berry-pink", "label": "Pink", "value": "#fd79a8" },
+      { "id": "sunny-yellow", "label": "Yellow", "value": "#fdcb6e" },
+      { "id": "tangerine-orange", "label": "Orange", "value": "#f0932b" },
+      { "id": "tomato-red", "label": "Red", "value": "#e05d5d" }
+    ]
+  },
+  "success_rules": {
+    "completion_action": "finish_art",
+    "min_decorations": 1
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "Baby Polar Bear looks wonderful!",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Try a sticker or a color.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Tap a color for the shirt, or a sticker, then a spot.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

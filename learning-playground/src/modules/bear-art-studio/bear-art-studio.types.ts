@@ -11,7 +11,8 @@ export type ArtMode =
   | 'color_request'
   | 'quantity_decorate'
   | 'pattern'
-  | 'fix_art';
+  | 'fix_art'
+  | 'story_card';
 
 export interface StudioColor {
   id: string;
@@ -41,6 +42,18 @@ export interface FreeDecorateContent extends StudioBase {
   colors: StudioColor[];
   stickers: StudioShapeId[];
   slotCount: number;
+  /** 'card' (default) or the dress-up 'shirt' surface. */
+  surface: 'card' | 'shirt';
+}
+
+export interface StoryCardContent extends StudioBase {
+  mode: 'story_card';
+  /** Short kebab-case theme id, e.g. 'going-outside'. */
+  storyTheme: string;
+  /** Every sticker the tray offers (story items + distractors). */
+  stickerPool: StudioShapeId[];
+  /** The stickers that belong to the story. */
+  storyStickers: StudioShapeId[];
 }
 
 export interface ColorRequestContent extends StudioBase {
@@ -84,4 +97,5 @@ export type StudioContent =
   | ColorRequestContent
   | QuantityDecorateContent
   | PatternContent
-  | FixArtContent;
+  | FixArtContent
+  | StoryCardContent;

@@ -1679,6 +1679,78 @@
   min-height: 56px;
 }
 
+/* Story mode: the request card shows only HOW MANY things belong; the
+   story slots on the card fill as the child finds them. */
+.bear-art-studio__request-slot {
+  display: block;
+  width: 30px;
+  aspect-ratio: 1;
+  border: 3px dashed rgba(58, 36, 97, 0.4);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.bear-art-studio__card--story {
+  display: flex;
+  justify-content: center;
+}
+
+.bear-art-studio__slot--story {
+  width: 84px;
+}
+
+.bear-art-studio__sticker.is-placed {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+/* Dress-up surface: the shirt IS the card; swatches repaint its fill. */
+.bear-art-studio__card--shirt {
+  position: relative;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(88vw, 360px);
+  min-height: 250px;
+  padding: 56px 78px var(--space-lg);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.bear-art-studio__shirt {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bear-art-studio__shirt svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bear-art-studio__card--shirt .bear-art-studio__slot {
+  position: relative;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* The gallery finish: the completed piece lifts once and keeps a warm
+   frame ring — art the bear keeps, not a screen that just stops. */
+.bear-art-studio__card.is-gallery,
+.bear-art-studio__subject.is-gallery,
+.bear-art-studio__scarf.is-gallery {
+  animation: artGalleryLift 700ms ease-out;
+  box-shadow:
+    0 0 0 8px rgba(246, 195, 67, 0.35),
+    0 0 0 14px rgba(58, 36, 97, 0.15),
+    0 16px 40px rgba(58, 36, 97, 0.2);
+}
+
+@keyframes artGalleryLift {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
+
 /* Gentle miss: the same soft bounce the rest of the app uses. */
 .bear-art-studio__subject.is-wrong,
 .bear-art-studio__card.is-wrong,
@@ -2599,6 +2671,9 @@
   .bear-art-studio__card.is-wrong,
   .bear-art-studio__segment.is-wrong,
   .bear-art-studio__region.is-wrong,
+  .bear-art-studio__card.is-gallery,
+  .bear-art-studio__subject.is-gallery,
+  .bear-art-studio__scarf.is-gallery,
   .number-train.is-counting .number-train__seat.is-occupied,
   .number-train__seat.is-next-hint,
   .number-train__path.is-walking .number-train__path-stop,
@@ -3259,6 +3334,20 @@
   .bear-art-studio__sticker svg {
     width: 38px;
     height: 38px;
+  }
+
+  .bear-art-studio__request-slot {
+    width: 24px;
+  }
+
+  .bear-art-studio__slot--story {
+    width: 64px;
+  }
+
+  .bear-art-studio__card--shirt {
+    width: min(80vw, 300px);
+    min-height: 200px;
+    padding: 44px 62px var(--space-md);
   }
 
   .bear-cafe-delivery,

@@ -1,12 +1,16 @@
 {
   "id": "art-studio-fix-card",
-  "version": 1,
+  "version": 2,
   "title": "Fix the Art Card",
   "domain": "art",
-  "skill_ids": ["color_fill"],
+  "skill_ids": [
+    "color_fill"
+  ],
   "originating_brief_id": "brief-color_fill-different_prompt_mode",
   "transfer": {
-    "skill_ids": ["color_fill"],
+    "skill_ids": [
+      "color_fill"
+    ],
     "context_type": "different_prompt_mode",
     "context_id": "fix-the-art",
     "example_set_id": "fix-star-card-1",
@@ -22,21 +26,54 @@
   "content": {
     "game": "bear-art-studio",
     "art_mode": "fix_art",
-    "character": { "id": "baby-polar-bear", "name": "Baby Polar Bear" },
+    "character": {
+      "id": "baby-polar-bear",
+      "name": "Baby Polar Bear"
+    },
     "prompt_audio": "Oops! One thing on the card does not match Baby Polar Bear's picture. Fix it.",
     "regions": [
-      { "id": "star", "shape": "star", "color_id": "sunny-yellow" },
-      { "id": "heart", "shape": "heart", "color_id": "berry-pink" },
-      { "id": "flower", "shape": "flower", "color_id": "leaf-green" }
+      {
+        "id": "star",
+        "shape": "star",
+        "color_id": "sunny-yellow"
+      },
+      {
+        "id": "heart",
+        "shape": "heart",
+        "color_id": "berry-pink"
+      },
+      {
+        "id": "flower",
+        "shape": "flower",
+        "color_id": "leaf-green"
+      }
     ],
     "wrong_region_id": "star",
     "wrong_color_id": "tomato-red",
     "colors": [
-      { "id": "sunny-yellow", "label": "Yellow", "value": "#fdcb6e" },
-      { "id": "berry-pink", "label": "Pink", "value": "#fd79a8" },
-      { "id": "leaf-green", "label": "Green", "value": "#00b894" },
-      { "id": "tomato-red", "label": "Red", "value": "#e05d5d" }
-    ]
+      {
+        "id": "sunny-yellow",
+        "label": "Yellow",
+        "value": "#fdcb6e"
+      },
+      {
+        "id": "berry-pink",
+        "label": "Pink",
+        "value": "#fd79a8"
+      },
+      {
+        "id": "leaf-green",
+        "label": "Green",
+        "value": "#00b894"
+      },
+      {
+        "id": "tomato-red",
+        "label": "Red",
+        "value": "#e05d5d"
+      }
+    ],
+    "next_activity_id": "art-studio-story-outside",
+    "next_label": "Next art"
   },
   "success_rules": {
     "completion_action": "fix_mismatch",

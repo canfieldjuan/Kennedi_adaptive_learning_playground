@@ -25,12 +25,14 @@ import { renderBearArt } from '../kennedis-orders/bear-art';
 import { createStudioEnvironment } from '../coloring-book/studio-environment';
 import {
   isStudioShapeId,
+  shirtSurfaceSvg,
   studioShapeSvg,
   type StudioShapeId,
 } from './studio-art';
 import type {
   ArtMode,
   ColorRequestContent,
+  StoryCardContent,
   FixArtContent,
   FixRegion,
   FreeDecorateContent,
@@ -209,6 +211,9 @@ export function renderBearArtStudioActivity(
     case 'fix_art':
       renderFixArt(shared, content);
       break;
+    case 'story_card':
+      renderStoryCard(shared, content);
+      break;
   }
 
   options.speech.speak(content.promptAudio);
@@ -251,7 +256,10 @@ function bearReacts(shared: SharedRefs, face: 'waiting' | 'receiving' | 'happy')
   shared.portrait.innerHTML = renderBearArt(shared.content.character.id, face);
 }
 
-function finishPiece(shared: SharedRefs, message: string): void {
+function finishPiece(shared: SharedRefs, message: string, piece?: HTMLElement): void {
+  // The finished art becomes a kept piece: a one-shot lift-and-frame beat
+  // (reduced-motion disables the animation; the frame ring remains).
+  piece?.classList.add('is-gallery');
   bearReacts(shared, 'happy');
   showFeedback(shared.feedback, message, 'success');
   speakAndPlay(shared.options, {
@@ -413,6 +421,16 @@ function buildRequestCard(content: StudioContent): HTMLElement {
         .join('');
       break;
     }
+    case 'story_card': {
+      card.setAttribute(
+        'aria-label',
+        `${content.character.name}'s story needs ${content.storyStickers.length} stickers`
+      );
+      card.innerHTML = content.storyStickers
+        .map(() => '<span class="bear-art-studio__request-slot"></span>')
+        .join('');
+      break;
+    }
     case 'fix_art': {
       card.setAttribute(
         'aria-label',
@@ -440,8 +458,21 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
   let done = false;
   const placements = new Map<number, StudioShapeId>();
 
+  const isShirt = content.surface === 'shirt';
   const card = document.createElement('div');
-  card.className = 'bear-art-studio__card';
+  card.className = isShirt
+    ? 'bear-art-studio__card bear-art-studio__card--shirt'
+    : 'bear-art-studio__card';
+
+  // Dress-up: the shirt is the surface; swatch taps repaint its fill.
+  let shirtBackdrop: HTMLElement | null = null;
+  if (isShirt) {
+    shirtBackdrop = document.createElement('span');
+    shirtBackdrop.className = 'bear-art-studio__shirt';
+    shirtBackdrop.setAttribute('aria-hidden', 'true');
+    shirtBackdrop.innerHTML = shirtSurfaceSvg('#fbf8f1');
+    card.appendChild(shirtBackdrop);
+  }
 
   const slots: HTMLButtonElement[] = [];
   for (let index = 0; index < content.slotCount; index += 1) {
@@ -473,7 +504,11 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
   const swatches = buildSwatches(shared, content.colors, (color) => {
     if (done) return;
     cardColor = color;
-    card.style.setProperty('--art-card-color', color.value);
+    if (shirtBackdrop) {
+      shirtBackdrop.innerHTML = shirtSurfaceSvg(color.value);
+    } else {
+      card.style.setProperty('--art-card-color', color.value);
+    }
     markSelected(swatches, color.id);
     doneButton.disabled = false;
     showFeedback(shared.feedback, color.label, 'hint');
@@ -528,7 +563,7 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
         stickers_placed: stickerList.length,
         sticker_ids: stickerList.join(','),
         card_color_id: cardColor?.id ?? 'none',
-        art_surface_id: 'decorate-card',
+        art_surface_id: isShirt ? 'bear-shirt' : 'decorate-card',
       },
     });
     emitStudioEvent(shared, {
@@ -540,10 +575,10 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
       hintShown: false,
       metadata: {
         stickers_placed: stickerList.length,
-        art_surface_id: 'decorate-card',
+        art_surface_id: isShirt ? 'bear-shirt' : 'decorate-card',
       },
     });
-    finishPiece(shared, shared.correctFeedback.speech ?? 'Art finished.');
+    finishPiece(shared, shared.correctFeedback.speech ?? 'Art finished.', card);
   };
   doneButton.addEventListener('click', onDone);
   cleanupHandlers.push(() => doneButton.removeEventListener('click', onDone));
@@ -665,7 +700,7 @@ function renderColorRequest(shared: SharedRefs, content: ColorRequestContent): v
         art_surface_id: `${content.subjectShape}-card`,
       },
     });
-    finishPiece(shared, shared.correctFeedback.speech ?? 'That matches.');
+    finishPiece(shared, shared.correctFeedback.speech ?? 'That matches.', subject);
   };
   subject.addEventListener('click', onSubject);
   cleanupHandlers.push(() => subject.removeEventListener('click', onSubject));
@@ -795,7 +830,7 @@ function renderQuantityDecorate(
       hintShown,
       metadata: baseMetadata,
     });
-    finishPiece(shared, shared.correctFeedback.speech ?? 'You made it.');
+    finishPiece(shared, shared.correctFeedback.speech ?? 'You made it.', card);
   };
   checkButton.addEventListener('click', onCheck);
   cleanupHandlers.push(() => checkButton.removeEventListener('click', onCheck));
@@ -944,7 +979,7 @@ function renderPattern(shared: SharedRefs, content: PatternContent): void {
         art_surface_id: 'scarf',
       },
     });
-    finishPiece(shared, shared.correctFeedback.speech ?? 'You finished the pattern.');
+    finishPiece(shared, shared.correctFeedback.speech ?? 'You finished the pattern.', scarf);
   });
 }
 
@@ -1092,11 +1127,151 @@ function renderFixArt(shared: SharedRefs, content: FixArtContent): void {
           art_surface_id: 'fix-card',
         },
       });
-      finishPiece(shared, shared.correctFeedback.speech ?? 'You fixed it.');
+      finishPiece(shared, shared.correctFeedback.speech ?? 'You fixed it.', card);
     };
     button.addEventListener('click', onRegion);
     cleanupHandlers.push(() => button.removeEventListener('click', onRegion));
   }
+}
+
+// — Mode: story card (vocabulary — which stickers belong to the story?) —
+
+function renderStoryCard(shared: SharedRefs, content: StoryCardContent): void {
+  let done = false;
+  let attemptNumber = 0;
+  let hintShown = false;
+  let attemptStartedAt = Date.now();
+  const placed = new Set<StudioShapeId>();
+
+  const card = document.createElement('div');
+  card.className = 'bear-art-studio__card bear-art-studio__card--story';
+
+  const slots: HTMLElement[] = [];
+  for (let index = 0; index < content.storyStickers.length; index += 1) {
+    const slot = document.createElement('span');
+    slot.className = 'bear-art-studio__slot bear-art-studio__slot--story';
+    slot.setAttribute('aria-hidden', 'true');
+    slots.push(slot);
+    card.appendChild(slot);
+  }
+  shared.board.appendChild(card);
+
+  const stickerTray = document.createElement('div');
+  stickerTray.className = 'bear-art-studio__stickers';
+  stickerTray.setAttribute('aria-label', 'Sticker choices');
+  const stickerButtons = new Map<StudioShapeId, HTMLButtonElement>();
+
+  for (const shape of content.stickerPool) {
+    const chip = document.createElement('button');
+    chip.className = 'bear-art-studio__sticker';
+    chip.type = 'button';
+    chip.setAttribute('aria-label', `${shape} sticker`);
+    chip.innerHTML = studioShapeSvg(shape);
+
+    const onChip = () => {
+      if (done || placed.has(shape)) return;
+      attemptNumber += 1;
+      const responseTimeMs = Date.now() - attemptStartedAt;
+      const belongs = content.storyStickers.includes(shape);
+      const pickMetadata = {
+        story_theme: content.storyTheme,
+        sticker_id: shape,
+        belongs_to_story: belongs,
+        art_surface_id: 'story-card',
+      };
+
+      if (!belongs) {
+        wiggle(chip);
+        emitStudioEvent(shared, {
+          outcome: 'incorrect',
+          attemptNumber,
+          responseTimeMs,
+          selectedChoiceId: shape,
+          selectedAnswer: shape,
+          correctAnswer: content.storyStickers.join(','),
+          hintShown,
+          metadata: pickMetadata,
+        });
+        showFeedback(
+          shared.feedback,
+          shared.incorrectFeedback.speech ?? 'Does that belong in the story?',
+          'support'
+        );
+        speakAndPlay(shared.options, shared.incorrectFeedback);
+
+        if (!hintShown && attemptNumber - placed.size >= shared.content.maxAttemptsBeforeHint) {
+          hintShown = true;
+          const missing = content.storyStickers.find((id) => !placed.has(id));
+          if (missing) stickerButtons.get(missing)?.classList.add('is-hinted');
+          showFeedback(shared.feedback, shared.hintFeedback.speech ?? 'Think about the story.', 'hint');
+          speakAndPlay(shared.options, shared.hintFeedback);
+          emitStudioEvent(shared, {
+            outcome: 'hint_used',
+            attemptNumber,
+            responseTimeMs,
+            selectedAnswer: shape,
+            correctAnswer: content.storyStickers.join(','),
+            hintShown: true,
+            metadata: { story_theme: content.storyTheme, art_surface_id: 'story-card' },
+          });
+        }
+        attemptStartedAt = Date.now();
+        return;
+      }
+
+      // The sticker belongs: it pops onto the next open story slot.
+      const slot = slots[placed.size];
+      if (slot) {
+        slot.innerHTML = studioShapeSvg(shape);
+        slot.classList.add('is-filled');
+      }
+      placed.add(shape);
+      chip.classList.remove('is-hinted');
+      chip.classList.add('is-placed');
+      chip.disabled = true;
+      if (placed.size === 1) bearReacts(shared, 'receiving');
+      emitStudioEvent(shared, {
+        outcome: 'correct',
+        attemptNumber,
+        responseTimeMs,
+        selectedChoiceId: shape,
+        selectedAnswer: shape,
+        correctAnswer: content.storyStickers.join(','),
+        hintShown,
+        metadata: pickMetadata,
+      });
+      attemptStartedAt = Date.now();
+
+      if (placed.size < content.storyStickers.length) {
+        showFeedback(shared.feedback, 'That belongs in the story.', 'success');
+        return;
+      }
+
+      done = true;
+      card.classList.add('is-complete');
+      disableAll(stickerButtons.values());
+      emitStudioEvent(shared, {
+        outcome: 'completed',
+        attemptNumber,
+        responseTimeMs,
+        selectedAnswer: [...placed].join(','),
+        correctAnswer: content.storyStickers.join(','),
+        hintShown,
+        metadata: {
+          story_theme: content.storyTheme,
+          selected_sticker_ids: [...placed].join(','),
+          required_sticker_ids: content.storyStickers.join(','),
+          art_surface_id: 'story-card',
+        },
+      });
+      finishPiece(shared, shared.correctFeedback.speech ?? 'Story art finished.', card);
+    };
+    chip.addEventListener('click', onChip);
+    cleanupHandlers.push(() => chip.removeEventListener('click', onChip));
+    stickerButtons.set(shape, chip);
+    stickerTray.appendChild(chip);
+  }
+  shared.tray.appendChild(stickerTray);
 }
 
 // — Content parsing (fail-closed) —
@@ -1129,8 +1304,12 @@ function parseStudioContent(activity: LearningActivity): StudioContent | null {
     case 'free_decorate': {
       const stickers = parseStickers(raw.stickers);
       const slotCount = boundedNumber(raw.slot_count, 1, 8);
+      const surface = raw.surface === 'shirt' ? 'shirt' : 'card';
+      if (raw.surface !== undefined && raw.surface !== 'card' && raw.surface !== 'shirt') {
+        return null;
+      }
       if (colors.length === 0 || stickers.length === 0 || slotCount === null) return null;
-      return { ...base, mode: 'free_decorate', colors, stickers, slotCount };
+      return { ...base, mode: 'free_decorate', colors, stickers, slotCount, surface };
     }
     case 'color_request': {
       const subjectShape = raw.subject_shape;
@@ -1181,6 +1360,23 @@ function parseStudioContent(activity: LearningActivity): StudioContent | null {
         patternLength,
         patternPrefill,
       };
+    }
+    case 'story_card': {
+      const storyTheme = optionalString(raw.story_theme);
+      const stickerPool = parseStickers(raw.sticker_pool);
+      const storyStickers = parseStickers(raw.story_sticker_ids);
+      const poolHasAll = storyStickers.every((id) => stickerPool.includes(id));
+      const hasDistractor = stickerPool.some((id) => !storyStickers.includes(id));
+      const uniquePool = new Set(stickerPool).size === stickerPool.length;
+      if (
+        !storyTheme ||
+        storyStickers.length < 1 ||
+        stickerPool.length < storyStickers.length + 1 ||
+        !poolHasAll ||
+        !hasDistractor ||
+        !uniquePool
+      ) return null;
+      return { ...base, mode: 'story_card', storyTheme, stickerPool, storyStickers };
     }
     case 'fix_art': {
       const regions = parseRegions(raw.regions);

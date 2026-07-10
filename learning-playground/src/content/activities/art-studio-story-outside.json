@@ -1,0 +1,74 @@
+{
+  "id": "art-studio-story-outside",
+  "version": 1,
+  "title": "Story Card: Going Outside",
+  "domain": "language",
+  "skill_ids": [
+    "vocabulary"
+  ],
+  "originating_brief_id": "brief-vocabulary-different_prompt_mode",
+  "transfer": {
+    "skill_ids": [
+      "vocabulary"
+    ],
+    "context_type": "different_prompt_mode",
+    "context_id": "story-card-art",
+    "example_set_id": "going-outside-1",
+    "prompt_mode": "spoken"
+  },
+  "difficulty": {
+    "level": 4,
+    "choice_count": 4,
+    "distractor_strength": "medium"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 75,
+  "content": {
+    "game": "bear-art-studio",
+    "art_mode": "story_card",
+    "character": {
+      "id": "baby-polar-bear",
+      "name": "Baby Polar Bear"
+    },
+    "prompt_audio": "Baby Polar Bear plays in the garden today. Add what belongs to the story.",
+    "story_theme": "going-outside",
+    "story_sticker_ids": [
+      "sun",
+      "flower"
+    ],
+    "sticker_pool": [
+      "sun",
+      "moon",
+      "flower",
+      "star"
+    ],
+    "next_activity_id": "art-studio-dress-bear",
+    "next_label": "Next art"
+  },
+  "success_rules": {
+    "completion_action": "finish_story_card",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "Your story picture is ready!",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Hmm, does that belong in the story?",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Baby Polar Bear is outside in the daytime. What would be there?",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}
