@@ -110,6 +110,8 @@ const PARENT_ACTION_TYPES: ParentDifficultyActionType[] = [
 
 const BEAR_CAFE_FIRST_ACTIVITY_ID = 'kennedis-orders-banana-001';
 const BEAR_CAFE_ROUTE = `#activity/${BEAR_CAFE_FIRST_ACTIVITY_ID}`;
+const VIDEO_VAULT_ACTIVITY_ID = 'video-vault';
+const VIDEO_VAULT_ROUTE = `#activity/${VIDEO_VAULT_ACTIVITY_ID}`;
 const CURRICULUM_GRAPH = loadCurriculumGraph();
 
 interface SettingRow {
@@ -229,7 +231,7 @@ export function renderParentPanel(
     ])
   );
 
-  _container.appendChild(createParentGameLaunchSection());
+  _container.appendChild(createParentGameLaunchSection(settings.video_enabled));
   _container.appendChild(createParentGateSettingsSection(
     settings,
     storage,
@@ -344,7 +346,7 @@ function createLocalDataSnapshotSection(
   return section;
 }
 
-function createParentGameLaunchSection(): HTMLElement {
+function createParentGameLaunchSection(videoEnabled: boolean): HTMLElement {
   const section = document.createElement('div');
   section.className = 'parent-section parent-game-launch';
 
@@ -353,6 +355,43 @@ function createParentGameLaunchSection(): HTMLElement {
   title.textContent = 'Parent-Started Games';
   section.appendChild(title);
 
+  section.appendChild(createParentGameLaunchCard({
+    title: 'Bear Cafe',
+    status: 'Kennedi\'s Orders',
+    metrics: [
+      { label: 'Entry', value: 'Banana Order' },
+      { label: 'Home Grid', value: 'Hidden' },
+    ],
+    buttonLabel: 'Start Bear Cafe',
+    activityId: BEAR_CAFE_FIRST_ACTIVITY_ID,
+    route: BEAR_CAFE_ROUTE,
+  }));
+  section.appendChild(createParentGameLaunchCard({
+    title: 'Video Observation',
+    status: 'Bear Bakes Bread + separate question',
+    metrics: [
+      { label: 'Entry', value: 'Local Video Vault' },
+      { label: 'Evidence', value: 'Exposure + response' },
+      { label: 'Playback', value: videoEnabled ? 'Enabled' : 'Off' },
+    ],
+    buttonLabel: 'Start Video Observation',
+    activityId: VIDEO_VAULT_ACTIVITY_ID,
+    route: VIDEO_VAULT_ROUTE,
+    disabled: !videoEnabled,
+  }));
+
+  return section;
+}
+
+function createParentGameLaunchCard(config: {
+  title: string;
+  status: string;
+  metrics: SettingRow[];
+  buttonLabel: string;
+  activityId: string;
+  route: string;
+  disabled?: boolean;
+}): HTMLElement {
   const card = document.createElement('div');
   card.className = 'parent-game-launch__card';
 
@@ -361,34 +400,35 @@ function createParentGameLaunchSection(): HTMLElement {
 
   const gameTitle = document.createElement('h3');
   gameTitle.className = 'parent-game-launch__title';
-  gameTitle.textContent = 'Bear Cafe';
+  gameTitle.textContent = config.title;
   details.appendChild(gameTitle);
 
   const status = document.createElement('p');
   status.className = 'parent-game-launch__status';
-  status.textContent = 'Kennedi\'s Orders';
+  status.textContent = config.status;
   details.appendChild(status);
 
   const meta = document.createElement('div');
   meta.className = 'parent-game-launch__meta';
-  meta.appendChild(createProgressMetric('Entry', 'Banana Order'));
-  meta.appendChild(createProgressMetric('Home Grid', 'Hidden'));
+  for (const metric of config.metrics) {
+    meta.appendChild(createProgressMetric(metric.label, metric.value));
+  }
   details.appendChild(meta);
 
   const launchButton = document.createElement('button');
   launchButton.className = 'parent-panel__back parent-game-launch__button';
   launchButton.type = 'button';
-  launchButton.textContent = 'Start Bear Cafe';
-  launchButton.setAttribute('aria-label', 'Start Bear Cafe');
-  launchButton.dataset.activityId = BEAR_CAFE_FIRST_ACTIVITY_ID;
+  launchButton.textContent = config.buttonLabel;
+  launchButton.setAttribute('aria-label', config.buttonLabel);
+  launchButton.dataset.activityId = config.activityId;
+  launchButton.disabled = config.disabled ?? false;
   launchButton.addEventListener('click', () => {
-    window.location.hash = BEAR_CAFE_ROUTE;
+    window.location.hash = config.route;
   });
 
   card.appendChild(details);
   card.appendChild(launchButton);
-  section.appendChild(card);
-  return section;
+  return card;
 }
 
 function createPhase2ReviewSection(

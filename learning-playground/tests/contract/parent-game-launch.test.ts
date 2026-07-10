@@ -21,7 +21,7 @@ describe('parent game launch contract', () => {
     vi.unstubAllGlobals();
   });
 
-  test('parent panel renders and routes the Bear Cafe launch path', () => {
+  test('parent panel renders and routes both parent-started launch paths', () => {
     const root = document.createElement('div');
 
     renderParentPanel(root, createMockStorage(), {
@@ -37,6 +37,41 @@ describe('parent game launch contract', () => {
     expect(launchButton?.dataset.activityId).toBe('kennedis-orders-banana-001');
     launchButton?.click();
     expect(window.location.hash).toBe('#activity/kennedis-orders-banana-001');
+
+    expect(collectText(root)).toContain('Video Observation');
+    expect(collectText(root)).toContain('Bear Bakes Bread + separate question');
+    expect(collectText(root)).toContain('Exposure + response');
+    const videoLaunchButton = findElementByText(root, 'Start Video Observation');
+
+    expect(videoLaunchButton).toBeDefined();
+    expect(videoLaunchButton?.dataset.activityId).toBe('video-vault');
+    videoLaunchButton?.click();
+    expect(window.location.hash).toBe('#activity/video-vault');
+    expect(localStorage.getItem('lp_activity_events')).toBeNull();
+  });
+
+  test('video observation launch honors the parent playback setting', () => {
+    const storage = createMockStorage();
+    const enabledSettings = storage.getSettings();
+    storage.getSettings = () => ({
+      ...enabledSettings,
+      video_enabled: false,
+    });
+    const root = document.createElement('div');
+
+    renderParentPanel(root, storage, {
+      childId: 'local-child',
+      sessionId: 'session-1',
+    });
+
+    const videoLaunchButton = findElementByText(root, 'Start Video Observation');
+    expect(videoLaunchButton).toBeDefined();
+    expect(videoLaunchButton?.disabled).toBe(true);
+    expect(collectText(root)).toMatch(/Playback\s+Off/);
+
+    videoLaunchButton?.click();
+    expect(window.location.hash).toBe('#parent');
+    expect(localStorage.getItem('lp_activity_events')).toBeNull();
   });
 
   test('parent progress renders curriculum level labels instead of bare numbers', () => {
@@ -262,6 +297,7 @@ class MockElement {
   }
 
   click(): void {
+    if (this.disabled) return;
     for (const handler of this.listeners.click ?? []) {
       handler();
     }
