@@ -187,6 +187,61 @@ describe('bear art studio runtime', () => {
       requested_quantity: 3,
       applied_quantity: 3,
     });
+
+    findByText(root, 'Next art')?.click();
+    expect(window.location.hash).toBe('#activity/art-studio-five-flowers');
+  });
+
+  test('five-flower variant records difficulty-3 structured counting evidence', () => {
+    const activity = getActivity('art-studio-five-flowers');
+    const { root, events } = setup('art-studio-five-flowers');
+
+    expect(activity.safety).toMatchObject({
+      requires_parent_approval: true,
+      external_links_allowed: false,
+    });
+    expect(activity.transfer.context_type).toBe('same_format_new_examples');
+    expect(findAllByClass(root, 'bear-art-studio__slot')).toHaveLength(6);
+
+    for (let spot = 1; spot <= 4; spot += 1) {
+      findByAria(root, `Sticker spot ${spot}`)?.click();
+    }
+    findByText(root, 'Check')?.click();
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      outcome: 'incorrect',
+      skill_ids: ['counting'],
+      difficulty_level: 3,
+      choice_count: 6,
+      distractor_strength: 'medium',
+      selected_answer: '4',
+      correct_answer: '5',
+      metadata: {
+        requested_quantity: 5,
+        applied_quantity: 4,
+        count_difference: -1,
+      },
+    });
+
+    findByAria(root, 'Sticker spot 5')?.click();
+    findByText(root, 'Check')?.click();
+    expect(events.map((event) => event.outcome)).toEqual([
+      'incorrect',
+      'correct',
+      'completed',
+    ]);
+    expect(events[2]).toMatchObject({
+      skill_ids: ['counting'],
+      difficulty_level: 3,
+      metadata: {
+        requested_quantity: 5,
+        applied_quantity: 5,
+      },
+    });
+
+    findByText(root, 'Next art')?.click();
+    expect(window.location.hash).toBe('#activity/art-studio-pattern-scarf');
   });
 
   test('the pattern fills position by position and records the sequence', () => {

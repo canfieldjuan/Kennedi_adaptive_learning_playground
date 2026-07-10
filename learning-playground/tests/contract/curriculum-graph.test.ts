@@ -106,7 +106,6 @@ describe('curriculum graph contract', () => {
       ALL_SKILL_IDS
     )).toEqual([
       'Skill vocabulary level 2 has no approved activity in difficulty band 4-5',
-      'Skill counting level 1 has no approved activity in difficulty band 2-3',
       'Skill subitizing level 2 has no approved activity in difficulty band 4-5',
       'Skill numeral_recognition level 1 has no approved activity in difficulty band 2-3',
       'Skill numeral_recognition level 2 has no approved activity in difficulty band 4-5',
