@@ -43,6 +43,39 @@ describe('one-shot PR attention decision', () => {
     });
   });
 
+  test.each(['initial', 'final', 'checks'] as const)(
+    'a pending proof with a stale %s head requires attention',
+    (sample) => {
+      const current = pendingProof();
+      const staleHead = '2222222222222222222222222222222222222222';
+      if (sample === 'initial') current.pr.initial.headRefOid = staleHead;
+      else if (sample === 'final') current.pr.final.headRefOid = staleHead;
+      else current.checks.head_sha = staleHead;
+
+      const parsed = parseReadinessProof(JSON.stringify(current));
+      expect(decideAttention('check', parsed)).toMatchObject({
+        decision: 'attention',
+        merge_authorized: false,
+      });
+    }
+  );
+
+  test.each(['metadata', 'policy', 'threads'] as const)(
+    'a pending proof with contradictory %s evidence requires attention',
+    (evidence) => {
+      const current = pendingProof();
+      if (evidence === 'metadata') current.pr.metadata_stable = false;
+      else if (evidence === 'policy') current.policy.stable = false;
+      else current.review_threads.unresolved_count = 1;
+
+      const parsed = parseReadinessProof(JSON.stringify(current));
+      expect(decideAttention('check', parsed)).toMatchObject({
+        decision: 'attention',
+        merge_authorized: false,
+      });
+    }
+  );
+
   test.each(['FAILURE', 'CANCELLED', 'TIMED_OUT', 'SKIPPED', 'NEUTRAL'])(
     'a check wake with %s requires attention',
     (conclusion) => {
@@ -197,6 +230,74 @@ describe('attention input contract', () => {
     );
   });
 
+  test.each(['checks', 'review_threads'] as const)(
+    'rejects a non-ready proof with incomplete %s evidence',
+    (surface) => {
+      const current = pendingProof();
+      current[surface].complete = false;
+
+      expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+        expect.objectContaining({ code: 'incomplete_proof' })
+      );
+    }
+  );
+
+  test('rejects a successful required result without a matching context', () => {
+    const current = proof();
+    current.checks.contexts = [];
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
+  test('rejects a required result whose matched-row count is false', () => {
+    const current = proof();
+    current.checks.required_results[0].matched_rows = 2;
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
+  test('rejects a successful required result backed by a pending context', () => {
+    const current = proof();
+    current.checks.contexts[0] = check({
+      status: 'IN_PROGRESS',
+      conclusion: null,
+      successful: false,
+    });
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
+  test('rejects an app-bound result backed by a same-name different app', () => {
+    const current = proof();
+    current.checks.contexts[0].app_id = 99999;
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
+  test('a wildcard required result reconciles every same-name context', () => {
+    const current = proof();
+    current.checks.contexts.push(check({
+      app_id: 99999,
+      status: 'IN_PROGRESS',
+      conclusion: null,
+      successful: false,
+    }));
+    current.checks.required_results[0].app_id = null;
+    current.checks.required_results[0].matched_rows = 2;
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
   test('rejects a check context whose success contradicts its state', () => {
     const current = pendingProof();
     current.checks.contexts[0].successful = true;
@@ -245,6 +346,24 @@ describe('attention CLI exits', () => {
     expect(JSON.parse(output)).toMatchObject({
       decision: 'error',
       merge_authorized: false,
+    });
+  });
+
+  test('incomplete pending evidence returns exit 2 with merge unauthorized', async () => {
+    const current = pendingProof();
+    current.checks.complete = false;
+    let output = '';
+    const result = await runCli({
+      argv: ['--wake-source', 'check'],
+      inputText: JSON.stringify(current),
+      stdout: { write: (chunk: string) => { output += chunk; return true; } },
+    });
+
+    expect(result).toBe(2);
+    expect(JSON.parse(output)).toMatchObject({
+      decision: 'error',
+      merge_authorized: false,
+      error: { code: 'incomplete_proof' },
     });
   });
 });
