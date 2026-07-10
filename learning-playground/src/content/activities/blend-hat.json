@@ -1,6 +1,6 @@
 {
   "id": "blend-hat",
-  "version": 1,
+  "version": 2,
   "title": "Blend the Sounds: hat",
   "domain": "phonics",
   "skill_ids": ["blending"],
@@ -12,7 +12,7 @@
     "prompt_mode": "spoken"
   },
   "difficulty": {
-    "level": 2,
+    "level": 3,
     "choice_count": 3,
     "distractor_strength": "hard"
   },

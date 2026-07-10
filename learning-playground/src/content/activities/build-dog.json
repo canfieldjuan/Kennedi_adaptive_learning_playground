@@ -1,6 +1,6 @@
 {
   "id": "build-dog",
-  "version": 1,
+  "version": 2,
   "title": "Build the Word: dog",
   "domain": "phonics",
   "skill_ids": ["word_building"],
@@ -12,7 +12,7 @@
     "prompt_mode": "mixed"
   },
   "difficulty": {
-    "level": 2,
+    "level": 3,
     "choice_count": 3,
     "distractor_strength": "easy"
   },

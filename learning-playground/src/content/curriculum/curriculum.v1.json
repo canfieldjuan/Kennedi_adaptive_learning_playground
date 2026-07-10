@@ -190,19 +190,19 @@
       "levels": [
         {
           "level": 0,
-          "label": "Blends a short word with support",
+          "label": "Blends first word with sound-strip support",
           "min_difficulty_level": 0,
           "max_difficulty_level": 2
         },
         {
           "level": 1,
-          "label": "Blends three sounds",
+          "label": "Blends another three-sound word",
           "min_difficulty_level": 3,
           "max_difficulty_level": 4
         },
         {
           "level": 2,
-          "label": "Blends new words fluently",
+          "label": "Blends across the approved word set",
           "min_difficulty_level": 5,
           "max_difficulty_level": 5
         }
@@ -243,19 +243,19 @@
       "levels": [
         {
           "level": 0,
-          "label": "Builds a short word with support",
+          "label": "Builds first word with three tiles",
           "min_difficulty_level": 0,
           "max_difficulty_level": 2
         },
         {
           "level": 1,
-          "label": "Spells three-sound words",
+          "label": "Builds another three-letter word",
           "min_difficulty_level": 3,
           "max_difficulty_level": 4
         },
         {
           "level": 2,
-          "label": "Builds new words fluently",
+          "label": "Builds across the approved word set",
           "min_difficulty_level": 5,
           "max_difficulty_level": 5
         }

@@ -1,6 +1,6 @@
 {
   "id": "blend-bat",
-  "version": 1,
+  "version": 2,
   "title": "Blend the Sounds: bat",
   "domain": "phonics",
   "skill_ids": ["blending"],
@@ -12,7 +12,7 @@
     "prompt_mode": "spoken"
   },
   "difficulty": {
-    "level": 2,
+    "level": 5,
     "choice_count": 3,
     "distractor_strength": "hard"
   },

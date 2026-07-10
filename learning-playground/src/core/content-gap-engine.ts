@@ -24,6 +24,7 @@ export type ActivityVariantBriefStrength =
   | 'retention';
 
 export type SuggestedGameFamily =
+  | 'word_game'
   | 'kennedis_orders'
   | 'color_lab'
   | 'dress_up_stage'
@@ -100,7 +101,7 @@ export function buildContentGapRecommendations(params: {
       missing_context_strength: contextStrength,
       current_strongest_context_strength: params.current_strongest_context_strength,
       suggested_activity_template: getSuggestedActivityTemplate(
-        params.skill.domain,
+        params.skill,
         contextType
       ),
       activity_variant_brief: buildActivityVariantBrief({
@@ -135,7 +136,7 @@ function buildActivityVariantBrief(params: {
   if (!isActivityVariantBriefStrength(requiredStrength)) return undefined;
 
   const suggestedGameFamily = getSuggestedGameFamily(
-    params.skill.domain,
+    params.skill,
     params.context_type
   );
   const suggestedActivityPattern = getSuggestedActivityPattern(
@@ -204,30 +205,47 @@ function isActivityVariantBriefStrength(
 }
 
 function getSuggestedActivityTemplate(
-  domain: string,
+  skill: CurriculumSkill,
   contextType: TransferContextType
 ): string {
   if (contextType === 'delayed_review') return 'delayed_review_check';
 
-  if (domain === 'phonics') {
+  if (skill.id === 'initial_sound') {
     if (contextType === 'reverse_mapping') return 'hear_word_choose_starting_letter';
     if (contextType === 'category_sort') return 'sort_words_by_initial_sound';
     return 'new_initial_sound_examples';
   }
 
-  if (domain === 'math') {
+  if (skill.id === 'letter_sound_match') {
+    if (contextType === 'category_sort') return 'sort_words_by_starting_letter';
+    return 'hear_word_choose_starting_letter';
+  }
+
+  if (skill.id === 'blending') {
+    if (contextType === 'different_prompt_mode') return 'blend_spoken_sounds_choose_word';
+    if (contextType === 'different_interaction_model') return 'assemble_word_from_sound_parts';
+    return 'blend_new_word_examples';
+  }
+
+  if (skill.id === 'word_building') {
+    if (contextType === 'different_prompt_mode') return 'build_word_from_spoken_prompt';
+    if (contextType === 'different_interaction_model') return 'arrange_letters_to_match_picture';
+    return 'build_new_word_examples';
+  }
+
+  if (skill.domain === 'math') {
     if (contextType === 'different_interaction_model') return 'match_numeral_to_quantity';
     if (contextType === 'different_prompt_mode') return 'choose_more_or_less';
     return 'same_quantity_new_layout';
   }
 
-  if (domain === 'spatial') {
+  if (skill.domain === 'spatial') {
     if (contextType === 'different_interaction_model') return 'match_shape_silhouette';
     if (contextType === 'different_prompt_mode') return 'find_shape_in_scene';
     return 'same_shape_new_examples';
   }
 
-  if (domain === 'art') {
+  if (skill.domain === 'art') {
     if (contextType === 'parent_observed_real_world') return 'parent_observed_color_choice';
     return 'same_color_skill_new_shape';
   }
@@ -236,14 +254,19 @@ function getSuggestedActivityTemplate(
 }
 
 function getSuggestedGameFamily(
-  domain: string,
+  skill: CurriculumSkill,
   contextType: ActivityVariantBriefContextType
 ): SuggestedGameFamily {
-  if (domain === 'phonics') return 'kennedis_orders';
-  if (domain === 'math') return 'delivery_race';
-  if (domain === 'art') return 'color_lab';
-  if (domain === 'spatial') return 'dress_up_stage';
-  if (domain === 'language') return 'story_director';
+  if (
+    skill.id === 'letter_sound_match' ||
+    skill.id === 'blending' ||
+    skill.id === 'word_building'
+  ) return 'word_game';
+  if (skill.id === 'initial_sound') return 'kennedis_orders';
+  if (skill.domain === 'math') return 'delivery_race';
+  if (skill.domain === 'art') return 'color_lab';
+  if (skill.domain === 'spatial') return 'dress_up_stage';
+  if (skill.domain === 'language') return 'story_director';
   if (contextType === 'category_sort' || contextType === 'reverse_mapping') {
     return 'kennedis_orders';
   }
@@ -281,6 +304,27 @@ function getSuggestedActivityPattern(
     if (contextType === 'delayed_review') return "Yesterday's Bear Cafe Order";
     if (contextType === 'different_prompt_mode') return 'Picture Order Card';
     return 'New Order Station';
+  }
+
+  if (skill.id === 'letter_sound_match') {
+    if (contextType === 'category_sort') return 'Starting Letter Sort';
+    if (contextType === 'delayed_review') return "Yesterday's Starting Letter";
+    if (contextType === 'different_interaction_model') return 'Starting Letter Builder';
+    return 'Hear a Word, Choose Its Letter';
+  }
+
+  if (skill.id === 'blending') {
+    if (contextType === 'different_prompt_mode') return 'Listen and Blend';
+    if (contextType === 'different_interaction_model') return 'Sound Tile Blend';
+    if (contextType === 'delayed_review') return "Yesterday's Sound Blend";
+    return 'New Word Blend';
+  }
+
+  if (skill.id === 'word_building') {
+    if (contextType === 'different_prompt_mode') return 'Build the Word You Hear';
+    if (contextType === 'different_interaction_model') return 'Letter Tile Build';
+    if (contextType === 'delayed_review') return "Yesterday's Word Build";
+    return 'New Word Build';
   }
 
   if (skill.domain === 'math') {
