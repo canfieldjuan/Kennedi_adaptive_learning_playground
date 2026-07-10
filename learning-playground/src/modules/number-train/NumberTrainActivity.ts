@@ -27,6 +27,7 @@ import type {
   NumberTrainSessionConfig,
 } from './number-train.types';
 import { buildSessionPlan } from './round-plan';
+import { createStationEnvironment } from './station-environment';
 import { trainEngineSvg, passengerSvg } from './train-art';
 
 interface NumberTrainOptions {
@@ -66,7 +67,7 @@ export function renderNumberTrainActivity(
   );
 
   container = document.createElement('div');
-  container.className = 'child-container activity-screen number-train-screen';
+  container.className = 'child-container activity-screen number-train-screen train-station';
   container.id = `activity-${options.activity.id}`;
   parent.appendChild(container);
 
@@ -82,6 +83,11 @@ export function renderNumberTrainActivity(
     if (!container) return;
     runSessionCleanup();
     container.innerHTML = '';
+
+    // The friendly station: a decorative scene (inert — aria-hidden, no
+    // pointer events, nothing countable) remounted with each trip because
+    // Play Again rebuilds the container.
+    container.appendChild(createStationEnvironment());
 
     let plan: NumberTrainPlan;
     try {

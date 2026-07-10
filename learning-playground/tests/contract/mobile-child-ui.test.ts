@@ -143,6 +143,15 @@ describe('mobile child UI contract', () => {
     );
   });
 
+  test('keeps the train station environment inert and shallow on phones', () => {
+    expect(childUiCss).toMatch(
+      /\.station-environment \{[\s\S]*?pointer-events: none;[\s\S]*?\}/
+    );
+    expect(childUiCss).toMatch(
+      /\.station-environment \.station-env__prop--minor \{\s*display: none;/
+    );
+  });
+
   test('keeps the Art studio environment inert and shallow on phones', () => {
     expect(childUiCss).toMatch(
       /\.studio-environment \{[\s\S]*?pointer-events: none;[\s\S]*?\}/
