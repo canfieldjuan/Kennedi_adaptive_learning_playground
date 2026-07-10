@@ -2,11 +2,13 @@ import type { LearningActivity } from '../types/activity';
 import artColorCircleCoolColors from './activities/art-color-circle-cool-colors.json';
 import artColorCircle from './activities/art-color-circle.json';
 import artMatchBlueCard from './activities/art-match-blue-card.json';
+import artStudioDressBear from './activities/art-studio-dress-bear.json';
 import artStudioFixCard from './activities/art-studio-fix-card.json';
 import artStudioFreeDecorate from './activities/art-studio-free-decorate.json';
 import artStudioPatternScarf from './activities/art-studio-pattern-scarf.json';
 import artStudioPinkRequest from './activities/art-studio-pink-request.json';
 import artStudioFiveFlowers from './activities/art-studio-five-flowers.json';
+import artStudioStoryOutside from './activities/art-studio-story-outside.json';
 import artStudioThreeStars from './activities/art-studio-three-stars.json';
 import blendBat from './activities/blend-bat.json';
 import blendCat from './activities/blend-cat.json';
@@ -72,10 +74,12 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   artColorCircle,
   artColorCircleCoolColors,
   artMatchBlueCard,
+  artStudioDressBear,
   artStudioFixCard,
   artStudioFreeDecorate,
   artStudioPatternScarf,
   artStudioPinkRequest,
+  artStudioStoryOutside,
   artStudioThreeStars,
   artStudioFiveFlowers,
   kennedisOrdersBanana,

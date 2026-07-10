@@ -105,7 +105,9 @@ describe('curriculum graph contract', () => {
       activities,
       ALL_SKILL_IDS
     )).toEqual([
-      'Skill vocabulary level 2 has no approved activity in difficulty band 4-5',
+      // vocabulary level 2 (band 4-5) is covered by the Bear Art Studio story
+      // card (art-studio-story-outside); counting level 1 (band 2-3) by the
+      // structured counting variant (art-studio-five-flowers).
       'Skill subitizing level 2 has no approved activity in difficulty band 4-5',
       'Skill numeral_recognition level 1 has no approved activity in difficulty band 2-3',
       'Skill numeral_recognition level 2 has no approved activity in difficulty band 4-5',

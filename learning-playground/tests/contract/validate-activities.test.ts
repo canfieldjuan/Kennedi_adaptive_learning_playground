@@ -404,7 +404,10 @@ function hasReverseMappingContent(activity: ActivityJson): boolean {
 function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
   if (isKennedisOrdersFixOrder(activity)) return true;
   if (activity.domain === 'language' && activity.skill_ids.includes('vocabulary')) {
-    return hasLanguageVocabularyResponse(activity);
+    return (
+      hasBearArtStudioStoryCard(activity) ||
+      hasLanguageVocabularyResponse(activity)
+    );
   }
   if (activity.domain === 'phonics' && activity.skill_ids.includes('blending')) {
     return hasSpokenBlendingPrompt(activity);
@@ -473,6 +476,29 @@ function hasLanguageVocabularyResponse(activity: ActivityJson): boolean {
     declaredCorrectChoices.length === 1 &&
     correctChoice === declaredCorrectChoices[0] &&
     !promptAudio.includes(correctChoice.label.toLowerCase())
+  );
+}
+
+// Bear Art Studio story card: the story is SPOKEN and never names the
+// stickers that belong — the child must infer them from the story's
+// meaning, with at least one plausible distractor in the pool.
+function hasBearArtStudioStoryCard(activity: ActivityJson): boolean {
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const storyTheme = getString(activity.content.story_theme);
+  const storyStickers = getStringArray(activity.content.story_sticker_ids);
+  const stickerPool = getStringArray(activity.content.sticker_pool);
+
+  return (
+    isBearArtStudioActivity(activity) &&
+    getString(activity.content.art_mode) === 'story_card' &&
+    activity.interaction_model === 'tap_then_place' &&
+    activity.transfer.prompt_mode === 'spoken' &&
+    storyTheme.length > 0 &&
+    storyStickers.length >= 1 &&
+    stickerPool.length >= storyStickers.length + 1 &&
+    storyStickers.every((id) => stickerPool.includes(id)) &&
+    stickerPool.some((id) => !storyStickers.includes(id)) &&
+    storyStickers.every((id) => !promptAudio.includes(id.toLowerCase()))
   );
 }
 

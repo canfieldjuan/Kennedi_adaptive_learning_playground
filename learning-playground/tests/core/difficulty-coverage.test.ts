@@ -100,7 +100,8 @@ describe('difficulty coverage', () => {
       'quantity_construction:1:2-3',
       'quantity_construction:2:4-5',
       'subitizing:2:4-5',
-      'vocabulary:2:4-5',
+      // vocabulary:2:4-5 is covered by art-studio-story-outside (Bear Art
+      // Studio story card).
     ]);
   });
 });
