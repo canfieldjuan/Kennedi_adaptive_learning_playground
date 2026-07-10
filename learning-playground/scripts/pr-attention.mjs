@@ -5,6 +5,8 @@ import { pathToFileURL } from 'node:url';
 export const ATTENTION_SCHEMA_VERSION = 1;
 export const ATTENTION_DECISION_TYPE = 'kennedi.pr-attention';
 export const MAX_INPUT_BYTES = 2 * 1024 * 1024;
+export const PAGE_SIZE = 100;
+export const MAX_PAGES = 100;
 
 const EVENT_SOURCES = new Set(['push', 'review', 'comment', 'check']);
 const DIRECT_ATTENTION_SOURCES = new Set(['push', 'review', 'comment']);
@@ -17,6 +19,24 @@ const PENDING_CHECK_STATES = new Set([
   'REQUESTED',
 ]);
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
+const PR_STATES = new Set(['OPEN', 'CLOSED', 'MERGED']);
+const REVIEW_DECISIONS = new Set(['CHANGES_REQUESTED', 'APPROVED', 'REVIEW_REQUIRED']);
+const MERGEABLE_STATES = new Set(['MERGEABLE', 'CONFLICTING', 'UNKNOWN']);
+const MERGE_STATE_STATUSES = new Set([
+  'DIRTY',
+  'UNKNOWN',
+  'BLOCKED',
+  'BEHIND',
+  'UNSTABLE',
+  'HAS_HOOKS',
+  'CLEAN',
+]);
+const POLICY_SOURCE_FIELDS = [
+  'classic_protection',
+  'applicable_branch_rule_pages',
+  'applicable_branch_rules',
+  'required_status_check_rules',
+];
 
 export class AttentionError extends Error {
   constructor(code, message) {
@@ -98,6 +118,7 @@ export function parseReadinessProof(raw) {
       typeof checks.complete !== 'boolean'
       || !Number.isInteger(checks.pages)
       || checks.pages < 1
+      || checks.pages > MAX_PAGES
       || !SHA_PATTERN.test(checks.head_sha ?? '')
       || !Array.isArray(checks.contexts)
       || !Array.isArray(checks.required_results)
@@ -106,6 +127,9 @@ export function parseReadinessProof(raw) {
     }
     if (!checks.complete) {
       throw new AttentionError('incomplete_proof', 'Readiness proof check evidence is incomplete');
+    }
+    if (checks.contexts.length > checks.pages * PAGE_SIZE) {
+      throw new AttentionError('contradictory_proof', 'Check context count exceeds page capacity');
     }
     for (const context of checks.contexts) validateCheckContext(context);
     for (const result of checks.required_results) validateRequiredResult(result);
@@ -116,6 +140,7 @@ export function parseReadinessProof(raw) {
       typeof threads.complete !== 'boolean'
       || !Number.isInteger(threads.pages)
       || threads.pages < 1
+      || threads.pages > MAX_PAGES
       || !Number.isInteger(threads.total_count)
       || !Number.isInteger(threads.unresolved_count)
       || !Array.isArray(threads.unresolved_ids)
@@ -376,16 +401,13 @@ function validatePullRequestSnapshot(snapshot) {
     || !SHA_PATTERN.test(snapshot.baseBranchOid ?? '')
     || typeof snapshot.baseRefName !== 'string'
     || snapshot.baseRefName.length === 0
-    || typeof snapshot.state !== 'string'
-    || snapshot.state.length === 0
+    || !PR_STATES.has(snapshot.state)
     || typeof snapshot.isDraft !== 'boolean'
     || (snapshot.reviewDecision !== null && (
-      typeof snapshot.reviewDecision !== 'string' || snapshot.reviewDecision.length === 0
+      !REVIEW_DECISIONS.has(snapshot.reviewDecision)
     ))
-    || typeof snapshot.mergeable !== 'string'
-    || snapshot.mergeable.length === 0
-    || typeof snapshot.mergeStateStatus !== 'string'
-    || snapshot.mergeStateStatus.length === 0
+    || !MERGEABLE_STATES.has(snapshot.mergeable)
+    || !MERGE_STATE_STATUSES.has(snapshot.mergeStateStatus)
   ) {
     throw new AttentionError('invalid_proof', 'Readiness proof PR state is invalid');
   }
@@ -395,6 +417,7 @@ function validateRequiredPolicy(policy) {
   if (!isRecord(policy) || !isRecord(policy.sources) || !Array.isArray(policy.requiredChecks)) {
     throw new AttentionError('invalid_proof', 'Readiness proof policy state is invalid');
   }
+  validatePolicySources(policy.sources);
   const keys = new Set();
   for (const requirement of policy.requiredChecks) {
     validateRequirement(requirement);
@@ -403,6 +426,35 @@ function validateRequiredPolicy(policy) {
       throw new AttentionError('contradictory_proof', 'Required policy repeats a requirement');
     }
     keys.add(key);
+  }
+}
+
+function validatePolicySources(sources) {
+  const keys = Object.keys(sources).sort();
+  const expectedKeys = [...POLICY_SOURCE_FIELDS].sort();
+  if (
+    keys.length !== expectedKeys.length
+    || keys.some((key, index) => key !== expectedKeys[index])
+    || typeof sources.classic_protection !== 'boolean'
+    || !Number.isInteger(sources.applicable_branch_rule_pages)
+    || !Number.isInteger(sources.applicable_branch_rules)
+    || !Number.isInteger(sources.required_status_check_rules)
+  ) {
+    throw new AttentionError('invalid_proof', 'Readiness proof policy sources are invalid');
+  }
+
+  const pages = sources.applicable_branch_rule_pages;
+  const rules = sources.applicable_branch_rules;
+  const requiredRules = sources.required_status_check_rules;
+  if (
+    pages < 1
+    || pages > MAX_PAGES
+    || rules < (pages - 1) * PAGE_SIZE
+    || rules >= pages * PAGE_SIZE
+    || requiredRules < 0
+    || requiredRules > rules
+  ) {
+    throw new AttentionError('contradictory_proof', 'Policy source counts are contradictory');
   }
 }
 
@@ -500,6 +552,7 @@ function validateReviewThreadSummary(threads) {
     || threads.unresolved_count !== ids.length
     || threads.unresolved_count > threads.total_count
     || threads.outdated_unresolved_count > threads.unresolved_count
+    || threads.total_count > threads.pages * PAGE_SIZE
   ) {
     throw new AttentionError('contradictory_proof', 'Review thread summary is contradictory');
   }

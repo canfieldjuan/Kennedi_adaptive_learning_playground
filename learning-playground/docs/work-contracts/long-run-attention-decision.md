@@ -116,38 +116,66 @@ readiness proof and is not available to this isolated branch.
   its contract/tests, workflows, merge runtime, and all prior non-scope remain
   unchanged.
 
+### 2026-07-10 schema-domain review correction
+
+- Live current-head review threads `PRRT_kwDOTPmar86QALIY`,
+  `PRRT_kwDOTPmar86QALIh`, `PRRT_kwDOTPmar86QALIn`, and
+  `PRRT_kwDOTPmar86QALIr` prove four remaining schema-domain gaps: truncated
+  policy-source summaries, unknown PR enum values, impossible thread totals for
+  the reported page count, and page counts beyond the producer cap.
+- The correction must validate the producer's exact normalized policy-source
+  fields and numeric relationships, GitHub's legal pull-request enum domains,
+  the hard 100-page limit, and the 100-item upper bound per review-thread page.
+- Positive boundaries must remain accepted: page counts 1 and 100, a thread
+  total equal to `pages * 100`, every legal non-ready PR enum, and complete
+  normalized policy-source evidence.
+- The correction remains confined to the attention runtime, its dedicated
+  tests, contract-test enrollment, and this audit; all prior non-scope remains
+  unchanged.
+
 ## Cold Diff Audit
 
 ### Gaps
 
-- CONFIRMED — the first review's three blocking gaps are addressed: incomplete
-  pagination is rejected, stale/contradictory non-ready evidence is derived
-  independently of summary codes, and required results are reconciled with raw
-  contexts (`learning-playground/scripts/pr-attention.mjs:96`,
-  `learning-playground/scripts/pr-attention.mjs:267`,
-  `learning-playground/scripts/pr-attention.mjs:512`).
-- CONFIRMED — the second review's five blocking gaps are addressed: ready and
-  non-ready decisions now inspect full PR/base/policy state, draft-only summaries
-  cannot hide failed rows, policy/result coverage is exact, thread ids/counts
-  reconcile, and pending statuses cannot carry terminal conclusions
-  (`learning-playground/scripts/pr-attention.mjs:81`,
-  `learning-playground/scripts/pr-attention.mjs:246`,
-  `learning-playground/scripts/pr-attention.mjs:267`,
-  `learning-playground/scripts/pr-attention.mjs:422`,
+- CONFIRMED — the first review's three gaps remain addressed: incomplete
+  pagination is rejected, stale/contradictory evidence is derived independently
+  of summary codes, and policy results are reconciled with raw contexts
+  (`learning-playground/scripts/pr-attention.mjs:59`,
+  `learning-playground/scripts/pr-attention.mjs:292`,
+  `learning-playground/scripts/pr-attention.mjs:565`).
+- CONFIRMED — the second review's five gaps remain addressed: full PR/base/policy
+  state controls ready and waiting, draft-only summaries cannot hide failed rows,
+  policy/result coverage is exact, thread ids/counts reconcile, and pending
+  statuses cannot carry terminal conclusions
+  (`learning-playground/scripts/pr-attention.mjs:271`,
+  `learning-playground/scripts/pr-attention.mjs:292`,
+  `learning-playground/scripts/pr-attention.mjs:396`,
   `learning-playground/scripts/pr-attention.mjs:474`,
-  `learning-playground/scripts/pr-attention.mjs:490`).
-- CONFIRMED — contract requirement still not delivered after both corrections:
-  none. Regression coverage exercises both sides of every reviewed boundary,
-  including valid pending check runs/statuses, valid draft/empty-policy evidence,
-  ready-predicate blockers, app-id matching, and coherent unresolved threads
+  `learning-playground/scripts/pr-attention.mjs:526`,
+  `learning-playground/scripts/pr-attention.mjs:542`).
+- CONFIRMED — the third review's four gaps are addressed: normalized policy
+  source fields/counts are complete, PR enums are restricted to GitHub's legal
+  domains, all producer page counts are capped at 100, and check/thread counts
+  cannot exceed page capacity (`learning-playground/scripts/pr-attention.mjs:8`,
+  `learning-playground/scripts/pr-attention.mjs:396`,
+  `learning-playground/scripts/pr-attention.mjs:432`,
+  `learning-playground/scripts/pr-attention.mjs:542`).
+- CONFIRMED — contract requirement still not delivered after all three review
+  corrections: none. Tests probe both sides of every reviewed boundary,
+  including valid pending check runs/statuses, legal blocking enums, maximum
+  policy/check/thread pages and counts, draft/empty-policy evidence, app-id
+  matching, and coherent unresolved threads
   (`learning-playground/tests/scripts/pr-attention.test.ts:37`,
   `learning-playground/tests/scripts/pr-attention.test.ts:49`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:221`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:233`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:242`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:312`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:423`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:472`).
+  `learning-playground/tests/scripts/pr-attention.test.ts:234`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:243`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:356`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:381`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:406`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:438`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:483`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:503`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:616`).
 - CONFIRMED — protected surface touched: none. The diff is confined to the
   attention contract (`learning-playground/docs/contracts/pr-attention-decision.contract.md:1`),
   attention CLI (`learning-playground/scripts/pr-attention.mjs:1`), its tests
@@ -173,59 +201,62 @@ readiness proof and is not available to this isolated branch.
   `learning-playground/docs/contracts/pr-attention-decision.contract.md:78`).
 - CONFIRMED — the CLI accepts only push/review/comment/check and rejects
   scheduled or malformed argument shapes
-  (`learning-playground/scripts/pr-attention.mjs:29`).
+  (`learning-playground/scripts/pr-attention.mjs:49`).
 - CONFIRMED — schema parsing caps input at 2 MiB and rejects incomplete,
   unsupported, duplicate, inconsistent, non-paginated, or contradictory proof
-  input before classification; it validates full PR snapshots, normalized policy,
-  exact policy/result coverage, coherent raw check contexts, and complete thread
-  summaries (`learning-playground/scripts/pr-attention.mjs:39`,
-  `learning-playground/scripts/pr-attention.mjs:81`,
-  `learning-playground/scripts/pr-attention.mjs:94`,
-  `learning-playground/scripts/pr-attention.mjs:110`,
-  `learning-playground/scripts/pr-attention.mjs:114`,
-  `learning-playground/scripts/pr-attention.mjs:371`,
-  `learning-playground/scripts/pr-attention.mjs:394`,
-  `learning-playground/scripts/pr-attention.mjs:422`,
+  input before classification; it validates legal PR enums, normalized policy
+  sources/requirements, exact policy/result/context coverage, coherent check
+  status/conclusion pairs, pagination caps/capacity, and thread summaries
+  (`learning-playground/scripts/pr-attention.mjs:59`,
+  `learning-playground/scripts/pr-attention.mjs:396`,
+  `learning-playground/scripts/pr-attention.mjs:416`,
+  `learning-playground/scripts/pr-attention.mjs:432`,
   `learning-playground/scripts/pr-attention.mjs:474`,
-  `learning-playground/scripts/pr-attention.mjs:490`).
+  `learning-playground/scripts/pr-attention.mjs:526`,
+  `learning-playground/scripts/pr-attention.mjs:542`,
+  `learning-playground/scripts/pr-attention.mjs:565`).
 - CONFIRMED — decision precedence stops stable terminal PRs, makes
   push/review/comment attention-only, maps producer errors to attention,
   derives the producer's complete blocking predicate independently of failure
   codes, reports only a complete ready proof without merge authority, and
   delegates only coherent pending rows/draft state to waiting
-  (`learning-playground/scripts/pr-attention.mjs:137`,
-  `learning-playground/scripts/pr-attention.mjs:246`,
-  `learning-playground/scripts/pr-attention.mjs:267`).
+  (`learning-playground/scripts/pr-attention.mjs:162`,
+  `learning-playground/scripts/pr-attention.mjs:271`,
+  `learning-playground/scripts/pr-attention.mjs:292`).
 - CONFIRMED — streaming stdin is bounded before concatenation and the CLI emits
   schema-v1 decisions with exits `0`/`1`/`2`/`3`
-  (`learning-playground/scripts/pr-attention.mjs:197`,
-  `learning-playground/scripts/pr-attention.mjs:211`,
-  `learning-playground/scripts/pr-attention.mjs:364`).
+  (`learning-playground/scripts/pr-attention.mjs:222`,
+  `learning-playground/scripts/pr-attention.mjs:236`,
+  `learning-playground/scripts/pr-attention.mjs:389`).
 - CONFIRMED — pending classification requires matching required rows and known
   pending context states with coherent conclusions; missing, terminal, unknown,
   policy-omitted, or contradictory check evidence becomes attention or input
-  error (`learning-playground/scripts/pr-attention.mjs:246`,
-  `learning-playground/scripts/pr-attention.mjs:326`,
-  `learning-playground/scripts/pr-attention.mjs:422`,
+  error (`learning-playground/scripts/pr-attention.mjs:271`,
+  `learning-playground/scripts/pr-attention.mjs:351`,
   `learning-playground/scripts/pr-attention.mjs:474`,
-  `learning-playground/scripts/pr-attention.mjs:512`).
-- CONFIRMED — 72 dedicated tests cover direct-event precedence, full
-  ready/non-ready PR and base state, pending check runs and commit statuses,
+  `learning-playground/scripts/pr-attention.mjs:526`,
+  `learning-playground/scripts/pr-attention.mjs:565`).
+- CONFIRMED — 103 dedicated tests cover direct-event precedence, full
+  ready/non-ready PR and base state, all legal/unknown enums, pending check runs
+  and commit statuses, normalized policy sources, pagination caps/capacity,
   policy/result/context reconciliation, draft-only failure hiding, thread
-  identity/counts, terminal conclusions, app-id boundaries, terminal PRs,
-  schema/resources, and every exit with merge unauthorized
+  identity/counts, app-id boundaries, terminal PRs, schema/resources, and every
+  exit with merge unauthorized
   (`learning-playground/tests/scripts/pr-attention.test.ts:10`,
   `learning-playground/tests/scripts/pr-attention.test.ts:37`,
   `learning-playground/tests/scripts/pr-attention.test.ts:49`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:86`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:112`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:179`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:312`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:329`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:341`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:423`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:472`,
-  `learning-playground/tests/scripts/pr-attention.test.ts:501`).
+  `learning-playground/tests/scripts/pr-attention.test.ts:101`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:126`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:193`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:313`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:356`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:381`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:406`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:438`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:483`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:503`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:616`,
+  `learning-playground/tests/scripts/pr-attention.test.ts:650`).
 - CONFIRMED — the contract checker requires the durable contract, runtime safety
   markers, original behavior tests, and the review-driven boundary tests while
   rejecting network, mutation, merge, file-write, and process-launch surfaces
@@ -236,15 +267,15 @@ readiness proof and is not available to this isolated branch.
 ### Contract Traceability
 
 - CONFIRMED — event precedence and the no-merge output trace directly to Root
-  Cause and Acceptance Standard (`learning-playground/scripts/pr-attention.mjs:137`).
+  Cause and Acceptance Standard (`learning-playground/scripts/pr-attention.mjs:162`).
 - CONFIRMED — pending-versus-failed check classification traces to Correct Fix
   Must Touch and now derives from reconciled rows rather than summary codes
-  (`learning-playground/scripts/pr-attention.mjs:246`).
+  (`learning-playground/scripts/pr-attention.mjs:271`).
 - CONFIRMED — complete-proof validation, input cap, and error exit trace to the
   trusted-input/resource boundary
-  (`learning-playground/scripts/pr-attention.mjs:39`,
-  `learning-playground/scripts/pr-attention.mjs:197`,
-  `learning-playground/scripts/pr-attention.mjs:211`).
+  (`learning-playground/scripts/pr-attention.mjs:59`,
+  `learning-playground/scripts/pr-attention.mjs:222`,
+  `learning-playground/scripts/pr-attention.mjs:236`).
 - CONFIRMED — no workflow, GitHub/network, dispatch, process, filesystem-write,
   subscription, review/thread, branch/ruleset, queue, merge, product, package,
   PR #69, or shared wake-draft surface was added; the runtime imports only
@@ -252,9 +283,9 @@ readiness proof and is not available to this isolated branch.
 
 ### Verification
 
-- PASS — `npx vitest run tests/scripts/pr-attention.test.ts`: 72 dedicated tests
+- PASS — `npx vitest run tests/scripts/pr-attention.test.ts`: 103 dedicated tests
   (`learning-playground/tests/scripts/pr-attention.test.ts:10`).
-- PASS — `npm test`: contract enrollment plus 484 tests across 49 files; command
+- PASS — `npm test`: contract enrollment plus 515 tests across 49 files; command
   composition is defined at `learning-playground/package.json:11` and
   `learning-playground/package.json:12`.
 - PASS — `npm run test:viewport`: 6 browser scenarios; command is defined at
@@ -265,7 +296,7 @@ readiness proof and is not available to this isolated branch.
   check wake accepted the real producer schema and emitted `attention` for
   `base_not_current`, `merge_state_not_clean`, and `review_threads_unresolved`
   with `merge_authorized=false`, as controlled at
-  `learning-playground/scripts/pr-attention.mjs:137`.
+  `learning-playground/scripts/pr-attention.mjs:162`.
 - PASS — a temporary forbidden `fetch(` marker made the contract checker fail
   on the intended network boundary (`learning-playground/scripts/check-work-contract.mjs:184`,
   `learning-playground/scripts/check-work-contract.mjs:283`) and was removed
@@ -275,9 +306,9 @@ readiness proof and is not available to this isolated branch.
 - CONFIRMED — no P1/P2 finding remains after the security, data-integrity,
   concurrency, contract, resource, validator, and effect-claim audit; the
   fail-closed boundaries are implemented at
-  `learning-playground/scripts/pr-attention.mjs:39`,
-  `learning-playground/scripts/pr-attention.mjs:137`,
-  `learning-playground/scripts/pr-attention.mjs:197`,
-  `learning-playground/scripts/pr-attention.mjs:246`,
-  `learning-playground/scripts/pr-attention.mjs:267`, and
-  `learning-playground/scripts/pr-attention.mjs:371`.
+  `learning-playground/scripts/pr-attention.mjs:59`,
+  `learning-playground/scripts/pr-attention.mjs:162`,
+  `learning-playground/scripts/pr-attention.mjs:222`,
+  `learning-playground/scripts/pr-attention.mjs:271`,
+  `learning-playground/scripts/pr-attention.mjs:292`, and
+  `learning-playground/scripts/pr-attention.mjs:396`.

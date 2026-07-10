@@ -209,8 +209,9 @@ describe('one-shot PR attention decision', () => {
       const current = notReadyProof('pr_not_open');
       current.pr.initial.state = state;
       current.pr.final.state = state;
+      const parsed = parseReadinessProof(JSON.stringify(current));
 
-      expect(decideAttention('review', current)).toMatchObject({
+      expect(decideAttention('review', parsed)).toMatchObject({
         decision: 'terminal',
         action: 'stop',
         merge_authorized: false,
@@ -347,6 +348,50 @@ describe('attention input contract', () => {
     );
   });
 
+  test.each([
+    'classic_protection',
+    'applicable_branch_rule_pages',
+    'applicable_branch_rules',
+    'required_status_check_rules',
+  ] as const)('rejects policy sources missing %s', (field) => {
+    const current = proof();
+    delete (current.policy.initial.sources as Record<string, unknown>)[field];
+    delete (current.policy.final.sources as Record<string, unknown>)[field];
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'invalid_proof' })
+    );
+  });
+
+  test.each([
+    ['page_cap', { applicable_branch_rule_pages: 101 }],
+    ['page_fill', { applicable_branch_rule_pages: 1, applicable_branch_rules: 100 }],
+    ['rule_floor', { applicable_branch_rule_pages: 2, applicable_branch_rules: 99 }],
+    ['required_count', { applicable_branch_rules: 0, required_status_check_rules: 1 }],
+  ])('rejects contradictory policy source %s evidence', (_label, overrides) => {
+    const current = proof();
+    Object.assign(current.policy.initial.sources, overrides);
+    Object.assign(current.policy.final.sources, overrides);
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
+  test('accepts policy source evidence at the producer page/count maxima', () => {
+    const current = proof();
+    const sources = {
+      classic_protection: true,
+      applicable_branch_rule_pages: 100,
+      applicable_branch_rules: 9_999,
+      required_status_check_rules: 9_999,
+    };
+    current.policy.initial.sources = { ...sources };
+    current.policy.final.sources = { ...sources };
+
+    expect(parseReadinessProof(JSON.stringify(current))).toMatchObject({ ready: true });
+  });
+
   test('rejects required-result coverage that omits a policy requirement', () => {
     const current = proof();
     current.policy.initial.requiredChecks.push({ context: 'other-check', app_id: null });
@@ -355,6 +400,51 @@ describe('attention input contract', () => {
     expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
       expect.objectContaining({ code: 'contradictory_proof' })
     );
+  });
+
+  test.each(['state', 'reviewDecision', 'mergeable', 'mergeStateStatus'] as const)(
+    'rejects an unknown PR %s enum value',
+    (field) => {
+      const current = proof();
+      current.pr.initial[field] = 'BANANA';
+      current.pr.final[field] = 'BANANA';
+
+      expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+        expect.objectContaining({ code: 'invalid_proof' })
+      );
+    }
+  );
+
+  test.each([null, 'APPROVED', 'REVIEW_REQUIRED'])(
+    'accepts legal non-blocking review decision %s',
+    (reviewDecision) => {
+      const current = proof();
+      current.pr.initial.reviewDecision = reviewDecision;
+      current.pr.final.reviewDecision = reviewDecision;
+
+      expect(parseReadinessProof(JSON.stringify(current))).toMatchObject({ ready: true });
+    }
+  );
+
+  test.each([
+    ['mergeable', 'CONFLICTING'],
+    ['mergeable', 'UNKNOWN'],
+    ['mergeStateStatus', 'DIRTY'],
+    ['mergeStateStatus', 'UNKNOWN'],
+    ['mergeStateStatus', 'BLOCKED'],
+    ['mergeStateStatus', 'BEHIND'],
+    ['mergeStateStatus', 'UNSTABLE'],
+    ['mergeStateStatus', 'HAS_HOOKS'],
+  ] as const)('accepts legal blocking PR %s value %s', (field, value) => {
+    const current = pendingProof();
+    current.pr.initial[field] = value;
+    current.pr.final[field] = value;
+    const parsed = parseReadinessProof(JSON.stringify(current));
+
+    expect(decideAttention('check', parsed)).toMatchObject({
+      decision: 'attention',
+      merge_authorized: false,
+    });
   });
 
   test('rejects a ready proof with unresolved threads', () => {
@@ -388,6 +478,47 @@ describe('attention input contract', () => {
       );
     }
   );
+
+  test.each(['checks', 'review_threads'] as const)(
+    'rejects %s page counts beyond the producer cap',
+    (surface) => {
+      const current = proof();
+      current[surface].pages = 101;
+
+      expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+        expect.objectContaining({ code: 'invalid_proof' })
+      );
+    }
+  );
+
+  test('accepts the producer page cap and a full final thread page', () => {
+    const current = proof();
+    current.checks.pages = 100;
+    current.review_threads.pages = 100;
+    current.review_threads.total_count = 10_000;
+
+    expect(parseReadinessProof(JSON.stringify(current))).toMatchObject({ ready: true });
+  });
+
+  test('rejects more check contexts than the reported pages can contain', () => {
+    const current = proof();
+    current.checks.contexts.push(...Array.from({ length: 100 }, (_, index) => (
+      check({ name: `extra-${index}`, app_id: null })
+    )));
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
+  test('accepts check contexts equal to the reported page capacity', () => {
+    const current = proof();
+    current.checks.contexts.push(...Array.from({ length: 99 }, (_, index) => (
+      check({ name: `extra-${index}`, app_id: null })
+    )));
+
+    expect(parseReadinessProof(JSON.stringify(current))).toMatchObject({ ready: true });
+  });
 
   test('rejects a successful required result without a matching context', () => {
     const current = proof();
@@ -481,6 +612,24 @@ describe('attention input contract', () => {
       );
     }
   );
+
+  test('rejects a thread total larger than the reported pages can contain', () => {
+    const current = proof();
+    current.review_threads.pages = 1;
+    current.review_threads.total_count = 101;
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
+  test('accepts a thread total equal to the reported page capacity', () => {
+    const current = proof();
+    current.review_threads.pages = 1;
+    current.review_threads.total_count = 100;
+
+    expect(parseReadinessProof(JSON.stringify(current))).toMatchObject({ ready: true });
+  });
 
   test('rejects a check context whose success contradicts its state', () => {
     const current = pendingProof();
