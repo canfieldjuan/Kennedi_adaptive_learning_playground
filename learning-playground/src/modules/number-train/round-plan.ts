@@ -47,12 +47,15 @@ export function buildSessionPlan(config: NumberTrainSessionConfig): NumberTrainP
     if (quantity === previousQuantity && quantity < maxQuantity) quantity += 1;
     previousQuantity = quantity;
 
-    if (isLoadRoundIndex(index, roundCount)) {
+    const kind = roundKindAt(index, roundCount);
+    if (kind === 'load_train') {
       rounds.push({
         kind: 'load_train',
         target: quantity,
         prompt: `Put ${quantity} passengers on the train.`,
       });
+    } else if (kind === 'missing_station') {
+      rounds.push(buildMissingStationRound(quantity, maxQuantity, random));
     } else {
       rounds.push({
         kind: 'count_train',
@@ -74,16 +77,47 @@ export function buildSessionPlan(config: NumberTrainSessionConfig): NumberTrainP
 }
 
 /**
- * Which trip positions are Load-the-Train (quantity construction) rounds.
- * Deterministic composition: on the standard six-round trip the child counts
- * first (confidence), builds in the middle (rounds 4–5), and finishes with a
- * stretch count. Shorter authored trips keep one build round near the middle;
- * Missing Station (slice 4) will take one of these positions later.
+ * Deterministic trip composition. On the standard six-round trip the child
+ * counts first (confidence), builds a quantity at round 4, fills a missing
+ * station number at round 5, and finishes with a stretch count. Shorter
+ * authored trips keep one build round near the middle; sequences appear only
+ * on trips of six or more rounds.
  */
-function isLoadRoundIndex(index: number, roundCount: number): boolean {
-  if (roundCount < 3) return false;
-  if (roundCount < 6) return index === roundCount - 2;
-  return index === 3 || index === 4;
+function roundKindAt(
+  index: number,
+  roundCount: number
+): 'count_train' | 'load_train' | 'missing_station' {
+  if (roundCount < 3) return 'count_train';
+  if (roundCount < 6) {
+    return index === roundCount - 2 ? 'load_train' : 'count_train';
+  }
+  if (index === 3) return 'load_train';
+  if (index === 4) return 'missing_station';
+  return 'count_train';
+}
+
+/**
+ * A four-number consecutive path anchored near the ramp quantity, with a
+ * seeded blank. The number line never dips below 1 or above the session max.
+ */
+function buildMissingStationRound(
+  quantity: number,
+  maxQuantity: number,
+  random: () => number
+): NumberTrainRound {
+  const pathLength = Math.min(4, maxQuantity);
+  const start = clamp(quantity - 2, 1, Math.max(1, maxQuantity - (pathLength - 1)));
+  const sequence = Array.from({ length: pathLength }, (_, i) => start + i);
+  const missingIndex = Math.floor(random() * sequence.length);
+  const answer = sequence[missingIndex];
+
+  return {
+    kind: 'missing_station',
+    sequence,
+    missing_index: missingIndex,
+    choices: buildChoices(answer, maxQuantity, random),
+    prompt: 'Which number is missing on the track?',
+  };
 }
 
 /** Three choices: the answer plus two neighbor distractors, seed-ordered. */
@@ -175,6 +209,52 @@ function validateRound(
     }
     if (round.target > maxQuantity) {
       errors.push(`${where}: target ${round.target} above max ${maxQuantity}`);
+    }
+    if (round.prompt.trim().length === 0) {
+      errors.push(`${where}: empty prompt`);
+    }
+    return errors;
+  }
+
+  if (round.kind === 'missing_station') {
+    if (round.sequence.length < 3) {
+      errors.push(`${where}: sequence needs at least three numbers`);
+    }
+    for (let i = 0; i < round.sequence.length; i += 1) {
+      const value = round.sequence[i];
+      if (!Number.isInteger(value) || value < 0 || value > maxQuantity) {
+        errors.push(`${where}: sequence value ${value} outside 0..${maxQuantity}`);
+      }
+      if (i > 0 && value !== round.sequence[i - 1] + 1) {
+        errors.push(`${where}: sequence is not consecutive ascending`);
+        break;
+      }
+    }
+    if (
+      !Number.isInteger(round.missing_index) ||
+      round.missing_index < 0 ||
+      round.missing_index >= round.sequence.length
+    ) {
+      errors.push(`${where}: missing_index ${round.missing_index} out of range`);
+      return errors;
+    }
+    const answer = round.sequence[round.missing_index];
+    if (round.choices.length < 2) {
+      errors.push(`${where}: needs at least two choices`);
+    }
+    if (new Set(round.choices).size !== round.choices.length) {
+      errors.push(`${where}: duplicate choices`);
+    }
+    if (!round.choices.includes(answer)) {
+      errors.push(`${where}: missing number ${answer} absent from choices`);
+    }
+    for (const choice of round.choices) {
+      if (!Number.isInteger(choice) || choice < 0) {
+        errors.push(`${where}: choice ${choice} is negative or non-integer`);
+      }
+      if (choice > maxQuantity) {
+        errors.push(`${where}: choice ${choice} above max ${maxQuantity}`);
+      }
     }
     if (round.prompt.trim().length === 0) {
       errors.push(`${where}: empty prompt`);
