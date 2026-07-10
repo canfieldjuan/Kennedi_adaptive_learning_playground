@@ -1,6 +1,6 @@
 {
   "id": "kennedis-orders-free-make-001",
-  "version": 2,
+  "version": 3,
   "title": "Bake Time",
   "domain": "language",
   "skill_ids": ["vocabulary"],

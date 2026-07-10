@@ -82,7 +82,7 @@ export function renderKennedisOrdersActivity(
   const tray: TrayState = createInitialTray(content);
   let stage: ViewStage = 'phone';
   let attemptNumber = 0;
-  let selectionAttemptNumber = 0;
+  let selectionIndex = 0;
   let hintShown = false;
   let replayCount = 0;
   let phoneIntroSpoken = false;
@@ -201,14 +201,15 @@ export function renderKennedisOrdersActivity(
       onFoodTap: (food: BearCafeFood) => {
         const wasSelected = (tray.foodCounts[food.id] ?? 0) > 0;
         updateFoodSelection(content, tray, food.id);
-        selectionAttemptNumber += 1;
+        selectionIndex += 1;
         emitFoodSelectionEvent({
           options,
           content,
           tray,
           food,
           wasSelected,
-          attemptNumber: selectionAttemptNumber,
+          attemptNumber: getFoodSelectionAttemptNumber(attemptNumber),
+          selectionIndex,
           responseTimeMs: Date.now() - attemptStartedAt,
           hintShown,
           replayCount,
@@ -1169,6 +1170,7 @@ function emitFoodSelectionEvent(params: {
   food: BearCafeFood;
   wasSelected: boolean;
   attemptNumber: number;
+  selectionIndex: number;
   responseTimeMs: number;
   hintShown: boolean;
   replayCount: number;
@@ -1195,12 +1197,17 @@ function emitFoodSelectionEvent(params: {
     selectedChoiceId: params.food.id,
     selectedAnswer: params.food.label,
     extraMetadata: {
+      selection_index: params.selectionIndex,
       selected_food_id: params.food.id,
       selected_food_count: params.tray.foodCounts[params.food.id] ?? 0,
     },
   });
 
   params.options.onEvent(event);
+}
+
+export function getFoodSelectionAttemptNumber(completedCheckCount: number): number {
+  return completedCheckCount + 1;
 }
 
 function emitCompletedEvent(params: {
@@ -1407,6 +1414,14 @@ function createTwoPartHintSkillOutcomes(
       skill_id: 'color_fill',
       outcome: 'hint_used',
       reason: issue,
+    }];
+  }
+
+  if (skillIds.length === 1) {
+    return [{
+      skill_id: skillIds[0],
+      outcome: 'hint_used',
+      reason: issue ?? 'hint_shown',
     }];
   }
 

@@ -18,14 +18,21 @@ export interface SkillAccuracySummary {
   accuracy: number;
 }
 
+export interface ActivityReviewReference {
+  activity_id: string;
+  activity_version: number;
+}
+
 export interface ParentSessionReview {
   session_id: string;
   completed_activities: string[];
+  completed_activity_refs?: ActivityReviewReference[];
   skills_touched: string[];
   accuracy_by_skill: SkillAccuracySummary[];
   hints_used: number;
   abandoned_activities: string[];
   most_repeated_activity?: string;
+  most_repeated_activity_ref?: ActivityReviewReference;
   parent_notes: ParentObservation[];
 }
 
@@ -39,6 +46,7 @@ export function buildParentSessionReview(
   const sessionObservations = observations
     .filter((observation) => observation.session_id === sessionId)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const mostRepeatedActivity = getMostRepeatedActivity(sessionEvents);
 
   return {
     session_id: sessionId,
@@ -46,6 +54,9 @@ export function buildParentSessionReview(
       sessionEvents
         .filter((event) => event.outcome === 'completed')
         .map((event) => event.activity_id)
+    ),
+    completed_activity_refs: getUniqueActivityReferences(
+      sessionEvents.filter((event) => event.outcome === 'completed')
     ),
     skills_touched: getUniqueValues(
       sessionEvents.flatMap((event) => event.skill_ids)
@@ -57,7 +68,11 @@ export function buildParentSessionReview(
         .filter((event) => event.outcome === 'abandoned')
         .map((event) => event.activity_id)
     ),
-    most_repeated_activity: getMostRepeatedActivity(sessionEvents),
+    most_repeated_activity: mostRepeatedActivity,
+    most_repeated_activity_ref: getMostRepeatedActivityReference(
+      sessionEvents,
+      mostRepeatedActivity
+    ),
     parent_notes: sessionObservations,
   };
 }
@@ -113,6 +128,56 @@ function getMostRepeatedActivity(
     .sort(([activityA, countA], [activityB, countB]) => (
       countB - countA || activityA.localeCompare(activityB)
     ))[0]?.[0];
+}
+
+function getMostRepeatedActivityReference(
+  events: ActivityAttemptEvent[],
+  activityId: string | undefined
+): ActivityReviewReference | undefined {
+  if (!activityId) return undefined;
+  const counts = new Map<string, { reference: ActivityReviewReference; count: number }>();
+
+  for (const event of events) {
+    if (
+      event.activity_id !== activityId ||
+      event.metadata?.event_name === 'food_selected'
+    ) continue;
+    const key = `${event.activity_id}\u0000${event.activity_version}`;
+    const current = counts.get(key);
+    counts.set(key, {
+      reference: {
+        activity_id: event.activity_id,
+        activity_version: event.activity_version,
+      },
+      count: (current?.count ?? 0) + 1,
+    });
+  }
+
+  return [...counts.values()]
+    .sort((first, second) => (
+      second.count - first.count ||
+      first.reference.activity_id.localeCompare(second.reference.activity_id) ||
+      first.reference.activity_version - second.reference.activity_version
+    ))[0]?.reference;
+}
+
+function getUniqueActivityReferences(
+  events: ActivityAttemptEvent[]
+): ActivityReviewReference[] {
+  const references = new Map<string, ActivityReviewReference>();
+
+  for (const event of events) {
+    const key = `${event.activity_id}\u0000${event.activity_version}`;
+    references.set(key, {
+      activity_id: event.activity_id,
+      activity_version: event.activity_version,
+    });
+  }
+
+  return [...references.values()].sort((first, second) => (
+    first.activity_id.localeCompare(second.activity_id) ||
+    first.activity_version - second.activity_version
+  ));
 }
 
 function getUniqueValues(values: string[]): string[] {

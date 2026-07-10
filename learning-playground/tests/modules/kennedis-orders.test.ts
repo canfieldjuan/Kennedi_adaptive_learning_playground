@@ -12,6 +12,7 @@ import {
   evaluateTray,
   getBearCafeContent,
   getFoodChoiceAccessibilityState,
+  getFoodSelectionAttemptNumber,
   getPlatedFoodIcons,
   getToggleChoiceAccessibilityState,
   renderOrderTicketVisual,
@@ -89,7 +90,7 @@ describe("Kennedi's Orders adapter contract", () => {
   test('rewritten shipped cafe orders bump their activity version', () => {
     expect(getActivity('kennedis-orders-two-cookies-001').version).toBe(2);
     expect(getActivity('kennedis-orders-pink-berries-001').version).toBe(2);
-    expect(getActivity('kennedis-orders-free-make-001').version).toBe(2);
+    expect(getActivity('kennedis-orders-free-make-001').version).toBe(3);
   });
 
   test('every cafe skill exists in the curriculum graph and allows its context', () => {
@@ -407,7 +408,21 @@ describe("Kennedi's Orders adapter contract", () => {
         issue: 'none',
       }).metadata?.hinted_skill_ids
     ).toBe('counting');
-    expect(foodHintEvent.skill_outcomes).toEqual([]);
+    expect(foodHintEvent.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'hint_used',
+        reason: 'food',
+      },
+    ]);
+  });
+
+  test('food selection ordinals do not masquerade as correction attempts', () => {
+    const firstSelectionAttempt = getFoodSelectionAttemptNumber(0);
+    const fourthSelectionAttempt = getFoodSelectionAttemptNumber(0);
+
+    expect([firstSelectionAttempt, fourthSelectionAttempt]).toEqual([1, 1]);
+    expect(getFoodSelectionAttemptNumber(1)).toBe(2);
   });
 
   test('first-attempt success is not marked as corrected', () => {
