@@ -21,6 +21,7 @@ import type {
 import type {
   CountTrainRound,
   LoadTrainRound,
+  MissingStationRound,
   NumberTrainRound,
   NumberTrainPlan,
   NumberTrainSessionConfig,
@@ -181,8 +182,10 @@ export function renderNumberTrainActivity(
 
       if (round.kind === 'count_train') {
         renderCountRound(round, roundIndex);
-      } else {
+      } else if (round.kind === 'load_train') {
         renderLoadRound(round, roundIndex);
+      } else {
+        renderMissingStationRound(round, roundIndex);
       }
     }
 
@@ -502,6 +505,176 @@ export function renderNumberTrainActivity(
       options.speech.speak(round.prompt);
     }
 
+    /**
+     * Missing Station — number sequence. A short consecutive number path of
+     * station signs along the track with one blanked numeral; the child picks
+     * the missing number. The hint walks the track one number at a time.
+     */
+    function renderMissingStationRound(
+      round: MissingStationRound,
+      roundIndex: number
+    ): void {
+      let attemptNumber = 0;
+      let hintShown = false;
+      let roundDone = false;
+      let attemptStartedAt = Date.now();
+
+      const answer = round.sequence[round.missing_index];
+
+      const path = document.createElement('div');
+      path.className = 'number-train__path';
+      path.setAttribute('role', 'img');
+      path.setAttribute(
+        'aria-label',
+        `Number track: ${round.sequence
+          .map((value, i) => (i === round.missing_index ? 'blank' : String(value)))
+          .join(', ')}`
+      );
+
+      const engine = document.createElement('div');
+      engine.className = 'number-train__engine number-train__engine--path';
+      engine.innerHTML = trainEngineSvg();
+      path.appendChild(engine);
+
+      const stops: HTMLElement[] = [];
+      for (const [i, value] of round.sequence.entries()) {
+        const stop = document.createElement('span');
+        stop.className = 'number-train__path-stop';
+        if (i === round.missing_index) {
+          stop.classList.add('is-missing');
+          stop.textContent = '?';
+        } else {
+          stop.textContent = String(value);
+        }
+        stop.style.animationDelay = `${i * 300}ms`;
+        path.appendChild(stop);
+        stops.push(stop);
+      }
+      stage.appendChild(path);
+
+      const choiceButtons = new Map<number, HTMLButtonElement>();
+
+      for (const choice of round.choices) {
+        const button = document.createElement('button');
+        button.className = 'activity-choice number-train__number-choice';
+        button.type = 'button';
+        button.setAttribute('aria-label', String(choice));
+        button.dataset.choiceId = String(choice);
+
+        const label = document.createElement('span');
+        label.className = 'activity-choice__label number-train__numeral';
+        label.textContent = String(choice);
+        button.appendChild(label);
+
+        const onChoiceClick = () => {
+          if (roundDone) return;
+
+          attemptNumber += 1;
+          const responseTimeMs = Date.now() - attemptStartedAt;
+          const isCorrect = choice === answer;
+
+          options.onEvent(
+            createAttemptEvent({
+              options,
+              round,
+              plan,
+              roundIndex,
+              outcome: isCorrect ? 'correct' : 'incorrect',
+              selected: choice,
+              attemptNumber,
+              responseTimeMs,
+              hintShown,
+            })
+          );
+
+          if (isCorrect) {
+            roundDone = true;
+            button.classList.add('is-correct');
+            for (const other of choiceButtons.values()) other.disabled = true;
+            stations[roundIndex]?.classList.add('is-done');
+
+            // The blank fills with the found number.
+            const missingStop = stops[round.missing_index];
+            if (missingStop) {
+              missingStop.textContent = String(answer);
+              missingStop.classList.remove('is-missing');
+              missingStop.classList.add('is-filled');
+            }
+
+            const line = `Yes! ${round.sequence.join(', ')}. ${correctFeedback.speech ?? 'All aboard!'}`;
+            showFeedback(feedback, line, 'success');
+            options.speech.speak(line);
+            if (correctFeedback.sound) options.audio.play(correctFeedback.sound);
+
+            if (roundIndex === plan.rounds.length - 1) {
+              finishSession(round, roundIndex, attemptNumber, responseTimeMs, hintShown);
+            } else {
+              const nextButton = document.createElement('button');
+              nextButton.className = 'child-button number-train__next';
+              nextButton.type = 'button';
+              nextButton.textContent = 'Next station';
+              nextButton.addEventListener('click', () => {
+                renderRound(roundIndex + 1);
+              });
+              completeActions.appendChild(nextButton);
+              completeActions.hidden = false;
+            }
+            return;
+          }
+
+          button.classList.add('is-incorrect');
+          const handle = window.setTimeout(() => {
+            button.classList.remove('is-incorrect');
+          }, 500);
+          timeoutHandles.push(handle);
+
+          showFeedback(
+            feedback,
+            incorrectFeedback.speech ?? 'Let us count again.',
+            'support'
+          );
+          speakAndPlay(options, incorrectFeedback);
+
+          if (!hintShown && attemptNumber >= maxAttemptsBeforeHint) {
+            hintShown = true;
+            // Walk the track one number at a time: speak the sequence with the
+            // blank and ask what comes next; the signs pulse in order.
+            path.classList.add('is-walking');
+            const hintText = buildSequenceHint(round);
+            showFeedback(feedback, hintText, 'hint');
+            options.speech.speak(hintText);
+            if (hintFeedback.sound) options.audio.play(hintFeedback.sound);
+            if (hintFeedback.highlight_target !== false) {
+              choiceButtons.get(answer)?.classList.add('is-hinted');
+            }
+
+            options.onEvent(
+              createAttemptEvent({
+                options,
+                round,
+                plan,
+                roundIndex,
+                outcome: 'hint_used',
+                selected: choice,
+                attemptNumber,
+                responseTimeMs,
+                hintShown,
+              })
+            );
+          }
+
+          attemptStartedAt = Date.now();
+        };
+
+        button.addEventListener('click', onChoiceClick);
+        cleanupHandlers.push(() => button.removeEventListener('click', onChoiceClick));
+        choiceButtons.set(choice, button);
+        grid.appendChild(button);
+      }
+
+      options.speech.speak(round.prompt);
+    }
+
     /** One-time deterministic arrival: the trip ends, no reward loop. */
     function finishSession(
       round: NumberTrainRound,
@@ -678,6 +851,22 @@ function buildCountingHint(quantity: number): string {
   return `One full car is ten passengers. Count on: ${countOn.join(', ')}.`;
 }
 
+/**
+ * Walk the number track aloud: the sequence with the blank spoken as "hmm",
+ * then the question anchored to the neighbor ("what comes after N?" — or
+ * "before N" when the blank leads the path).
+ */
+function buildSequenceHint(round: MissingStationRound): string {
+  const walked = round.sequence
+    .map((value, i) => (i === round.missing_index ? 'hmm' : String(value)))
+    .join(', ');
+  const question =
+    round.missing_index === 0
+      ? `What comes before ${round.sequence[1]}?`
+      : `What comes after ${round.sequence[round.missing_index - 1]}?`;
+  return `Count along the track: ${walked}. ${question}`;
+}
+
 function getSessionConfig(activity: LearningActivity): NumberTrainSessionConfig {
   const content = activity.content as Record<string, unknown>;
   return {
@@ -729,7 +918,9 @@ function speakAndPlay(options: NumberTrainOptions, feedback: FeedbackRule): void
 
 /** The evaluated answer a round is scored against. */
 function correctAnswerOf(round: NumberTrainRound): number {
-  return round.kind === 'count_train' ? round.quantity : round.target;
+  if (round.kind === 'count_train') return round.quantity;
+  if (round.kind === 'load_train') return round.target;
+  return round.sequence[round.missing_index];
 }
 
 function createAttemptEvent(params: {

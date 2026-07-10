@@ -101,17 +101,23 @@ describe('number train round plan', () => {
       const plan = buildSessionPlan({ ...SESSION_CONFIG, seed });
       expect(validatePlan(plan)).toEqual([]);
 
+      // The ramp anchor rises monotonically. A missing-station blank may sit
+      // below its anchor, so the ramp is checked on the anchor, not the blank.
       let previous = 0;
       for (const round of plan.rounds) {
         const answer = answerOf(round);
         expect(answer).toBeGreaterThanOrEqual(1);
         expect(answer).toBeLessThanOrEqual(SESSION_CONFIG.max_quantity);
-        expect(answer).toBeGreaterThanOrEqual(previous);
+        const anchor =
+          round.kind === 'missing_station'
+            ? Math.max(...round.sequence)
+            : answer;
+        expect(anchor).toBeGreaterThanOrEqual(previous);
         if (round.kind === 'count_train') {
           expect(new Set(round.choices).size).toBe(round.choices.length);
           expect(round.choices).toContain(round.quantity);
         }
-        previous = answer;
+        if (round.kind !== 'missing_station') previous = anchor;
       }
 
       // Easy confidence start, slight stretch finish.
@@ -122,7 +128,25 @@ describe('number train round plan', () => {
     }
   });
 
-  test('the six-round trip builds quantities in the middle (rounds 4 and 5)', () => {
+  test('tiny authored maxima still produce a valid trip (no impossible sequence)', () => {
+    // A sequence path needs three consecutive numbers; with max_quantity 1-2
+    // the composition substitutes a count round instead of failing the plan.
+    for (const max of [1, 2]) {
+      const plan = buildSessionPlan({ seed: 1, round_count: 6, max_quantity: max });
+      expect(validatePlan(plan)).toEqual([]);
+      expect(plan.rounds.some((round) => round.kind === 'missing_station')).toBe(false);
+    }
+    // At max 3 the sequence fits (a three-number path) and appears again.
+    const plan3 = buildSessionPlan({ seed: 1, round_count: 6, max_quantity: 3 });
+    expect(validatePlan(plan3)).toEqual([]);
+    const seq = plan3.rounds.find((round) => round.kind === 'missing_station');
+    expect(seq).toBeDefined();
+    if (seq?.kind === 'missing_station') {
+      expect(seq.sequence.length).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  test('the six-round trip builds at round 4 and fills a sequence at round 5', () => {
     for (let seed = 1; seed <= 10; seed += 1) {
       const plan = buildSessionPlan({ ...SESSION_CONFIG, seed });
       expect(plan.rounds.map((round) => round.kind)).toEqual([
@@ -130,7 +154,7 @@ describe('number train round plan', () => {
         'count_train',
         'count_train',
         'load_train',
-        'load_train',
+        'missing_station',
         'count_train',
       ]);
     }
@@ -183,6 +207,33 @@ describe('number train round plan', () => {
         rounds: [{ kind: 'load_train', target: 21, prompt: 'x' }],
       }).join(' ')
     ).toContain('target 21 above max');
+
+    // Sequences must be consecutive ascending with the blank in range.
+    expect(
+      validatePlan({
+        ...base,
+        rounds: [{
+          kind: 'missing_station',
+          sequence: [4, 5, 7, 8],
+          missing_index: 1,
+          choices: [4, 5, 6],
+          prompt: 'x',
+        }],
+      }).join(' ')
+    ).toContain('not consecutive');
+
+    expect(
+      validatePlan({
+        ...base,
+        rounds: [{
+          kind: 'missing_station',
+          sequence: [4, 5, 6, 7],
+          missing_index: 4,
+          choices: [4, 5, 6],
+          prompt: 'x',
+        }],
+      }).join(' ')
+    ).toContain('missing_index 4 out of range');
 
     expect(
       validatePlan({ ...base, max_quantity: NUMBER_TRAIN_ABSOLUTE_MAX + 1 }).join(' ')
@@ -377,6 +428,52 @@ describe('number train runtime', () => {
     expect(findByText(root, 'Next station')).toBeDefined();
   });
 
+  test('a missing-station round fills the blank and hints by walking the track', () => {
+    const { root, events } = setup();
+
+    // Play through rounds 1-4 to reach the sequence round.
+    for (const round of plan.rounds.slice(0, 4)) {
+      completeRound(root, round);
+      findByText(root, 'Next station')?.click();
+    }
+    const seqRound = plan.rounds[4];
+    if (seqRound.kind !== 'missing_station') throw new Error('expected sequence round');
+    const answer = seqRound.sequence[seqRound.missing_index];
+    const eventsBefore = events.length;
+
+    // The path renders one sign per number with exactly one blank.
+    const stops = findAllByClass(root, 'number-train__path-stop');
+    expect(stops).toHaveLength(seqRound.sequence.length);
+    expect(stops.filter((s) => s.className.includes('is-missing'))).toHaveLength(1);
+    expect(stops[seqRound.missing_index]?.textContent).toBe('?');
+
+    // Two wrong numerals → walk-along hint + highlighted correct numeral.
+    const wrong = seqRound.choices.filter((c) => c !== answer);
+    findChoice(root, String(wrong[0]))?.click();
+    findChoice(root, String(wrong[1]))?.click();
+    expect(events.slice(eventsBefore).map((e) => e.outcome)).toEqual([
+      'incorrect',
+      'incorrect',
+      'hint_used',
+    ]);
+    expect(findByClass(root, 'number-train__path')?.className).toContain('is-walking');
+    expect(findChoice(root, String(answer))?.classList.contains('is-hinted')).toBe(true);
+
+    // The correct numeral fills the blank and advances the trip.
+    findChoice(root, String(answer))?.click();
+    expect(events[events.length - 1]).toMatchObject({
+      outcome: 'correct',
+      selected_answer: String(answer),
+    });
+    expect(events[events.length - 1]?.metadata).toMatchObject({
+      round_type: 'missing_station',
+      target_quantity: answer,
+    });
+    expect(stops[seqRound.missing_index]?.textContent).toBe(String(answer));
+    expect(stops[seqRound.missing_index]?.classList.contains('is-filled')).toBe(true);
+    expect(findByText(root, 'Next station')).toBeDefined();
+  });
+
   test('destroy removes the screen so re-render starts clean', () => {
     const { root } = setup();
     expect(findByClass(root, 'number-train-screen')).toBeDefined();
@@ -471,6 +568,7 @@ class MockElement {
   readonly children: MockElement[] = [];
   readonly dataset: Record<string, string> = {};
   readonly attributes: Record<string, string> = {};
+  readonly style: Record<string, string> = {};
   readonly classList = new MockClassList(this);
   baseClassName = '';
   id = '';
@@ -582,7 +680,9 @@ function findAllByClass(element: MockElement, className: string): MockElement[] 
 }
 
 function answerOf(round: NumberTrainRound): number {
-  return round.kind === 'count_train' ? round.quantity : round.target;
+  if (round.kind === 'count_train') return round.quantity;
+  if (round.kind === 'load_train') return round.target;
+  return round.sequence[round.missing_index];
 }
 
 function asCount(round: NumberTrainRound): CountTrainRound {
@@ -592,14 +692,14 @@ function asCount(round: NumberTrainRound): CountTrainRound {
 
 /** Solve one round the way the child would: tap the numeral, or build + Check. */
 function completeRound(root: MockElement, round: NumberTrainRound): void {
-  if (round.kind === 'count_train') {
-    findChoice(root, String(round.quantity))?.click();
+  if (round.kind === 'load_train') {
+    for (let i = 0; i < round.target; i += 1) {
+      findByText(root, 'Add passenger')?.click();
+    }
+    findByText(root, 'Check')?.click();
     return;
   }
-  for (let i = 0; i < round.target; i += 1) {
-    findByText(root, 'Add passenger')?.click();
-  }
-  findByText(root, 'Check')?.click();
+  findChoice(root, String(answerOf(round)))?.click();
 }
 
 function findByText(element: MockElement, text: string): MockElement | undefined {

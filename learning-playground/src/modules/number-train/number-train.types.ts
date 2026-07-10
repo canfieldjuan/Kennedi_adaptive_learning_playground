@@ -26,8 +26,22 @@ export interface LoadTrainRound {
   prompt: string;
 }
 
+/** Missing Station: a short consecutive number path along the track with one
+ * numeral blanked; the child picks the missing number. */
+export interface MissingStationRound {
+  kind: 'missing_station';
+  /** The full consecutive ascending path (the display blanks one entry). */
+  sequence: number[];
+  /** Which position in `sequence` is blanked for the child. */
+  missing_index: number;
+  /** Numeral options; contains the missing number exactly once. */
+  choices: number[];
+  /** Short spoken prompt for the round. */
+  prompt: string;
+}
+
 /** All Number Train round shapes (union grows in later slices). */
-export type NumberTrainRound = CountTrainRound | LoadTrainRound;
+export type NumberTrainRound = CountTrainRound | LoadTrainRound | MissingStationRound;
 
 export interface NumberTrainPlan {
   rounds: NumberTrainRound[];
