@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.27 visual color request transfer baseline
+Version: v0.3.28 Number Train load-the-train baseline
 
 ## Current Working MVP
 
@@ -27,7 +27,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   every declared phonics rung reachable without relaxing current-rung evidence
   checks. The rung labels describe the approved word sequence rather than
   claiming unsupported fluency.
-- Math activity: the Math tile now opens **Number Train**, the first dedicated Math game runtime (arc slice 1). The child sees a structured quantity — an illustrated engine plus train cars of ten seats in a stable 2×5 layout so fives and tens read at a glance — and taps the matching numeral (a deterministic, seeded six-round trip of graduated Count-the-Train rounds with a station journey strip, a one-time arrival celebration, and Play Again from the next stable seed; Load-the-Train and Missing Station come next). Counting-only evidence (no subitizing for structured counting), bounded structural hint (occupied seats pulse while the count is spoken), reduced-motion-guarded, local inline SVG art. The three legacy tap-choice Math activities remain registered and reachable by direct route/parent transfer lane.
+- Math activity: the Math tile now opens **Number Train**, the first dedicated Math game runtime (arc slice 1). The child sees a structured quantity — an illustrated engine plus train cars of ten seats in a stable 2×5 layout so fives and tens read at a glance — and taps the matching numeral (a deterministic, seeded six-round trip with a station journey strip, arrival celebration, and Play Again from the next stable seed. Rounds mix reading and building quantities: Count-the-Train rounds, plus Load-the-Train rounds mid-trip where the child seats passengers (tap seats or large Add/Remove controls, remove-before-submit) and presses Check — evaluated only on Check, never per tap, with bounded "how many more" hints that never auto-fill; Missing Station comes next). Counting-only evidence (no subitizing for structured counting), bounded structural hint (occupied seats pulse while the count is spoken), reduced-motion-guarded, local inline SVG art. The three legacy tap-choice Math activities remain registered and reachable by direct route/parent transfer lane.
 - Art activity: tap-fill coloring activity.
 - Art now has one parent-launchable medium transfer activity that shows a visual
   color request card. A mismatched applied color remains correctable and emits

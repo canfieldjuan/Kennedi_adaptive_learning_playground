@@ -16,8 +16,18 @@ export interface CountTrainRound {
   prompt: string;
 }
 
+/** Load the Train: the game asks for a quantity; the child builds it by
+ * seating passengers, then checks the train. Evaluated on Check, not per tap. */
+export interface LoadTrainRound {
+  kind: 'load_train';
+  /** Passengers the child must seat before checking. */
+  target: number;
+  /** Short spoken prompt for the round. */
+  prompt: string;
+}
+
 /** All Number Train round shapes (union grows in later slices). */
-export type NumberTrainRound = CountTrainRound;
+export type NumberTrainRound = CountTrainRound | LoadTrainRound;
 
 export interface NumberTrainPlan {
   rounds: NumberTrainRound[];

@@ -23,6 +23,10 @@ import {
 } from '../../src/modules/home/HomeScreen';
 import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import { loadCurriculumGraph } from '../../src/core/curriculum-graph';
+import type {
+  CountTrainRound,
+  NumberTrainRound,
+} from '../../src/modules/number-train/number-train.types';
 import type { LearningActivity } from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
 import type {
@@ -99,19 +103,36 @@ describe('number train round plan', () => {
 
       let previous = 0;
       for (const round of plan.rounds) {
-        expect(round.quantity).toBeGreaterThanOrEqual(1);
-        expect(round.quantity).toBeLessThanOrEqual(SESSION_CONFIG.max_quantity);
-        expect(round.quantity).toBeGreaterThanOrEqual(previous);
-        expect(new Set(round.choices).size).toBe(round.choices.length);
-        expect(round.choices).toContain(round.quantity);
-        previous = round.quantity;
+        const answer = answerOf(round);
+        expect(answer).toBeGreaterThanOrEqual(1);
+        expect(answer).toBeLessThanOrEqual(SESSION_CONFIG.max_quantity);
+        expect(answer).toBeGreaterThanOrEqual(previous);
+        if (round.kind === 'count_train') {
+          expect(new Set(round.choices).size).toBe(round.choices.length);
+          expect(round.choices).toContain(round.quantity);
+        }
+        previous = answer;
       }
 
       // Easy confidence start, slight stretch finish.
-      expect(plan.rounds[0].quantity).toBeLessThanOrEqual(5);
-      expect(plan.rounds[plan.rounds.length - 1].quantity).toBeGreaterThanOrEqual(
+      expect(answerOf(plan.rounds[0])).toBeLessThanOrEqual(5);
+      expect(answerOf(plan.rounds[plan.rounds.length - 1])).toBeGreaterThanOrEqual(
         SESSION_CONFIG.max_quantity - 4
       );
+    }
+  });
+
+  test('the six-round trip builds quantities in the middle (rounds 4 and 5)', () => {
+    for (let seed = 1; seed <= 10; seed += 1) {
+      const plan = buildSessionPlan({ ...SESSION_CONFIG, seed });
+      expect(plan.rounds.map((round) => round.kind)).toEqual([
+        'count_train',
+        'count_train',
+        'count_train',
+        'load_train',
+        'load_train',
+        'count_train',
+      ]);
     }
   });
 
@@ -155,6 +176,14 @@ describe('number train round plan', () => {
       }).join(' ')
     ).toContain('choice 99 above max');
 
+    // Load rounds obey the same bound.
+    expect(
+      validatePlan({
+        ...base,
+        rounds: [{ kind: 'load_train', target: 21, prompt: 'x' }],
+      }).join(' ')
+    ).toContain('target 21 above max');
+
     expect(
       validatePlan({ ...base, max_quantity: NUMBER_TRAIN_ABSOLUTE_MAX + 1 }).join(' ')
     ).toContain('outside');
@@ -176,10 +205,11 @@ describe('number train runtime', () => {
   });
 
   const plan = buildSessionPlan(SESSION_CONFIG); // same seed/config as the envelope
+  const round1 = asCount(plan.rounds[0]);
 
   test('renders the round-1 quantity as structured cars of ten seats', () => {
     const { root } = setup();
-    const quantity = plan.rounds[0].quantity;
+    const quantity = round1.quantity;
     const expectedCars = Math.max(1, Math.ceil(quantity / 10));
 
     expect(findAllByClass(root, 'number-train__car')).toHaveLength(expectedCars);
@@ -195,7 +225,7 @@ describe('number train runtime', () => {
 
   test('a correct numeral tap emits counting evidence and offers Next station', () => {
     const { root, events } = setup();
-    const quantity = plan.rounds[0].quantity;
+    const quantity = round1.quantity;
 
     findChoice(root, String(quantity))?.click();
 
@@ -211,15 +241,15 @@ describe('number train runtime', () => {
     });
 
     // Round locked; the child advances by tapping Next station.
-    findChoice(root, String(plan.rounds[0].choices.find((c) => c !== quantity)))?.click();
+    findChoice(root, String(round1.choices.find((c) => c !== quantity)))?.click();
     expect(events).toHaveLength(1);
     expect(findByText(root, 'Next station')).toBeDefined();
   });
 
   test('two wrong taps trigger a structural counting hint', () => {
     const { root, events } = setup();
-    const quantity = plan.rounds[0].quantity;
-    const wrong = plan.rounds[0].choices.filter((c) => c !== quantity);
+    const quantity = round1.quantity;
+    const wrong = round1.choices.filter((c) => c !== quantity);
 
     findChoice(root, String(wrong[0]))?.click();
     findChoice(root, String(wrong[1]))?.click();
@@ -233,13 +263,12 @@ describe('number train runtime', () => {
     expect(findChoice(root, String(quantity))?.classList.contains('is-hinted')).toBe(true);
   });
 
-  test('a full trip fills every station and emits completed exactly once', () => {
+  test('a full mixed trip fills every station and emits completed exactly once', () => {
     const { root, events } = setup();
 
     for (const round of plan.rounds) {
-      findChoice(root, String(round.quantity))?.click();
-      const next = findByText(root, 'Next station');
-      next?.click();
+      completeRound(root, round);
+      findByText(root, 'Next station')?.click();
     }
 
     const outcomes = events.map((event) => event.outcome);
@@ -261,7 +290,7 @@ describe('number train runtime', () => {
     const { root, events } = setup();
 
     for (const round of plan.rounds) {
-      findChoice(root, String(round.quantity))?.click();
+      completeRound(root, round);
       findByText(root, 'Next station')?.click();
     }
     findByText(root, 'Play Again')?.click();
@@ -271,17 +300,81 @@ describe('number train runtime', () => {
       seed: SESSION_CONFIG.seed + 1,
     });
     expect(validatePlan(replayPlan)).toEqual([]);
+    const replayRound1 = asCount(replayPlan.rounds[0]);
 
     // The new trip renders round 1 of the replay plan and is playable.
     const occupied = findAllByClass(root, 'number-train__seat').filter((seat) =>
       seat.className.includes('is-occupied')
     );
-    expect(occupied).toHaveLength(replayPlan.rounds[0].quantity);
+    expect(occupied).toHaveLength(replayRound1.quantity);
 
     const before = events.length;
-    findChoice(root, String(replayPlan.rounds[0].quantity))?.click();
+    findChoice(root, String(replayRound1.quantity))?.click();
     expect(events).toHaveLength(before + 1);
     expect(events[events.length - 1]?.outcome).toBe('correct');
+  });
+
+  test('a load round builds only on Check, with remove-before-submit', () => {
+    const { root, events } = setup();
+
+    // Play through rounds 1-3 (counts) to reach the first load round.
+    for (const round of plan.rounds.slice(0, 3)) {
+      completeRound(root, round);
+      findByText(root, 'Next station')?.click();
+    }
+    const loadRound = plan.rounds[3];
+    if (loadRound.kind !== 'load_train') throw new Error('expected load round');
+    const eventsBefore = events.length;
+
+    // Empty train with capacity for the target; large controls present.
+    const seats = findAllByClass(root, 'number-train__seat--tap');
+    expect(seats.length).toBe(Math.max(1, Math.ceil(loadRound.target / 10)) * 10);
+    expect(seats.filter((s) => s.className.includes('is-occupied'))).toHaveLength(0);
+    expect(findByText(root, 'Add passenger')).toBeDefined();
+    expect(findByText(root, 'Remove')).toBeDefined();
+
+    // Seat taps toggle and emit NO events.
+    seats[0]?.click();
+    expect(seats[0]?.classList.contains('is-occupied')).toBe(true);
+    seats[0]?.click();
+    expect(seats[0]?.classList.contains('is-occupied')).toBe(false);
+    findByText(root, 'Add passenger')?.click();
+    findByText(root, 'Add passenger')?.click();
+    findByText(root, 'Remove')?.click();
+    expect(events).toHaveLength(eventsBefore);
+    expect(seats.filter((s) => s.className.includes('is-occupied'))).toHaveLength(1);
+
+    // Wrong Check → incorrect with the constructed count as the answer.
+    findByText(root, 'Check')?.click();
+    expect(events).toHaveLength(eventsBefore + 1);
+    expect(events[events.length - 1]).toMatchObject({
+      outcome: 'incorrect',
+      selected_answer: '1',
+      correct_answer: String(loadRound.target),
+    });
+    expect(events[events.length - 1]?.metadata).toMatchObject({
+      round_type: 'load_train',
+      target_quantity: loadRound.target,
+    });
+
+    // Second wrong Check → bounded structural hint: the next empty seat lights
+    // up and nothing is auto-filled.
+    findByText(root, 'Check')?.click();
+    expect(events.map((e) => e.outcome).slice(-2)).toEqual(['incorrect', 'hint_used']);
+    expect(seats.some((s) => s.className.includes('is-next-hint'))).toBe(true);
+    expect(seats.filter((s) => s.className.includes('is-occupied'))).toHaveLength(1);
+
+    // Build the target and Check → correct, attempt_number counts Checks.
+    for (let i = 1; i < loadRound.target; i += 1) {
+      findByText(root, 'Add passenger')?.click();
+    }
+    findByText(root, 'Check')?.click();
+    expect(events[events.length - 1]).toMatchObject({
+      outcome: 'correct',
+      selected_answer: String(loadRound.target),
+      attempt_number: 3,
+    });
+    expect(findByText(root, 'Next station')).toBeDefined();
   });
 
   test('destroy removes the screen so re-render starts clean', () => {
@@ -486,6 +579,27 @@ function findAllByClass(element: MockElement, className: string): MockElement[] 
     matches.push(...findAllByClass(child, className));
   }
   return matches;
+}
+
+function answerOf(round: NumberTrainRound): number {
+  return round.kind === 'count_train' ? round.quantity : round.target;
+}
+
+function asCount(round: NumberTrainRound): CountTrainRound {
+  if (round.kind !== 'count_train') throw new Error('expected a count round');
+  return round;
+}
+
+/** Solve one round the way the child would: tap the numeral, or build + Check. */
+function completeRound(root: MockElement, round: NumberTrainRound): void {
+  if (round.kind === 'count_train') {
+    findChoice(root, String(round.quantity))?.click();
+    return;
+  }
+  for (let i = 0; i < round.target; i += 1) {
+    findByText(root, 'Add passenger')?.click();
+  }
+  findByText(root, 'Check')?.click();
 }
 
 function findByText(element: MockElement, text: string): MockElement | undefined {
