@@ -19,13 +19,13 @@ describe('difficulty coverage', () => {
       current_min_difficulty_level: 0,
       current_max_difficulty_level: 1,
       status: 'covered',
-      covered_level_count: 2,
+      covered_level_count: 3,
       total_level_count: 3,
     });
     expect(coverage?.approved_activity_ids).toContain('number-train');
   });
 
-  test('reports an uncovered current rung as an app content gap', () => {
+  test('reports the structured counting rung as covered by the studio variant', () => {
     const coverage = evaluateSkillDifficultyCoverage({
       skill_id: 'counting',
       current_level: 1,
@@ -35,8 +35,28 @@ describe('difficulty coverage', () => {
       current_level_label: 'Counts structured quantities accurately',
       current_min_difficulty_level: 2,
       current_max_difficulty_level: 3,
+      status: 'covered',
+      covered_level_count: 3,
+      total_level_count: 3,
+    });
+    expect(coverage?.approved_activity_ids).toEqual(['art-studio-five-flowers']);
+  });
+
+  test('still reports a content gap when the producing activity is absent', () => {
+    const activities = APPROVED_ACTIVITIES.filter((activity) => (
+      activity.id !== 'art-studio-five-flowers'
+    ));
+    const coverage = evaluateSkillDifficultyCoverage({
+      skill_id: 'counting',
+      current_level: 1,
+      activities,
+    });
+
+    expect(coverage).toMatchObject({
       status: 'blocked_by_content_gap',
       approved_activity_ids: [],
+      covered_level_count: 2,
+      total_level_count: 3,
     });
     expect(coverage?.reason).toContain('content gap in the app');
     expect(coverage?.reason).toContain('not a judgment about the child');
@@ -73,7 +93,6 @@ describe('difficulty coverage', () => {
     expect(listCurriculumDifficultyGaps().map((gap) => (
       `${gap.skill_id}:${gap.level}:${gap.min_difficulty_level}-${gap.max_difficulty_level}`
     ))).toEqual([
-      'counting:1:2-3',
       'number_sequence:1:2-3',
       'number_sequence:2:4-5',
       'numeral_recognition:1:2-3',
