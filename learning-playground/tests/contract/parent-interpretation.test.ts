@@ -154,6 +154,59 @@ describe('parent interpretation contract', () => {
     expect(interpretation.recommendation).toBe('Add support');
     expect(text).not.toMatch(/streak|rank|behind|score|faster|shame/);
   });
+
+  test('gated skills read their prerequisites evaluated mastery, not an unmet default', () => {
+    // Counting reaches likely_mastered (three correct across two approved
+    // transfer contexts); quantity_construction (prerequisite: counting) has
+    // strong single-context evidence from Number Train. Before prerequisite
+    // statuses were wired through, the gate treated counting as unmet and
+    // pinned quantity_construction behind "still prerequisite evidence".
+    const events: ActivityAttemptEvent[] = [
+      makeEvent('event-1', 'correct'),
+      { ...makeEvent('event-2', 'correct'), activity_id: 'math-dot-card-three' },
+      makeEvent('event-3', 'correct'),
+      ...[4, 5, 6].map((n) => ({
+        ...makeEvent(`event-${n}`, 'correct'),
+        activity_id: 'number-train',
+        skill_ids: ['counting', 'quantity_construction'],
+        skill_outcomes: [
+          { skill_id: 'counting', outcome: 'correct' as const },
+          { skill_id: 'quantity_construction', outcome: 'correct' as const },
+        ],
+        prompt_text: 'Put 7 passengers on the train.',
+        selected_answer: '7',
+        correct_answer: '7',
+      })),
+    ];
+    const review: ParentSessionReview = {
+      session_id: 'session-1',
+      completed_activities: ['math-count-stars-three', 'number-train'],
+      skills_touched: ['counting', 'quantity_construction'],
+      accuracy_by_skill: [
+        { skill_id: 'counting', correct_attempts: 6, total_attempts: 6, accuracy: 1 },
+        {
+          skill_id: 'quantity_construction',
+          correct_attempts: 3,
+          total_attempts: 3,
+          accuracy: 1,
+        },
+      ],
+      hints_used: 0,
+      abandoned_activities: [],
+      most_repeated_activity: 'number-train',
+      parent_notes: [],
+    };
+
+    const interpretations = buildParentSkillInterpretations(review, events);
+    const counting = interpretations.find((item) => item.skill_id === 'counting');
+    const construction = interpretations.find(
+      (item) => item.skill_id === 'quantity_construction'
+    );
+
+    expect(counting?.mastery_status).toBe('likely_mastered');
+    expect(construction?.mastery_reason).not.toContain('prerequisite evidence');
+    expect(construction?.mastery_status).not.toBe('practicing');
+  });
 });
 
 function makeReview(params: {

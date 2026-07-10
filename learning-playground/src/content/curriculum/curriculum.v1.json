@@ -300,23 +300,26 @@
         },
         {
           "level": 1,
-          "label": "Counts small pretend-play sets",
+          "label": "Counts structured quantities accurately",
           "min_difficulty_level": 2,
           "max_difficulty_level": 3
         },
         {
           "level": 2,
-          "label": "Counts in combined orders",
+          "label": "Counts grouped quantities across tens",
           "min_difficulty_level": 4,
           "max_difficulty_level": 5
         }
       ],
       "prerequisites": [],
       "unlocks": [
-        "subitizing"
+        "subitizing",
+        "quantity_construction",
+        "number_sequence"
       ],
       "activity_contexts": [
-        "math-count-stars-three"
+        "math-count-stars-three",
+        "number-train"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",
@@ -382,6 +385,157 @@
         "min_accuracy": 0.8,
         "max_hint_rate": 0.34,
         "max_average_response_ms": 4500,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "numeral_recognition",
+      "label": "Numeral Recognition",
+      "domain": "math",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Matches numerals to small quantities",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 1
+        },
+        {
+          "level": 1,
+          "label": "Reads numerals to twenty",
+          "min_difficulty_level": 2,
+          "max_difficulty_level": 3
+        },
+        {
+          "level": 2,
+          "label": "Reads numerals beyond twenty",
+          "min_difficulty_level": 4,
+          "max_difficulty_level": 5
+        }
+      ],
+      "prerequisites": [],
+      "unlocks": [],
+      "activity_contexts": [
+        "number-train"
+      ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "different_prompt_mode",
+        "delayed_review"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 3,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 5000,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "quantity_construction",
+      "label": "Quantity Construction",
+      "domain": "math",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Builds small quantities with support",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 1
+        },
+        {
+          "level": 1,
+          "label": "Builds quantities to twenty",
+          "min_difficulty_level": 2,
+          "max_difficulty_level": 3
+        },
+        {
+          "level": 2,
+          "label": "Builds grouped quantities across tens",
+          "min_difficulty_level": 4,
+          "max_difficulty_level": 5
+        }
+      ],
+      "prerequisites": [
+        "counting"
+      ],
+      "unlocks": [],
+      "activity_contexts": [
+        "number-train"
+      ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "different_interaction_model",
+        "delayed_review"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 3,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 8000,
+        "min_contexts_for_transfer": 2,
+        "requires_retention": true
+      },
+      "review_policy": {
+        "likely_mastered_hours": 24,
+        "first_review_days": 3,
+        "second_review_days": 7
+      }
+    },
+    {
+      "id": "number_sequence",
+      "label": "Number Sequence",
+      "domain": "math",
+      "levels": [
+        {
+          "level": 0,
+          "label": "Finds a missing number with support",
+          "min_difficulty_level": 0,
+          "max_difficulty_level": 1
+        },
+        {
+          "level": 1,
+          "label": "Orders numbers to twenty",
+          "min_difficulty_level": 2,
+          "max_difficulty_level": 3
+        },
+        {
+          "level": 2,
+          "label": "Orders numbers beyond twenty",
+          "min_difficulty_level": 4,
+          "max_difficulty_level": 5
+        }
+      ],
+      "prerequisites": [
+        "counting"
+      ],
+      "unlocks": [],
+      "activity_contexts": [
+        "number-train"
+      ],
+      "planned_transfer_contexts": [
+        "same_format_same_examples",
+        "same_format_new_examples",
+        "different_prompt_mode",
+        "delayed_review"
+      ],
+      "evidence_requirements": {
+        "min_attempts": 3,
+        "min_accuracy": 0.8,
+        "max_hint_rate": 0.34,
+        "max_average_response_ms": 6000,
         "min_contexts_for_transfer": 2,
         "requires_retention": true
       },
