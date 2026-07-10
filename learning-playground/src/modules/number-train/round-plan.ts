@@ -90,6 +90,9 @@ function validateRound(
     if (!Number.isInteger(choice) || choice < 0) {
       errors.push(`${where}: choice ${choice} is negative or non-integer`);
     }
+    if (choice > maxQuantity) {
+      errors.push(`${where}: choice ${choice} above max ${maxQuantity}`);
+    }
   }
   if (round.prompt.trim().length === 0) {
     errors.push(`${where}: empty prompt`);

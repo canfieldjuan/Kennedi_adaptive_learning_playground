@@ -22,6 +22,7 @@ import {
   renderHomeScreen,
 } from '../../src/modules/home/HomeScreen';
 import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
+import { loadCurriculumGraph } from '../../src/core/curriculum-graph';
 import type { LearningActivity } from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
 import type {
@@ -111,6 +112,15 @@ describe('number train round plan', () => {
         rounds: [{ kind: 'count_train', quantity: -1, choices: [-1, 2, 3], prompt: 'x' }],
       }).join(' ')
     ).toContain('negative');
+
+    // A distractor above the configured maximum is invalid even when the
+    // correct answer is in range (the guard's second side).
+    expect(
+      validatePlan({
+        ...base,
+        rounds: [{ kind: 'count_train', quantity: 7, choices: [6, 7, 99], prompt: 'x' }],
+      }).join(' ')
+    ).toContain('choice 99 above max');
 
     expect(
       validatePlan({ ...base, max_quantity: NUMBER_TRAIN_ABSOLUTE_MAX + 1 }).join(' ')
@@ -208,6 +218,17 @@ describe('number train protected surfaces', () => {
     expect(activity?.safety.requires_parent_approval).toBe(true);
     expect(activity?.safety.external_links_allowed).toBe(false);
     expect(JSON.stringify(activity)).not.toMatch(/https?:\/\//);
+  });
+
+  test('the default Math activity feeds the counting entry level', () => {
+    // Promotion is band-scoped (progress.ts): a fresh profile starts at
+    // counting level 0, so the activity behind the Math home tile must emit a
+    // difficulty inside level 0's band or a new child can never accrue
+    // promotion-eligible attempts.
+    const activity = APPROVED_ACTIVITIES.find((entry) => entry.id === 'number-train');
+    const graph = loadCurriculumGraph();
+    const level = graph.getSkillLevelForDifficulty('counting', activity!.difficulty.level);
+    expect(level?.level).toBe(0);
   });
 });
 
