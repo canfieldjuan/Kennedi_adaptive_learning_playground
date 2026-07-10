@@ -190,6 +190,23 @@ describe('curriculum graph contract', () => {
     ).toContain('different_prompt_mode');
   });
 
+  test('shape scene prompt occupies the across-changes spatial rung', () => {
+    const activity = activities.find((item) => item.id === 'shapes-roof-in-scene');
+
+    expect(activity).toMatchObject({
+      version: 1,
+      skill_ids: ['shape_match'],
+      transfer: {
+        context_type: 'different_prompt_mode',
+        prompt_mode: 'mixed',
+      },
+      difficulty: { level: 4 },
+    });
+    expect(
+      loadCurriculumGraph().getSkill('shape_match')?.planned_transfer_contexts
+    ).toContain('different_prompt_mode');
+  });
+
   test('current graph has valid references and no circular prerequisites', () => {
     expect(validateCurriculumGraph(curriculumData as CurriculumGraphData)).toEqual([]);
   });
