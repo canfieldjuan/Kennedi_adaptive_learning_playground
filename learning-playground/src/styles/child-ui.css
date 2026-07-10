@@ -565,6 +565,38 @@
   animation: trainCountPulse 900ms ease-in-out 2;
 }
 
+/* Load-the-Train: seats become tappable buttons; the hint lights exactly the
+   seat to act on next (never auto-filled for the child). */
+.number-train__seat--tap {
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  border-color: rgba(58, 36, 97, 0.5);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.number-train__seat--tap:hover,
+.number-train__seat--tap:focus-visible {
+  border-color: var(--child-accent-blue);
+  outline: none;
+}
+
+.number-train__seat.is-next-hint {
+  border-color: var(--child-accent-yellow);
+  box-shadow: 0 0 0 4px rgba(253, 203, 110, 0.35);
+  animation: trainCountPulse 900ms ease-in-out 2;
+}
+
+.number-train__choices .number-train__load-control,
+.number-train__choices .number-train__check {
+  min-height: 84px;
+  font-size: 1.25rem;
+}
+
+.number-train__choices .number-train__check {
+  border: 4px solid var(--child-accent-green);
+}
+
 .number-train__numeral {
   font-size: 2.4rem;
 }
@@ -1647,6 +1679,7 @@
   .word-builder__picture-image.is-alive,
   .word-builder__model.is-alive,
   .number-train.is-counting .number-train__seat.is-occupied,
+  .number-train__seat.is-next-hint,
   .number-train__stage--arrived .number-train {
     animation: none;
   }

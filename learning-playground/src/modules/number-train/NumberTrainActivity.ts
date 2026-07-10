@@ -20,6 +20,8 @@ import type {
 } from '../../types/runtime';
 import type {
   CountTrainRound,
+  LoadTrainRound,
+  NumberTrainRound,
   NumberTrainPlan,
   NumberTrainSessionConfig,
 } from './number-train.types';
@@ -159,32 +161,40 @@ export function renderNumberTrainActivity(
 
     function renderRound(roundIndex: number): void {
       const round = plan.rounds[roundIndex];
-      if (!round || round.kind !== 'count_train') {
+      if (!round) {
         renderSessionUnavailable();
         return;
       }
 
-      let attemptNumber = 0;
-      let hintShown = false;
-      let roundDone = false;
-      let attemptStartedAt = Date.now();
-
+      // Common round scaffolding: journey state, prompt, cleared stage/grid.
       for (const [index, station] of stations.entries()) {
         station.classList.remove('is-current');
         if (index === roundIndex) station.classList.add('is-current');
         if (index < roundIndex) station.classList.add('is-done');
       }
-
       prompt.textContent = round.prompt;
       feedback.textContent = '';
       completeActions.hidden = true;
       completeActions.innerHTML = '';
-
       stage.innerHTML = '';
-      const train = buildTrainVisual(round.quantity);
+      grid.innerHTML = '';
+
+      if (round.kind === 'count_train') {
+        renderCountRound(round, roundIndex);
+      } else {
+        renderLoadRound(round, roundIndex);
+      }
+    }
+
+    function renderCountRound(round: CountTrainRound, roundIndex: number): void {
+      let attemptNumber = 0;
+      let hintShown = false;
+      let roundDone = false;
+      let attemptStartedAt = Date.now();
+
+      const { train } = buildTrainVisual(round.quantity);
       stage.appendChild(train);
 
-      grid.innerHTML = '';
       const choiceButtons = new Map<number, HTMLButtonElement>();
 
       for (const choice of round.choices) {
@@ -304,9 +314,197 @@ export function renderNumberTrainActivity(
       options.speech.speak(round.prompt);
     }
 
+    /**
+     * Load the Train — quantity construction. The train renders with enough
+     * cars for the target but empty; the child seats passengers by tapping
+     * seats or the large Add/Remove controls, then presses Check. Evaluated
+     * only on Check (seat taps emit no events); attempt_number counts Checks.
+     */
+    function renderLoadRound(round: LoadTrainRound, roundIndex: number): void {
+      let checkCount = 0;
+      let hintShown = false;
+      let roundDone = false;
+      let attemptStartedAt = Date.now();
+
+      const { train, seats } = buildTrainVisual(0, {
+        capacityFor: round.target,
+        tappableSeats: true,
+      });
+      stage.appendChild(train);
+
+      const seatedCount = (): number =>
+        seats.filter((seat) => seat.classList.contains('is-occupied')).length;
+
+      const clearSeatHint = (): void => {
+        for (const seat of seats) seat.classList.remove('is-next-hint');
+      };
+
+      const setSeat = (seat: HTMLElement, occupied: boolean): void => {
+        if (occupied) {
+          seat.classList.add('is-occupied');
+          seat.innerHTML = passengerSvg();
+          seat.setAttribute('aria-label', 'Seat with passenger. Tap to remove.');
+        } else {
+          seat.classList.remove('is-occupied');
+          seat.innerHTML = '';
+          seat.setAttribute('aria-label', 'Empty seat. Tap to add a passenger.');
+        }
+      };
+
+      for (const seat of seats) {
+        setSeat(seat, false);
+        const onSeatTap = () => {
+          if (roundDone) return;
+          clearSeatHint();
+          setSeat(seat, !seat.classList.contains('is-occupied'));
+        };
+        seat.addEventListener('click', onSeatTap);
+        cleanupHandlers.push(() => seat.removeEventListener('click', onSeatTap));
+      }
+
+      // Large, preschool-safe controls mirroring the direct seat taps.
+      const addButton = document.createElement('button');
+      addButton.className = 'child-button number-train__load-control';
+      addButton.type = 'button';
+      addButton.textContent = 'Add passenger';
+      const onAdd = () => {
+        if (roundDone) return;
+        clearSeatHint();
+        const empty = seats.find((seat) => !seat.classList.contains('is-occupied'));
+        if (empty) setSeat(empty, true);
+      };
+      addButton.addEventListener('click', onAdd);
+      cleanupHandlers.push(() => addButton.removeEventListener('click', onAdd));
+      grid.appendChild(addButton);
+
+      const removeButton = document.createElement('button');
+      removeButton.className = 'child-button number-train__load-control';
+      removeButton.type = 'button';
+      removeButton.textContent = 'Remove';
+      const onRemove = () => {
+        if (roundDone) return;
+        clearSeatHint();
+        const occupied = [...seats]
+          .reverse()
+          .find((seat) => seat.classList.contains('is-occupied'));
+        if (occupied) setSeat(occupied, false);
+      };
+      removeButton.addEventListener('click', onRemove);
+      cleanupHandlers.push(() => removeButton.removeEventListener('click', onRemove));
+      grid.appendChild(removeButton);
+
+      const checkButton = document.createElement('button');
+      checkButton.className = 'child-button number-train__check';
+      checkButton.type = 'button';
+      checkButton.textContent = 'Check';
+      const onCheck = () => {
+        if (roundDone) return;
+
+        checkCount += 1;
+        const responseTimeMs = Date.now() - attemptStartedAt;
+        const built = seatedCount();
+        const isCorrect = built === round.target;
+
+        options.onEvent(
+          createAttemptEvent({
+            options,
+            round,
+            plan,
+            roundIndex,
+            outcome: isCorrect ? 'correct' : 'incorrect',
+            selected: built,
+            attemptNumber: checkCount,
+            responseTimeMs,
+            hintShown,
+          })
+        );
+
+        if (isCorrect) {
+          roundDone = true;
+          clearSeatHint();
+          for (const seat of seats) (seat as HTMLButtonElement).disabled = true;
+          addButton.disabled = true;
+          removeButton.disabled = true;
+          checkButton.disabled = true;
+          stations[roundIndex]?.classList.add('is-done');
+
+          const line = `Yes! ${round.target} ${round.target === 1 ? 'passenger' : 'passengers'} aboard. ${correctFeedback.speech ?? 'All aboard!'}`;
+          showFeedback(feedback, line, 'success');
+          options.speech.speak(line);
+          if (correctFeedback.sound) options.audio.play(correctFeedback.sound);
+
+          if (roundIndex === plan.rounds.length - 1) {
+            finishSession(round, roundIndex, checkCount, responseTimeMs, hintShown);
+          } else {
+            const nextButton = document.createElement('button');
+            nextButton.className = 'child-button number-train__next';
+            nextButton.type = 'button';
+            nextButton.textContent = 'Next station';
+            nextButton.addEventListener('click', () => {
+              renderRound(roundIndex + 1);
+            });
+            completeActions.appendChild(nextButton);
+            completeActions.hidden = false;
+          }
+          return;
+        }
+
+        const diff = round.target - built;
+        const supportLine =
+          diff > 0
+            ? `${diff} more ${diff === 1 ? 'passenger' : 'passengers'} needed.`
+            : `${-diff} too many. Take ${-diff === 1 ? 'one' : 'some'} off.`;
+        showFeedback(feedback, supportLine, 'support');
+        options.speech.speak(supportLine);
+        if (incorrectFeedback.sound) options.audio.play(incorrectFeedback.sound);
+
+        if (!hintShown && checkCount >= maxAttemptsBeforeHint) {
+          hintShown = true;
+          // Structural hint: say where the count stands and light the seat to
+          // act on next. Never fill or empty seats for the child.
+          const hintLine =
+            diff > 0
+              ? `You have ${built}. Put on ${diff} more.`
+              : `You have ${built}. Take off ${-diff}.`;
+          showFeedback(feedback, hintLine, 'hint');
+          options.speech.speak(hintLine);
+          if (hintFeedback.sound) options.audio.play(hintFeedback.sound);
+
+          const hintSeat =
+            diff > 0
+              ? seats.find((seat) => !seat.classList.contains('is-occupied'))
+              : [...seats]
+                  .reverse()
+                  .find((seat) => seat.classList.contains('is-occupied'));
+          hintSeat?.classList.add('is-next-hint');
+
+          options.onEvent(
+            createAttemptEvent({
+              options,
+              round,
+              plan,
+              roundIndex,
+              outcome: 'hint_used',
+              selected: built,
+              attemptNumber: checkCount,
+              responseTimeMs,
+              hintShown,
+            })
+          );
+        }
+
+        attemptStartedAt = Date.now();
+      };
+      checkButton.addEventListener('click', onCheck);
+      cleanupHandlers.push(() => checkButton.removeEventListener('click', onCheck));
+      grid.appendChild(checkButton);
+
+      options.speech.speak(round.prompt);
+    }
+
     /** One-time deterministic arrival: the trip ends, no reward loop. */
     function finishSession(
-      round: CountTrainRound,
+      round: NumberTrainRound,
       roundIndex: number,
       attemptNumber: number,
       responseTimeMs: number,
@@ -319,7 +517,7 @@ export function renderNumberTrainActivity(
           plan,
           roundIndex,
           outcome: 'completed',
-          selected: round.quantity,
+          selected: correctAnswerOf(round),
           attemptNumber,
           responseTimeMs,
           hintShown,
@@ -401,23 +599,35 @@ function runSessionCleanup(): void {
 /**
  * Build the structured train: an engine plus one car per started group of ten,
  * each car a stable 2×5 seat grid filled left-to-right so fives and tens read
- * at a glance. Works for 0–50 (0 shows one empty car).
+ * at a glance. Works for 0–50 (0 shows one empty car). `capacityFor` sizes the
+ * cars for a target the child will build toward; `tappableSeats` renders seats
+ * as buttons for the Load-the-Train interaction.
  */
-function buildTrainVisual(quantity: number): HTMLElement {
+function buildTrainVisual(
+  quantity: number,
+  options?: { capacityFor?: number; tappableSeats?: boolean }
+): { train: HTMLElement; seats: HTMLElement[] } {
   const train = document.createElement('div');
   train.className = 'number-train';
-  train.setAttribute('role', 'img');
-  train.setAttribute(
-    'aria-label',
-    `A train carrying ${quantity} ${quantity === 1 ? 'passenger' : 'passengers'}`
-  );
+  const allSeats: HTMLElement[] = [];
+
+  if (options?.tappableSeats) {
+    train.setAttribute('aria-label', 'Train seats');
+  } else {
+    train.setAttribute('role', 'img');
+    train.setAttribute(
+      'aria-label',
+      `A train carrying ${quantity} ${quantity === 1 ? 'passenger' : 'passengers'}`
+    );
+  }
 
   const engine = document.createElement('div');
   engine.className = 'number-train__engine';
   engine.innerHTML = trainEngineSvg();
   train.appendChild(engine);
 
-  const carCount = Math.max(1, Math.ceil(quantity / SEATS_PER_CAR));
+  const capacityBasis = Math.max(quantity, options?.capacityFor ?? 0);
+  const carCount = Math.max(1, Math.ceil(capacityBasis / SEATS_PER_CAR));
   for (let carIndex = 0; carIndex < carCount; carIndex += 1) {
     const car = document.createElement('div');
     car.className = 'number-train__car';
@@ -431,20 +641,25 @@ function buildTrainVisual(quantity: number): HTMLElement {
     );
 
     for (let seatIndex = 0; seatIndex < SEATS_PER_CAR; seatIndex += 1) {
-      const seat = document.createElement('div');
+      const seat = document.createElement(options?.tappableSeats ? 'button' : 'div');
       seat.className = 'number-train__seat';
+      if (options?.tappableSeats) {
+        seat.classList.add('number-train__seat--tap');
+        (seat as HTMLButtonElement).type = 'button';
+      }
       if (seatIndex < occupiedInCar) {
         seat.classList.add('is-occupied');
         seat.innerHTML = passengerSvg();
       }
       seats.appendChild(seat);
+      allSeats.push(seat);
     }
 
     car.appendChild(seats);
     train.appendChild(car);
   }
 
-  return train;
+  return { train, seats: allSeats };
 }
 
 /**
@@ -512,9 +727,14 @@ function speakAndPlay(options: NumberTrainOptions, feedback: FeedbackRule): void
   }
 }
 
+/** The evaluated answer a round is scored against. */
+function correctAnswerOf(round: NumberTrainRound): number {
+  return round.kind === 'count_train' ? round.quantity : round.target;
+}
+
 function createAttemptEvent(params: {
   options: NumberTrainOptions;
-  round: CountTrainRound;
+  round: NumberTrainRound;
   plan: NumberTrainPlan;
   roundIndex: number;
   outcome: ActivityAttemptEvent['outcome'];
@@ -524,6 +744,7 @@ function createAttemptEvent(params: {
   hintShown: boolean;
 }): ActivityAttemptEvent {
   const { options, round, plan } = params;
+  const answer = correctAnswerOf(round);
   return {
     event_id: createEventId(),
     session_id: options.sessionId,
@@ -535,9 +756,9 @@ function createAttemptEvent(params: {
     prompt_text: round.prompt,
     outcome: params.outcome,
     selected_choice_id: String(params.selected),
-    correct_choice_id: String(round.quantity),
+    correct_choice_id: String(answer),
     selected_answer: String(params.selected),
-    correct_answer: String(round.quantity),
+    correct_answer: String(answer),
     attempt_number: params.attemptNumber,
     response_time_ms: params.responseTimeMs,
     difficulty_level: options.activity.difficulty.level,
@@ -550,7 +771,7 @@ function createAttemptEvent(params: {
       round_type: round.kind,
       round_index: params.roundIndex + 1,
       round_total: plan.rounds.length,
-      target_quantity: round.quantity,
+      target_quantity: answer,
     },
   };
 }

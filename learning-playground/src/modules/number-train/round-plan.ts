@@ -47,12 +47,20 @@ export function buildSessionPlan(config: NumberTrainSessionConfig): NumberTrainP
     if (quantity === previousQuantity && quantity < maxQuantity) quantity += 1;
     previousQuantity = quantity;
 
-    rounds.push({
-      kind: 'count_train',
-      quantity,
-      choices: buildChoices(quantity, maxQuantity, random),
-      prompt: COUNT_PROMPT,
-    });
+    if (isLoadRoundIndex(index, roundCount)) {
+      rounds.push({
+        kind: 'load_train',
+        target: quantity,
+        prompt: `Put ${quantity} passengers on the train.`,
+      });
+    } else {
+      rounds.push({
+        kind: 'count_train',
+        quantity,
+        choices: buildChoices(quantity, maxQuantity, random),
+        prompt: COUNT_PROMPT,
+      });
+    }
   }
 
   const plan: NumberTrainPlan = { max_quantity: maxQuantity, rounds };
@@ -63,6 +71,19 @@ export function buildSessionPlan(config: NumberTrainSessionConfig): NumberTrainP
   }
 
   return plan;
+}
+
+/**
+ * Which trip positions are Load-the-Train (quantity construction) rounds.
+ * Deterministic composition: on the standard six-round trip the child counts
+ * first (confidence), builds in the middle (rounds 4–5), and finishes with a
+ * stretch count. Shorter authored trips keep one build round near the middle;
+ * Missing Station (slice 4) will take one of these positions later.
+ */
+function isLoadRoundIndex(index: number, roundCount: number): boolean {
+  if (roundCount < 3) return false;
+  if (roundCount < 6) return index === roundCount - 2;
+  return index === 3 || index === 4;
 }
 
 /** Three choices: the answer plus two neighbor distractors, seed-ordered. */
@@ -147,6 +168,19 @@ function validateRound(
 ): string[] {
   const errors: string[] = [];
   const where = `round ${index + 1} (${round.kind})`;
+
+  if (round.kind === 'load_train') {
+    if (!Number.isInteger(round.target) || round.target < 1) {
+      errors.push(`${where}: target ${round.target} must be a positive integer`);
+    }
+    if (round.target > maxQuantity) {
+      errors.push(`${where}: target ${round.target} above max ${maxQuantity}`);
+    }
+    if (round.prompt.trim().length === 0) {
+      errors.push(`${where}: empty prompt`);
+    }
+    return errors;
+  }
 
   if (!Number.isInteger(round.quantity) || round.quantity < 0) {
     errors.push(`${where}: quantity ${round.quantity} is negative or non-integer`);
