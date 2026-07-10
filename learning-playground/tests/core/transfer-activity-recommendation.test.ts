@@ -77,6 +77,40 @@ describe('transfer activity recommendation', () => {
     });
   });
 
+  test('recommends the approved spoken blend after weak visual blending evidence', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('blending');
+    expect(skill).toBeDefined();
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeBlendingEvent('event-1'),
+        makeBlendingEvent('event-2'),
+        makeBlendingEvent('event-3'),
+      ],
+      activities: APPROVED_ACTIVITIES,
+    });
+    const coverage = evaluateTransferCoverage(
+      'blending',
+      APPROVED_ACTIVITIES,
+      evidence,
+      graph
+    );
+
+    expect(coverage.status).toBe('ready_for_transfer');
+    expect(coverage.successful_strengths).toEqual(['weak']);
+    expect(getTransferActivityRecommendation({
+      skillId: 'blending',
+      activities: APPROVED_ACTIVITIES,
+      coverage,
+    })).toMatchObject({
+      skill_id: 'blending',
+      activity_id: 'blend-listen-dog',
+      activity_title: 'Listen and Blend',
+      context_type: 'different_prompt_mode',
+    });
+  });
+
   test('does not recommend a launch activity while coverage is blocked by content gap', () => {
     const graph = loadCurriculumGraph();
     const skill = graph.getSkill('counting');
@@ -185,6 +219,31 @@ function makePhonicsEvent(eventId: string): ActivityAttemptEvent {
     difficulty_level: 2,
     choice_count: 3,
     distractor_strength: 'easy',
+    input_type: 'tap',
+    hint_shown: false,
+  };
+}
+
+function makeBlendingEvent(eventId: string): ActivityAttemptEvent {
+  return {
+    event_id: eventId,
+    session_id: 'session-1',
+    child_id: 'local-child',
+    activity_id: 'blend-cat',
+    activity_version: 2,
+    skill_ids: ['blending'],
+    timestamp: `2026-01-01T12:00:0${eventId.slice(-1)}.000Z`,
+    prompt_text: 'Sound it out. Which word do these sounds make?',
+    outcome: 'correct',
+    selected_choice_id: 'cat',
+    correct_choice_id: 'cat',
+    selected_answer: 'cat',
+    correct_answer: 'cat',
+    attempt_number: 1,
+    response_time_ms: 1200,
+    difficulty_level: 2,
+    choice_count: 3,
+    distractor_strength: 'hard',
     input_type: 'tap',
     hint_shown: false,
   };
