@@ -207,6 +207,32 @@ describe('activity schema contract', () => {
     expect(hasDifferentPromptModeContent(activity!)).toBe(true);
   });
 
+  test('approved symbolic word builder implements its brief honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'build-model-map'
+    ));
+
+    expect(activity).toMatchObject({
+      title: 'Copy the Word',
+      skill_ids: ['word_building'],
+      originating_brief_id: 'brief-word_building-different_prompt_mode',
+      transfer: {
+        context_type: 'different_prompt_mode',
+        context_id: 'copy-printed-word',
+        example_set_id: 'map-model-1',
+        prompt_mode: 'symbolic',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasDifferentPromptModeContent(activity!)).toBe(true);
+
+    const mismatchedModel = {
+      ...activity!,
+      content: { ...activity!.content, word_model: 'sun' },
+    };
+    expect(hasDifferentPromptModeContent(mismatchedModel)).toBe(false);
+  });
+
   test('approved Bear Cafe category-sort activity implements its brief honestly', () => {
     const activity = allActivities.find((item) => (
       item.id === 'kennedis-orders-b-foods-001'
@@ -273,6 +299,9 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
   if (activity.domain === 'phonics' && activity.skill_ids.includes('blending')) {
     return hasSpokenBlendingPrompt(activity);
   }
+  if (activity.domain === 'phonics' && activity.skill_ids.includes('word_building')) {
+    return hasSymbolicWordBuildingPrompt(activity);
+  }
   if (activity.domain !== 'math') return false;
 
   const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
@@ -302,6 +331,28 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
     correctChoice?.label === String(targetQuantity) &&
     choices.length >= 2 &&
     choices.every((choice) => /^\d+$/.test(choice.label))
+  );
+}
+
+function hasSymbolicWordBuildingPrompt(activity: ActivityJson): boolean {
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const wordModel = getString(activity.content.word_model).toLowerCase();
+  const targetWord = getString(activity.content.target_word).toLowerCase();
+  const successTarget = getString(activity.success_rules.target_word).toLowerCase();
+  const picture = getString(activity.content.picture);
+  const tiles = getStringArray(activity.content.tiles).map((tile) => tile.toLowerCase());
+  const targetLetters = targetWord.split('');
+
+  return (
+    activity.interaction_model === 'tap_then_place' &&
+    activity.transfer.prompt_mode === 'symbolic' &&
+    wordModel.length > 0 &&
+    wordModel === targetWord &&
+    successTarget === targetWord &&
+    picture.length === 0 &&
+    !promptAudio.includes(targetWord) &&
+    tiles.length === targetLetters.length &&
+    [...tiles].sort().join('') === [...targetLetters].sort().join('')
   );
 }
 

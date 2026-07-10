@@ -1,6 +1,6 @@
 /**
  * Word-builder runtime — the top rung of the Word game (issue #27). The child
- * builds a pictured word by tapping letter tiles into slots in order (a
+ * builds a visually prompted word by tapping letter tiles into slots in order (a
  * tap-then-place interaction, a mode of the phonics Word-game runtime, not a new
  * top-level game type). Reuses Pip; emits the same ActivityAttemptEvent shape as
  * the matcher. The completion cheer + picture pop is a single deterministic
@@ -46,10 +46,16 @@ export function renderWordBuilderActivity(
 
   const targetWord = getTargetWord(options.activity);
   const tiles = getTiles(options.activity);
+  const wordModel = getWordModel(options.activity);
 
   // Fail closed on a misconfigured activity: the tiles must be able to spell the
   // target word (mirrors the matcher guarding that a correct choice exists).
-  if (!targetWord || tiles.length === 0 || !tilesCanSpell(targetWord, tiles)) {
+  if (
+    !targetWord ||
+    tiles.length === 0 ||
+    !tilesCanSpell(targetWord, tiles) ||
+    (wordModel !== undefined && wordModel.toLowerCase() !== targetWord.toLowerCase())
+  ) {
     renderActivityUnavailable(parent);
     return;
   }
@@ -113,6 +119,16 @@ export function renderWordBuilderActivity(
   prompt.className = 'activity-prompt';
   prompt.textContent = promptText;
   container.appendChild(prompt);
+
+  let wordModelElement: HTMLElement | null = null;
+  if (wordModel) {
+    wordModelElement = document.createElement('div');
+    wordModelElement.className = 'word-builder__model';
+    wordModelElement.setAttribute('role', 'img');
+    wordModelElement.setAttribute('aria-label', `Word to copy: ${wordModel}`);
+    wordModelElement.textContent = wordModel;
+    container.appendChild(wordModelElement);
+  }
 
   const picturePath = getPicture(options.activity);
   let pictureImage: HTMLImageElement | null = null;
@@ -258,6 +274,7 @@ export function renderWordBuilderActivity(
           setCharacterMouth('cheer');
           character.classList.add('is-cheering');
           pictureImage?.classList.add('is-alive');
+          wordModelElement?.classList.add('is-alive');
           completeActions.hidden = false;
         }
         return;
@@ -398,6 +415,13 @@ function tilesCanSpell(word: string, tiles: string[]): boolean {
 function getPicture(activity: LearningActivity): string | undefined {
   const picture = activity.content.picture;
   return typeof picture === 'string' ? picture : undefined;
+}
+
+function getWordModel(activity: LearningActivity): string | undefined {
+  const wordModel = activity.content.word_model;
+  return typeof wordModel === 'string' && wordModel.trim().length > 0
+    ? wordModel.trim()
+    : undefined;
 }
 
 function getPrompt(activity: LearningActivity): string {

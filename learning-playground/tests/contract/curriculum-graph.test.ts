@@ -156,6 +156,23 @@ describe('curriculum graph contract', () => {
     });
   });
 
+  test('symbolic word-building transfer occupies a planned medium context', () => {
+    const activity = activities.find((item) => item.id === 'build-model-map');
+
+    expect(activity).toMatchObject({
+      version: 1,
+      skill_ids: ['word_building'],
+      transfer: {
+        context_type: 'different_prompt_mode',
+        prompt_mode: 'symbolic',
+      },
+      difficulty: { level: 4 },
+    });
+    expect(
+      loadCurriculumGraph().getSkill('word_building')?.planned_transfer_contexts
+    ).toContain('different_prompt_mode');
+  });
+
   test('current graph has valid references and no circular prerequisites', () => {
     expect(validateCurriculumGraph(curriculumData as CurriculumGraphData)).toEqual([]);
   });

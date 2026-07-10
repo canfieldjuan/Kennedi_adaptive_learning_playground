@@ -349,7 +349,29 @@
   text-transform: lowercase;
 }
 
-/* Word builder — picture + slots + letter tiles (tap the letters in order). */
+/* Word builder — visual task object + slots + letter tiles. */
+.word-builder__model {
+  display: grid;
+  place-items: center;
+  width: min(240px, 72vw);
+  min-height: 72px;
+  padding: var(--space-sm) var(--space-lg);
+  border: 4px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-lg);
+  background: var(--child-bg-card);
+  box-shadow: 0 8px 24px var(--child-shadow);
+  color: var(--child-text);
+  font-size: 2.35rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: lowercase;
+}
+
+.word-builder__model.is-alive {
+  border-color: var(--child-accent-green);
+  animation: pipWordAlive 700ms ease-out;
+}
+
 .word-builder__picture {
   display: grid;
   place-items: center;
@@ -1462,7 +1484,8 @@
   .activity-choice.is-alive .activity-choice__image,
   .word-builder__slot.is-filled,
   .word-builder__tile.is-wrong,
-  .word-builder__picture-image.is-alive {
+  .word-builder__picture-image.is-alive,
+  .word-builder__model.is-alive {
     animation: none;
   }
 }
@@ -1764,6 +1787,12 @@
 
   .word-builder__picture-image {
     width: min(104px, 28vw);
+  }
+
+  .word-builder__model {
+    width: min(210px, 64vw);
+    min-height: 62px;
+    font-size: 2rem;
   }
 
   .word-builder__slot {
@@ -2170,6 +2199,13 @@
 
   .word-builder__picture-image {
     width: clamp(58px, 18dvh, 76px);
+  }
+
+  .word-builder__model {
+    width: min(190px, 46vw);
+    min-height: 48px;
+    padding: var(--space-xs) var(--space-md);
+    font-size: 1.65rem;
   }
 
   .word-builder__slots,

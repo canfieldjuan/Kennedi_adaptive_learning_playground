@@ -122,6 +122,54 @@ describe('word-builder runtime', () => {
     expect(events).toHaveLength(0);
     expect(cTile?.disabled).toBe(true);
   });
+
+  test('symbolic transfer renders a model instead of a picture and emits normal evidence', () => {
+    const { root, events } = setup('build-model-map');
+    const model = findByClass(root, 'word-builder__model');
+
+    expect(model?.textContent).toBe('map');
+    expect(model?.attributes['aria-label']).toBe('Word to copy: map');
+    expect(findByClass(root, 'word-builder__picture-image')).toBeUndefined();
+
+    findTileByLetter(root, 'm')?.click();
+    findTileByLetter(root, 'a')?.click();
+    findTileByLetter(root, 'p')?.click();
+
+    expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
+    expect(events[0]).toMatchObject({
+      activity_id: 'build-model-map',
+      activity_version: 1,
+      skill_ids: ['word_building'],
+      prompt_text: 'Copy this word. Tap the matching letters in order.',
+      selected_answer: 'map',
+      correct_answer: 'map',
+      difficulty_level: 4,
+    });
+    expect(model?.classList.contains('is-alive')).toBe(true);
+  });
+
+  test('a symbolic model that disagrees with the target fails closed', () => {
+    const root = document.createElement('div') as unknown as MockElement;
+    const broken = {
+      ...getActivity('build-model-map'),
+      content: {
+        ...getActivity('build-model-map').content,
+        word_model: 'sun',
+      },
+    } as LearningActivity;
+
+    renderWordBuilderActivity(root as unknown as HTMLElement, {
+      activity: broken,
+      childId: 'local-child',
+      sessionId: 'session-1',
+      speech: createMockSpeech(),
+      audio: createMockAudio(),
+      onEvent: vi.fn(),
+    });
+
+    expect(findByClass(root, 'word-builder__model')).toBeUndefined();
+    expect(findByClass(root, 'activity-title')?.textContent).toBe('Activity needs setup');
+  });
 });
 
 function setup(activityId: string): { root: MockElement; events: ActivityAttemptEvent[] } {

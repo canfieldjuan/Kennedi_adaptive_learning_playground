@@ -66,6 +66,12 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('min-height: 48px');
   });
 
+  test('disables symbolic word-model completion motion when reduced motion is requested', () => {
+    expect(childUiCss).toContain(
+      '.word-builder__picture-image.is-alive,\n  .word-builder__model.is-alive'
+    );
+  });
+
   test('keeps wide-landscape home cards compact without shrinking phone targets', () => {
     expect(childUiCss).toContain('@media (min-width: 768px) and (min-height: 481px),');
     expect(childUiCss).toContain('(min-width: 941px)');
