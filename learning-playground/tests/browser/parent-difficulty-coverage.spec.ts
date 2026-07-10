@@ -21,9 +21,9 @@ test('Parent Guidance identifies an uncovered stored current rung as an app cont
       created_at: '2026-01-01T11:00:00.000Z',
       updated_at: '2026-01-01T12:00:00.000Z',
       skill_mastery: {
-        counting: {
-          skill_id: 'counting',
-          current_level: 1,
+        subitizing: {
+          skill_id: 'subitizing',
+          current_level: 2,
           confidence: 0.8,
           total_attempts: 5,
           correct_attempts: 5,
@@ -42,9 +42,9 @@ test('Parent Guidance identifies an uncovered stored current rung as an app cont
         child_id: 'local-child',
         activity_id: 'math-count-stars-three',
         activity_version: 1,
-        skill_ids: ['counting'],
+        skill_ids: ['subitizing'],
         timestamp: `2026-01-01T12:00:0${attempt}.000Z`,
-        prompt_text: 'How many stars do you see?',
+        prompt_text: 'How many stars?',
         outcome: 'correct',
         selected_choice_id: 'three',
         correct_choice_id: 'three',
@@ -52,9 +52,9 @@ test('Parent Guidance identifies an uncovered stored current rung as an app cont
         correct_answer: '3',
         attempt_number: attempt,
         response_time_ms: 1000,
-        difficulty_level: 1,
+        difficulty_level: 2,
         choice_count: 3,
-        distractor_strength: 'easy',
+        distractor_strength: 'medium',
         input_type: 'tap',
         hint_shown: false,
       }))
@@ -64,13 +64,13 @@ test('Parent Guidance identifies an uncovered stored current rung as an app cont
   await page.goto('/#parent');
 
   const guidance = page.locator('.parent-guidance-row').filter({
-    hasText: 'Counting',
+    hasText: 'Subitizing',
   });
   await expect(guidance).toContainText('Difficulty Coverage');
   await expect(guidance).toContainText('Blocked by content gap');
-  await expect(guidance).toContainText('Counts structured quantities accurately');
+  await expect(guidance).toContainText('Recognizes quantities in new layouts');
   await expect(guidance).toContainText('Difficulty Band');
-  await expect(guidance).toContainText('2-3');
+  await expect(guidance).toContainText('4-5');
   await expect(guidance).toContainText('Approved Activities');
   await expect(guidance).toContainText('0');
   await expect(guidance).toContainText(

@@ -23,6 +23,17 @@
 - An ended clip may reveal a manual route to a separate response activity. It
   must not navigate, score, or start that activity until the child taps it.
 
+## Parent Observation Access
+
+- The gated Parent Panel may offer a manual launch into an already-approved
+  local Video Vault activity so a parent can observe the clip/response fit.
+- The parent launch is access only. Rendering or pressing it emits no exposure,
+  response, accuracy, transfer, retention, or mastery evidence.
+- The launch must honor the existing parent Video Playback setting and remain
+  non-navigable while playback is Off.
+- Parent observation access must not add Video Vault to the four-choice child
+  home, autoplay media, or navigate automatically to the response activity.
+
 ## Future Content
 
 The first local clip is paired with a separate evidence-bearing response

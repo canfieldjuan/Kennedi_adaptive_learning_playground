@@ -52,7 +52,8 @@
         "initial_sound"
       ],
       "activity_contexts": [
-        "video-vault"
+        "video-vault",
+        "art-studio-story-outside"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",
@@ -320,7 +321,8 @@
       "activity_contexts": [
         "math-count-stars-three",
         "number-train",
-        "art-studio-three-stars"
+        "art-studio-three-stars",
+        "art-studio-five-flowers"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",
@@ -627,7 +629,8 @@
         "art-studio-free-decorate",
         "art-studio-pink-request",
         "art-studio-pattern-scarf",
-        "art-studio-fix-card"
+        "art-studio-fix-card",
+        "art-studio-dress-bear"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",

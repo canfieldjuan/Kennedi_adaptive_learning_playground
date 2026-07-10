@@ -8,7 +8,7 @@
 
 const INK = '#3a2461';
 
-export type StudioShapeId = 'star' | 'heart' | 'flower' | 'sun' | 'bubble';
+export type StudioShapeId = 'star' | 'heart' | 'flower' | 'sun' | 'bubble' | 'moon';
 
 /** Natural sticker fills, used when no paint color is applied. */
 export const STUDIO_SHAPE_DEFAULT_FILLS: Record<StudioShapeId, string> = {
@@ -17,6 +17,7 @@ export const STUDIO_SHAPE_DEFAULT_FILLS: Record<StudioShapeId, string> = {
   flower: '#e78fb3',
   sun: '#f6c343',
   bubble: '#a8d8f0',
+  moon: '#f0e6c8',
 };
 
 function shapeBody(shape: StudioShapeId, fill: string): string {
@@ -47,6 +48,8 @@ function shapeBody(shape: StudioShapeId, fill: string): string {
         <circle cx="50" cy="50" r="38" fill="${fill}" opacity="0.85" stroke="${INK}" stroke-width="5"/>
         <path d="M30 38 q6 -12 20 -14" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
       </g>`;
+    case 'moon':
+      return `<path d="M64 10 a40 40 0 1 0 24 66 a34 34 0 0 1 -24 -66 Z" fill="${fill}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>`;
   }
 }
 
@@ -61,13 +64,25 @@ export function studioShapeSvg(shape: StudioShapeId, fill?: string): string {
 
 export function isStudioShapeId(value: unknown): value is StudioShapeId {
   return typeof value === 'string' &&
-    ['star', 'heart', 'flower', 'sun', 'bubble'].includes(value);
+    ['star', 'heart', 'flower', 'sun', 'bubble', 'moon'].includes(value);
+}
+
+/**
+ * The dress-up surface: Baby Polar Bear's shirt, paintable via the main
+ * body fill. Rendered behind the decoration slots in free-decorate's
+ * shirt variant.
+ */
+export function shirtSurfaceSvg(fill: string): string {
+  return `<svg class="studio-shirt-svg" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
+    <path d="M66 14 L28 34 L10 74 L40 88 L46 70 L46 146 a8 8 0 0 0 8 8 h92 a8 8 0 0 0 8 -8 V70 l6 18 L190 74 L172 34 L134 14 a34 20 0 0 1 -68 0 Z" fill="${fill}" stroke="#3a2461" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M66 14 a34 20 0 0 0 68 0" fill="none" stroke="#3a2461" stroke-width="5"/>
+  </svg>`;
 }
 
 /** All shapes on one sheet, for render checks only. */
-export const STUDIO_ART_SHEET_SVG = `<svg viewBox="0 0 560 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <rect width="560" height="120" fill="#f4efe6"/>
-  ${(['star', 'heart', 'flower', 'sun', 'bubble'] as StudioShapeId[])
+export const STUDIO_ART_SHEET_SVG = `<svg viewBox="0 0 680 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="680" height="120" fill="#f4efe6"/>
+  ${(['star', 'heart', 'flower', 'sun', 'bubble', 'moon'] as StudioShapeId[])
     .map((shape, index) => `<g transform="translate(${16 + index * 110}, 10)">${shapeBody(shape, STUDIO_SHAPE_DEFAULT_FILLS[shape])}</g>`)
     .join('\n  ')}
 </svg>`;

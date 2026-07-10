@@ -160,7 +160,7 @@ describe('parent interpretation contract', () => {
       events,
       { skill_states: { counting: makeSkillState(0) } }
     );
-    const [blockedInterpretation] = buildParentSkillInterpretations(
+    const [structuredInterpretation] = buildParentSkillInterpretations(
       review,
       events,
       { skill_states: { counting: makeSkillState(1) } }
@@ -170,16 +170,16 @@ describe('parent interpretation contract', () => {
       current_level: 0,
       status: 'covered',
     });
-    expect(blockedInterpretation.difficulty_coverage).toMatchObject({
+    expect(structuredInterpretation.difficulty_coverage).toMatchObject({
       current_level: 1,
       current_min_difficulty_level: 2,
       current_max_difficulty_level: 3,
-      status: 'blocked_by_content_gap',
-      approved_activity_ids: [],
-      covered_level_count: 2,
+      status: 'covered',
+      approved_activity_ids: ['art-studio-five-flowers'],
+      covered_level_count: 3,
       total_level_count: 3,
     });
-    expect(blockedInterpretation.recommendation).toBe(
+    expect(structuredInterpretation.recommendation).toBe(
       entryInterpretation.recommendation
     );
   });
