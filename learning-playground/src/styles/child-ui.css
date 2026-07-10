@@ -1576,7 +1576,8 @@
 .home-card:nth-child(4) { animation-delay: 0.4s; }
 
 /* — Responsive — */
-@media (max-width: 768px) {
+@media (max-width: 768px),
+  (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
   .child-container {
     justify-content: flex-start;
     min-height: 100dvh;
@@ -1606,6 +1607,12 @@
     min-height: clamp(118px, 24dvh, 160px);
     gap: var(--space-sm);
     padding: var(--space-lg) var(--space-sm);
+  }
+
+  .home-card::before,
+  .activity-choice::before {
+    inset: 0;
+    pointer-events: none;
   }
 
   .home-card__icon {

@@ -32,10 +32,16 @@ describe('mobile child UI contract', () => {
   });
 
   test('keeps mobile gameplay targets large while reducing vertical stacking', () => {
-    expect(childUiCss).toContain('@media (max-width: 768px)');
+    expect(childUiCss).toContain('@media (max-width: 768px),');
+    expect(childUiCss).toContain('(max-width: 940px) and (max-height: 480px) and (orientation: landscape)');
     expect(childUiCss).toContain('grid-template-columns: repeat(auto-fit, minmax(104px, 1fr))');
     expect(childUiCss).toContain('min-height: 112px');
     expect(childUiCss).toContain('.activity-feedback:empty');
+  });
+
+  test('keeps expanded hit zones inside compact mobile grids', () => {
+    expect(childUiCss).toContain('.home-card::before,\n  .activity-choice::before');
+    expect(childUiCss).toContain('inset: 0;\n    pointer-events: none;');
   });
 
   test('defines mobile Bear Cafe as scene plus tray/action plus compact kitchen', () => {
