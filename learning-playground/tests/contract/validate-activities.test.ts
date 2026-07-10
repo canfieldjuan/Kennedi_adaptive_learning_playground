@@ -343,6 +343,34 @@ describe('activity schema contract', () => {
     expect(activity).toBeDefined();
     expect(hasDifferentPromptModeContent(activity!)).toBe(true);
   });
+
+  test('language vocabulary truth checks are not tied to the Bear video example', () => {
+    const videoResponse = allActivities.find((item) => (
+      item.id === 'video-bear-bakes-bread-response'
+    ));
+    expect(videoResponse).toBeDefined();
+
+    const generalVocabularyResponse: ActivityJson = {
+      ...videoResponse!,
+      id: 'clothing-vocabulary-response',
+      title: 'What Can You Wear?',
+      content: {
+        prompt_audio: 'Which picture shows something you can wear?',
+        choices: [
+          { id: 'hat', label: 'hat', image: '/assets/images/hat.svg', correct: true },
+          { id: 'apple', label: 'apple', image: '/assets/images/apple.svg', correct: false },
+          { id: 'bread', label: 'bread', image: '/assets/images/bread.svg', correct: false },
+        ],
+      },
+      success_rules: {
+        correct_choice_id: 'hat',
+        required_correct_count: 1,
+        max_attempts_before_hint: 2,
+      },
+    };
+
+    expect(hasDifferentPromptModeContent(generalVocabularyResponse)).toBe(true);
+  });
 });
 
 function hasReverseMappingContent(activity: ActivityJson): boolean {
@@ -372,7 +400,7 @@ function hasReverseMappingContent(activity: ActivityJson): boolean {
 function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
   if (isKennedisOrdersFixOrder(activity)) return true;
   if (activity.domain === 'language' && activity.skill_ids.includes('vocabulary')) {
-    return hasVideoVocabularyResponse(activity);
+    return hasLanguageVocabularyResponse(activity);
   }
   if (activity.domain === 'phonics' && activity.skill_ids.includes('blending')) {
     return hasSpokenBlendingPrompt(activity);
@@ -418,28 +446,25 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
   );
 }
 
-function hasVideoVocabularyResponse(activity: ActivityJson): boolean {
+function hasLanguageVocabularyResponse(activity: ActivityJson): boolean {
   const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
-  const sourceManifestId = getString(activity.content.source_manifest_id);
-  const sourceVideoId = getString(activity.content.source_video_id);
   const choices = getChoices(activity);
   const correctChoiceId = getString(activity.success_rules.correct_choice_id);
-  const correctChoice = choices.find((choice) => (
-    choice.id === correctChoiceId || choice.correct === true
-  ));
+  const declaredCorrectChoices = choices.filter((choice) => choice.correct === true);
+  const correctChoice = choices.find((choice) => choice.id === correctChoiceId);
 
   return (
     activity.interaction_model === 'tap_to_match' &&
-    activity.transfer.prompt_mode === 'mixed' &&
-    sourceManifestId.length > 0 &&
-    sourceVideoId.length > 0 &&
-    promptAudio.includes('what') &&
-    promptAudio.includes('bear') &&
-    choices.length === 3 &&
+    (activity.transfer.prompt_mode === 'mixed' ||
+      activity.transfer.prompt_mode === 'spoken') &&
+    promptAudio.length > 0 &&
+    choices.length >= 2 &&
+    choices.length <= 6 &&
     choices.every((choice) => choice.image?.startsWith('/assets/images/')) &&
-    correctChoice?.id === 'bread' &&
-    correctChoice.label.toLowerCase() === 'bread' &&
-    !promptAudio.includes('bread')
+    choices.every((choice) => choice.label.trim().length > 0) &&
+    declaredCorrectChoices.length === 1 &&
+    correctChoice === declaredCorrectChoices[0] &&
+    !promptAudio.includes(correctChoice.label.toLowerCase())
   );
 }
 
