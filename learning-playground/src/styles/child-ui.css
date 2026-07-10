@@ -1139,6 +1139,137 @@
   box-shadow: inset 0 4px 18px rgba(0, 0, 0, 0.16);
 }
 
+/* The Art studio — the all-neutral illustrated surface behind the coloring
+   activity (visual arc stage 4). The scene stays cream/wood/gray-beige so
+   color on this screen belongs only to the palette swatches and the filled
+   shape. The decorative layer is inert (aria-hidden, no pointer events);
+   content stacks above it, and text/cards switch to ink-on-warm because the
+   shared white styling is for the dark background. */
+.coloring-studio {
+  position: relative;
+  background:
+    linear-gradient(165deg, rgba(244, 239, 230, 0.97), rgba(233, 225, 210, 0.95)),
+    var(--child-bg);
+}
+
+.studio-environment {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.studio-environment .studio-env__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.coloring-studio > :not(.studio-environment) {
+  position: relative;
+  z-index: 1;
+}
+
+.coloring-studio .activity-icon-button {
+  background: rgba(58, 36, 97, 0.12);
+  color: #3a2461;
+}
+
+.coloring-studio .activity-title {
+  color: #3a2461;
+}
+
+.coloring-studio .activity-prompt {
+  color: rgba(58, 36, 97, 0.75);
+}
+
+.coloring-studio .activity-feedback {
+  color: #3a2461;
+}
+
+.coloring-studio .coloring-request-card {
+  border-color: rgba(58, 36, 97, 0.3);
+  background: #fffdf7;
+}
+
+/* The palette sits on a supply tray: a wood band that lifts the swatch
+   colors — the only saturated color on the screen — off the neutral scene. */
+.coloring-studio .coloring-swatches {
+  padding: var(--space-md);
+  border: 4px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-xl);
+  background: rgba(217, 196, 163, 0.5);
+}
+
+.coloring-studio .coloring-swatch {
+  background: #fffdf7;
+  color: #3a2461;
+}
+
+/* The shape becomes a canvas on an easel: white panel, ink frame, easel legs
+   painted by pseudo-elements (decorative — no pointer events of their own). */
+.coloring-studio .coloring-shape {
+  position: relative;
+  margin-bottom: var(--space-md);
+  border: 5px solid rgba(58, 36, 97, 0.4);
+  border-radius: var(--radius-lg);
+  background: #fbf8f1;
+  box-shadow: 0 10px 30px rgba(58, 36, 97, 0.18);
+}
+
+.coloring-studio .coloring-shape::before,
+.coloring-studio .coloring-shape::after {
+  content: '';
+  position: absolute;
+  bottom: -36px;
+  z-index: -1;
+  width: 12px;
+  height: 36px;
+  border-radius: 6px;
+  background: #c9b28d;
+  box-shadow: inset 0 0 0 3px rgba(58, 36, 97, 0.25);
+  pointer-events: none;
+  transform-origin: top center;
+}
+
+.coloring-studio .coloring-shape::before {
+  left: 20%;
+  transform: rotate(10deg);
+}
+
+.coloring-studio .coloring-shape::after {
+  right: 20%;
+  transform: rotate(-10deg);
+}
+
+/* Completion: one paint-shine sweep across the filled canvas (one-shot;
+   disabled under prefers-reduced-motion). */
+.coloring-studio .coloring-shape.is-complete .coloring-shape__circle {
+  position: relative;
+  overflow: hidden;
+}
+
+.coloring-studio .coloring-shape.is-complete .coloring-shape__circle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 32%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 68%
+  );
+  transform: translateX(-100%);
+  animation: studioPaintShine 900ms ease-out 1 forwards;
+}
+
+@keyframes studioPaintShine {
+  to {
+    transform: translateX(100%);
+  }
+}
+
 /* — Video Vault — */
 .video-vault-screen {
   justify-content: flex-start;
@@ -1998,6 +2129,7 @@
   .word-builder__picture-image.is-alive,
   .word-builder__model.is-alive,
   .coloring-shape.is-wrong,
+  .coloring-studio .coloring-shape.is-complete .coloring-shape__circle::after,
   .number-train.is-counting .number-train__seat.is-occupied,
   .number-train__seat.is-next-hint,
   .number-train__path.is-walking .number-train__path-stop,
@@ -2564,6 +2696,23 @@
 
   .phonics-workshop .activity-choice-grid,
   .phonics-workshop .word-builder__slots {
+    padding: var(--space-sm);
+  }
+
+  .studio-environment .studio-env__prop--minor {
+    display: none;
+  }
+
+  .coloring-studio .coloring-shape {
+    margin-bottom: 0;
+  }
+
+  .coloring-studio .coloring-shape::before,
+  .coloring-studio .coloring-shape::after {
+    display: none;
+  }
+
+  .coloring-studio .coloring-swatches {
     padding: var(--space-sm);
   }
 

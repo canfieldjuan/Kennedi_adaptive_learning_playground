@@ -142,4 +142,18 @@ describe('mobile child UI contract', () => {
       /\.bear-cafe-environment \.cafe-env__prop--minor \{\s*display: none;/
     );
   });
+
+  test('keeps the Art studio environment inert and shallow on phones', () => {
+    expect(childUiCss).toMatch(
+      /\.studio-environment \{[\s\S]*?pointer-events: none;[\s\S]*?\}/
+    );
+    expect(childUiCss).toMatch(
+      /\.studio-environment \.studio-env__prop--minor \{\s*display: none;/
+    );
+    // The decorative easel legs disappear on phones so the shape's footprint
+    // stays exactly what the landscape grid expects.
+    expect(childUiCss).toMatch(
+      /\.coloring-studio \.coloring-shape::before,\s*\.coloring-studio \.coloring-shape::after \{\s*display: none;/
+    );
+  });
 });
