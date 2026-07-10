@@ -281,7 +281,11 @@ describe('number train runtime', () => {
     findChoice(root, String(quantity))?.click();
 
     expect(events.map((event) => event.outcome)).toEqual(['correct']);
-    expect(events[0]?.skill_ids).toEqual(['counting']);
+    expect(events[0]?.skill_ids).toEqual(['counting', 'numeral_recognition']);
+    expect(events[0]?.skill_outcomes).toEqual([
+      { skill_id: 'counting', outcome: 'correct' },
+      { skill_id: 'numeral_recognition', outcome: 'correct' },
+    ]);
     expect(events[0]?.skill_ids).not.toContain('subitizing');
     expect(events[0]?.metadata).toMatchObject({
       game: 'number-train',
@@ -395,14 +399,20 @@ describe('number train runtime', () => {
     expect(events).toHaveLength(eventsBefore);
     expect(seats.filter((s) => s.className.includes('is-occupied'))).toHaveLength(1);
 
-    // Wrong Check → incorrect with the constructed count as the answer.
+    // Wrong Check → incorrect with the constructed count as the answer,
+    // attributed to counting + quantity construction (never subitizing).
     findByText(root, 'Check')?.click();
     expect(events).toHaveLength(eventsBefore + 1);
     expect(events[events.length - 1]).toMatchObject({
       outcome: 'incorrect',
       selected_answer: '1',
       correct_answer: String(loadRound.target),
+      skill_ids: ['counting', 'quantity_construction'],
     });
+    expect(events[events.length - 1]?.skill_outcomes).toEqual([
+      { skill_id: 'counting', outcome: 'incorrect' },
+      { skill_id: 'quantity_construction', outcome: 'incorrect' },
+    ]);
     expect(events[events.length - 1]?.metadata).toMatchObject({
       round_type: 'load_train',
       target_quantity: loadRound.target,
@@ -459,11 +469,13 @@ describe('number train runtime', () => {
     expect(findByClass(root, 'number-train__path')?.className).toContain('is-walking');
     expect(findChoice(root, String(answer))?.classList.contains('is-hinted')).toBe(true);
 
-    // The correct numeral fills the blank and advances the trip.
+    // The correct numeral fills the blank and advances the trip; sequence
+    // rounds attribute number order + numeral recognition.
     findChoice(root, String(answer))?.click();
     expect(events[events.length - 1]).toMatchObject({
       outcome: 'correct',
       selected_answer: String(answer),
+      skill_ids: ['number_sequence', 'numeral_recognition'],
     });
     expect(events[events.length - 1]?.metadata).toMatchObject({
       round_type: 'missing_station',
@@ -500,21 +512,28 @@ describe('number train protected surfaces', () => {
     expect(activity?.interaction_model).toBe('tap_then_place');
     expect((activity?.content as { game?: string }).game).toBe('number-train');
     expect(activity?.domain).toBe('math');
-    expect(activity?.skill_ids).toEqual(['counting']);
+    expect(activity?.skill_ids).toEqual([
+      'counting',
+      'numeral_recognition',
+      'quantity_construction',
+      'number_sequence',
+    ]);
     expect(activity?.safety.requires_parent_approval).toBe(true);
     expect(activity?.safety.external_links_allowed).toBe(false);
     expect(JSON.stringify(activity)).not.toMatch(/https?:\/\//);
   });
 
-  test('the default Math activity feeds the counting entry level', () => {
-    // Promotion is band-scoped (progress.ts): a fresh profile starts at
-    // counting level 0, so the activity behind the Math home tile must emit a
-    // difficulty inside level 0's band or a new child can never accrue
-    // promotion-eligible attempts.
+  test('the default Math activity feeds the entry level of every skill it claims', () => {
+    // Promotion is band-scoped (progress.ts): a fresh profile starts each
+    // skill at level 0, so the activity behind the Math home tile must emit a
+    // difficulty inside level 0's band for every skill it records evidence
+    // for, or a new child can never accrue promotion-eligible attempts.
     const activity = APPROVED_ACTIVITIES.find((entry) => entry.id === 'number-train');
     const graph = loadCurriculumGraph();
-    const level = graph.getSkillLevelForDifficulty('counting', activity!.difficulty.level);
-    expect(level?.level).toBe(0);
+    for (const skillId of activity!.skill_ids) {
+      const level = graph.getSkillLevelForDifficulty(skillId, activity!.difficulty.level);
+      expect(level?.level).toBe(0);
+    }
   });
 });
 

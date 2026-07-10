@@ -923,6 +923,19 @@ function correctAnswerOf(round: NumberTrainRound): number {
   return round.sequence[round.missing_index];
 }
 
+/**
+ * Which curriculum skills a round actually exercises. Count rounds pair
+ * counting with reading the written numeral; load rounds pair counting with
+ * constructing the quantity; missing-station rounds pair number order with
+ * reading the numeral. Never subitizing — structured counting is not
+ * subitizing evidence.
+ */
+function roundSkillIds(round: NumberTrainRound): string[] {
+  if (round.kind === 'count_train') return ['counting', 'numeral_recognition'];
+  if (round.kind === 'load_train') return ['counting', 'quantity_construction'];
+  return ['number_sequence', 'numeral_recognition'];
+}
+
 function createAttemptEvent(params: {
   options: NumberTrainOptions;
   round: NumberTrainRound;
@@ -936,16 +949,21 @@ function createAttemptEvent(params: {
 }): ActivityAttemptEvent {
   const { options, round, plan } = params;
   const answer = correctAnswerOf(round);
+  const skillIds = roundSkillIds(round);
   return {
     event_id: createEventId(),
     session_id: options.sessionId,
     child_id: options.childId,
     activity_id: options.activity.id,
     activity_version: options.activity.version,
-    skill_ids: options.activity.skill_ids,
+    skill_ids: skillIds,
     timestamp: new Date().toISOString(),
     prompt_text: round.prompt,
     outcome: params.outcome,
+    skill_outcomes: skillIds.map((skillId) => ({
+      skill_id: skillId,
+      outcome: params.outcome,
+    })),
     selected_choice_id: String(params.selected),
     correct_choice_id: String(answer),
     selected_answer: String(params.selected),

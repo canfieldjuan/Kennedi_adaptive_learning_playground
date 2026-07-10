@@ -3,9 +3,19 @@
   "version": 1,
   "title": "Number Train",
   "domain": "math",
-  "skill_ids": ["counting"],
+  "skill_ids": [
+    "counting",
+    "numeral_recognition",
+    "quantity_construction",
+    "number_sequence"
+  ],
   "transfer": {
-    "skill_ids": ["counting"],
+    "skill_ids": [
+      "counting",
+      "numeral_recognition",
+      "quantity_construction",
+      "number_sequence"
+    ],
     "context_type": "same_format_new_examples",
     "context_id": "number-train-count",
     "example_set_id": "train-seats-v1",

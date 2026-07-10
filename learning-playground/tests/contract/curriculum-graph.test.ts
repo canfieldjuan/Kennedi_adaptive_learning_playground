@@ -67,10 +67,10 @@ describe('curriculum graph contract', () => {
     const graph = loadCurriculumGraph();
 
     expect(graph.getSkillLevel('counting', 1)?.label).toBe(
-      'Counts small pretend-play sets'
+      'Counts structured quantities accurately'
     );
     expect(graph.getSkillLevelForDifficulty('counting', 4)?.label).toBe(
-      'Counts in combined orders'
+      'Counts grouped quantities across tens'
     );
     expect(graph.getLowestSkillLevel('counting')?.level).toBe(0);
     expect(graph.getMaxSkillLevel('counting')?.level).toBe(2);

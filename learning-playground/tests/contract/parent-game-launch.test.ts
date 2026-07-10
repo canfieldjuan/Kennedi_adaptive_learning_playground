@@ -65,7 +65,7 @@ describe('parent game launch contract', () => {
       sessionId: 'session-1',
     });
 
-    expect(collectText(root)).toContain('1: Counts small pretend-play sets');
+    expect(collectText(root)).toContain('1: Counts structured quantities accurately');
   });
 
   test('Bear Cafe replaces Videos on the four-slot child home grid', () => {
