@@ -8,7 +8,7 @@
     "skill_ids": ["vocabulary"],
     "context_type": "same_format_same_examples",
     "context_id": "local-video-vocabulary-choice",
-    "example_set_id": "empty-vault-v1",
+    "example_set_id": "bear-bakes-bread-v1",
     "prompt_mode": "mixed"
   },
   "difficulty": {
@@ -29,7 +29,7 @@
   },
   "feedback_rules": {
     "correct": {
-      "speech": "All done.",
+      "speech": "Bear baked bread. Tap the question mark.",
       "animation": "glow_pop",
       "sound": "soft_chime"
     },

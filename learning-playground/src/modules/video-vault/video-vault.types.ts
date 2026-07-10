@@ -27,6 +27,7 @@ export interface ApprovedVideo {
   duration_seconds: number;
   mime_type: SupportedVideoMimeType;
   evidence_role: 'exposure_only';
+  response_activity_id: string;
   source: 'local';
   approved_by_parent: true;
   thumbnail_path?: string;

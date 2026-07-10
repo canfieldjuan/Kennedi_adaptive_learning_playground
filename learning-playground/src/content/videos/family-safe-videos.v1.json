@@ -2,10 +2,23 @@
   "id": "family-safe-videos-v1",
   "version": 1,
   "title": "Family Safe Videos",
-  "description": "Parent-approved local video manifest. Starts empty until local assets are added.",
+  "description": "Parent-approved repo-bundled videos with separate response activities.",
   "intake_mode": "repo_bundled",
   "parent_imports_supported": false,
   "approved_by_parent": true,
   "evidence_role": "exposure_only",
-  "items": []
+  "items": [
+    {
+      "id": "bear-bakes-bread",
+      "title": "Bear Bakes Bread",
+      "path": "/assets/videos/bear-bakes-bread.webm",
+      "duration_seconds": 10,
+      "mime_type": "video/webm",
+      "evidence_role": "exposure_only",
+      "response_activity_id": "video-bear-bakes-bread-response",
+      "source": "local",
+      "approved_by_parent": true,
+      "thumbnail_path": "/assets/images/video-bear-bread-ready.svg"
+    }
+  ]
 }
