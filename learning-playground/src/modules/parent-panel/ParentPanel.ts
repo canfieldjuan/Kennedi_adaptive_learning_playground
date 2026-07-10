@@ -606,7 +606,7 @@ function createVoiceSettingsSection(
   for (const voice of voices) {
     const option = document.createElement('option');
     option.value = voice.voiceURI;
-    option.textContent = voice.name;
+    option.textContent = `${voice.name} (${voice.lang})`;
     if (settings.speech_voice_uri === voice.voiceURI) option.selected = true;
     select.appendChild(option);
   }
@@ -630,7 +630,7 @@ function createVoiceSettingsSection(
       for (const voice of loaded) {
         const option = document.createElement('option');
         option.value = voice.voiceURI;
-        option.textContent = voice.name;
+        option.textContent = `${voice.name} (${voice.lang})`;
         if (settings.speech_voice_uri === voice.voiceURI) option.selected = true;
         select.appendChild(option);
       }
