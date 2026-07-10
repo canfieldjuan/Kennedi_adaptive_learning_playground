@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.33 Video Vault evidence boundary baseline
+Version: v0.3.34 Bear Cafe environment baseline
 
 ## Current Working MVP
 
@@ -49,6 +49,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   The child sees a local illustrated house and identifies the triangle roof,
   crossing from isolated circle cards to a new target shape in context.
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
+- Bear Cafe now plays inside one continuous illustrated cafe (visual arc stage 2): a game-owned decorative environment layer (wall, window, pendant, icon-only menu board, shelf, plant, counter, floor — inert: `aria-hidden`, `pointer-events: none`) sits behind every stage and reframes per stage — the wall phone station appears during the call, and the customer waits at an illustrated service window (sky, ink frame, counter sill) instead of a floating card. The delivery stage's bell/basket emoji are replaced by illustrated SVG (the Deliver control renders the serving tray, accessible name unchanged); the order sits visibly on the tray at the counter. Scenery hides minor props on phones and never covers controls; no event, timing, or rule changes.
 - Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
 - The Bear Cafe bear is now an illustrated inline-SVG character (first slice of the chosen illustrated art standard) that expresses the order arc through its face — waiting while its order is prepared, receiving at the handoff, happy on completion — tinted per caller. Local SVG only (no external assets/network/deps); the emoji `content.character.icon` stays in the data (no schema change). This supersedes the earlier emoji reaction accents.
 - The seven Bear Cafe foods (apple, banana, berry, bread, cookie, cupcake, soup) are now illustrated inline SVG matching the bear's style — in the choice buttons, the tray, and the count-expanded plating/handoff plates. Local SVG only; `content.food.icon` stays in the data (no schema change); plate count integrity preserved.

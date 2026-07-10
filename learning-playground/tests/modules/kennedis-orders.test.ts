@@ -127,14 +127,17 @@ describe("Kennedi's Orders adapter contract", () => {
   });
 
   test('child UI hides adult labels behind icon-only controls and visual tickets', () => {
+    // The Deliver control is no longer a text glyph: it renders the
+    // illustrated serving tray (visual arc stage 2) with the accessible name
+    // "Deliver order" — icon-only/no-reading still holds without an entry here.
     expect(BEAR_CAFE_CHILD_CONTROL_LABELS).toMatchObject({
       home: '⌂',
       repeat: '↻',
       check: '✓',
-      deliver: '🧺',
       next: '→',
       restart: '↻',
     });
+    expect(BEAR_CAFE_CHILD_CONTROL_LABELS).not.toHaveProperty('deliver');
 
     const content = getRequiredContent(getActivity('kennedis-orders-pink-berries-001'));
     const ticket = renderOrderTicketVisual(content);

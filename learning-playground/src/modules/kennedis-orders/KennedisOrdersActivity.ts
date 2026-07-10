@@ -14,6 +14,12 @@ import type {
 import { renderBearArt } from './bear-art';
 import { renderFoodArt } from './food-art';
 import { renderDecorationArt } from './decoration-art';
+import {
+  createCafeEnvironment,
+  pickupBellSvg,
+  deliveryTraySvg,
+  cafePhoneSvg,
+} from './cafe-environment';
 
 interface KennedisOrdersOptions {
   activity: LearningActivity;
@@ -48,11 +54,13 @@ const HANDOFF_DURATION_MS = 900;
 // interrupted beat drops no evidence.
 const PLATING_DURATION_MS = 800;
 
+// Icon-only child controls (no reading required). The Deliver control renders
+// the illustrated serving tray (cafe-environment.ts) instead of a text glyph,
+// so it no longer appears here; its accessible name stays "Deliver order".
 export const BEAR_CAFE_CHILD_CONTROL_LABELS = {
   home: '⌂',
   repeat: '↻',
   check: '✓',
-  deliver: '🧺',
   next: '→',
   restart: '↻',
 } as const;
@@ -99,6 +107,12 @@ export function renderKennedisOrdersActivity(
   const render = () => {
     if (!container) return;
     container.innerHTML = '';
+
+    // The cafe itself: one decorative environment behind every stage, reframed
+    // per stage via data-stage (the wall phone shows only during the call).
+    const environment = createCafeEnvironment();
+    environment.dataset.stage = stage;
+    container.appendChild(environment);
 
     // Any render means the stage changed or the child interacted — reset the
     // idle nudge so it only fires after a genuine pause.
@@ -148,7 +162,7 @@ export function renderKennedisOrdersActivity(
     }
 
     if (stage === 'delivery') {
-      renderDeliveryStage(container, content, options, () => {
+      renderDeliveryStage(container, content, tray, options, () => {
         // Emit completion synchronously on the delivery commit, before the
         // cosmetic handoff beat. Tapping Home during the beat tears the view
         // down and clears the handoff timer, so the order_delivered event must
@@ -370,7 +384,7 @@ function renderPhoneStage(
   phone.type = 'button';
   phone.setAttribute('aria-label', `${content.character.name} is calling`);
   phone.innerHTML = `
-    <span class="bear-cafe-phone__icon bear-cafe-phone__icon--ringing" aria-hidden="true">☎</span>
+    <span class="bear-cafe-phone__icon bear-cafe-phone__icon--ringing" aria-hidden="true">${cafePhoneSvg()}</span>
     <span class="bear-cafe-phone__portrait" aria-hidden="true">${renderBearArt(content.character.id, 'happy')}</span>
   `;
   phone.addEventListener('click', onAnswer);
@@ -730,6 +744,7 @@ function renderHandoffStage(
 function renderDeliveryStage(
   parent: HTMLElement,
   content: BearCafeContent,
+  tray: TrayState,
   options: KennedisOrdersOptions,
   onDeliver: () => void
 ): void {
@@ -737,32 +752,35 @@ function renderDeliveryStage(
   delivery.className = 'bear-cafe-delivery';
   delivery.innerHTML = `
     <div class="bear-cafe-ready" role="status" aria-label="Order ready">
-      <span class="bear-cafe-ready__bell" aria-hidden="true">🔔</span>
+      <span class="bear-cafe-ready__bell" aria-hidden="true">${pickupBellSvg()}</span>
     </div>
   `;
 
-  const button = document.createElement('button');
-  button.className = 'child-button bear-cafe-deliver-button';
-  button.type = 'button';
-  button.textContent = BEAR_CAFE_CHILD_CONTROL_LABELS.deliver;
-  button.setAttribute('aria-label', 'Deliver order');
-  button.addEventListener('click', () => {
-    options.speech.speak('You delivered it.');
-    onDeliver();
-  });
-  delivery.appendChild(button);
-
+  // The pickup scene: the finished order sits on an illustrated serving tray
+  // at the counter while the customer waits at the service window across it.
   const deliveryScene = document.createElement('div');
   deliveryScene.className = 'bear-cafe-delivery__scene';
   deliveryScene.innerHTML = `
-    <div class="bear-cafe-delivery__basket" aria-hidden="true">
-      <span>🧺</span>
+    <div class="bear-cafe-delivery__order" aria-hidden="true">
+      <span class="bear-cafe-delivery__order-food">${getPlatedFoodIcons(content, tray) || renderFoodArt('plate')}</span>
+      ${deliveryTraySvg()}
     </div>
     <div class="bear-cafe-delivery__window" aria-hidden="true">
       ${renderBearArt(content.character.id, 'waiting')}
     </div>
   `;
   delivery.appendChild(deliveryScene);
+
+  const button = document.createElement('button');
+  button.className = 'child-button bear-cafe-deliver-button';
+  button.type = 'button';
+  button.innerHTML = deliveryTraySvg();
+  button.setAttribute('aria-label', 'Deliver order');
+  button.addEventListener('click', () => {
+    options.speech.speak('You delivered it.');
+    onDeliver();
+  });
+  delivery.appendChild(button);
   parent.appendChild(delivery);
 }
 
