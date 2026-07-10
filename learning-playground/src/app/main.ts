@@ -64,7 +64,7 @@ for (const activity of APPROVED_ACTIVITIES) {
 // — Services —
 const storage = new StorageService();
 const settings = storage.getSettings();
-const speech = new SpeechService(settings.speech_enabled);
+const speech = new SpeechService(settings.speech_enabled, settings.speech_voice_uri);
 const audio = new AudioService(settings.sound_enabled);
 const sessionId = createSessionId();
 const childId = 'local-child';
@@ -111,7 +111,7 @@ function handleRoute(route: Route): void {
             unlockParentGate(parentGateState);
             destroyParentGate();
             app.innerHTML = '';
-            renderParentPanel(app, storage, { childId, sessionId });
+            renderParentPanel(app, storage, { childId, sessionId, speech });
           },
           onCancel: () => {
             window.location.hash = '#home';
@@ -119,7 +119,7 @@ function handleRoute(route: Route): void {
         });
         break;
       }
-      renderParentPanel(app, storage, { childId, sessionId });
+      renderParentPanel(app, storage, { childId, sessionId, speech });
       break;
     }
     case 'activity':

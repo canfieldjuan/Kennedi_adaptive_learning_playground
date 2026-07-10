@@ -18,6 +18,8 @@ export interface ParentSettings {
   session_limit_minutes: number;
   sound_enabled: boolean;
   speech_enabled: boolean;
+  /** Preferred speech-synthesis voiceURI; undefined = the device default voice. */
+  speech_voice_uri?: string;
   video_enabled: boolean;
   max_activity_choices: number;
   difficulty_mode: "fixed" | "adaptive";

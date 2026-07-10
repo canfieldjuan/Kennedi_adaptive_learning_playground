@@ -28,6 +28,40 @@ describe('parent review formatting contract', () => {
     )).toBe('Mystery Practice Round');
   });
 
+  test('keeps legacy shipped activity titles for older local events', () => {
+    expect(resolveActivityTitle(
+      'kennedis-orders-pink-berries-001',
+      ACTIVITY_TITLE_LOOKUP,
+      1
+    )).toBe('Three Pink Berries Order');
+    expect(resolveActivityTitle(
+      'kennedis-orders-pink-berries-001',
+      ACTIVITY_TITLE_LOOKUP,
+      2
+    )).toBe('Banana Cookie Order');
+
+    const recentAttempts = formatRecentAttempts([
+      makeEvent({
+        eventId: 'legacy-cafe-event',
+        timestamp: '2026-01-01T12:00:00.000Z',
+        outcome: 'correct',
+        activityId: 'kennedis-orders-pink-berries-001',
+        activityVersion: 1,
+        skillIds: ['counting', 'color_fill'],
+        promptText: 'Mama Bear wants 3 pink berries.',
+        selectedAnswer: '3 berry, pink',
+        correctAnswer: '3 pink berry',
+      }),
+    ], ACTIVITY_TITLE_LOOKUP);
+
+    expect(recentAttempts[0]).toMatchObject({
+      activity_title: 'Three Pink Berries Order',
+      prompt_text: 'Mama Bear wants 3 pink berries.',
+      correct_answer: '3 pink berry',
+      skill_labels: ['Counting', 'Color Fill'],
+    });
+  });
+
   test('formats recent attempts with parent-readable details', () => {
     const recentAttempts = formatRecentAttempts([
       makeEvent({
@@ -91,7 +125,7 @@ describe('parent review formatting contract', () => {
       sessionId: 'session-1',
       childId: 'local-child',
       outcome: 'completed',
-      tray: { foodCounts: { berry: 3 }, colorId: 'pink' },
+      tray: { foodCounts: { banana: 2, cookie: 1 } },
       attemptNumber: 1,
       responseTimeMs: 2600,
       hintShown: false,
@@ -104,15 +138,42 @@ describe('parent review formatting contract', () => {
     expect(recentAttempts).toHaveLength(1);
     expect(recentAttempts[0]).toMatchObject({
       activity_id: 'kennedis-orders-pink-berries-001',
-      activity_title: 'Three Pink Berries Order',
-      skill_labels: ['Counting', 'Color Fill'],
-      prompt_text: 'Mama Bear wants 3 pink berries.',
-      selected_answer: '3 berry, pink',
-      correct_answer: '3 pink berry',
+      activity_title: 'Banana Cookie Order',
+      skill_labels: ['Counting'],
+      prompt_text: 'Mama Bear wants 2 bananas and 1 cookie.',
+      selected_answer: '2 banana, cookie',
+      correct_answer: '2 banana, cookie',
       outcome_label: 'Completed',
       hint_used: false,
       response_time_label: '2.6 sec',
     });
+  });
+
+  test('does not show Bear Cafe food-selection telemetry as recent attempts', () => {
+    const activity = getActivity('kennedis-orders-two-cookies-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const selectionEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { cookie: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 500,
+      hintShown: false,
+      eventName: 'food_selected',
+      selectedChoiceId: 'cookie',
+      selectedAnswer: 'cookie',
+      extraMetadata: {
+        selected_food_id: 'cookie',
+        selected_food_count: 1,
+      },
+    });
+
+    expect(formatRecentAttempts([selectionEvent], ACTIVITY_TITLE_LOOKUP)).toEqual([]);
   });
 
   test('collapses Bear Cafe tray check success when a matching delivery is present', () => {
@@ -415,6 +476,7 @@ function makeEvent(overrides: {
   timestamp: string;
   outcome: ActivityAttemptEvent['outcome'];
   activityId: string;
+  activityVersion?: number;
   skillIds: string[];
   promptText?: string;
   selectedAnswer?: string;
@@ -427,7 +489,7 @@ function makeEvent(overrides: {
     session_id: 'session-1',
     child_id: 'local-child',
     activity_id: overrides.activityId,
-    activity_version: 1,
+    activity_version: overrides.activityVersion ?? 1,
     skill_ids: overrides.skillIds,
     timestamp: overrides.timestamp,
     prompt_text: overrides.promptText ?? 'Prompt',

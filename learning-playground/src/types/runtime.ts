@@ -24,6 +24,8 @@ export interface SpeechServiceInterface {
   speak(text: string, options?: SpeechOptions): Promise<void>;
   stop(): void;
   repeatLast(): void;
+  /** Optional: switch the preferred voice on the live service (parent picker). */
+  setVoiceURI?(voiceURI?: string): void;
 }
 
 export interface SpeechOptions {

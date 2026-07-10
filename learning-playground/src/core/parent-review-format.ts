@@ -1,6 +1,11 @@
 import type { ActivityAttemptEvent, AttemptOutcome } from '../types/events';
 
-export type ActivityTitleLookup = Record<string, string>;
+export interface ActivityTitleEntry {
+  current: string;
+  versions?: Record<number, string>;
+}
+
+export type ActivityTitleLookup = Record<string, string | ActivityTitleEntry>;
 
 export interface ParentRecentAttempt {
   event_id: string;
@@ -28,9 +33,20 @@ const REVIEW_ATTEMPT_OUTCOMES = new Set<AttemptOutcome>([
 
 export function resolveActivityTitle(
   activityId: string,
-  titleLookup: ActivityTitleLookup
+  titleLookup: ActivityTitleLookup,
+  activityVersion?: number
 ): string {
-  return titleLookup[activityId] ?? formatInternalName(activityId);
+  const entry = titleLookup[activityId];
+  if (typeof entry === 'string') return entry;
+  if (entry) {
+    if (activityVersion !== undefined) {
+      const versionedTitle = entry.versions?.[activityVersion];
+      if (versionedTitle) return versionedTitle;
+    }
+    return entry.current;
+  }
+
+  return formatInternalName(activityId);
 }
 
 export function formatActivityTitleList(
@@ -75,7 +91,7 @@ export function formatRecentAttempts(
     .map((event) => ({
       event_id: event.event_id,
       activity_id: event.activity_id,
-      activity_title: resolveActivityTitle(event.activity_id, titleLookup),
+      activity_title: resolveActivityTitle(event.activity_id, titleLookup, event.activity_version),
       skill_ids: event.skill_ids,
       skill_labels: event.skill_ids.map(formatSkillLabel),
       prompt_text: event.prompt_text,
@@ -94,6 +110,8 @@ function isReviewAttemptEvent(
   event: ActivityAttemptEvent,
   supersededBearCafeTrayCheckIds: Set<string>
 ): boolean {
+  if (event.metadata?.event_name === 'food_selected') return false;
+
   if (isBearCafeTrayCheckSuccess(event)) {
     return !supersededBearCafeTrayCheckIds.has(event.event_id);
   }

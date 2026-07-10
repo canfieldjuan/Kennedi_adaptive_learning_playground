@@ -6,13 +6,17 @@ import activitySchema from '../../src/contracts/activity.schema.json';
 import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import { appendEvent, type EventLogStorage } from '../../src/core/event-log';
 import { loadCurriculumGraph } from '../../src/core/curriculum-graph';
+import { eventAppliesToSkill } from '../../src/core/skill-outcomes';
 import {
+  BEAR_CAFE_CHILD_CONTROL_LABELS,
   createKennedisOrdersEvent,
   evaluateTray,
   getBearCafeContent,
   getFoodChoiceAccessibilityState,
+  getFoodSelectionAttemptNumber,
   getPlatedFoodIcons,
   getToggleChoiceAccessibilityState,
+  renderOrderTicketVisual,
   type TrayState,
 } from '../../src/modules/kennedis-orders/KennedisOrdersActivity';
 import type { LearningActivity } from '../../src/types/activity';
@@ -84,6 +88,12 @@ describe("Kennedi's Orders adapter contract", () => {
     }
   });
 
+  test('rewritten shipped cafe orders bump their activity version', () => {
+    expect(getActivity('kennedis-orders-two-cookies-001').version).toBe(2);
+    expect(getActivity('kennedis-orders-pink-berries-001').version).toBe(2);
+    expect(getActivity('kennedis-orders-free-make-001').version).toBe(3);
+  });
+
   test('every cafe skill exists in the curriculum graph and allows its context', () => {
     const graph = loadCurriculumGraph();
 
@@ -105,6 +115,44 @@ describe("Kennedi's Orders adapter contract", () => {
     }
   });
 
+  test('keeps each child order to a small object set', () => {
+    for (const activity of cafeActivities) {
+      const content = getRequiredContent(activity);
+      expect(content.foods.length).toBeLessThanOrEqual(6);
+      expect(content.colors?.length ?? 0).toBeLessThanOrEqual(6);
+      expect(content.decorations?.length ?? 0).toBeLessThanOrEqual(6);
+      expect((content.foods.length + (content.colors?.length ?? 0) + (content.decorations?.length ?? 0)))
+        .toBeLessThanOrEqual(6);
+    }
+  });
+
+  test('child UI hides adult labels behind icon-only controls and visual tickets', () => {
+    expect(BEAR_CAFE_CHILD_CONTROL_LABELS).toMatchObject({
+      home: '⌂',
+      repeat: '↻',
+      check: '✓',
+      deliver: '🧺',
+      next: '→',
+      restart: '↻',
+    });
+
+    const content = getRequiredContent(getActivity('kennedis-orders-pink-berries-001'));
+    const ticket = renderOrderTicketVisual(content);
+    expect(ticket).toContain('bear-cafe-ticket-item');
+    expect(ticket).not.toContain(content.prompt_audio);
+    expect(ticket).not.toContain(content.order_ticket);
+  });
+
+  test('first-sound tickets show the category cue without revealing exact answers', () => {
+    const content = getRequiredContent(getActivity('kennedis-orders-b-foods-001'));
+    const ticket = renderOrderTicketVisual(content);
+
+    expect(ticket).toContain('bear-cafe-ticket-letter');
+    expect(ticket).toContain('B');
+    expect(ticket).not.toContain('bear-cafe-ticket-item');
+    expect(ticket).not.toContain('food-art');
+  });
+
   test('rich cafe activities reference originating briefs', () => {
     expect(getActivityWithBrief('kennedis-orders-b-foods-001').originating_brief_id).toBe(
       'brief-initial_sound-category_sort'
@@ -118,8 +166,10 @@ describe("Kennedi's Orders adapter contract", () => {
     const activity = getActivity('kennedis-orders-pink-berries-001');
     const content = getRequiredContent(activity);
     const tray: TrayState = {
-      foodCounts: { berry: 3 },
-      colorId: 'pink',
+      foodCounts: {
+        banana: 2,
+        cookie: 1,
+      },
     };
     const correctEvent = createKennedisOrdersEvent({
       activity,
@@ -159,12 +209,12 @@ describe("Kennedi's Orders adapter contract", () => {
     expect(stored).toHaveLength(2);
     expect(stored[0]).toMatchObject({
       outcome: 'correct',
-      selected_answer: '3 berry, pink',
-      correct_answer: '3 pink berry',
+      selected_answer: '2 banana, cookie',
+      correct_answer: '2 banana, cookie',
     });
     expect(stored[1]).toMatchObject({
       outcome: 'completed',
-      selected_answer: '3 berry, pink',
+      selected_answer: '2 banana, cookie',
     });
     expect(stored[1]?.metadata.event_name).toBe('order_delivered');
   });
@@ -178,7 +228,7 @@ describe("Kennedi's Orders adapter contract", () => {
       sessionId: 'session-1',
       childId: 'local-child',
       outcome: 'correct',
-      tray: { foodCounts: { cookie: 2 } },
+      tray: { foodCounts: { cookie: 4 } },
       attemptNumber: 2,
       responseTimeMs: 4200,
       hintShown: true,
@@ -192,50 +242,18 @@ describe("Kennedi's Orders adapter contract", () => {
       game_mode: 'quantity',
       caller_id: 'daddy-bear',
       round_index: 2,
+      round_number: 2,
       round_total: 5,
-      required_quantity: 2,
+      required_quantity: 4,
+      requested_quantity: 4,
+      selected_quantity: 4,
       corrected: true,
       hinted_skill_ids: 'counting',
       replay_count: 1,
     });
   });
 
-  test('two-part tray checks emit per-skill evidence for partial matches', () => {
-    const activity = getActivity('kennedis-orders-pink-berries-001');
-    const content = getRequiredContent(activity);
-    const event = createKennedisOrdersEvent({
-      activity,
-      content,
-      sessionId: 'session-1',
-      childId: 'local-child',
-      outcome: 'incorrect',
-      tray: {
-        foodCounts: { berry: 3 },
-        colorId: 'yellow',
-      },
-      attemptNumber: 1,
-      responseTimeMs: 1400,
-      hintShown: false,
-      eventName: 'tray_checked',
-      issue: 'color',
-    });
-
-    expect(event.outcome).toBe('incorrect');
-    expect(event.skill_outcomes).toEqual([
-      {
-        skill_id: 'counting',
-        outcome: 'correct',
-        reason: 'quantity_match',
-      },
-      {
-        skill_id: 'color_fill',
-        outcome: 'incorrect',
-        reason: 'color_mismatch',
-      },
-    ]);
-  });
-
-  test('two-part quantity evidence counts the required food, not tray total', () => {
+  test('two-part tray checks require matching food counts for counting evidence', () => {
     const activity = getActivity('kennedis-orders-pink-berries-001');
     const content = getRequiredContent(activity);
     const event = createKennedisOrdersEvent({
@@ -246,10 +264,71 @@ describe("Kennedi's Orders adapter contract", () => {
       outcome: 'incorrect',
       tray: {
         foodCounts: {
-          berry: 2,
-          cupcake: 1,
+          banana: 2,
+          berry: 1,
         },
-        colorId: 'pink',
+      },
+      attemptNumber: 1,
+      responseTimeMs: 1400,
+      hintShown: false,
+      eventName: 'tray_checked',
+      issue: 'food',
+    });
+
+    expect(event.outcome).toBe('incorrect');
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'incorrect',
+        reason: 'quantity_mismatch',
+      },
+    ]);
+  });
+
+  test('two-part quantity evidence counts the full requested order', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'incorrect',
+      tray: {
+        foodCounts: {
+          banana: 1,
+          cookie: 1,
+        },
+      },
+      attemptNumber: 1,
+      responseTimeMs: 1400,
+      hintShown: false,
+      eventName: 'tray_checked',
+      issue: 'quantity_under',
+    });
+
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'incorrect',
+        reason: 'quantity_mismatch',
+      },
+    ]);
+  });
+
+  test('two-part quantity evidence compares each required food count', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'incorrect',
+      tray: {
+        foodCounts: {
+          banana: 3,
+        },
       },
       attemptNumber: 1,
       responseTimeMs: 1400,
@@ -264,11 +343,6 @@ describe("Kennedi's Orders adapter contract", () => {
         outcome: 'incorrect',
         reason: 'quantity_mismatch',
       },
-      {
-        skill_id: 'color_fill',
-        outcome: 'correct',
-        reason: 'color_match',
-      },
     ]);
   });
 
@@ -276,21 +350,20 @@ describe("Kennedi's Orders adapter contract", () => {
     const activity = getActivity('kennedis-orders-pink-berries-001');
     const content = getRequiredContent(activity);
 
-    const colorHintEvent = createKennedisOrdersEvent({
+    const quantityHintEvent = createKennedisOrdersEvent({
       activity,
       content,
       sessionId: 'session-1',
       childId: 'local-child',
       outcome: 'hint_used',
       tray: {
-        foodCounts: { berry: 3 },
-        colorId: 'yellow',
+        foodCounts: { banana: 1, cookie: 1 },
       },
       attemptNumber: 2,
       responseTimeMs: 1800,
       hintShown: true,
       eventName: 'hint_shown',
-      issue: 'color',
+      issue: 'quantity_under',
     });
     const foodHintEvent = createKennedisOrdersEvent({
       activity,
@@ -299,8 +372,7 @@ describe("Kennedi's Orders adapter contract", () => {
       childId: 'local-child',
       outcome: 'hint_used',
       tray: {
-        foodCounts: { cupcake: 3 },
-        colorId: 'pink',
+        foodCounts: { soup: 3 },
       },
       attemptNumber: 2,
       responseTimeMs: 1800,
@@ -309,11 +381,11 @@ describe("Kennedi's Orders adapter contract", () => {
       issue: 'food',
     });
 
-    expect(colorHintEvent.skill_outcomes).toEqual([
+    expect(quantityHintEvent.skill_outcomes).toEqual([
       {
-        skill_id: 'color_fill',
+        skill_id: 'counting',
         outcome: 'hint_used',
-        reason: 'color',
+        reason: 'quantity_under',
       },
     ]);
     expect(
@@ -324,18 +396,34 @@ describe("Kennedi's Orders adapter contract", () => {
         childId: 'local-child',
         outcome: 'correct',
         tray: {
-          foodCounts: { berry: 3 },
-          colorId: 'pink',
+          foodCounts: {
+            banana: 2,
+            cookie: 1,
+          },
         },
         attemptNumber: 3,
         responseTimeMs: 1600,
         hintShown: true,
-        hintedSkillIds: ['color_fill'],
+        hintedSkillIds: ['counting'],
         eventName: 'tray_checked',
         issue: 'none',
       }).metadata?.hinted_skill_ids
-    ).toBe('color_fill');
-    expect(foodHintEvent.skill_outcomes).toEqual([]);
+    ).toBe('counting');
+    expect(foodHintEvent.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'hint_used',
+        reason: 'food',
+      },
+    ]);
+  });
+
+  test('food selection ordinals do not masquerade as correction attempts', () => {
+    const firstSelectionAttempt = getFoodSelectionAttemptNumber(0);
+    const fourthSelectionAttempt = getFoodSelectionAttemptNumber(0);
+
+    expect([firstSelectionAttempt, fourthSelectionAttempt]).toEqual([1, 1]);
+    expect(getFoodSelectionAttemptNumber(1)).toBe(2);
   });
 
   test('first-attempt success is not marked as corrected', () => {
@@ -367,26 +455,22 @@ describe("Kennedi's Orders adapter contract", () => {
     });
   });
 
-  test('two-part order requires food, quantity, and color together', () => {
+  test('two-part order requires exact food counts together', () => {
     const content = getRequiredContent(getActivity('kennedis-orders-pink-berries-001'));
 
-    expect(evaluateTray(content, { foodCounts: { berry: 3 }, colorId: 'pink' })).toMatchObject({
+    expect(evaluateTray(content, { foodCounts: { banana: 2, cookie: 1 } })).toMatchObject({
       correct: true,
       issue: 'none',
     });
-    expect(evaluateTray(content, { foodCounts: { berry: 2 }, colorId: 'pink' })).toMatchObject({
+    expect(evaluateTray(content, { foodCounts: { banana: 1, cookie: 1 } })).toMatchObject({
       correct: false,
       issue: 'quantity_under',
     });
-    expect(evaluateTray(content, { foodCounts: { berry: 4 }, colorId: 'pink' })).toMatchObject({
+    expect(evaluateTray(content, { foodCounts: { banana: 3, cookie: 1 } })).toMatchObject({
       correct: false,
       issue: 'quantity_over',
     });
-    expect(evaluateTray(content, { foodCounts: { berry: 3 }, colorId: 'yellow' })).toMatchObject({
-      correct: false,
-      issue: 'color',
-    });
-    expect(evaluateTray(content, { foodCounts: { cupcake: 3 }, colorId: 'pink' })).toMatchObject({
+    expect(evaluateTray(content, { foodCounts: { banana: 2, cookie: 1, berry: 1 } })).toMatchObject({
       correct: false,
       issue: 'food',
     });
@@ -395,32 +479,203 @@ describe("Kennedi's Orders adapter contract", () => {
   test('extra foods on the tray fail a specific order', () => {
     const content = getRequiredContent(getActivity('kennedis-orders-two-cookies-001'));
 
-    expect(evaluateTray(content, { foodCounts: { cookie: 2, banana: 1 } })).toMatchObject({
+    expect(evaluateTray(content, { foodCounts: { cookie: 4, banana: 1 } })).toMatchObject({
       correct: false,
       issue: 'food',
     });
-    expect(evaluateTray(content, { foodCounts: { cookie: 2 } })).toMatchObject({
+    expect(evaluateTray(content, { foodCounts: { cookie: 4 } })).toMatchObject({
       correct: true,
       issue: 'none',
     });
   });
 
   test('plated icons preserve quantity so a correct count is not contradicted by the beats', () => {
-    // A correct { cookie: 2 } tray must plate two cookies during the cook/plating
+    // A correct { cookie: 4 } tray must plate four cookies during the cook/plating
     // and handoff beats — not one, which would show wrong-quantity feedback right
     // after a correct quantity answer. The plate is now illustrated SVG, so count
     // is verified by how many food SVGs are emitted.
     const svgCount = (markup: string) => (markup.match(/<svg/g) ?? []).length;
     const twoCookies = getRequiredContent(getActivity('kennedis-orders-two-cookies-001'));
-    expect(svgCount(getPlatedFoodIcons(twoCookies, { foodCounts: { cookie: 2 } }))).toBe(2);
+    expect(svgCount(getPlatedFoodIcons(twoCookies, { foodCounts: { cookie: 4 } }))).toBe(4);
 
     // A single item stays single (no false expansion).
     const banana = getRequiredContent(getActivity('kennedis-orders-banana-001'));
     expect(svgCount(getPlatedFoodIcons(banana, { foodCounts: { banana: 1 } }))).toBe(1);
 
-    // A three-count order plates three icons.
-    const berries = getRequiredContent(getActivity('kennedis-orders-pink-berries-001'));
-    expect(svgCount(getPlatedFoodIcons(berries, { foodCounts: { berry: 3 } }))).toBe(3);
+    // A two-food order plates each requested item.
+    const twoPart = getRequiredContent(getActivity('kennedis-orders-pink-berries-001'));
+    expect(svgCount(getPlatedFoodIcons(twoPart, { foodCounts: { banana: 2, cookie: 1 } }))).toBe(3);
+  });
+
+  test('first sound order emits category-sort evidence through the existing event shape', () => {
+    const activity = getActivity('kennedis-orders-b-foods-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: {
+        foodCounts: {
+          banana: 1,
+          berry: 1,
+          bread: 1,
+        },
+      },
+      attemptNumber: 1,
+      responseTimeMs: 2100,
+      hintShown: false,
+      eventName: 'tray_checked',
+    });
+
+    expect(event.metadata).toMatchObject({
+      context_type: 'category_sort',
+      game_mode: 'first_sound_sort',
+      order_type: 'first_sound_sort',
+      target_sound: 'b',
+      requested_quantity: 3,
+      selected_quantity: 3,
+    });
+  });
+
+  test('food selections emit decision-level events without completing the order', () => {
+    const activity = getActivity('kennedis-orders-free-make-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { cupcake: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 600,
+      hintShown: false,
+      eventName: 'food_selected',
+      selectedChoiceId: 'cupcake',
+      selectedAnswer: 'cupcake',
+      extraMetadata: {
+        selected_food_id: 'cupcake',
+        selected_food_count: 1,
+      },
+    });
+
+    expect(event.outcome).toBe('correct');
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'vocabulary',
+        outcome: 'correct',
+        reason: 'food_selected',
+      },
+    ]);
+    expect(event.selected_choice_id).toBe('cupcake');
+    expect(event.selected_answer).toBe('cupcake');
+    expect(event.metadata).toMatchObject({
+      event_name: 'food_selected',
+      selected_food_id: 'cupcake',
+      selected_food_count: 1,
+      selected_quantity: 1,
+      shift_completed: false,
+    });
+  });
+
+  test('food-selection events count incorrect first-sound choices for the touched skill', () => {
+    const activity = getActivity('kennedis-orders-b-foods-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'incorrect',
+      tray: { foodCounts: { apple: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 700,
+      hintShown: false,
+      eventName: 'food_selected',
+      issue: 'first_sound_sort',
+      selectedChoiceId: 'apple',
+      selectedAnswer: 'apple',
+      extraMetadata: {
+        selected_food_id: 'apple',
+        selected_food_count: 1,
+      },
+    });
+
+    expect(event.skill_outcomes).toEqual([
+      {
+        skill_id: 'initial_sound',
+        outcome: 'incorrect',
+        reason: 'first_sound_sort',
+      },
+    ]);
+  });
+
+  test('partial quantity selections stay out of counted skill accuracy', () => {
+    const activity = getActivity('kennedis-orders-two-cookies-001');
+    const content = getRequiredContent(activity);
+    const partialEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { cookie: 3 } },
+      attemptNumber: 1,
+      responseTimeMs: 700,
+      hintShown: false,
+      eventName: 'food_selected',
+      selectedChoiceId: 'cookie',
+      selectedAnswer: 'cookie',
+    });
+    const fulfilledEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { cookie: 4 } },
+      attemptNumber: 1,
+      responseTimeMs: 900,
+      hintShown: false,
+      eventName: 'food_selected',
+      selectedChoiceId: 'cookie',
+      selectedAnswer: 'cookie',
+    });
+
+    expect(partialEvent.skill_outcomes).toEqual([]);
+    expect(eventAppliesToSkill(partialEvent, 'counting')).toBe(false);
+    expect(fulfilledEvent.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'correct',
+        reason: 'food_selected',
+      },
+    ]);
+    expect(eventAppliesToSkill(fulfilledEvent, 'counting')).toBe(true);
+  });
+
+  test('completed bake time event marks the cafe shift complete', () => {
+    const activity = getActivity('kennedis-orders-free-make-001');
+    const content = getRequiredContent(activity);
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'completed',
+      tray: { foodCounts: { cupcake: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 1300,
+      hintShown: false,
+      eventName: 'order_delivered',
+    });
+
+    expect(event.metadata).toMatchObject({
+      event_name: 'order_delivered',
+      shift_completed: true,
+    });
   });
 
   test('food choices expose tray count and pressed state to assistive tech', () => {
