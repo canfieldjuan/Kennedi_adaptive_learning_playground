@@ -16,6 +16,7 @@ import kennedisOrdersTwoCookies from './activities/kennedis-orders-two-cookies-0
 import mathCountHeartsThree from './activities/math-count-hearts-three.json';
 import mathCountStarsThree from './activities/math-count-stars-three.json';
 import mathDotCardThree from './activities/math-dot-card-three.json';
+import numberTrain from './activities/number-train.json';
 import phonicsBananaStartingLetter from './activities/phonics-banana-starting-letter.json';
 import phonicsFindBBall from './activities/phonics-find-b-ball.json';
 import phonicsFindB from './activities/phonics-find-b.json';
@@ -50,6 +51,10 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   mathCountStarsThree,
   mathDotCardThree,
   mathCountHeartsThree,
+  // Ordered after the legacy math activities on purpose: the transfer
+  // recommendation engine picks the first uncovered-context activity by array
+  // order, so the counting recommendation stays math-dot-card-three.
+  numberTrain,
   artColorCircle,
   artColorCircleCoolColors,
   kennedisOrdersBanana,

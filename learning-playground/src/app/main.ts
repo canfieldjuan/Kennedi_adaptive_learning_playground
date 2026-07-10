@@ -54,6 +54,10 @@ import {
   renderWordBuilderActivity,
   destroyWordBuilderActivity,
 } from '../modules/phonics-match/WordBuilderActivity';
+import {
+  renderNumberTrainActivity,
+  destroyNumberTrainActivity,
+} from '../modules/number-train/NumberTrainActivity';
 import { APPROVED_ACTIVITIES } from '../content/activity-catalog';
 import familySafeVideos from '../content/videos/family-safe-videos.v1.json';
 
@@ -92,6 +96,7 @@ function handleRoute(route: Route): void {
   destroyKennedisOrdersActivity();
   destroyPhonicsMatchActivity();
   destroyWordBuilderActivity();
+  destroyNumberTrainActivity();
   app.innerHTML = '';
 
   switch (route.view) {
@@ -173,6 +178,23 @@ function renderActivityRoute(activityId: string): void {
     runtimeActivity.content.game === 'kennedis-orders'
   ) {
     renderKennedisOrdersActivity(app, {
+      activity: runtimeActivity,
+      childId,
+      sessionId,
+      speech,
+      audio,
+      onEvent: handleActivityEvent,
+    });
+    return;
+  }
+
+  // Number Train (math) — the dedicated Math game runtime, keyed by its game
+  // id exactly like Bear Cafe above; both are tap_then_place.
+  if (
+    runtimeActivity.interaction_model === 'tap_then_place' &&
+    runtimeActivity.content.game === 'number-train'
+  ) {
+    renderNumberTrainActivity(app, {
       activity: runtimeActivity,
       childId,
       sessionId,

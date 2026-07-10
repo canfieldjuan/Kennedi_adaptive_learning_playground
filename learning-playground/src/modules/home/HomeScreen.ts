@@ -41,7 +41,7 @@ const HOME_OPTIONS: HomeOption[] = [
     label: 'Math',
     color: 'green',
     speechLabel: 'Math',
-    route: '#activity/math-count-stars-three',
+    route: '#activity/number-train',
   },
   {
     id: 'home-art',
