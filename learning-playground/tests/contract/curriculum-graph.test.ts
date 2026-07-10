@@ -99,7 +99,7 @@ describe('curriculum graph contract', () => {
 
   test('reports a phonics rung with no approved activity in its difficulty band', () => {
     const activitiesWithoutMiddleBlend = activities.map((activity) => (
-      activity.id === 'blend-hat'
+      activity.id === 'blend-hat' || activity.id === 'blend-listen-dog'
         ? { ...activity, difficulty: { ...activity.difficulty, level: 2 as const } }
         : activity
     ));
@@ -116,8 +116,9 @@ describe('curriculum graph contract', () => {
   test('regraded phonics activities use new versions and cover their named rungs', () => {
     const expected = new Map([
       ['phonics-banana-starting-letter', { version: 2, difficulty: 5 }],
-      ['blend-hat', { version: 2, difficulty: 3 }],
-      ['blend-bat', { version: 2, difficulty: 5 }],
+      ['blend-cat', { version: 2, difficulty: 2 }],
+      ['blend-hat', { version: 3, difficulty: 3 }],
+      ['blend-bat', { version: 3, difficulty: 5 }],
       ['build-dog', { version: 2, difficulty: 3 }],
       ['build-sun', { version: 2, difficulty: 5 }],
     ]);
@@ -128,13 +129,30 @@ describe('curriculum graph contract', () => {
       expect(activity?.difficulty.level).toBe(values.difficulty);
     }
 
-    expect(activities.find((item) => item.id === 'blend-cat')).toMatchObject({
-      version: 1,
-      difficulty: { level: 2 },
-    });
     expect(activities.find((item) => item.id === 'build-cat')).toMatchObject({
       version: 1,
       difficulty: { level: 2 },
+    });
+  });
+
+  test('blending prompt metadata matches the approved visual and spoken modes', () => {
+    for (const activityId of ['blend-cat', 'blend-hat', 'blend-bat']) {
+      const activity = activities.find((item) => item.id === activityId);
+      expect(activity?.transfer).toMatchObject({
+        context_type: 'same_format_same_examples',
+        prompt_mode: 'visual',
+      });
+      expect(activity?.content.segments).toBeDefined();
+    }
+
+    expect(activities.find((item) => item.id === 'blend-listen-dog')).toMatchObject({
+      version: 1,
+      skill_ids: ['blending'],
+      transfer: {
+        context_type: 'different_prompt_mode',
+        prompt_mode: 'spoken',
+      },
+      difficulty: { level: 4 },
     });
   });
 

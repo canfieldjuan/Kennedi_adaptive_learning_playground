@@ -4,6 +4,7 @@ import artColorCircle from './activities/art-color-circle.json';
 import blendBat from './activities/blend-bat.json';
 import blendCat from './activities/blend-cat.json';
 import blendHat from './activities/blend-hat.json';
+import blendListenDog from './activities/blend-listen-dog.json';
 import buildCat from './activities/build-cat.json';
 import buildDog from './activities/build-dog.json';
 import buildSun from './activities/build-sun.json';
@@ -43,6 +44,7 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   blendCat,
   blendHat,
   blendBat,
+  blendListenDog,
   buildCat,
   buildDog,
   buildSun,
