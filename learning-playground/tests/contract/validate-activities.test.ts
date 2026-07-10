@@ -323,6 +323,54 @@ describe('activity schema contract', () => {
     expect(activity).toBeDefined();
     expect(hasDifferentPromptModeContent(activity!)).toBe(true);
   });
+
+  test('approved video response implements a separate vocabulary check honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'video-bear-bakes-bread-response'
+    ));
+
+    expect(activity).toMatchObject({
+      title: "Bear's Bakery",
+      skill_ids: ['vocabulary'],
+      originating_brief_id: 'brief-vocabulary-different_prompt_mode',
+      transfer: {
+        context_type: 'different_prompt_mode',
+        context_id: 'recall-object-from-local-video',
+        example_set_id: 'bear-bakes-bread-v1',
+        prompt_mode: 'mixed',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasDifferentPromptModeContent(activity!)).toBe(true);
+  });
+
+  test('language vocabulary truth checks are not tied to the Bear video example', () => {
+    const videoResponse = allActivities.find((item) => (
+      item.id === 'video-bear-bakes-bread-response'
+    ));
+    expect(videoResponse).toBeDefined();
+
+    const generalVocabularyResponse: ActivityJson = {
+      ...videoResponse!,
+      id: 'clothing-vocabulary-response',
+      title: 'What Can You Wear?',
+      content: {
+        prompt_audio: 'Which picture shows something you can wear?',
+        choices: [
+          { id: 'hat', label: 'hat', image: '/assets/images/hat.svg', correct: true },
+          { id: 'apple', label: 'apple', image: '/assets/images/apple.svg', correct: false },
+          { id: 'bread', label: 'bread', image: '/assets/images/bread.svg', correct: false },
+        ],
+      },
+      success_rules: {
+        correct_choice_id: 'hat',
+        required_correct_count: 1,
+        max_attempts_before_hint: 2,
+      },
+    };
+
+    expect(hasDifferentPromptModeContent(generalVocabularyResponse)).toBe(true);
+  });
 });
 
 function hasReverseMappingContent(activity: ActivityJson): boolean {
@@ -351,6 +399,9 @@ function hasReverseMappingContent(activity: ActivityJson): boolean {
 
 function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
   if (isKennedisOrdersFixOrder(activity)) return true;
+  if (activity.domain === 'language' && activity.skill_ids.includes('vocabulary')) {
+    return hasLanguageVocabularyResponse(activity);
+  }
   if (activity.domain === 'phonics' && activity.skill_ids.includes('blending')) {
     return hasSpokenBlendingPrompt(activity);
   }
@@ -392,6 +443,28 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
     correctChoice?.label === String(targetQuantity) &&
     choices.length >= 2 &&
     choices.every((choice) => /^\d+$/.test(choice.label))
+  );
+}
+
+function hasLanguageVocabularyResponse(activity: ActivityJson): boolean {
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const choices = getChoices(activity);
+  const correctChoiceId = getString(activity.success_rules.correct_choice_id);
+  const declaredCorrectChoices = choices.filter((choice) => choice.correct === true);
+  const correctChoice = choices.find((choice) => choice.id === correctChoiceId);
+
+  return (
+    activity.interaction_model === 'tap_to_match' &&
+    (activity.transfer.prompt_mode === 'mixed' ||
+      activity.transfer.prompt_mode === 'spoken') &&
+    promptAudio.length > 0 &&
+    choices.length >= 2 &&
+    choices.length <= 6 &&
+    choices.every((choice) => choice.image?.startsWith('/assets/images/')) &&
+    choices.every((choice) => choice.label.trim().length > 0) &&
+    declaredCorrectChoices.length === 1 &&
+    correctChoice === declaredCorrectChoices[0] &&
+    !promptAudio.includes(correctChoice.label.toLowerCase())
   );
 }
 

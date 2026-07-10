@@ -6,11 +6,16 @@ import { validateVideoManifest } from '../../src/modules/video-vault/video-manif
 import type { LearningActivity } from '../../src/types/activity';
 
 describe('video vault manifest boundary', () => {
-  test('accepts the real empty repo-bundled manifest', () => {
-    expect(validateVideoManifest(realManifest, 'family-safe-videos-v1')).toEqual({
-      valid: true,
-      issues: [],
-      playable_videos: [],
+  test('accepts the real repo-bundled manifest and its first local clip', () => {
+    const result = validateVideoManifest(realManifest, 'family-safe-videos-v1');
+
+    expect(result.valid).toBe(true);
+    expect(result.issues).toEqual([]);
+    expect(result.playable_videos).toHaveLength(1);
+    expect(result.playable_videos[0]).toMatchObject({
+      id: 'bear-bakes-bread',
+      mime_type: 'video/webm',
+      response_activity_id: 'video-bear-bakes-bread-response',
     });
   });
 
@@ -65,6 +70,7 @@ describe('video vault manifest boundary', () => {
     ['unapproved media', { approved_by_parent: false }, 'approved by a parent'],
     ['non-local source', { source: 'remote' }, 'source must be local'],
     ['skill-response role', { evidence_role: 'skill_response' }, 'exposure_only'],
+    ['invalid response activity id', { response_activity_id: '../parent' }, 'local activity id'],
     ['external thumbnail', { thumbnail_path: 'https://example.com/bear.png' }, 'safe local image'],
     ['autoplay', { autoplay: true }, 'cannot autoplay'],
     ['autoplay next', { autoplay_next: true }, 'cannot autoplay'],
@@ -139,6 +145,7 @@ describe('video vault manifest boundary', () => {
         media_source: 'local',
         media_type: 'video/mp4',
         evidence_role: 'exposure_only',
+        response_activity_id: 'video-bear-bakes-bread-response',
       },
     });
   });
@@ -163,6 +170,7 @@ function makeManifest(
       duration_seconds: 45,
       mime_type: 'video/mp4',
       evidence_role: 'exposure_only',
+      response_activity_id: 'video-bear-bakes-bread-response',
       source: 'local',
       approved_by_parent: true,
       thumbnail_path: '/assets/images/bear.svg',

@@ -1074,6 +1074,18 @@
   text-align: center;
 }
 
+.video-vault-card__response {
+  align-self: center;
+  min-width: 76px;
+  min-height: 64px;
+  padding: var(--space-sm) var(--space-lg);
+  font-size: 2rem;
+}
+
+.video-vault-card__response[hidden] {
+  display: none;
+}
+
 .video-vault-empty {
   display: flex;
   flex-direction: column;

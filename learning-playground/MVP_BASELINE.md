@@ -1,10 +1,10 @@
 # MVP Baseline
 
-Version: v0.3.33 Video Vault evidence boundary baseline
+Version: v0.3.34 first local video and vocabulary response baseline
 
 ## Current Working MVP
 
-The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a child home Bear Cafe entry backed by the direct-route Kennedi's Orders adapter and Parent Panel launch path, a local Video Vault shell reachable by direct route, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
+The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a child home Bear Cafe entry backed by the direct-route Kennedi's Orders adapter and Parent Panel launch path, a local Video Vault with one approved clip and separate response activity reachable by direct route, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
 
 ## Child Modules
 
@@ -32,10 +32,11 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Art now has one parent-launchable medium transfer activity that shows a visual
   color request card. A mismatched applied color remains correctable and emits
   incorrect evidence; legacy free-choice coloring remains unchanged.
-- Video Vault: parent-approved local video shell, currently empty and reachable
-  by direct route. Its manifest now has a validated repo-bundled-only intake
-  policy; video completion is explicitly exposure-only and cannot count as a
-  vocabulary response or mastery evidence.
+- Video Vault: validated repo-bundled-only video intake, reachable by direct
+  route, with one short local narrated clip, `Bear Bakes Bread`. Completion is
+  exposure-only. When the clip ends, a manual question action opens a separate
+  three-picture vocabulary response; only that response records correct or
+  incorrect evidence.
 - Targeted transfer variants for Words, Math, Art, and shape/spatial practice use the same existing runtimes.
 - The first rich transfer variant is a phonics reverse-mapping activity that asks from a word back to its starting letter.
 - Math now has a medium transfer activity that asks from a visual dot card to the matching numeral.
@@ -106,6 +107,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Video completion events carry explicit local provenance and `exposure_only`
   metadata. They may create completion evidence but never a counted vocabulary
   attempt, successful transfer context, or mastery promotion.
+- The first local video links to its response activity in manifest metadata;
+  ending the clip reveals that route but never opens or scores it automatically.
 
 ## Local Data
 

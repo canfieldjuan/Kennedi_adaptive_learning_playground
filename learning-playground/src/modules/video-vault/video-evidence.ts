@@ -44,6 +44,7 @@ export function createVideoCompletionEvent(params: {
       media_source: params.video.source,
       media_type: params.video.mime_type,
       evidence_role: params.video.evidence_role,
+      response_activity_id: params.video.response_activity_id,
     },
   };
 }

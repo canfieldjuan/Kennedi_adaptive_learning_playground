@@ -155,15 +155,32 @@ function renderVideoCard(
     player.poster = video.thumbnail_path;
   }
 
+  const responseButton = document.createElement('button');
+  responseButton.className = 'child-button video-vault-card__response';
+  responseButton.type = 'button';
+  responseButton.textContent = '?';
+  responseButton.hidden = true;
+  responseButton.dataset.responseActivityId = video.response_activity_id;
+  responseButton.setAttribute('aria-label', 'Answer the video question');
+
+  const onResponseClick = () => {
+    window.location.hash = `#activity/${video.response_activity_id}`;
+  };
+
   const onEnded = () => {
     onCompleted();
+    responseButton.hidden = false;
     options.speech.speak(
       getFeedbackSpeech(options.activity.feedback_rules.correct, 'All done.')
     );
   };
 
+  responseButton.addEventListener('click', onResponseClick);
   player.addEventListener('ended', onEnded);
-  cleanupHandlers.push(() => player.removeEventListener('ended', onEnded));
+  cleanupHandlers.push(() => {
+    player.removeEventListener('ended', onEnded);
+    responseButton.removeEventListener('click', onResponseClick);
+  });
 
   card.appendChild(player);
 
@@ -171,6 +188,7 @@ function renderVideoCard(
   meta.className = 'video-vault-card__meta';
   meta.textContent = formatDuration(video.duration_seconds);
   card.appendChild(meta);
+  card.appendChild(responseButton);
 
   return card;
 }

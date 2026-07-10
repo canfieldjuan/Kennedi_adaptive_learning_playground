@@ -30,6 +30,7 @@ import phonicsFindT from './activities/phonics-find-t.json';
 import shapesFindCircleHeart from './activities/shapes-find-circle-heart.json';
 import shapesFindCircle from './activities/shapes-find-circle.json';
 import shapesRoofInScene from './activities/shapes-roof-in-scene.json';
+import videoBearBakesBreadResponse from './activities/video-bear-bakes-bread-response.json';
 import videoVault from './activities/video-vault.json';
 
 export const APPROVED_ACTIVITIES: LearningActivity[] = [
@@ -72,4 +73,5 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   kennedisOrdersFixBerries,
   kennedisOrdersFreeMake,
   videoVault,
+  videoBearBakesBreadResponse,
 ] as LearningActivity[];
