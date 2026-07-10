@@ -123,6 +123,15 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('repeat(3, minmax(76px, 1fr))');
   });
 
+  test('keeps the Word Workshop environment inert and shallow on phones', () => {
+    expect(childUiCss).toMatch(
+      /\.workshop-environment \{[\s\S]*?pointer-events: none;[\s\S]*?\}/
+    );
+    expect(childUiCss).toMatch(
+      /\.workshop-environment \.workshop-env__prop--minor \{\s*display: none;/
+    );
+  });
+
   test('keeps the Bear Cafe environment inert and shallow on phones', () => {
     // The decorative scene can never intercept taps, and its minor props get
     // out of the way on small screens (game environment contract).

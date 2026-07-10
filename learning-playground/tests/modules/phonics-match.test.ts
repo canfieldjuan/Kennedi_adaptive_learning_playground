@@ -33,6 +33,19 @@ describe('phonics-match (Word game) runtime — parity behavior', () => {
     vi.unstubAllGlobals();
   });
 
+  test('the Word Workshop scene renders inert behind every mode (no letters)', () => {
+    const { root } = setup('phonics-find-b');
+    const layers = findAllByClassName(root, 'workshop-environment');
+    expect(layers).toHaveLength(1);
+    expect(layers[0].attributes['aria-hidden']).toBe('true');
+    expect(layers[0].innerHTML).toContain('workshop-env__svg');
+    // Hard guardrail: nothing in the scene may read as a letter or word.
+    expect(layers[0].innerHTML).not.toContain('<text');
+
+    const blend = setup('blend-cat');
+    expect(findAllByClassName(blend.root, 'workshop-environment')).toHaveLength(1);
+  });
+
   test('a correct tap emits correct + completed and locks the grid', () => {
     const { root, events } = setup('phonics-find-b');
 
@@ -262,6 +275,14 @@ function createMockSpeech(): SpeechServiceInterface {
 
 function createMockAudio(): AudioServiceInterface {
   return { play: vi.fn(), stop: vi.fn() };
+}
+
+function findAllByClassName(element: MockElement, className: string): MockElement[] {
+  const matches = element.className.split(/\s+/).includes(className) ? [element] : [];
+  for (const child of element.children) {
+    matches.push(...findAllByClassName(child, className));
+  }
+  return matches;
 }
 
 function findByChoiceId(element: MockElement, choiceId: string): MockElement | undefined {

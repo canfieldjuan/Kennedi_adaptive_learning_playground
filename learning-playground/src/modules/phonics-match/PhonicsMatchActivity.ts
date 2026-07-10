@@ -25,6 +25,7 @@ import {
   mouthForSound,
   type CharacterMouth,
 } from './phonics-character-art';
+import { createWorkshopEnvironment } from './workshop-environment';
 
 interface PhonicsMatchOptions {
   activity: LearningActivity;
@@ -68,8 +69,12 @@ export function renderPhonicsMatchActivity(
   const promptText = getPrompt(options.activity);
 
   container = document.createElement('div');
-  container.className = 'child-container activity-screen';
+  container.className = 'child-container activity-screen phonics-workshop';
   container.id = `activity-${options.activity.id}`;
+
+  // Pip's Word Workshop: the shared decorative scene behind every Words mode
+  // (inert — aria-hidden, no pointer events; content stacks above it).
+  container.appendChild(createWorkshopEnvironment());
 
   const topBar = document.createElement('div');
   topBar.className = 'activity-topbar';
