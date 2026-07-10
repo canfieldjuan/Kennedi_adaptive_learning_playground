@@ -770,11 +770,10 @@
   display: grid;
   place-items: center;
   gap: var(--space-xs);
-  width: min(92vw, 820px);
-  padding: var(--space-xs) var(--space-md);
-  border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.74);
-  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.1);
+  width: min(84vw, 520px);
+  padding: 4px var(--space-sm);
+  border-radius: var(--radius-round);
+  background: rgba(255, 255, 255, 0.52);
 }
 
 .bear-cafe-shift__label {
@@ -819,7 +818,7 @@
 .bear-cafe-phone__button {
   display: grid;
   place-items: center;
-  gap: var(--space-md);
+  gap: var(--space-lg);
   width: min(86vw, 420px);
   min-height: 320px;
   padding: var(--space-xl);
@@ -953,16 +952,66 @@
 }
 
 .bear-cafe-order__ticket {
-  display: inline-grid;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
   min-width: 160px;
   min-height: 48px;
-  place-items: center;
   padding: var(--space-xs) var(--space-md);
   border: 3px solid rgba(244, 114, 182, 0.35);
   border-radius: var(--radius-sm);
   background:
     linear-gradient(90deg, rgba(244, 114, 182, 0.09), rgba(250, 204, 21, 0.11)),
     #ffffff;
+}
+
+.bear-cafe-ticket-item,
+.bear-cafe-ticket-letter,
+.bear-cafe-ticket-swatch {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.bear-cafe-ticket-item {
+  font-size: 2.2rem;
+}
+
+.bear-cafe-ticket-letter {
+  background: #3a2461;
+  color: #ffffff;
+  font-size: 1.65rem;
+  font-weight: 900;
+}
+
+.bear-cafe-ticket-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-round);
+  background: #f472b6;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 900;
+  box-shadow: 0 4px 10px rgba(58, 36, 97, 0.18);
+}
+
+.bear-cafe-ticket-swatch {
+  background: var(--bear-cafe-ticket-color, #f472b6);
+  box-shadow:
+    inset 0 0 0 5px rgba(255, 255, 255, 0.55),
+    0 6px 18px rgba(58, 36, 97, 0.12);
 }
 
 .bear-cafe-tray {
@@ -1070,7 +1119,7 @@
 
 .bear-cafe-food {
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: 0;
   border: 4px solid rgba(96, 165, 250, 0.38);
   padding: var(--space-sm);
 }
@@ -1113,13 +1162,12 @@
 }
 
 .bear-cafe-food__icon {
-  font-size: 2.7rem;
+  font-size: 3.25rem;
   line-height: 1;
 }
 
 .bear-cafe-food__label {
-  font-size: 1rem;
-  text-transform: capitalize;
+  display: none;
 }
 
 .bear-cafe-food__count {
@@ -1155,9 +1203,8 @@
 
 .bear-cafe-swatch::after {
   content: '';
-  width: 28px;
+  width: 42px;
   aspect-ratio: 1;
-  margin-left: var(--space-sm);
   border-radius: var(--radius-round);
   background: var(--bear-cafe-swatch);
   box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.45);
@@ -1171,8 +1218,10 @@
 
 .bear-cafe-check,
 .bear-cafe-deliver-button {
+  min-width: 96px;
   background: #3a2461;
   color: #ffffff;
+  font-size: 2rem;
 }
 
 .bear-cafe-check:disabled {

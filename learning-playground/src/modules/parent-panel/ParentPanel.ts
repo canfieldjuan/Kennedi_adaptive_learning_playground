@@ -665,7 +665,15 @@ function createSessionReviewSection(
   summary.className = 'parent-review-grid';
   summary.appendChild(createReviewMetric(
     'Completed Activities',
-    formatList(formatActivityTitleList(review.completed_activities, ACTIVITY_TITLE_LOOKUP))
+    formatList(review.completed_activity_refs
+      ? review.completed_activity_refs.map((activity) => (
+          resolveActivityTitle(
+            activity.activity_id,
+            ACTIVITY_TITLE_LOOKUP,
+            activity.activity_version
+          )
+        ))
+      : formatActivityTitleList(review.completed_activities, ACTIVITY_TITLE_LOOKUP))
   ));
   summary.appendChild(createReviewMetric(
     'Skills Touched',
@@ -678,8 +686,14 @@ function createSessionReviewSection(
   ));
   summary.appendChild(createReviewMetric(
     'Most Repeated Activity',
-    review.most_repeated_activity
-      ? resolveActivityTitle(review.most_repeated_activity, ACTIVITY_TITLE_LOOKUP)
+    review.most_repeated_activity_ref
+      ? resolveActivityTitle(
+          review.most_repeated_activity_ref.activity_id,
+          ACTIVITY_TITLE_LOOKUP,
+          review.most_repeated_activity_ref.activity_version
+        )
+      : review.most_repeated_activity
+        ? resolveActivityTitle(review.most_repeated_activity, ACTIVITY_TITLE_LOOKUP)
       : 'None'
   ));
   section.appendChild(summary);
