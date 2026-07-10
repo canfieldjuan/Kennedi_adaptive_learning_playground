@@ -95,6 +95,10 @@ Scroll is allowed for:
 ## Safety Rules
 
 - No tiny touch targets.
+- Selectable play objects remain at least 80px by 80px in short landscape;
+  reflow the composition instead of shrinking them.
+- Wide command buttons remain at least 56px tall and 96px wide.
+- Home and Repeat utility controls may compact to 44px minimum.
 - No dense grids of small controls.
 - No child-facing debug or evidence text.
 - No required reading for gameplay.
@@ -114,4 +118,3 @@ On small phone, large phone, small tablet, and landscape:
 - Does completion fit or scroll only lightly?
 - Does the parent panel still scroll normally?
 - Does landscape behave acceptably?
-

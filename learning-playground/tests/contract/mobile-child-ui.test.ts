@@ -6,6 +6,9 @@ import { readFileSync } from 'node:fs';
 const childUiCss = readFixture('../../src/styles/child-ui.css');
 const baseCss = readFixture('../../src/styles/base.css');
 const tapChoiceSource = readFixture('../../src/modules/tap-choice/TapChoiceActivity.ts');
+const wordBuilderSource = readFixture(
+  '../../src/modules/phonics-match/WordBuilderActivity.ts'
+);
 
 function readFixture(path: string): string {
   return readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -51,7 +54,7 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('"tray tray"');
     expect(childUiCss).toContain('.bear-cafe-choice-grid');
     expect(childUiCss).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
-    expect(childUiCss).toContain('@media (min-width: 704px) and (max-width: 940px) and (orientation: landscape)');
+    expect(childUiCss).toContain('@media (min-width: 568px) and (max-width: 940px) and (orientation: landscape)');
     expect(childUiCss).toContain('grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.1fr)');
     expect(childUiCss).toContain('grid-template-columns: minmax(0, 1fr);');
     expect(childUiCss).toContain('grid-column: 1 / -1;');
@@ -64,7 +67,10 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('.phonics-character__art');
     expect(childUiCss).toContain('width: clamp(56px, 18dvh, 72px)');
     expect(childUiCss).toContain('.word-builder__tile');
-    expect(childUiCss).toContain('min-height: 48px');
+    expect(childUiCss).toContain('min-height: 80px');
+    expect(wordBuilderSource).toContain('word-builder-screen');
+    expect(childUiCss).toContain('"object slots"');
+    expect(childUiCss).toContain('"character tray"');
   });
 
   test('disables symbolic word-model completion motion when reduced motion is requested', () => {
@@ -74,8 +80,8 @@ describe('mobile child UI contract', () => {
   });
 
   test('keeps wide-landscape home cards compact without shrinking phone targets', () => {
-    expect(childUiCss).toContain('@media (min-width: 768px) and (min-height: 481px),');
-    expect(childUiCss).toContain('(min-width: 941px)');
+    expect(childUiCss).toContain('@media (min-width: 769px) and (max-height: 710px) and (orientation: landscape)');
+    expect(childUiCss).toContain('@media (min-width: 769px) and (min-height: 711px)');
     expect(childUiCss).not.toContain('@media (min-width: 768px) {');
     expect(childUiCss).toContain('min-height: clamp(118px, 24dvh, 160px)');
   });
@@ -89,7 +95,7 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('"swatches shape"');
     expect(childUiCss).toContain('grid-template-columns: repeat(2, minmax(64px, 1fr))');
     expect(childUiCss).toContain('width: min(42dvh, 180px)');
-    expect(childUiCss).toContain('min-height: 58px');
+    expect(childUiCss).toContain('min-height: 80px');
   });
 
   test('keeps color-request mismatch motion guarded', () => {

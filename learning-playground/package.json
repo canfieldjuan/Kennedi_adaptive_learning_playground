@@ -1,7 +1,7 @@
 {
   "name": "learning-playground",
   "private": true,
-  "version": "0.3.40",
+  "version": "0.3.41",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,9 +10,11 @@
     "typecheck": "tsc --noEmit",
     "check:work-contract": "node scripts/check-work-contract.mjs",
     "test": "npm run check:work-contract && vitest run",
+    "test:viewport": "playwright test",
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "typescript": "~6.0.2",
