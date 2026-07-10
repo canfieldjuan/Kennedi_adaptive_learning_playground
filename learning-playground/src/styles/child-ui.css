@@ -1751,6 +1751,41 @@
   100% { transform: translateY(0); }
 }
 
+/* The gallery shelf: the just-made piece slides in ahead of up to three
+   earlier ones (all re-rendered from event descriptors — no stored images). */
+.bear-art-studio__shelf {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 6px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-sm);
+}
+
+.bear-art-studio__mini {
+  display: block;
+  width: 74px;
+  filter: drop-shadow(0 4px 10px rgba(58, 36, 97, 0.2));
+}
+
+.bear-art-studio__mini--new {
+  width: 86px;
+  animation: gallerySlideIn 600ms ease-out;
+}
+
+.bear-art-studio__mini svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@keyframes gallerySlideIn {
+  0% { transform: translateY(14px) scale(0.7); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
 /* Gentle miss: the same soft bounce the rest of the app uses. */
 .bear-art-studio__subject.is-wrong,
 .bear-art-studio__card.is-wrong,
@@ -2674,6 +2709,7 @@
   .bear-art-studio__card.is-gallery,
   .bear-art-studio__subject.is-gallery,
   .bear-art-studio__scarf.is-gallery,
+  .bear-art-studio__mini--new,
   .number-train.is-counting .number-train__seat.is-occupied,
   .number-train__seat.is-next-hint,
   .number-train__path.is-walking .number-train__path-stop,
@@ -2952,6 +2988,16 @@
 
   .activity-feedback:empty {
     display: none;
+  }
+
+  /* The warm scenes set ink feedback text; pair it with a cream pill (the
+     dark pill above is for the dark-background games). */
+  .coloring-studio .activity-feedback,
+  .phonics-workshop .activity-feedback,
+  .train-station .activity-feedback,
+  .activity-screen--shape-garden .activity-feedback {
+    background: rgba(255, 253, 247, 0.92);
+    box-shadow: 0 2px 10px rgba(58, 36, 97, 0.16);
   }
 
   .activity-complete-actions {
@@ -3348,6 +3394,14 @@
     width: min(80vw, 300px);
     min-height: 200px;
     padding: 44px 62px var(--space-md);
+  }
+
+  .bear-art-studio__mini {
+    width: 58px;
+  }
+
+  .bear-art-studio__mini--new {
+    width: 68px;
   }
 
   .bear-cafe-delivery,
