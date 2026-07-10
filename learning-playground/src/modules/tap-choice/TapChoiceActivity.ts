@@ -74,6 +74,10 @@ export function renderTapChoiceActivity(
   container.className = [
     'child-container activity-screen',
     promptVisualLayout === 'scene' ? 'activity-screen--scene-prompt' : '',
+    // The direct-route Shapes lane (the only spatial-domain content) gets a
+    // light garden tint (visual arc cohesion pass) — other tap-choice
+    // domains keep the dark surface.
+    options.activity.domain === 'spatial' ? 'activity-screen--shape-garden' : '',
   ].filter(Boolean).join(' ');
   container.id = `activity-${options.activity.id}`;
 

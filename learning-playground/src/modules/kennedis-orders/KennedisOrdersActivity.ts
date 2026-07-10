@@ -798,7 +798,14 @@ function renderCompleteStage(parent: HTMLElement, content: BearCafeContent): voi
   const celebrate = document.createElement('div');
   celebrate.className = 'bear-cafe-celebrate';
   celebrate.setAttribute('aria-hidden', 'true');
-  const CELEBRATE_GLYPHS = ['🎉', '✨', '⭐', '💛', '🎊', '🌟'];
+  // Illustrated confetti (visual arc cohesion pass): star / heart / round /
+  // diamond in the accent palette — no emoji in the polished scene.
+  const CELEBRATE_SHAPES = [
+    `<svg class="bear-cafe-celebrate-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M12 2 l3 7 l7 1 l-5 5 l1 7 l-6 -4 l-6 4 l1 -7 l-5 -5 l7 -1 Z" fill="#f6c343" stroke="#3a2461" stroke-width="2" stroke-linejoin="round"/></svg>`,
+    `<svg class="bear-cafe-celebrate-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M12 21 q-9 -7 -9 -12 q0 -5 5 -5 q3 0 4 3 q1 -3 4 -3 q5 0 5 5 q0 5 -9 12 Z" fill="#f6a5c0" stroke="#3a2461" stroke-width="2" stroke-linejoin="round"/></svg>`,
+    `<svg class="bear-cafe-celebrate-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8" fill="#74b9ff" stroke="#3a2461" stroke-width="2"/></svg>`,
+    `<svg class="bear-cafe-celebrate-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M12 2 l8 10 l-8 10 l-8 -10 Z" fill="#7cd6b5" stroke="#3a2461" stroke-width="2" stroke-linejoin="round"/></svg>`,
+  ];
   const CELEBRATE_PIECES = 12;
   for (let i = 0; i < CELEBRATE_PIECES; i += 1) {
     const piece = document.createElement('span');
@@ -808,7 +815,7 @@ function renderCompleteStage(parent: HTMLElement, content: BearCafeContent): voi
     piece.style.setProperty('--tx', `${Math.round(Math.cos(angle) * distance)}px`);
     piece.style.setProperty('--ty', `${Math.round(Math.sin(angle) * distance)}px`);
     piece.style.setProperty('--delay', `${(i % 3) * 60}ms`);
-    piece.textContent = CELEBRATE_GLYPHS[i % CELEBRATE_GLYPHS.length];
+    piece.innerHTML = CELEBRATE_SHAPES[i % CELEBRATE_SHAPES.length];
     celebrate.appendChild(piece);
   }
   complete.appendChild(celebrate);

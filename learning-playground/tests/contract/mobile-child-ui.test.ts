@@ -143,6 +143,19 @@ describe('mobile child UI contract', () => {
     );
   });
 
+  test('scopes the shape-garden tint to the spatial (Shapes) domain only', () => {
+    // The direct-route Shapes lane — the only spatial-domain content — gets a
+    // light tint (cohesion pass); every other tap-choice domain keeps the
+    // dark surface.
+    expect(tapChoiceSource).toContain(
+      "options.activity.domain === 'spatial' ? 'activity-screen--shape-garden' : ''"
+    );
+    expect(childUiCss).toContain('.activity-screen--shape-garden');
+    expect(childUiCss).toMatch(
+      /\.activity-screen--shape-garden \.activity-choice \{[\s\S]*?background: #fffdf7;/
+    );
+  });
+
   test('keeps the train station environment inert and shallow on phones', () => {
     expect(childUiCss).toMatch(
       /\.station-environment \{[\s\S]*?pointer-events: none;[\s\S]*?\}/
