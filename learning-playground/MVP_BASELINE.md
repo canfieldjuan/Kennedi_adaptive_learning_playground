@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.45 Bear Art Studio slice 2 baseline
+Version: v0.3.46 parent video observation launch baseline
 
 ## Current Working MVP
 
@@ -43,8 +43,9 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Art now has one parent-launchable medium transfer activity that shows a visual
   color request card. A mismatched applied color remains correctable and emits
   incorrect evidence; legacy free-choice coloring remains unchanged.
-- Video Vault: validated repo-bundled-only video intake, reachable by direct
-  route, with one short local narrated clip, `Bear Bakes Bread`. Completion is
+- Video Vault: validated repo-bundled-only video intake, reachable by direct or
+  parent-started observation route, with one short local narrated clip,
+  `Bear Bakes Bread`. Completion is
   exposure-only. When the clip ends, a manual question action opens a separate
   three-picture vocabulary response; only that response records correct or
   incorrect evidence.
@@ -80,7 +81,9 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 ## Parent Modules
 
 - Parent Panel behind a visible local parent check.
-- Parent Panel includes a Bear Cafe launch button for parent-led play.
+- Parent Panel includes Bear Cafe and Video Observation launch buttons for
+  parent-led play. Video Observation opens the existing local vault and emits no
+  evidence until the clip itself ends.
 - Settings summary for display name, difficulty mode, session length, audio, speech, video, and enabled domains.
 - Local progress summary by skill.
 - Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and structured parent observations.
