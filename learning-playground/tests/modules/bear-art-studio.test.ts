@@ -421,6 +421,57 @@ describe('bear art studio runtime', () => {
     expect(dress.content.next_activity_id).toBeUndefined();
   });
 
+  test('finishing shows the gallery shelf: live piece first, then history', () => {
+    const history = [{
+      event_id: 'old-1',
+      activity_id: 'art-studio-pink-request',
+      created_at: '2026-07-10T11:00:00.000Z',
+      kind: 'painted_subject' as const,
+      surface_id: 'heart-card',
+      sticker_ids: [],
+      color_ids: ['berry-pink'],
+    }];
+    const root = document.createElement('div') as unknown as MockElement;
+    renderBearArtStudioActivity(root as unknown as HTMLElement, {
+      activity: getActivity('art-studio-free-decorate'),
+      childId: 'local-child',
+      sessionId: 'session-1',
+      speech: createMockSpeech(),
+      audio: createMockAudio(),
+      onEvent: vi.fn(),
+      gallery: history,
+    });
+
+    const shelf = findByClass(root, 'bear-art-studio__shelf');
+    expect(shelf?.hidden).toBe(true);
+
+    findByAria(root, 'star sticker')?.click();
+    findByAria(root, 'Art spot 1')?.click();
+    findByText(root, 'Finish art')?.click();
+
+    expect(shelf?.hidden).toBe(false);
+    expect(shelf?.children).toHaveLength(2);
+    expect(shelf?.children[0]?.className).toContain('bear-art-studio__mini--new');
+    expect(shelf?.children[0]?.innerHTML).toContain('bear-art-studio__mini-svg');
+    expect(shelf?.children[1]?.className).not.toContain('--new');
+  });
+
+  test('free decorate completion carries the full piece descriptor', () => {
+    const { root, events } = setup('art-studio-free-decorate');
+
+    findByColorId(root, 'sunny-yellow')?.click();
+    findByAria(root, 'heart sticker')?.click();
+    findByAria(root, 'Art spot 3')?.click();
+    findByText(root, 'Finish art')?.click();
+
+    const completed = events.find((event) => event.outcome === 'completed');
+    expect(completed?.metadata).toMatchObject({
+      sticker_ids: 'heart',
+      card_color_id: 'sunny-yellow',
+      art_surface_id: 'decorate-card',
+    });
+  });
+
   test('malformed studio content fails closed to the setup screen', () => {
     const activity = getActivity('art-studio-pink-request');
     const broken = {
