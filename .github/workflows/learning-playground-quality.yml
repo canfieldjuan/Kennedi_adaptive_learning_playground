@@ -1,0 +1,53 @@
+name: Learning Playground Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: learning-playground-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: quality-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: learning-playground
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: learning-playground/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install Chromium for viewport tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run contract and unit tests
+        run: npm test
+
+      - name: Run mobile viewport tests
+        run: npm run test:viewport
+
+      - name: Run TypeScript checks
+        run: npm run typecheck
+
+      - name: Build production bundle
+        run: npm run build
