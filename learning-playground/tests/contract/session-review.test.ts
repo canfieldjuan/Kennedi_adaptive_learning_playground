@@ -29,10 +29,17 @@ describe('parent session review contract', () => {
     const review = buildParentSessionReview(events, observations, 'session-1');
 
     expect(review.completed_activities).toEqual(['math-count-stars-three']);
+    expect(review.completed_activity_refs).toEqual([
+      { activity_id: 'math-count-stars-three', activity_version: 1 },
+    ]);
     expect(review.skills_touched).toEqual(['counting', 'initial_sound']);
     expect(review.hints_used).toBe(1);
     expect(review.abandoned_activities).toEqual(['phonics-find-b']);
     expect(review.most_repeated_activity).toBe('math-count-stars-three');
+    expect(review.most_repeated_activity_ref).toEqual({
+      activity_id: 'math-count-stars-three',
+      activity_version: 1,
+    });
     expect(review.parent_notes[0].note).toBe('Needed a break after phonics.');
     expect(review.accuracy_by_skill).toEqual([
       {
@@ -117,10 +124,55 @@ describe('parent session review contract', () => {
 
     expect(review.most_repeated_activity).toBe('phonics-find-b');
   });
+
+  test('preserves activity versions for parent summary title resolution', () => {
+    const events: ActivityAttemptEvent[] = [
+      makeEvent({
+        activityId: 'kennedis-orders-pink-berries-001',
+        activityVersion: 1,
+        outcome: 'completed',
+        skillIds: ['counting', 'color_fill'],
+      }),
+      makeEvent({
+        activityId: 'kennedis-orders-pink-berries-001',
+        activityVersion: 1,
+        outcome: 'correct',
+        skillIds: ['counting', 'color_fill'],
+      }),
+    ];
+
+    const review = buildParentSessionReview(events, [], 'session-1');
+
+    expect(review.completed_activity_refs).toEqual([
+      { activity_id: 'kennedis-orders-pink-berries-001', activity_version: 1 },
+    ]);
+    expect(review.most_repeated_activity_ref).toEqual({
+      activity_id: 'kennedis-orders-pink-berries-001',
+      activity_version: 1,
+    });
+  });
+
+  test('keeps the version reference attached to the selected repeat metric', () => {
+    const events: ActivityAttemptEvent[] = [
+      makeEvent({ activityId: 'cafe', activityVersion: 1, outcome: 'correct', skillIds: ['counting'] }),
+      makeEvent({ activityId: 'cafe', activityVersion: 1, outcome: 'completed', skillIds: ['counting'] }),
+      makeEvent({ activityId: 'cafe', activityVersion: 2, outcome: 'correct', skillIds: ['counting'] }),
+      makeEvent({ activityId: 'cafe', activityVersion: 2, outcome: 'completed', skillIds: ['counting'] }),
+      makeEvent({ activityId: 'words', activityVersion: 1, outcome: 'correct', skillIds: ['initial_sound'] }),
+      makeEvent({ activityId: 'words', activityVersion: 1, outcome: 'incorrect', skillIds: ['initial_sound'] }),
+      makeEvent({ activityId: 'words', activityVersion: 1, outcome: 'completed', skillIds: ['initial_sound'] }),
+    ];
+
+    const review = buildParentSessionReview(events, [], 'session-1');
+
+    expect(review.most_repeated_activity).toBe('cafe');
+    expect(review.most_repeated_activity_ref?.activity_id).toBe('cafe');
+  });
 });
 
 function makeEvent(params: {
   activityId: string;
+  activityVersion?: number;
   outcome: ActivityAttemptEvent['outcome'];
   skillIds: string[];
   skillOutcomes?: ActivityAttemptEvent['skill_outcomes'];
@@ -131,7 +183,7 @@ function makeEvent(params: {
     session_id: 'session-1',
     child_id: 'local-child',
     activity_id: params.activityId,
-    activity_version: 1,
+    activity_version: params.activityVersion ?? 1,
     skill_ids: params.skillIds,
     timestamp: '2026-01-01T12:00:00.000Z',
     prompt_text: 'Prompt',
