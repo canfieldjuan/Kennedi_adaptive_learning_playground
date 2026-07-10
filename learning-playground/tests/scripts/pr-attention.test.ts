@@ -4,6 +4,8 @@ import * as attention from '../../scripts/pr-attention.mjs';
 
 const { decideAttention, parseReadinessProof, parseWakeSource, runCli } = attention;
 const HEAD = '1111111111111111111111111111111111111111';
+const BASE = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const STALE_BASE = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
 describe('one-shot PR attention decision', () => {
   test.each(['push', 'review', 'comment'])(
@@ -33,12 +35,27 @@ describe('one-shot PR attention decision', () => {
   });
 
   test('a check wake with only pending required checks waits', () => {
-    const decision = decideAttention('check', pendingProof());
+    const parsed = parseReadinessProof(JSON.stringify(pendingProof()));
+    const decision = decideAttention('check', parsed);
 
     expect(decision).toMatchObject({
       decision: 'waiting',
       action: 'wait',
       ready_for_scheduled_confirmation: false,
+      merge_authorized: false,
+    });
+  });
+
+  test('a pending commit status with coherent state evidence waits', () => {
+    const current = pendingProof();
+    current.policy.initial.requiredChecks[0].app_id = null;
+    current.policy.final.requiredChecks[0].app_id = null;
+    current.checks.contexts = [statusContext()];
+    current.checks.required_results = [required({ app_id: null, result: 'not_successful' })];
+    const parsed = parseReadinessProof(JSON.stringify(current));
+
+    expect(decideAttention('check', parsed)).toMatchObject({
+      decision: 'waiting',
       merge_authorized: false,
     });
   });
@@ -66,7 +83,11 @@ describe('one-shot PR attention decision', () => {
       const current = pendingProof();
       if (evidence === 'metadata') current.pr.metadata_stable = false;
       else if (evidence === 'policy') current.policy.stable = false;
-      else current.review_threads.unresolved_count = 1;
+      else {
+        current.review_threads.total_count = 1;
+        current.review_threads.unresolved_count = 1;
+        current.review_threads.unresolved_ids = ['THREAD-1'];
+      }
 
       const parsed = parseReadinessProof(JSON.stringify(current));
       expect(decideAttention('check', parsed)).toMatchObject({
@@ -75,6 +96,47 @@ describe('one-shot PR attention decision', () => {
       });
     }
   );
+
+  test.each(['merge_state', 'mergeability', 'review', 'base'] as const)(
+    'a pending proof with blocking %s evidence requires attention',
+    (evidence) => {
+      const current = pendingProof();
+      if (evidence === 'merge_state') {
+        current.pr.initial.mergeStateStatus = 'DIRTY';
+        current.pr.final.mergeStateStatus = 'DIRTY';
+      } else if (evidence === 'mergeability') {
+        current.pr.initial.mergeable = 'CONFLICTING';
+        current.pr.final.mergeable = 'CONFLICTING';
+      } else if (evidence === 'review') {
+        current.pr.initial.reviewDecision = 'CHANGES_REQUESTED';
+        current.pr.final.reviewDecision = 'CHANGES_REQUESTED';
+      } else {
+        current.pr.initial.baseBranchOid = STALE_BASE;
+        current.pr.final.baseBranchOid = STALE_BASE;
+      }
+
+      const parsed = parseReadinessProof(JSON.stringify(current));
+      expect(decideAttention('check', parsed)).toMatchObject({
+        decision: 'attention',
+        merge_authorized: false,
+      });
+    }
+  );
+
+  test('a draft-only summary cannot hide a completed failed required check', () => {
+    const current = notReadyProof('pr_is_draft');
+    current.pr.initial.isDraft = true;
+    current.pr.final.isDraft = true;
+    current.checks.contexts = [check({ conclusion: 'FAILURE', successful: false })];
+    current.checks.required_results = [required({ result: 'not_successful' })];
+
+    const parsed = parseReadinessProof(JSON.stringify(current));
+    expect(decideAttention('check', parsed)).toMatchObject({
+      decision: 'attention',
+      reason_codes: expect.arrayContaining(['required_check_not_successful']),
+      merge_authorized: false,
+    });
+  });
 
   test.each(['FAILURE', 'CANCELLED', 'TIMED_OUT', 'SKIPPED', 'NEUTRAL'])(
     'a check wake with %s requires attention',
@@ -86,7 +148,8 @@ describe('one-shot PR attention decision', () => {
         successful: false,
       });
 
-      expect(decideAttention('check', current)).toMatchObject({
+      const parsed = parseReadinessProof(JSON.stringify(current));
+      expect(decideAttention('check', parsed)).toMatchObject({
         decision: 'attention',
         merge_authorized: false,
       });
@@ -128,7 +191,8 @@ describe('one-shot PR attention decision', () => {
   });
 
   test('a ready check wake reports readiness and waits for scheduled confirmation', () => {
-    const decision = decideAttention('check', proof());
+    const parsed = parseReadinessProof(JSON.stringify(proof()));
+    const decision = decideAttention('check', parsed);
 
     expect(decision).toMatchObject({
       decision: 'waiting',
@@ -155,8 +219,40 @@ describe('one-shot PR attention decision', () => {
   );
 
   test('draft state without other failure waits on a check wake', () => {
-    expect(decideAttention('check', notReadyProof('pr_is_draft'))).toMatchObject({
+    const current = notReadyProof('pr_is_draft');
+    current.pr.initial.isDraft = true;
+    current.pr.final.isDraft = true;
+    const parsed = parseReadinessProof(JSON.stringify(current));
+
+    expect(decideAttention('check', parsed)).toMatchObject({
       decision: 'waiting',
+      merge_authorized: false,
+    });
+  });
+
+  test('a draft summary without draft evidence requires attention', () => {
+    const parsed = parseReadinessProof(JSON.stringify(notReadyProof('pr_is_draft')));
+
+    expect(decideAttention('check', parsed)).toMatchObject({
+      decision: 'attention',
+      merge_authorized: false,
+    });
+  });
+
+  test('an empty required policy is attention rather than a schema error', () => {
+    const current = notReadyProof('required_policy_empty');
+    current.policy.initial.requiredChecks = [];
+    current.policy.final.requiredChecks = [];
+    current.checks.contexts = [];
+    current.checks.required_results = [];
+    const parsed = parseReadinessProof(JSON.stringify(current));
+
+    expect(decideAttention('check', parsed)).toMatchObject({
+      decision: 'attention',
+      reason_codes: expect.arrayContaining([
+        'required_policy_empty',
+        'required_policy_missing_quality_gate',
+      ]),
       merge_authorized: false,
     });
   });
@@ -212,9 +308,60 @@ describe('attention input contract', () => {
     );
   });
 
+  test.each(['draft', 'review', 'mergeability', 'merge_state', 'base'] as const)(
+    'rejects a ready proof with blocking %s evidence',
+    (evidence) => {
+      const current = proof();
+      if (evidence === 'draft') {
+        current.pr.initial.isDraft = true;
+        current.pr.final.isDraft = true;
+      } else if (evidence === 'review') {
+        current.pr.initial.reviewDecision = 'CHANGES_REQUESTED';
+        current.pr.final.reviewDecision = 'CHANGES_REQUESTED';
+      } else if (evidence === 'mergeability') {
+        current.pr.initial.mergeable = 'CONFLICTING';
+        current.pr.final.mergeable = 'CONFLICTING';
+      } else if (evidence === 'merge_state') {
+        current.pr.initial.mergeStateStatus = 'DIRTY';
+        current.pr.final.mergeStateStatus = 'DIRTY';
+      } else {
+        current.pr.initial.baseBranchOid = STALE_BASE;
+        current.pr.final.baseBranchOid = STALE_BASE;
+      }
+
+      expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+        expect.objectContaining({ code: 'contradictory_proof' })
+      );
+    }
+  );
+
+  test('rejects a ready proof whose policy omits quality-gate', () => {
+    const current = proof();
+    current.policy.initial.requiredChecks = [{ context: 'other-check', app_id: null }];
+    current.policy.final.requiredChecks = [{ context: 'other-check', app_id: null }];
+    current.checks.contexts = [check({ name: 'other-check', app_id: null })];
+    current.checks.required_results = [required({ context: 'other-check', app_id: null })];
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
+  test('rejects required-result coverage that omits a policy requirement', () => {
+    const current = proof();
+    current.policy.initial.requiredChecks.push({ context: 'other-check', app_id: null });
+    current.policy.final.requiredChecks.push({ context: 'other-check', app_id: null });
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
   test('rejects a ready proof with unresolved threads', () => {
     const current = proof();
+    current.review_threads.total_count = 1;
     current.review_threads.unresolved_count = 1;
+    current.review_threads.unresolved_ids = ['THREAD-1'];
 
     expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
       expect.objectContaining({ code: 'contradictory_proof' })
@@ -273,6 +420,27 @@ describe('attention input contract', () => {
     );
   });
 
+  test('rejects a pending check-run status paired with a terminal conclusion', () => {
+    const current = pendingProof();
+    current.checks.contexts[0].conclusion = 'FAILURE';
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
+  test('rejects a commit status whose conclusion differs from its state', () => {
+    const current = pendingProof();
+    current.policy.initial.requiredChecks[0].app_id = null;
+    current.policy.final.requiredChecks[0].app_id = null;
+    current.checks.contexts = [statusContext({ conclusion: 'FAILURE' })];
+    current.checks.required_results = [required({ app_id: null, result: 'not_successful' })];
+
+    expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+      expect.objectContaining({ code: 'contradictory_proof' })
+    );
+  });
+
   test('rejects an app-bound result backed by a same-name different app', () => {
     const current = proof();
     current.checks.contexts[0].app_id = 99999;
@@ -292,11 +460,27 @@ describe('attention input contract', () => {
     }));
     current.checks.required_results[0].app_id = null;
     current.checks.required_results[0].matched_rows = 2;
+    current.policy.initial.requiredChecks[0].app_id = null;
+    current.policy.final.requiredChecks[0].app_id = null;
 
     expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
       expect.objectContaining({ code: 'contradictory_proof' })
     );
   });
+
+  test.each(['ids', 'outdated_count', 'total_count'] as const)(
+    'rejects contradictory review-thread %s evidence',
+    (evidence) => {
+      const current = proof();
+      if (evidence === 'ids') current.review_threads.unresolved_ids = ['THREAD-1'];
+      else if (evidence === 'outdated_count') current.review_threads.outdated_unresolved_count = 1;
+      else current.review_threads.total_count = -1;
+
+      expect(() => parseReadinessProof(JSON.stringify(current))).toThrowError(
+        expect.objectContaining({ code: 'contradictory_proof' })
+      );
+    }
+  );
 
   test('rejects a check context whose success contradicts its state', () => {
     const current = pendingProof();
@@ -376,22 +560,68 @@ function proof() {
     ready: true,
     expected_head_sha: HEAD,
     pr: {
-      initial: { state: 'OPEN', headRefOid: HEAD },
-      final: { state: 'OPEN', headRefOid: HEAD },
+      initial: pullRequest(),
+      final: pullRequest(),
       metadata_stable: true,
     },
-    policy: { stable: true },
+    policy: {
+      initial: requiredPolicy(),
+      final: requiredPolicy(),
+      stable: true,
+    },
     checks: {
       complete: true,
+      pages: 1,
       head_sha: HEAD,
       contexts: [check()],
       required_results: [required()],
     },
     review_threads: {
       complete: true,
+      pages: 1,
+      total_count: 0,
       unresolved_count: 0,
+      unresolved_ids: [] as string[],
+      outdated_unresolved_count: 0,
     },
     failure_codes: [] as string[],
+  };
+}
+
+function pullRequest(overrides: Partial<{
+  headRefOid: string;
+  baseRefOid: string;
+  baseBranchOid: string;
+  baseRefName: string;
+  state: string;
+  isDraft: boolean;
+  reviewDecision: string | null;
+  mergeable: string;
+  mergeStateStatus: string;
+}> = {}) {
+  return {
+    headRefOid: HEAD,
+    baseRefOid: BASE,
+    baseBranchOid: BASE,
+    baseRefName: 'main',
+    state: 'OPEN',
+    isDraft: false,
+    reviewDecision: null as string | null,
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'CLEAN',
+    ...overrides,
+  };
+}
+
+function requiredPolicy() {
+  return {
+    sources: {
+      classic_protection: true,
+      applicable_branch_rule_pages: 1,
+      applicable_branch_rules: 0,
+      required_status_check_rules: 0,
+    },
+    requiredChecks: [{ context: 'quality-gate', app_id: 15368 as number | null }],
   };
 }
 
@@ -447,6 +677,23 @@ function check(overrides: Partial<{
     status: 'COMPLETED',
     conclusion: 'SUCCESS' as string | null,
     successful: true,
+    ...overrides,
+  };
+}
+
+function statusContext(overrides: Partial<{
+  name: string;
+  status: string;
+  conclusion: string;
+  successful: boolean;
+}> = {}) {
+  return {
+    type: 'status_context',
+    name: 'quality-gate',
+    app_id: null,
+    status: 'PENDING',
+    conclusion: 'PENDING',
+    successful: false,
     ...overrides,
   };
 }

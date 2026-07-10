@@ -80,24 +80,24 @@ export function parseReadinessProof(raw) {
     }
     const initial = readRecord(proof, 'pr', 'initial');
     const final = readRecord(proof, 'pr', 'final');
-    if (
-      typeof initial.state !== 'string'
-      || initial.state.length === 0
-      || typeof final.state !== 'string'
-      || final.state.length === 0
-      || !SHA_PATTERN.test(initial.headRefOid ?? '')
-      || !SHA_PATTERN.test(final.headRefOid ?? '')
-      || typeof proof.pr.metadata_stable !== 'boolean'
-    ) {
+    validatePullRequestSnapshot(initial);
+    validatePullRequestSnapshot(final);
+    if (typeof proof.pr.metadata_stable !== 'boolean') {
       throw new AttentionError('invalid_proof', 'Readiness proof PR state is invalid');
     }
     const policy = readRecord(proof, 'policy');
+    const initialPolicy = readRecord(proof, 'policy', 'initial');
+    const finalPolicy = readRecord(proof, 'policy', 'final');
     if (typeof policy.stable !== 'boolean') {
       throw new AttentionError('invalid_proof', 'Readiness proof policy state is invalid');
     }
+    validateRequiredPolicy(initialPolicy);
+    validateRequiredPolicy(finalPolicy);
     const checks = readRecord(proof, 'checks');
     if (
       typeof checks.complete !== 'boolean'
+      || !Number.isInteger(checks.pages)
+      || checks.pages < 1
       || !SHA_PATTERN.test(checks.head_sha ?? '')
       || !Array.isArray(checks.contexts)
       || !Array.isArray(checks.required_results)
@@ -110,29 +110,24 @@ export function parseReadinessProof(raw) {
     for (const context of checks.contexts) validateCheckContext(context);
     for (const result of checks.required_results) validateRequiredResult(result);
     validateRequiredResultsAgainstContexts(checks);
+    validateRequiredResultsAgainstPolicy(checks.required_results, initialPolicy.requiredChecks);
     const threads = readRecord(proof, 'review_threads');
     if (
       typeof threads.complete !== 'boolean'
+      || !Number.isInteger(threads.pages)
+      || threads.pages < 1
+      || !Number.isInteger(threads.total_count)
       || !Number.isInteger(threads.unresolved_count)
-      || threads.unresolved_count < 0
+      || !Array.isArray(threads.unresolved_ids)
+      || !Number.isInteger(threads.outdated_unresolved_count)
     ) {
       throw new AttentionError('invalid_proof', 'Readiness proof thread evidence is invalid');
     }
     if (!threads.complete) {
       throw new AttentionError('incomplete_proof', 'Readiness proof thread evidence is incomplete');
     }
-    if (proof.ready && (
-      initial.state !== 'OPEN'
-      || final.state !== 'OPEN'
-      || initial.headRefOid !== proof.expected_head_sha
-      || final.headRefOid !== proof.expected_head_sha
-      || !proof.pr.metadata_stable
-      || !policy.stable
-      || checks.head_sha !== proof.expected_head_sha
-      || checks.required_results.length === 0
-      || checks.required_results.some((result) => result.result !== 'success')
-      || threads.unresolved_count !== 0
-    )) {
+    validateReviewThreadSummary(threads);
+    if (proof.ready && deriveEvidenceReasons(proof).length > 0) {
       throw new AttentionError('contradictory_proof', 'Ready proof is incomplete or stale');
     }
   }
@@ -150,6 +145,10 @@ export function decideAttention(wakeSource, proof) {
     expected_head_sha: proof.expected_head_sha ?? null,
     merge_authorized: false,
   };
+  const evidenceReasons = proof.status === 'error' ? [] : deriveEvidenceReasons(proof);
+  const proofReasons = proof.status === 'error'
+    ? ['proof_error']
+    : [...new Set([...proof.failure_codes, ...evidenceReasons])].sort();
 
   if (
     proof.status !== 'error'
@@ -167,15 +166,10 @@ export function decideAttention(wakeSource, proof) {
   }
 
   if (DIRECT_ATTENTION_SOURCES.has(wakeSource)) {
-    const proofReasons = proof.status === 'error' ? ['proof_error'] : proof.failure_codes;
     return attention(base, [`event_${wakeSource}`, ...proofReasons]);
   }
 
   if (proof.status === 'error') return attention(base, ['proof_error']);
-  const evidenceReasons = nonWaitableEvidenceReasons(proof);
-  if (evidenceReasons.length > 0) {
-    return attention(base, [...proof.failure_codes, ...evidenceReasons]);
-  }
   if (proof.ready) {
     return {
       ...base,
@@ -187,17 +181,17 @@ export function decideAttention(wakeSource, proof) {
     };
   }
 
-  if (isOnlyWaitableState(proof)) {
+  if (isOnlyWaitableState(proof, proofReasons)) {
     return {
       ...base,
       decision: 'waiting',
       next_state: 'waiting',
       action: 'wait',
       ready_for_scheduled_confirmation: false,
-      reason_codes: [...proof.failure_codes].sort(),
+      reason_codes: proofReasons,
     };
   }
-  return attention(base, proof.failure_codes);
+  return attention(base, proofReasons);
 }
 
 export async function readBoundedInput(stream, maxBytes = MAX_INPUT_BYTES) {
@@ -249,29 +243,32 @@ export async function runCli({
   }
 }
 
-function isOnlyWaitableState(proof) {
+function isOnlyWaitableState(proof, reasons) {
   const waitableCodes = new Set(['pr_is_draft', 'required_check_not_successful']);
-  if (proof.failure_codes.some((code) => !waitableCodes.has(code))) return false;
-  if (!proof.failure_codes.includes('required_check_not_successful')) return true;
+  if (reasons.some((code) => !waitableCodes.has(code))) return false;
+  if (
+    reasons.includes('pr_is_draft')
+    && !proof.pr.initial.isDraft
+    && !proof.pr.final.isDraft
+  ) {
+    return false;
+  }
 
   const incomplete = proof.checks.required_results.filter((result) => result.result !== 'success');
-  if (incomplete.length === 0) return false;
+  if (incomplete.length === 0) return !reasons.includes('required_check_not_successful');
+  const contextIndex = indexCheckContexts(proof.checks.contexts);
   return incomplete.every((required) => {
     if (required.result !== 'not_successful') return false;
-    const matches = proof.checks.contexts.filter((context) => (
-      context.name === required.context
-      && (required.app_id === null || context.app_id === required.app_id)
-    ));
-    return matches.length > 0 && matches.every((context) => (
-      PENDING_CHECK_STATES.has(context.status)
-    ));
+    const matches = matchingContexts(contextIndex, required);
+    return matches.length > 0 && matches.every(isPendingContext);
   });
 }
 
-function nonWaitableEvidenceReasons(proof) {
+function deriveEvidenceReasons(proof) {
   const reasons = [];
   const { initial, final } = proof.pr;
   if (initial.state !== 'OPEN' || final.state !== 'OPEN') reasons.push('pr_not_open');
+  if (initial.isDraft || final.isDraft) reasons.push('pr_is_draft');
   if (
     initial.headRefOid !== proof.expected_head_sha
     || final.headRefOid !== proof.expected_head_sha
@@ -280,11 +277,77 @@ function nonWaitableEvidenceReasons(proof) {
     reasons.push('expected_head_mismatch');
   }
   if (initial.headRefOid !== final.headRefOid) reasons.push('head_changed');
-  if (!proof.pr.metadata_stable) reasons.push('pr_metadata_changed');
-  if (!proof.policy.stable) reasons.push('required_policy_changed');
-  if (proof.checks.required_results.length === 0) reasons.push('required_policy_empty');
+  if (initial.baseRefOid !== final.baseRefOid) reasons.push('base_changed');
+  if (initial.baseBranchOid !== final.baseBranchOid) reasons.push('base_branch_changed');
+  if (
+    initial.baseRefOid !== initial.baseBranchOid
+    || final.baseRefOid !== final.baseBranchOid
+  ) {
+    reasons.push('base_not_current');
+  }
+  if (!proof.pr.metadata_stable || JSON.stringify(initial) !== JSON.stringify(final)) {
+    reasons.push('pr_metadata_changed');
+  }
+
+  const initialRequirements = proof.policy.initial.requiredChecks;
+  if (!proof.policy.stable || JSON.stringify(proof.policy.initial) !== JSON.stringify(proof.policy.final)) {
+    reasons.push('required_policy_changed');
+  }
+  if (initialRequirements.length === 0) reasons.push('required_policy_empty');
+  if (!initialRequirements.some(({ context }) => context === 'quality-gate')) {
+    reasons.push('required_policy_missing_quality_gate');
+  }
+  if (proof.checks.required_results.some(({ result }) => result === 'missing')) {
+    reasons.push('required_check_missing');
+  }
+  if (proof.checks.required_results.some(({ result }) => result === 'not_successful')) {
+    reasons.push('required_check_not_successful');
+  }
   if (proof.review_threads.unresolved_count > 0) reasons.push('review_threads_unresolved');
+  if (
+    initial.reviewDecision === 'CHANGES_REQUESTED'
+    || final.reviewDecision === 'CHANGES_REQUESTED'
+  ) {
+    reasons.push('changes_requested');
+  }
+  if (initial.mergeable === 'UNKNOWN' || final.mergeable === 'UNKNOWN') {
+    reasons.push('mergeability_unknown');
+  } else if (initial.mergeable !== 'MERGEABLE' || final.mergeable !== 'MERGEABLE') {
+    reasons.push('merge_conflict');
+  }
+  if (initial.mergeStateStatus === 'UNKNOWN' || final.mergeStateStatus === 'UNKNOWN') {
+    reasons.push('merge_state_unknown');
+  } else if (initial.mergeStateStatus !== 'CLEAN' || final.mergeStateStatus !== 'CLEAN') {
+    reasons.push('merge_state_not_clean');
+  }
   return reasons;
+}
+
+function isPendingContext(context) {
+  if (!PENDING_CHECK_STATES.has(context.status)) return false;
+  if (context.type === 'check_run') return context.conclusion === null;
+  return context.conclusion === context.status;
+}
+
+function indexCheckContexts(contexts) {
+  const byName = new Map();
+  const byNameAndApp = new Map();
+  for (const context of contexts) {
+    const named = byName.get(context.name) ?? [];
+    named.push(context);
+    byName.set(context.name, named);
+
+    const key = requirementKey({ context: context.name, app_id: context.app_id });
+    const bound = byNameAndApp.get(key) ?? [];
+    bound.push(context);
+    byNameAndApp.set(key, bound);
+  }
+  return { byName, byNameAndApp };
+}
+
+function matchingContexts(index, requirement) {
+  if (requirement.app_id === null) return index.byName.get(requirement.context) ?? [];
+  return index.byNameAndApp.get(requirementKey(requirement)) ?? [];
 }
 
 function attention(base, reasons) {
@@ -305,17 +368,80 @@ function exitCodeFor(decision) {
   return 2;
 }
 
+function validatePullRequestSnapshot(snapshot) {
+  if (
+    !isRecord(snapshot)
+    || !SHA_PATTERN.test(snapshot.headRefOid ?? '')
+    || !SHA_PATTERN.test(snapshot.baseRefOid ?? '')
+    || !SHA_PATTERN.test(snapshot.baseBranchOid ?? '')
+    || typeof snapshot.baseRefName !== 'string'
+    || snapshot.baseRefName.length === 0
+    || typeof snapshot.state !== 'string'
+    || snapshot.state.length === 0
+    || typeof snapshot.isDraft !== 'boolean'
+    || (snapshot.reviewDecision !== null && (
+      typeof snapshot.reviewDecision !== 'string' || snapshot.reviewDecision.length === 0
+    ))
+    || typeof snapshot.mergeable !== 'string'
+    || snapshot.mergeable.length === 0
+    || typeof snapshot.mergeStateStatus !== 'string'
+    || snapshot.mergeStateStatus.length === 0
+  ) {
+    throw new AttentionError('invalid_proof', 'Readiness proof PR state is invalid');
+  }
+}
+
+function validateRequiredPolicy(policy) {
+  if (!isRecord(policy) || !isRecord(policy.sources) || !Array.isArray(policy.requiredChecks)) {
+    throw new AttentionError('invalid_proof', 'Readiness proof policy state is invalid');
+  }
+  const keys = new Set();
+  for (const requirement of policy.requiredChecks) {
+    validateRequirement(requirement);
+    const key = requirementKey(requirement);
+    if (keys.has(key)) {
+      throw new AttentionError('contradictory_proof', 'Required policy repeats a requirement');
+    }
+    keys.add(key);
+  }
+}
+
+function validateRequirement(requirement) {
+  if (
+    !isRecord(requirement)
+    || typeof requirement.context !== 'string'
+    || requirement.context.length === 0
+    || (requirement.app_id !== null && (
+      !Number.isInteger(requirement.app_id) || requirement.app_id <= 0
+    ))
+  ) {
+    throw new AttentionError('invalid_proof', 'Required policy requirement is invalid');
+  }
+}
+
 function validateCheckContext(context) {
   if (
     !isRecord(context)
     || !['check_run', 'status_context'].includes(context.type)
     || typeof context.name !== 'string'
+    || context.name.length === 0
     || typeof context.status !== 'string'
+    || context.status.length === 0
     || typeof context.successful !== 'boolean'
-    || (context.conclusion !== null && typeof context.conclusion !== 'string')
+    || (context.conclusion !== null && (
+      typeof context.conclusion !== 'string' || context.conclusion.length === 0
+    ))
     || (context.app_id !== null && (!Number.isInteger(context.app_id) || context.app_id <= 0))
   ) {
     throw new AttentionError('invalid_proof', 'Readiness proof check context is invalid');
+  }
+  if (
+    (context.type === 'check_run' && context.status !== 'COMPLETED' && context.conclusion !== null)
+    || (context.type === 'status_context' && (
+      context.app_id !== null || context.conclusion !== context.status
+    ))
+  ) {
+    throw new AttentionError('contradictory_proof', 'Check context status contradicts conclusion');
   }
   const expectedSuccess = context.type === 'check_run'
     ? context.status === 'COMPLETED' && context.conclusion === 'SUCCESS'
@@ -329,6 +455,7 @@ function validateRequiredResult(result) {
   if (
     !isRecord(result)
     || typeof result.context !== 'string'
+    || result.context.length === 0
     || !['success', 'missing', 'not_successful'].includes(result.result)
     || !Number.isInteger(result.matched_rows)
     || result.matched_rows < 0
@@ -344,12 +471,48 @@ function validateRequiredResult(result) {
   }
 }
 
+function validateRequiredResultsAgainstPolicy(results, requirements) {
+  const resultKeys = results.map(requirementKey);
+  const requirementKeys = requirements.map(requirementKey);
+  const requirementKeySet = new Set(requirementKeys);
+  if (
+    new Set(resultKeys).size !== resultKeys.length
+    || resultKeys.length !== requirementKeys.length
+    || resultKeys.some((key) => !requirementKeySet.has(key))
+  ) {
+    throw new AttentionError(
+      'contradictory_proof',
+      'Required check results do not cover the required policy'
+    );
+  }
+}
+
+function validateReviewThreadSummary(threads) {
+  const ids = threads.unresolved_ids;
+  if (ids.some((id) => typeof id !== 'string' || id.length === 0)) {
+    throw new AttentionError('invalid_proof', 'Readiness proof thread ids are invalid');
+  }
+  if (
+    threads.total_count < 0
+    || threads.unresolved_count < 0
+    || threads.outdated_unresolved_count < 0
+    || new Set(ids).size !== ids.length
+    || threads.unresolved_count !== ids.length
+    || threads.unresolved_count > threads.total_count
+    || threads.outdated_unresolved_count > threads.unresolved_count
+  ) {
+    throw new AttentionError('contradictory_proof', 'Review thread summary is contradictory');
+  }
+}
+
+function requirementKey(requirement) {
+  return `${requirement.context}\u0000${requirement.app_id ?? '*'}`;
+}
+
 function validateRequiredResultsAgainstContexts(checks) {
+  const contextIndex = indexCheckContexts(checks.contexts);
   for (const required of checks.required_results) {
-    const matches = checks.contexts.filter((context) => (
-      context.name === required.context
-      && (required.app_id === null || context.app_id === required.app_id)
-    ));
+    const matches = matchingContexts(contextIndex, required);
     let actualResult = 'success';
     if (matches.length === 0) actualResult = 'missing';
     else if (matches.some((context) => !context.successful)) actualResult = 'not_successful';
