@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.32 Number Train polish baseline
+Version: v0.3.33 Video Vault evidence boundary baseline
 
 ## Current Working MVP
 
@@ -32,7 +32,10 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Art now has one parent-launchable medium transfer activity that shows a visual
   color request card. A mismatched applied color remains correctable and emits
   incorrect evidence; legacy free-choice coloring remains unchanged.
-- Video Vault: parent-approved local video shell, currently empty until local video assets are added and reachable by direct route.
+- Video Vault: parent-approved local video shell, currently empty and reachable
+  by direct route. Its manifest now has a validated repo-bundled-only intake
+  policy; video completion is explicitly exposure-only and cannot count as a
+  vocabulary response or mastery evidence.
 - Targeted transfer variants for Words, Math, Art, and shape/spatial practice use the same existing runtimes.
 - The first rich transfer variant is a phonics reverse-mapping activity that asks from a word back to its starting letter.
 - Math now has a medium transfer activity that asks from a visual dot card to the matching numeral.
@@ -100,6 +103,9 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent mastery snapshots are stored locally when the Parent Panel reviews a skill.
 - Parent review schedule records are stored locally from mastery snapshots and shown in the Parent Panel.
 - Compound Bear Cafe rounds can record per-skill outcomes so progress and mastery evidence distinguish the quantity signal from the color signal while preserving the overall order result.
+- Video completion events carry explicit local provenance and `exposure_only`
+  metadata. They may create completion evidence but never a counted vocabulary
+  attempt, successful transfer context, or mastery promotion.
 
 ## Local Data
 

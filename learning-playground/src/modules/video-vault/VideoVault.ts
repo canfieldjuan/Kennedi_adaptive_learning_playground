@@ -7,6 +7,8 @@ import type { LearningActivity } from '../../types/activity';
 import type { ActivityAttemptEvent } from '../../types/events';
 import type { SpeechServiceInterface } from '../../types/runtime';
 import type { ApprovedVideo, VideoVaultManifest } from './video-vault.types';
+import { createVideoCompletionEvent } from './video-evidence';
+import { validateVideoManifest } from './video-manifest';
 
 interface VideoVaultOptions {
   activity: LearningActivity;
@@ -30,7 +32,12 @@ export function renderVideoVault(
     options.activity.content.prompt_audio,
     options.activity.title
   );
-  const videos = getApprovedLocalVideos(options.videoManifest);
+  const expectedManifestId = getStringContent(options.activity.content.manifest_id, '');
+  const manifestValidation = validateVideoManifest(
+    options.videoManifest,
+    expectedManifestId
+  );
+  const videos = manifestValidation.playable_videos;
   const startedAt = Date.now();
   let completedCount = 0;
 
@@ -82,10 +89,11 @@ export function renderVideoVault(
     for (const video of videos) {
       const card = renderVideoCard(video, options, () => {
         completedCount += 1;
-        options.onEvent(createVideoEvent({
+        options.onEvent(createVideoCompletionEvent({
           activity: options.activity,
           childId: options.childId,
           sessionId: options.sessionId,
+          manifestId: options.videoManifest.id,
           promptText,
           video,
           attemptNumber: completedCount,
@@ -197,27 +205,6 @@ function renderEmptyVault(parent: HTMLElement, activity: LearningActivity): void
   parent.appendChild(emptyState);
 }
 
-function getApprovedLocalVideos(manifest: VideoVaultManifest): ApprovedVideo[] {
-  return manifest.items.filter((video) => (
-    video.source === 'local' &&
-    video.approved_by_parent === true &&
-    isLocalVideoPath(video.path) &&
-    (video.thumbnail_path === undefined || isLocalAssetPath(video.thumbnail_path))
-  ));
-}
-
-function isLocalVideoPath(path: string): boolean {
-  return /^\/assets\/videos?\//.test(path) && !containsExternalUrl(path);
-}
-
-function isLocalAssetPath(path: string): boolean {
-  return path.startsWith('/assets/') && !containsExternalUrl(path);
-}
-
-function containsExternalUrl(value: string): boolean {
-  return /https?:\/\//i.test(value);
-}
-
 function getStringContent(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback;
 }
@@ -233,52 +220,4 @@ function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-}
-
-function createVideoEvent(params: {
-  activity: LearningActivity;
-  childId: string;
-  sessionId: string;
-  promptText: string;
-  video: ApprovedVideo;
-  attemptNumber: number;
-  responseTimeMs: number;
-}): ActivityAttemptEvent {
-  return {
-    event_id: createEventId(),
-    session_id: params.sessionId,
-    child_id: params.childId,
-    activity_id: params.activity.id,
-    activity_version: params.activity.version,
-    skill_ids: params.activity.skill_ids,
-    timestamp: new Date().toISOString(),
-    prompt_text: params.promptText,
-    outcome: 'completed',
-    selected_choice_id: params.video.id,
-    selected_answer: params.video.title,
-    correct_answer: params.video.title,
-    attempt_number: params.attemptNumber,
-    response_time_ms: params.responseTimeMs,
-    difficulty_level: params.activity.difficulty.level,
-    choice_count: params.activity.difficulty.choice_count,
-    distractor_strength: params.activity.difficulty.distractor_strength,
-    input_type: 'video',
-    hint_shown: false,
-    metadata: {
-      manifest_id: getStringContent(
-        params.activity.content.manifest_id,
-        'unknown'
-      ),
-      video_title: params.video.title,
-      duration_seconds: params.video.duration_seconds,
-    },
-  };
-}
-
-function createEventId(): string {
-  if (globalThis.crypto?.randomUUID) {
-    return globalThis.crypto.randomUUID();
-  }
-
-  return `event-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }

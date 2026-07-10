@@ -8,6 +8,8 @@
  */
 
 import { describe, test, expect } from 'vitest';
+// @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
+import { existsSync } from 'node:fs';
 import artColorCircle from '../../src/content/activities/art-color-circle.json';
 import mathCountStarsThree from '../../src/content/activities/math-count-stars-three.json';
 import phonicsFindB from '../../src/content/activities/phonics-find-b.json';
@@ -38,11 +40,17 @@ interface ContentPackJson {
 
 interface VideoManifestJson {
   id: string;
+  intake_mode: string;
+  parent_imports_supported: boolean;
+  approved_by_parent: boolean;
+  evidence_role: string;
   items: Array<{
     id: string;
     path: string;
     source: string;
     approved_by_parent: boolean;
+    mime_type: string;
+    evidence_role: string;
     thumbnail_path?: string;
     autoplay?: boolean;
     autoplay_next?: boolean;
@@ -112,17 +120,41 @@ describe('safety contract', () => {
     }
   });
 
+  test('video manifests declare repo-bundled exposure-only intake', () => {
+    for (const manifest of allVideoManifests) {
+      expect(manifest.intake_mode).toBe('repo_bundled');
+      expect(manifest.parent_imports_supported).toBe(false);
+      expect(manifest.approved_by_parent).toBe(true);
+      expect(manifest.evidence_role).toBe('exposure_only');
+    }
+  });
+
   test('video manifest items must be parent-approved local media', () => {
     for (const manifest of allVideoManifests) {
       for (const item of manifest.items) {
         expect(item.source).toBe('local');
         expect(item.approved_by_parent).toBe(true);
+        expect(['video/mp4', 'video/webm']).toContain(item.mime_type);
+        expect(item.evidence_role).toBe('exposure_only');
         expect(item.path).toMatch(/^\/assets\/videos?\//);
         expect(item.path).not.toMatch(/https?:\/\//);
         expect(item.thumbnail_path ?? '').not.toMatch(/https?:\/\//);
         expect(item.autoplay).not.toBe(true);
         expect(item.autoplay_next).not.toBe(true);
         expect(item.loop).not.toBe(true);
+      }
+    }
+  });
+
+  test('video manifest local asset paths exist when items are added', () => {
+    for (const manifest of allVideoManifests) {
+      for (const item of manifest.items) {
+        expect(existsSync(new URL(`../../public${item.path}`, import.meta.url))).toBe(true);
+        if (item.thumbnail_path) {
+          expect(
+            existsSync(new URL(`../../public${item.thumbnail_path}`, import.meta.url))
+          ).toBe(true);
+        }
       }
     }
   });
