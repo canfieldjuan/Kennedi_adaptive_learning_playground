@@ -4,6 +4,7 @@
  */
 
 import type { LearningActivity } from '../../types/activity';
+import { createStudioEnvironment } from './studio-environment';
 import type { ActivityAttemptEvent } from '../../types/events';
 import type {
   AudioServiceInterface,
@@ -90,10 +91,14 @@ export function renderColoringActivity(
 
   container = document.createElement('div');
   container.className = [
-    'child-container activity-screen coloring-screen',
+    'child-container activity-screen coloring-screen coloring-studio',
     targetColor ? 'coloring-screen--request' : '',
   ].filter(Boolean).join(' ');
   container.id = `activity-${options.activity.id}`;
+
+  // The Art studio: an all-neutral decorative scene (inert — aria-hidden, no
+  // pointer events), so color belongs only to the palette and the shape.
+  container.appendChild(createStudioEnvironment());
 
   const topBar = document.createElement('div');
   topBar.className = 'activity-topbar';

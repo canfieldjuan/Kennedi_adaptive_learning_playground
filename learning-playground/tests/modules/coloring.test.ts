@@ -28,6 +28,42 @@ describe('coloring runtime', () => {
     vi.unstubAllGlobals();
   });
 
+  test('the studio scene renders once, inert, and all-neutral', () => {
+    const { root } = setup('art-color-circle');
+
+    const screen = findByClass(root, 'coloring-screen');
+    expect(screen?.className).toContain('coloring-studio');
+
+    const layers = findAllByClass(root, 'studio-environment');
+    expect(layers).toHaveLength(1);
+    expect(layers[0].attributes['aria-hidden']).toBe('true');
+    expect(layers[0].innerHTML).toContain('studio-env__svg');
+    // Hard guardrails: nothing readable in the scene, and no saturated color —
+    // color on this screen belongs only to the palette and the filled shape.
+    expect(layers[0].innerHTML).not.toContain('<text');
+    const paints = layers[0].innerHTML.match(/(?:fill|stroke)="([^"]+)"/g) ?? [];
+    expect(paints.length).toBeGreaterThan(0);
+    const neutralPalette = [
+      'rgba(58, 36, 97, 0.45)',
+      'rgba(58, 36, 97, 0.28)',
+      '#f4efe6',
+      '#e9e1d2',
+      '#d9c4a3',
+      '#c9b28d',
+      '#fbf8f1',
+      '#f7f3e9',
+      '#d8d0c2',
+    ];
+    for (const paint of paints) {
+      const value = paint.replace(/^(?:fill|stroke)="/, '').replace(/"$/, '');
+      expect(neutralPalette).toContain(value);
+    }
+
+    // Rendering the request variant mounts the same single scene.
+    const request = setup('art-match-blue-card');
+    expect(findAllByClass(request.root, 'studio-environment')).toHaveLength(1);
+  });
+
   test('legacy free choice still accepts any selected palette color', () => {
     const { root, events } = setup('art-color-circle');
 
@@ -196,6 +232,7 @@ class MockElement {
   className = '';
   id = '';
   textContent = '';
+  innerHTML = '';
   disabled = false;
   hidden = false;
   type = '';
@@ -244,6 +281,15 @@ function findByClass(element: MockElement, className: string): MockElement | und
     if (match) return match;
   }
   return undefined;
+}
+
+function findAllByClass(element: MockElement, className: string): MockElement[] {
+  const matches: MockElement[] = [];
+  if (element.className.split(/\s+/).includes(className)) matches.push(element);
+  for (const child of element.children) {
+    matches.push(...findAllByClass(child, className));
+  }
+  return matches;
 }
 
 function findByColorId(element: MockElement, colorId: string): MockElement | undefined {
