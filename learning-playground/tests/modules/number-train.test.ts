@@ -267,6 +267,26 @@ describe('number train runtime', () => {
   const plan = buildSessionPlan(SESSION_CONFIG); // same seed/config as the envelope
   const round1 = asCount(plan.rounds[0]);
 
+  test('the station scene renders inert and survives Play Again', () => {
+    const { root } = setup();
+
+    const layers = findAllByClass(root, 'station-environment');
+    expect(layers).toHaveLength(1);
+    expect(layers[0].attributes['aria-hidden']).toBe('true');
+    expect(layers[0].innerHTML).toContain('station-env__svg');
+    // Nothing readable in the scene (icon-only station sign).
+    expect(layers[0].innerHTML).not.toContain('<text');
+
+    // Play Again rebuilds the whole container; the scene must remount and
+    // still appear exactly once.
+    for (const round of plan.rounds) {
+      completeRound(root, round);
+      findByText(root, 'Next station')?.click();
+    }
+    findByText(root, 'Play Again')?.click();
+    expect(findAllByClass(root, 'station-environment')).toHaveLength(1);
+  });
+
   test('renders the round-1 quantity as structured cars of ten seats', () => {
     const { root } = setup();
     const quantity = round1.quantity;
