@@ -7,12 +7,16 @@ import curriculumData from '../../src/content/curriculum/curriculum.v1.json';
 import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import {
   loadCurriculumGraph,
+  validateCurriculumActivityCoverage,
   validateCurriculumGraph,
   type CurriculumGraphData,
 } from '../../src/core/curriculum-graph';
 import type { LearningActivity } from '../../src/types/activity';
 
 const activities = APPROVED_ACTIVITIES as LearningActivity[];
+const PHONICS_SKILL_IDS = (curriculumData as CurriculumGraphData).skills
+  .filter((skill) => skill.domain === 'phonics')
+  .map((skill) => skill.id);
 
 describe('curriculum graph contract', () => {
   test('every existing activity skill exists in the curriculum graph', () => {
@@ -72,17 +76,66 @@ describe('curriculum graph contract', () => {
     expect(graph.getMaxSkillLevel('counting')?.level).toBe(2);
   });
 
-  test('blending maps each difficulty to a reachable level (top level not shadowed)', () => {
+  test('blending maps each difficulty to the declared level without shadowing', () => {
     const graph = loadCurriculumGraph();
 
     // Bands are non-overlapping (0-2 / 3-4 / 5-5), so difficulty 5 resolves to
-    // the top "fluent" level 2 rather than being eclipsed by level 1's band.
+    // the top approved-word-set level 2 rather than being eclipsed by level 1.
     const expected: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 2 };
     for (let difficulty = 0; difficulty <= 5; difficulty += 1) {
       expect(graph.getSkillLevelForDifficulty('blending', difficulty)?.level).toBe(
         expected[difficulty]
       );
     }
+  });
+
+  test('every declared phonics rung has an approved activity in its difficulty band', () => {
+    expect(validateCurriculumActivityCoverage(
+      curriculumData as CurriculumGraphData,
+      activities,
+      PHONICS_SKILL_IDS
+    )).toEqual([]);
+  });
+
+  test('reports a phonics rung with no approved activity in its difficulty band', () => {
+    const activitiesWithoutMiddleBlend = activities.map((activity) => (
+      activity.id === 'blend-hat'
+        ? { ...activity, difficulty: { ...activity.difficulty, level: 2 as const } }
+        : activity
+    ));
+
+    expect(validateCurriculumActivityCoverage(
+      curriculumData as CurriculumGraphData,
+      activitiesWithoutMiddleBlend,
+      ['blending']
+    )).toContain(
+      'Skill blending level 1 has no approved activity in difficulty band 3-4'
+    );
+  });
+
+  test('regraded phonics activities use new versions and cover their named rungs', () => {
+    const expected = new Map([
+      ['phonics-banana-starting-letter', { version: 2, difficulty: 5 }],
+      ['blend-hat', { version: 2, difficulty: 3 }],
+      ['blend-bat', { version: 2, difficulty: 5 }],
+      ['build-dog', { version: 2, difficulty: 3 }],
+      ['build-sun', { version: 2, difficulty: 5 }],
+    ]);
+
+    for (const [activityId, values] of expected) {
+      const activity = activities.find((item) => item.id === activityId);
+      expect(activity?.version).toBe(values.version);
+      expect(activity?.difficulty.level).toBe(values.difficulty);
+    }
+
+    expect(activities.find((item) => item.id === 'blend-cat')).toMatchObject({
+      version: 1,
+      difficulty: { level: 2 },
+    });
+    expect(activities.find((item) => item.id === 'build-cat')).toMatchObject({
+      version: 1,
+      difficulty: { level: 2 },
+    });
   });
 
   test('current graph has valid references and no circular prerequisites', () => {

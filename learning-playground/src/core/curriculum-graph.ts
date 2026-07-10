@@ -1,5 +1,5 @@
 import curriculumData from '../content/curriculum/curriculum.v1.json';
-import type { TransferContextType } from '../types/activity';
+import type { LearningActivity, TransferContextType } from '../types/activity';
 
 export interface CurriculumDomain {
   id: string;
@@ -172,6 +172,43 @@ export function validateCurriculumGraph(data: CurriculumGraphData): string[] {
   }
 
   errors.push(...detectPrerequisiteCycles(data));
+  return errors;
+}
+
+export function validateCurriculumActivityCoverage(
+  data: CurriculumGraphData,
+  activities: LearningActivity[],
+  skillIds: string[]
+): string[] {
+  const errors: string[] = [];
+  const skillsById = new Map(data.skills.map((skill) => [skill.id, skill]));
+
+  for (const skillId of [...new Set(skillIds)]) {
+    const skill = skillsById.get(skillId);
+    if (!skill) {
+      errors.push(`Cannot validate activity coverage for missing skill ${skillId}`);
+      continue;
+    }
+
+    const skillActivities = activities.filter((activity) => (
+      activity.skill_ids.includes(skillId)
+    ));
+
+    for (const level of skill.levels) {
+      const hasActivityInBand = skillActivities.some((activity) => (
+        activity.difficulty.level >= level.min_difficulty_level &&
+        activity.difficulty.level <= level.max_difficulty_level
+      ));
+
+      if (!hasActivityInBand) {
+        errors.push(
+          `Skill ${skillId} level ${level.level} has no approved activity in ` +
+          `difficulty band ${level.min_difficulty_level}-${level.max_difficulty_level}`
+        );
+      }
+    }
+  }
+
   return errors;
 }
 

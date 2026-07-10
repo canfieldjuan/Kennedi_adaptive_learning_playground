@@ -5,6 +5,9 @@ Activity variant briefs turn transfer coverage gaps into design-ready work. A br
 ## Requirements
 
 - A brief must cite the skill, domain, current transfer state, missing transfer context, required strength, reason, suggested game family, suggested activity pattern, and required evidence threshold.
+- Suggested templates, patterns, and game families must exercise the cited
+  skill. A shared domain must not collapse blending or word-building work into
+  an initial-sound brief.
 - A brief must only target richer transfer contexts: `different_prompt_mode`, `different_interaction_model`, `reverse_mapping`, `category_sort`, `delayed_review`, or `parent_observed_real_world`.
 - A brief required strength must be `medium`, `strong`, or `retention`; weak same-format contexts do not receive design briefs.
 - Weak-only transfer coverage must recommend richer briefs before more same-format variants.
@@ -37,6 +40,7 @@ export interface ActivityVariantBrief {
     | "parent_observed_real_world";
   required_strength: "medium" | "strong" | "retention";
   suggested_game_family:
+    | "word_game"
     | "kennedis_orders"
     | "color_lab"
     | "dress_up_stage"

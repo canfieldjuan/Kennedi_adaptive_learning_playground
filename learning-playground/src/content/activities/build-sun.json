@@ -1,6 +1,6 @@
 {
   "id": "build-sun",
-  "version": 1,
+  "version": 2,
   "title": "Build the Word: sun",
   "domain": "phonics",
   "skill_ids": ["word_building"],
@@ -12,7 +12,7 @@
     "prompt_mode": "mixed"
   },
   "difficulty": {
-    "level": 2,
+    "level": 5,
     "choice_count": 3,
     "distractor_strength": "easy"
   },

@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.22 Voice tuning baseline
+Version: v0.3.22 skill-aware phonics and voice tuning baseline
 
 ## Current Working MVP
 
@@ -15,6 +15,10 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - The Word game teaches **sound blending** (the next ladder rung after initial sounds): the child sees a word broken into a sound-out strip (c · a · t) with Pip resting on the first sound, and taps the whole word from a rhyming `-at` set (cat / bat / hat), so success requires attending to every sound. Three chained blends (blend-cat → blend-hat → blend-bat) run on the same `phonics-match` runtime; the initial-sound chain now climbs into them (find-t's "Next" → blend-cat). New `blending` curriculum skill (prerequisite letter_sound_match); new bat/hat illustrated cards. Parent-approved, no auto-difficulty routing, no reward loop.
 - The ten Word-game picture cards (bear, cat, sun, moon, top, dog, fish, ball, bat, hat) are now one **cohesive illustrated set** matching Pip and the Bear Cafe — ink outline `#3a2461`, warm flat fills, friendly rounded forms (previously a mix of flat no-outline and dark-outline clip-art). Pure local-SVG asset swap: same file paths and subjects, so every activity is unchanged; no code, logic, or schema change.
 - The Word game's top rung is a **word builder**: the child spells a pictured word by tapping letter tiles into slots in order (c + a + t), each correct letter snaps into the next slot, and completing the word cheers Pip + pops the picture. It is a new tap-then-place interaction added as a **mode of the phonics Word-game runtime** (`WordBuilderActivity`, a separate runtime that reuses Pip; the matcher is untouched) — not a new top-level game type; routed by `interaction_model: tap_then_place` + `domain: phonics` (Bear Cafe's tap_then_place is matched first by its game id). Three chained builds (build-cat → build-dog → build-sun) over existing picture cards; the blending chain now climbs into them (blend-bat's "Next" → build-cat). New `word_building` curriculum skill (prerequisite blending, non-overlapping difficulty bands). Emits the same attempt events; parent-approved, no auto-difficulty routing, deterministic completion (no reward loop); the tile-snap is reduced-motion-guarded.
+- Existing phonics chain steps now carry versioned difficulty grades that make
+  every declared phonics rung reachable without relaxing current-rung evidence
+  checks. The rung labels describe the approved word sequence rather than
+  claiming unsupported fluency.
 - Math activity: tap-choice counting/subitizing activity.
 - Art activity: tap-fill coloring activity.
 - Video Vault: parent-approved local video shell, currently empty until local video assets are added and reachable by direct route.
@@ -57,6 +61,11 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Curriculum skill levels now carry difficulty bands, so parent-visible progress levels are grounded in declared rungs instead of raw activity ordering.
 - Transfer Coverage shows when a skill is fluent in one context, ready for transfer, or blocked by missing approved transfer content.
 - Transfer Coverage assigns strength tiers to transfer contexts and prevents weak-only transfer from becoming likely mastery.
+- Curriculum coverage validation now rejects phonics rungs with no approved
+  activity inside their difficulty band.
+- Blending, word-building, and letter-sound content gaps now recommend work for
+  the named skill in the existing Word game instead of falling back to generic
+  initial-sound Bear Cafe briefs.
 - Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant.
 - Phonics now has one approved reverse-mapping transfer variant that references its originating brief.
 - Math now has one approved different-prompt-mode transfer variant that references its originating brief.

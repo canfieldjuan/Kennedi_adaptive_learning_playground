@@ -225,6 +225,126 @@ describe('transfer coverage', () => {
     )).not.toMatch(/https?:\/\//);
   });
 
+  test('blending gaps recommend blending work in the existing Word game', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('blending');
+    expect(skill).toBeDefined();
+    const activities = [
+      makeActivity('blend-cat', 'same_format_same_examples', 'blending', 'phonics'),
+      makeActivity('blend-hat', 'same_format_new_examples', 'blending', 'phonics'),
+    ];
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1', 'blend-cat', 'blending'),
+        makeEvent('event-2', 'blend-hat', 'blending'),
+        makeEvent('event-3', 'blend-cat', 'blending'),
+      ],
+      activities,
+    });
+
+    const recommendation = evaluateTransferCoverage(
+      'blending',
+      activities,
+      evidence,
+      graph
+    ).recommended_content_actions[0];
+
+    expect(recommendation).toMatchObject({
+      skill_id: 'blending',
+      suggested_context_type: 'different_prompt_mode',
+      suggested_activity_template: 'blend_spoken_sounds_choose_word',
+      activity_variant_brief: {
+        suggested_game_family: 'word_game',
+        suggested_activity_pattern: 'Listen and Blend',
+      },
+    });
+    expect(recommendation.suggested_activity_template).not.toContain('initial_sound');
+  });
+
+  test('letter-sound gaps recommend letter work in the existing Word game', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('letter_sound_match');
+    expect(skill).toBeDefined();
+    const activities = [
+      makeActivity(
+        'phonics-find-b',
+        'same_format_same_examples',
+        'letter_sound_match',
+        'phonics'
+      ),
+      makeActivity(
+        'phonics-find-b-ball',
+        'same_format_new_examples',
+        'letter_sound_match',
+        'phonics'
+      ),
+    ];
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1', 'phonics-find-b', 'letter_sound_match'),
+        makeEvent('event-2', 'phonics-find-b-ball', 'letter_sound_match'),
+        makeEvent('event-3', 'phonics-find-b', 'letter_sound_match'),
+      ],
+      activities,
+    });
+
+    const recommendation = evaluateTransferCoverage(
+      'letter_sound_match',
+      activities,
+      evidence,
+      graph
+    ).recommended_content_actions[0];
+
+    expect(recommendation).toMatchObject({
+      skill_id: 'letter_sound_match',
+      suggested_context_type: 'category_sort',
+      suggested_activity_template: 'sort_words_by_starting_letter',
+      activity_variant_brief: {
+        suggested_game_family: 'word_game',
+        suggested_activity_pattern: 'Starting Letter Sort',
+      },
+    });
+  });
+
+  test('word-building gaps recommend word-building work in the existing Word game', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('word_building');
+    expect(skill).toBeDefined();
+    const activities = [
+      makeActivity('build-cat', 'same_format_same_examples', 'word_building', 'phonics'),
+      makeActivity('build-dog', 'same_format_new_examples', 'word_building', 'phonics'),
+    ];
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1', 'build-cat', 'word_building'),
+        makeEvent('event-2', 'build-dog', 'word_building'),
+        makeEvent('event-3', 'build-cat', 'word_building'),
+      ],
+      activities,
+    });
+
+    const recommendation = evaluateTransferCoverage(
+      'word_building',
+      activities,
+      evidence,
+      graph
+    ).recommended_content_actions[0];
+
+    expect(recommendation).toMatchObject({
+      skill_id: 'word_building',
+      suggested_context_type: 'different_prompt_mode',
+      suggested_activity_template: 'build_word_from_spoken_prompt',
+      activity_variant_brief: {
+        suggested_game_family: 'word_game',
+        suggested_activity_pattern: 'Build the Word You Hear',
+      },
+    });
+    expect(recommendation.suggested_activity_template).not.toContain('initial_sound');
+  });
+
   test('delayed review brief declares retention evidence threshold', () => {
     const graph = loadCurriculumGraph();
     const skill = graph.getSkill('initial_sound');
