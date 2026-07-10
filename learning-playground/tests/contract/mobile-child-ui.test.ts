@@ -96,6 +96,23 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('.coloring-shape.is-wrong,');
   });
 
+  test('compacts the Number Train display for phones without shrinking controls', () => {
+    // Portrait AND short-landscape share one compaction block; only the
+    // display train/journey/path shrink — numeral choices and load controls
+    // stay on the shared child-safe sizing.
+    expect(childUiCss).toContain('/* Compact Number Train for phones');
+    expect(childUiCss).toContain('.number-train__engine--path');
+    expect(childUiCss).toMatch(
+      /Compact Number Train for phones[\s\S]*?\(max-width: 940px\) and \(max-height: 480px\) and \(orientation: landscape\)/
+    );
+    expect(childUiCss).toMatch(
+      /Compact Number Train for phones[\s\S]*?\.number-train__seat \{\s*width: 28px/
+    );
+    expect(childUiCss).toMatch(
+      /\.number-train__choices \.number-train__check \{\s*min-height: 72px/
+    );
+  });
+
   test('scopes the large scene prompt layout to one-image scene activities', () => {
     expect(tapChoiceSource).toContain("promptVisualLayout === 'scene'");
     expect(tapChoiceSource).toContain("activity.content.prompt_visual_layout === 'scene'");

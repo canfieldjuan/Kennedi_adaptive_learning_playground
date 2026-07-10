@@ -242,11 +242,20 @@ describe('number train round plan', () => {
 });
 
 describe('number train runtime', () => {
+  let timeoutId = 0;
+  let clearTimeoutSpy = vi.fn();
+
   beforeEach(() => {
+    timeoutId = 0;
+    clearTimeoutSpy = vi.fn();
     vi.stubGlobal('document', createMockDocument());
     vi.stubGlobal('window', {
       location: { hash: '#activity/number-train' },
-      setTimeout: vi.fn(() => 0),
+      setTimeout: vi.fn(() => {
+        timeoutId += 1;
+        return timeoutId;
+      }),
+      clearTimeout: clearTimeoutSpy,
     });
   });
 
@@ -500,6 +509,28 @@ describe('number train runtime', () => {
     expect(stops[seqRound.missing_index]?.textContent).toBe(String(answer));
     expect(stops[seqRound.missing_index]?.classList.contains('is-filled')).toBe(true);
     expect(findByText(root, 'Next station')).toBeDefined();
+  });
+
+  test('the journey strip announces the current station as the trip advances', () => {
+    const { root } = setup();
+    const journey = findByClass(root, 'number-train__journey');
+    expect(journey?.attributes['aria-label']).toBe('Trip: station 1 of 6');
+
+    completeRound(root, plan.rounds[0]);
+    findByText(root, 'Next station')?.click();
+    expect(journey?.attributes['aria-label']).toBe('Trip: station 2 of 6');
+  });
+
+  test('destroy clears pending timeouts (Home mid-round leaves no timers)', () => {
+    const { root } = setup();
+    const wrong = round1.choices.find((c) => c !== round1.quantity);
+
+    // A wrong tap schedules the bounce-reset timeout.
+    findChoice(root, String(wrong))?.click();
+    expect(clearTimeoutSpy).not.toHaveBeenCalled();
+
+    destroyNumberTrainActivity();
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(1);
   });
 
   test('destroy removes the screen so re-render starts clean', () => {

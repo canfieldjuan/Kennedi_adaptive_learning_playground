@@ -173,6 +173,10 @@ export function renderNumberTrainActivity(
         if (index === roundIndex) station.classList.add('is-current');
         if (index < roundIndex) station.classList.add('is-done');
       }
+      journey.setAttribute(
+        'aria-label',
+        `Trip: station ${roundIndex + 1} of ${plan.rounds.length}`
+      );
       prompt.textContent = round.prompt;
       feedback.textContent = '';
       completeActions.hidden = true;
