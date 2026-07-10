@@ -3,7 +3,7 @@
  */
 
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { pickVoice, listSpeechVoices } from '../../src/core/speech';
+import { pickVoice, listSpeechVoices, SpeechService } from '../../src/core/speech';
 
 const voices = [
   { voiceURI: 'v-samantha', name: 'Samantha', lang: 'en-US' },
@@ -36,5 +36,35 @@ describe('speech voice selection', () => {
       'Samantha',
       'Daniel',
     ]);
+  });
+
+  test('setVoiceURI makes a live speak() apply the chosen installed voice', () => {
+    const spoken: Array<{ voice: SpeechSynthesisVoice | null }> = [];
+    class FakeUtterance {
+      voice: SpeechSynthesisVoice | null = null;
+      rate = 1;
+      pitch = 1;
+      lang = '';
+      onend: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      text: string;
+      constructor(text: string) {
+        this.text = text;
+      }
+    }
+    vi.stubGlobal('window', {
+      speechSynthesis: {
+        getVoices: () => voices,
+        speak: (utterance: { voice: SpeechSynthesisVoice | null }) => spoken.push(utterance),
+        cancel: () => {},
+      },
+    });
+    vi.stubGlobal('SpeechSynthesisUtterance', FakeUtterance);
+
+    const service = new SpeechService(true);
+    service.setVoiceURI('v-daniel');
+    void service.speak('hello');
+
+    expect(spoken[0]?.voice?.name).toBe('Daniel');
   });
 });

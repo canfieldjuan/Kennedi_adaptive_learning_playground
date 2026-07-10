@@ -2,7 +2,7 @@
  * Parent Panel — settings and local progress behind parent gate.
  */
 
-import type { StorageServiceInterface } from '../../types/runtime';
+import type { StorageServiceInterface, SpeechServiceInterface } from '../../types/runtime';
 import type { ParentSettings } from '../../types/storage';
 import type { ParentObservation } from '../../types/observations';
 import type {
@@ -112,6 +112,7 @@ interface SettingRow {
 interface ParentPanelContext {
   childId: string;
   sessionId: string;
+  speech?: SpeechServiceInterface;
 }
 
 export function renderParentPanel(
@@ -618,6 +619,27 @@ function createVoiceSettingsSection(
     : 'Voice options load on your device; the device default is used until then.';
   form.appendChild(note);
 
+  // Some browsers load Web Speech voices asynchronously; repopulate the picker
+  // once they arrive so the parent isn't stuck seeing only "Device default".
+  if (voices.length === 0 && typeof window !== 'undefined' && window.speechSynthesis) {
+    const synth = window.speechSynthesis;
+    const onVoicesChanged = (): void => {
+      const loaded = listSpeechVoices();
+      if (loaded.length === 0) return;
+      synth.removeEventListener('voiceschanged', onVoicesChanged);
+      for (const voice of loaded) {
+        const option = document.createElement('option');
+        option.value = voice.voiceURI;
+        option.textContent = voice.name;
+        if (settings.speech_voice_uri === voice.voiceURI) option.selected = true;
+        select.appendChild(option);
+      }
+      note.textContent =
+        'Preview with Test, then Save to use it for prompts. Speech must be On.';
+    };
+    synth.addEventListener('voiceschanged', onVoicesChanged);
+  }
+
   const actions = document.createElement('div');
   actions.className = 'parent-voice-settings__actions';
 
@@ -626,8 +648,8 @@ function createVoiceSettingsSection(
   testButton.type = 'button';
   testButton.textContent = '🔊 Test voice';
   testButton.addEventListener('click', () => {
-    // Parent-initiated preview: play regardless of the child speech toggle.
-    const preview = new SpeechService(true, select.value || undefined);
+    // Preview honors the parent speech toggle (silent when speech is off).
+    const preview = new SpeechService(settings.speech_enabled, select.value || undefined);
     preview.speak('Hi! Let us play and learn.');
   });
   actions.appendChild(testButton);
@@ -642,10 +664,14 @@ function createVoiceSettingsSection(
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
+    const voiceURI = select.value || undefined;
     storage.saveSettings({
       ...settings,
-      speech_voice_uri: select.value || undefined,
+      speech_voice_uri: voiceURI,
     });
+    // Apply to the live speech service so child prompts use the new voice
+    // immediately, not only after a page reload.
+    context.speech?.setVoiceURI?.(voiceURI);
     destroyParentPanel();
     renderParentPanel(parent, storage, context);
   });

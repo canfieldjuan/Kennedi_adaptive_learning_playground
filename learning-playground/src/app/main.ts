@@ -111,7 +111,7 @@ function handleRoute(route: Route): void {
             unlockParentGate(parentGateState);
             destroyParentGate();
             app.innerHTML = '';
-            renderParentPanel(app, storage, { childId, sessionId });
+            renderParentPanel(app, storage, { childId, sessionId, speech });
           },
           onCancel: () => {
             window.location.hash = '#home';
@@ -119,7 +119,7 @@ function handleRoute(route: Route): void {
         });
         break;
       }
-      renderParentPanel(app, storage, { childId, sessionId });
+      renderParentPanel(app, storage, { childId, sessionId, speech });
       break;
     }
     case 'activity':
