@@ -65,4 +65,18 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toContain('.word-builder__tile');
     expect(childUiCss).toContain('min-height: 48px');
   });
+
+  test('keeps wide-landscape home cards compact without shrinking phone targets', () => {
+    expect(childUiCss).toContain('@media (min-width: 768px) and (min-height: 481px),');
+    expect(childUiCss).toContain('(min-width: 941px)');
+    expect(childUiCss).not.toContain('@media (min-width: 768px) {');
+    expect(childUiCss).toContain('min-height: clamp(118px, 24dvh, 160px)');
+  });
+
+  test('reflows coloring palette and shape side by side in phone landscape', () => {
+    expect(childUiCss).toContain('"swatches shape"');
+    expect(childUiCss).toContain('grid-template-columns: repeat(2, minmax(64px, 1fr))');
+    expect(childUiCss).toContain('width: min(42dvh, 180px)');
+    expect(childUiCss).toContain('min-height: 58px');
+  });
 });

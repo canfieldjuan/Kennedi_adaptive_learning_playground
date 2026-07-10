@@ -2189,6 +2189,55 @@
     font-size: 1.35rem;
   }
 
+  .coloring-screen {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(180px, 0.8fr);
+    grid-template-areas:
+      "topbar topbar"
+      "title title"
+      "prompt prompt"
+      "swatches shape"
+      "feedback feedback"
+      "actions actions";
+    align-items: center;
+  }
+
+  .coloring-screen > .activity-topbar {
+    grid-area: topbar;
+  }
+
+  .coloring-screen > .activity-title {
+    grid-area: title;
+  }
+
+  .coloring-screen > .activity-prompt {
+    grid-area: prompt;
+  }
+
+  .coloring-screen > .activity-feedback {
+    grid-area: feedback;
+  }
+
+  .coloring-screen > .activity-complete-actions {
+    grid-area: actions;
+  }
+
+  .coloring-swatches {
+    grid-area: swatches;
+    grid-template-columns: repeat(2, minmax(64px, 1fr));
+    max-width: none;
+  }
+
+  .coloring-swatch {
+    min-height: 58px;
+  }
+
+  .coloring-shape {
+    grid-area: shape;
+    width: min(42dvh, 180px);
+    justify-self: center;
+  }
+
   .bear-cafe {
     gap: var(--space-xs);
     padding-top: var(--space-xs);
@@ -2248,7 +2297,8 @@
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 481px),
+  (min-width: 941px) {
   .home-card {
     min-height: 200px;
     padding: var(--space-3xl) var(--space-xl);
