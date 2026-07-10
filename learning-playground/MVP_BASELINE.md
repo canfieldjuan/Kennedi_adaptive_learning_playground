@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.23 blending prompt-mode transfer baseline
+Version: v0.3.25 Number Train foundation baseline
 
 ## Current Working MVP
 
@@ -23,7 +23,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   every declared phonics rung reachable without relaxing current-rung evidence
   checks. The rung labels describe the approved word sequence rather than
   claiming unsupported fluency.
-- Math activity: tap-choice counting/subitizing activity.
+- Math activity: the Math tile now opens **Number Train**, the first dedicated Math game runtime (arc slice 1). The child sees a structured quantity — an illustrated engine plus train cars of ten seats in a stable 2×5 layout so fives and tens read at a glance — and taps the matching numeral (one fixed Count-the-Train round this slice; the deterministic multi-round session, Load-the-Train, and Missing Station come next). Counting-only evidence (no subitizing for structured counting), bounded structural hint (occupied seats pulse while the count is spoken), reduced-motion-guarded, local inline SVG art. The three legacy tap-choice Math activities remain registered and reachable by direct route/parent transfer lane.
 - Art activity: tap-fill coloring activity.
 - Video Vault: parent-approved local video shell, currently empty until local video assets are added and reachable by direct route.
 - Targeted transfer variants for Words, Math, Art, and shape/spatial practice use the same existing runtimes.
