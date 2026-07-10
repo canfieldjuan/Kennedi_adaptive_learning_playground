@@ -1,6 +1,6 @@
 {
   "id": "blend-cat",
-  "version": 1,
+  "version": 2,
   "title": "Blend the Sounds: cat",
   "domain": "phonics",
   "skill_ids": ["blending"],
@@ -9,7 +9,7 @@
     "context_type": "same_format_same_examples",
     "context_id": "tap-picture-blend",
     "example_set_id": "cat-bat-hat",
-    "prompt_mode": "spoken"
+    "prompt_mode": "visual"
   },
   "difficulty": {
     "level": 2,

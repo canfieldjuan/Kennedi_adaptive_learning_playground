@@ -53,6 +53,7 @@ interface ActivityJson {
 interface ChoiceJson {
   id: string;
   label: string;
+  image?: string;
   correct?: boolean;
 }
 
@@ -186,6 +187,26 @@ describe('activity schema contract', () => {
     expect(hasDifferentPromptModeContent(activity!)).toBe(true);
   });
 
+  test('approved spoken blending activity implements its brief honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'blend-listen-dog'
+    ));
+
+    expect(activity).toMatchObject({
+      title: 'Listen and Blend',
+      skill_ids: ['blending'],
+      originating_brief_id: 'brief-blending-different_prompt_mode',
+      transfer: {
+        context_type: 'different_prompt_mode',
+        context_id: 'listen-blend-choose-picture',
+        example_set_id: 'dog-cat-sun',
+        prompt_mode: 'spoken',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasDifferentPromptModeContent(activity!)).toBe(true);
+  });
+
   test('approved Bear Cafe category-sort activity implements its brief honestly', () => {
     const activity = allActivities.find((item) => (
       item.id === 'kennedis-orders-b-foods-001'
@@ -249,6 +270,9 @@ function hasReverseMappingContent(activity: ActivityJson): boolean {
 
 function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
   if (isKennedisOrdersFixOrder(activity)) return true;
+  if (activity.domain === 'phonics' && activity.skill_ids.includes('blending')) {
+    return hasSpokenBlendingPrompt(activity);
+  }
   if (activity.domain !== 'math') return false;
 
   const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
@@ -278,6 +302,33 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
     correctChoice?.label === String(targetQuantity) &&
     choices.length >= 2 &&
     choices.every((choice) => /^\d+$/.test(choice.label))
+  );
+}
+
+function hasSpokenBlendingPrompt(activity: ActivityJson): boolean {
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const spokenSegments = getStringArray(activity.content.spoken_segments)
+    .map((segment) => segment.toLowerCase());
+  const visualSegments = getStringArray(activity.content.segments);
+  const targetWord = getString(activity.content.target_word).toLowerCase();
+  const choices = getChoices(activity);
+  const correctChoiceId = getString(activity.success_rules.correct_choice_id);
+  const correctChoice = choices.find((choice) => (
+    choice.id === correctChoiceId || choice.correct === true
+  ));
+
+  return (
+    activity.interaction_model === 'tap_to_match' &&
+    activity.transfer.prompt_mode === 'spoken' &&
+    spokenSegments.length >= 2 &&
+    spokenSegments.every((segment) => promptAudio.includes(segment)) &&
+    visualSegments.length === 0 &&
+    targetWord.length > 0 &&
+    !promptAudio.includes(targetWord) &&
+    correctChoice?.label.toLowerCase() === targetWord &&
+    typeof correctChoice.image === 'string' &&
+    correctChoice.image.length > 0 &&
+    choices.length >= 2
   );
 }
 

@@ -113,6 +113,24 @@ describe('phonics-match (Word game) runtime — parity behavior', () => {
     expect(findByChoiceId(root, 'cat')?.classList.contains('is-alive')).toBe(true);
   });
 
+  test('spoken blending omits the visual sound strip and emits normal evidence', () => {
+    const { root, events } = setup('blend-listen-dog');
+
+    expect(findByClass(root, 'phonics-soundout')).toBeUndefined();
+    findByChoiceId(root, 'dog')?.click();
+
+    expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
+    expect(events[0]).toMatchObject({
+      activity_id: 'blend-listen-dog',
+      activity_version: 1,
+      skill_ids: ['blending'],
+      prompt_text: 'Listen: duh ... ah ... guh. Put the sounds together. Which picture?',
+      selected_answer: 'dog',
+      correct_answer: 'dog',
+      difficulty_level: 4,
+    });
+  });
+
   test('the Word-game chain is complete, ordered, and terminates', () => {
     const visited: string[] = [];
     const seen = new Set<string>();

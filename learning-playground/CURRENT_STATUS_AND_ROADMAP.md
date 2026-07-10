@@ -127,8 +127,8 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 34 test files passing
-- 207 tests passing
+- 36 test files passing
+- 241 tests passing
 
 Browser smoke checks confirmed:
 
@@ -191,7 +191,7 @@ Parent difficulty actions, transfer decisions, activity brief decisions, the act
 
 ### Transfer Evidence
 
-The app no longer treats one-context fluency as likely mastery. Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant, phonics has one approved reverse-mapping transfer variant tied to an originating brief, and math has one approved different-prompt-mode transfer variant tied to an originating brief. The parent can start an approved transfer activity from the Parent Panel. Weak transfer can generate targeted activity variant briefs, and parent choices on those briefs persist locally. Richer implemented transfer contexts for art, spatial, and video/vocabulary are still future work. Video/vocabulary evidence remains limited by the empty local Video Vault shell.
+The app no longer treats one-context fluency as likely mastery. Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant, initial-sound phonics has one approved reverse-mapping transfer variant, blending has one approved spoken different-prompt-mode variant, and math has one approved visual different-prompt-mode variant. Each richer activity is tied to an originating brief and can be started from the Parent Panel when coverage is ready. Weak transfer can generate targeted activity variant briefs, and parent choices on those briefs persist locally. Richer implemented transfer contexts for word building, art, spatial, and video/vocabulary are still future work. Video/vocabulary evidence remains limited by the empty local Video Vault shell.
 
 ### Game Adapter
 
@@ -199,7 +199,7 @@ The app no longer treats one-context fluency as likely mastery. Core evidence-be
 
 ## Where We Are Headed
 
-Phase 2 is complete. Phase 3 established skill graph, mastery, transfer coverage, and content gap work. The first v0.3 adapter work integrated Kennedi's Orders without changing the home grid, the next slice added a Parent Panel Bear Cafe launch path for testing, v0.3.2 moved Bear Cafe into the child home grid, v0.3.3 made Bear Cafe delivered orders visible in Recent Attempts, v0.3.4 added the delivery handoff beat, v0.3.5 added Bear Cafe reaction states, v0.3.6 added the cook/plating beat, v0.3.7 synthesized real feedback cues, v0.3.8 added the completion celebration burst, v0.3.9 added idle nudge, v0.3.10 aligned parent-visible progress levels to curriculum rungs, v0.3.11 translates legacy stored progress levels before review/export, v0.3.12 models per-skill evidence for compound Bear Cafe rounds and proves the illustrated bear style, v0.3.13 illustrates Bear Cafe foods, v0.3.14 illustrates Bear Cafe decorations, v0.3.15 adds the home-screen Bear Cafe scene backdrop, v0.3.16 adds the dedicated phonics-match runtime foundation and Bear Cafe choice accessibility polish, v0.3.17 adds the multi-word initial-sound chain, v0.3.18 adds Pip as the recurring phonics character, v0.3.19 adds the first sound-blending rung, v0.3.20 adds word building, v0.3.21 unifies Word-game card art, and v0.3.22 makes phonics rung coverage and content-gap briefs skill-aware.
+Phase 2 is complete. Phase 3 established skill graph, mastery, transfer coverage, and content gap work. The first v0.3 adapter work integrated Kennedi's Orders without changing the home grid, the next slice added a Parent Panel Bear Cafe launch path for testing, v0.3.2 moved Bear Cafe into the child home grid, v0.3.3 made Bear Cafe delivered orders visible in Recent Attempts, v0.3.4 added the delivery handoff beat, v0.3.5 added Bear Cafe reaction states, v0.3.6 added the cook/plating beat, v0.3.7 synthesized real feedback cues, v0.3.8 added the completion celebration burst, v0.3.9 added idle nudge, v0.3.10 aligned parent-visible progress levels to curriculum rungs, v0.3.11 translates legacy stored progress levels before review/export, v0.3.12 models per-skill evidence for compound Bear Cafe rounds and proves the illustrated bear style, v0.3.13 illustrates Bear Cafe foods, v0.3.14 illustrates Bear Cafe decorations, v0.3.15 adds the home-screen Bear Cafe scene backdrop, v0.3.16 adds the dedicated phonics-match runtime foundation and Bear Cafe choice accessibility polish, v0.3.17 adds the multi-word initial-sound chain, v0.3.18 adds Pip as the recurring phonics character, v0.3.19 adds the first sound-blending rung, v0.3.20 adds word building, v0.3.21 unifies Word-game card art, v0.3.22 makes phonics rung coverage and content-gap briefs skill-aware, and v0.3.23 adds truthful spoken prompt-mode transfer for blending.
 
 ### MVP Phase 2 Definition of Done
 
@@ -233,7 +233,7 @@ Parent can answer:
 
 ### Current Phase Status
 
-Phase 3 has continued through v0.3.22 with transfer quality, activity variant briefs, durable parent brief decisions, the parent-only activity brief design queue, mastery snapshot persistence, parent-visible review schedule records, truth-checked phonics and math transfer variants, the dedicated Word-game initial-sound, blending, and word-building chains, cohesive Word-game card art, skill-aware phonics activity briefs, approved-activity coverage checks for phonics rungs, the current-main Kennedi's Orders adapter, parent-readable Bear Cafe evidence, curriculum-grounded progress level rungs, read-time legacy level translation, and compound-round per-skill evidence.
+Phase 3 has continued through v0.3.23 with transfer quality, activity variant briefs, durable parent brief decisions, the parent-only activity brief design queue, mastery snapshot persistence, parent-visible review schedule records, truth-checked initial-sound, blending, and math transfer variants, the dedicated Word-game initial-sound, blending, and word-building chains, cohesive Word-game card art, skill-aware phonics activity briefs, approved-activity coverage checks for phonics rungs, the current-main Kennedi's Orders adapter, parent-readable Bear Cafe evidence, curriculum-grounded progress level rungs, read-time legacy level translation, and compound-round per-skill evidence.
 
 What this lane now covers:
 
@@ -254,6 +254,9 @@ What this lane now covers:
 - Word-game chain across five parent-approved initial-sound activities.
 - Pip phonics character with target-sound mouth shapes and deterministic correct-match reaction.
 - First sound-blending skill and activity chain using segmented prompts and rhyming whole-word choices.
+- First truth-checked medium blending transfer variant: spoken phoneme sequence
+  to matching picture, available through parent-approved transfer launch and
+  intentionally outside the fixed child chain.
 - First truth-checked medium math transfer variant: visual dot card to numeral match.
 - Parent-approved transfer launch from Parent Guidance into an existing activity route.
 - Local parent transfer-content decisions included in export and clear-data behavior.
@@ -287,7 +290,8 @@ Goal: deepen Phase 3 without breaking Phase 2.
 
 Good candidates:
 
-- Add stronger implemented transfer contexts beyond same-format/new-example variants.
+- Add further stronger implemented transfer contexts, beginning with word
+  building, art, and spatial skills that still have weak-only coverage.
 - Add more nuanced parent observation categories.
 - Add accessibility polish for the child activity screens.
 - Plan a future IndexedDB move for larger local histories.
@@ -299,4 +303,4 @@ The app is now best described as:
 
 > A working local-first preschool-safe learning playground with playable MVP activities, a dedicated phonics-match Word-game runtime foundation, a fixed initial-sound word chain, Pip as a recurring phonics character, a first sound-blending rung, targeted transfer variants, truth-checked phonics and math transfer variants, a direct-route Kennedi's Orders adapter plus Parent Panel and child home Bear Cafe launch paths, parent-approved transfer launch, parent-controlled local progress with curriculum-grounded rung labels, read-time legacy level translation, compound-round per-skill evidence, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage with context strength tiers, coverage-driven activity briefs, a parent-only activity brief design queue, local parent brief decisions, persisted mastery snapshots, parent-visible review schedules, configurable local parent gate friction, illustrated Bear Cafe bear/foods/decorations/home backdrop, Bear Cafe delivered-order evidence in Recent Attempts, Bear Cafe accessible choice state, and a parent session review layer.
 
-The current v0.3.22 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants, skill-aware content briefs, activity-band coverage validation, parent-clicked transfer launch, durable parent decisions, an activity brief design queue, mastery snapshots, review schedules, curriculum-aligned progress rungs with legacy-profile read migration, compound-round per-skill evidence, the dedicated Word-game initial-sound, blending, and word-building chains, cohesive local Word-game art, the scoped Bear Cafe adapter, and parent-readable evidence while keeping accounts, backend auth, cloud sync, and automatic adaptive routing out of scope.
+The current v0.3.23 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants including truthful spoken blending transfer, skill-aware content briefs, activity-band coverage validation, parent-clicked transfer launch, durable parent decisions, an activity brief design queue, mastery snapshots, review schedules, curriculum-aligned progress rungs with legacy-profile read migration, compound-round per-skill evidence, the dedicated Word-game initial-sound, blending, and word-building chains, cohesive local Word-game art, the scoped Bear Cafe adapter, and parent-readable evidence while keeping accounts, backend auth, cloud sync, and automatic adaptive routing out of scope.
