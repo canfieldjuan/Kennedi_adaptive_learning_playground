@@ -47,7 +47,7 @@ export function buildSessionPlan(config: NumberTrainSessionConfig): NumberTrainP
     if (quantity === previousQuantity && quantity < maxQuantity) quantity += 1;
     previousQuantity = quantity;
 
-    const kind = roundKindAt(index, roundCount);
+    const kind = roundKindAt(index, roundCount, maxQuantity);
     if (kind === 'load_train') {
       rounds.push({
         kind: 'load_train',
@@ -80,19 +80,22 @@ export function buildSessionPlan(config: NumberTrainSessionConfig): NumberTrainP
  * Deterministic trip composition. On the standard six-round trip the child
  * counts first (confidence), builds a quantity at round 4, fills a missing
  * station number at round 5, and finishes with a stretch count. Shorter
- * authored trips keep one build round near the middle; sequences appear only
- * on trips of six or more rounds.
+ * authored trips keep one build round near the middle. Sequence rounds need a
+ * consecutive path of at least three numbers, so they appear only on trips of
+ * six or more rounds AND when the session max supports the path — tiny
+ * authored maxima (1–2) substitute a count round instead of failing the plan.
  */
 function roundKindAt(
   index: number,
-  roundCount: number
+  roundCount: number,
+  maxQuantity: number
 ): 'count_train' | 'load_train' | 'missing_station' {
   if (roundCount < 3) return 'count_train';
   if (roundCount < 6) {
     return index === roundCount - 2 ? 'load_train' : 'count_train';
   }
   if (index === 3) return 'load_train';
-  if (index === 4) return 'missing_station';
+  if (index === 4) return maxQuantity >= 3 ? 'missing_station' : 'count_train';
   return 'count_train';
 }
 

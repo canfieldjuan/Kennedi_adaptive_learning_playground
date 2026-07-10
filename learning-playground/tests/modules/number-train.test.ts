@@ -128,6 +128,24 @@ describe('number train round plan', () => {
     }
   });
 
+  test('tiny authored maxima still produce a valid trip (no impossible sequence)', () => {
+    // A sequence path needs three consecutive numbers; with max_quantity 1-2
+    // the composition substitutes a count round instead of failing the plan.
+    for (const max of [1, 2]) {
+      const plan = buildSessionPlan({ seed: 1, round_count: 6, max_quantity: max });
+      expect(validatePlan(plan)).toEqual([]);
+      expect(plan.rounds.some((round) => round.kind === 'missing_station')).toBe(false);
+    }
+    // At max 3 the sequence fits (a three-number path) and appears again.
+    const plan3 = buildSessionPlan({ seed: 1, round_count: 6, max_quantity: 3 });
+    expect(validatePlan(plan3)).toEqual([]);
+    const seq = plan3.rounds.find((round) => round.kind === 'missing_station');
+    expect(seq).toBeDefined();
+    if (seq?.kind === 'missing_station') {
+      expect(seq.sequence.length).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   test('the six-round trip builds at round 4 and fills a sequence at round 5', () => {
     for (let seed = 1; seed <= 10; seed += 1) {
       const plan = buildSessionPlan({ ...SESSION_CONFIG, seed });
