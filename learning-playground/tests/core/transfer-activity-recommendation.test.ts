@@ -184,6 +184,40 @@ describe('transfer activity recommendation', () => {
     });
   });
 
+  test('recommends the shape scene after both weak spatial contexts succeed', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('shape_match');
+    expect(skill).toBeDefined();
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeShapeEvent('event-1', 'shapes-find-circle'),
+        makeShapeEvent('event-2', 'shapes-find-circle-heart'),
+        makeShapeEvent('event-3', 'shapes-find-circle'),
+      ],
+      activities: APPROVED_ACTIVITIES,
+    });
+    const coverage = evaluateTransferCoverage(
+      'shape_match',
+      APPROVED_ACTIVITIES,
+      evidence,
+      graph
+    );
+
+    expect(coverage.status).toBe('ready_for_transfer');
+    expect(coverage.successful_strengths).toEqual(['weak']);
+    expect(getTransferActivityRecommendation({
+      skillId: 'shape_match',
+      activities: APPROVED_ACTIVITIES,
+      coverage,
+    })).toMatchObject({
+      skill_id: 'shape_match',
+      activity_id: 'shapes-roof-in-scene',
+      activity_title: 'Roof Shape Match',
+      context_type: 'different_prompt_mode',
+    });
+  });
+
   test('does not recommend a launch activity while coverage is blocked by content gap', () => {
     const graph = loadCurriculumGraph();
     const skill = graph.getSkill('counting');
@@ -377,6 +411,34 @@ function makeColorEvent(
     difficulty_level: 1,
     choice_count: 4,
     distractor_strength: 'none',
+    input_type: 'tap',
+    hint_shown: false,
+  };
+}
+
+function makeShapeEvent(
+  eventId: string,
+  activityId: string
+): ActivityAttemptEvent {
+  return {
+    event_id: eventId,
+    session_id: 'session-1',
+    child_id: 'local-child',
+    activity_id: activityId,
+    activity_version: 1,
+    skill_ids: ['shape_match'],
+    timestamp: `2026-01-01T12:00:0${eventId.slice(-1)}.000Z`,
+    prompt_text: 'Find the circle.',
+    outcome: 'correct',
+    selected_choice_id: 'circle',
+    correct_choice_id: 'circle',
+    selected_answer: 'circle',
+    correct_answer: 'circle',
+    attempt_number: 1,
+    response_time_ms: 1000,
+    difficulty_level: 1,
+    choice_count: 3,
+    distractor_strength: 'easy',
     input_type: 'tap',
     hint_shown: false,
   };

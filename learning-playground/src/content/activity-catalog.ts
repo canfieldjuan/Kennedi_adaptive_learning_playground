@@ -29,6 +29,7 @@ import phonicsFindS from './activities/phonics-find-s.json';
 import phonicsFindT from './activities/phonics-find-t.json';
 import shapesFindCircleHeart from './activities/shapes-find-circle-heart.json';
 import shapesFindCircle from './activities/shapes-find-circle.json';
+import shapesRoofInScene from './activities/shapes-roof-in-scene.json';
 import videoVault from './activities/video-vault.json';
 
 export const APPROVED_ACTIVITIES: LearningActivity[] = [
@@ -53,6 +54,7 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   buildModelMap,
   shapesFindCircle,
   shapesFindCircleHeart,
+  shapesRoofInScene,
   mathCountStarsThree,
   mathDotCardThree,
   mathCountHeartsThree,

@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 
 const childUiCss = readFixture('../../src/styles/child-ui.css');
 const baseCss = readFixture('../../src/styles/base.css');
+const tapChoiceSource = readFixture('../../src/modules/tap-choice/TapChoiceActivity.ts');
 
 function readFixture(path: string): string {
   return readFileSync(new URL(path, import.meta.url), 'utf8');
@@ -110,5 +111,15 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toMatch(
       /\.number-train__choices \.number-train__check \{\s*min-height: 72px/
     );
+  });
+
+  test('scopes the large scene prompt layout to one-image scene activities', () => {
+    expect(tapChoiceSource).toContain("promptVisualLayout === 'scene'");
+    expect(tapChoiceSource).toContain("activity.content.prompt_visual_layout === 'scene'");
+    expect(tapChoiceSource).toContain('promptImages.length === 1');
+    expect(childUiCss).toContain('.activity-prompt-visual--scene');
+    expect(childUiCss).toContain('.activity-screen--scene-prompt');
+    expect(childUiCss).toContain('"scene choices"');
+    expect(childUiCss).toContain('repeat(3, minmax(76px, 1fr))');
   });
 });

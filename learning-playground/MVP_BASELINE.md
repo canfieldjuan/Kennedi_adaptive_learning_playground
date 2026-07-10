@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.31 Number Train polish baseline
+Version: v0.3.32 Number Train polish baseline
 
 ## Current Working MVP
 
@@ -27,7 +27,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   every declared phonics rung reachable without relaxing current-rung evidence
   checks. The rung labels describe the approved word sequence rather than
   claiming unsupported fluency.
-- Math activity: the Math tile now opens **Number Train**, the first dedicated Math game runtime (arc slice 1). The child sees a structured quantity — an illustrated engine plus train cars of ten seats in a stable 2×5 layout so fives and tens read at a glance — and taps the matching numeral (a deterministic, seeded six-round trip with a station journey strip, arrival celebration, and Play Again from the next stable seed. Rounds mix reading and building quantities: Count-the-Train rounds, plus Load-the-Train rounds mid-trip where the child seats passengers (tap seats or large Add/Remove controls, remove-before-submit) and presses Check — evaluated only on Check, never per tap, with bounded "how many more" hints that never auto-fill — and a Missing Station round where a short consecutive number path of station signs has one blank the child fills from numeral choices, hinted by walking the track one number at a time. Rounds record honest per-skill evidence via `skill_outcomes`: count rounds exercise counting + numeral recognition, load rounds counting + quantity construction, sequence rounds number sequence + numeral recognition — three new Math curriculum skills alongside generalized counting rungs ("Counts structured quantities accurately", "Counts grouped quantities across tens"); subitizing stays bounded to the small-set legacy activities and never receives Number Train evidence. The trip is phone-ready (one compaction block covers portrait and short landscape; only the display train/journey/path shrink — numeral choices and load controls keep child-safe sizes), the journey strip announces the current station to assistive tech, and Home mid-round clears all pending timers (test-proven). Future Math world seams (world menu, Number Trail, Balance Garden, the 21–50 range, comparison rounds) are documented in the v0.3.31 work contract — described, not built). Counting-only evidence (no subitizing for structured counting), bounded structural hint (occupied seats pulse while the count is spoken), reduced-motion-guarded, local inline SVG art. The three legacy tap-choice Math activities remain registered and reachable by direct route/parent transfer lane.
+- Math activity: the Math tile now opens **Number Train**, the first dedicated Math game runtime (arc slice 1). The child sees a structured quantity — an illustrated engine plus train cars of ten seats in a stable 2×5 layout so fives and tens read at a glance — and taps the matching numeral (a deterministic, seeded six-round trip with a station journey strip, arrival celebration, and Play Again from the next stable seed. Rounds mix reading and building quantities: Count-the-Train rounds, plus Load-the-Train rounds mid-trip where the child seats passengers (tap seats or large Add/Remove controls, remove-before-submit) and presses Check — evaluated only on Check, never per tap, with bounded "how many more" hints that never auto-fill — and a Missing Station round where a short consecutive number path of station signs has one blank the child fills from numeral choices, hinted by walking the track one number at a time. Rounds record honest per-skill evidence via `skill_outcomes`: count rounds exercise counting + numeral recognition, load rounds counting + quantity construction, sequence rounds number sequence + numeral recognition — three new Math curriculum skills alongside generalized counting rungs ("Counts structured quantities accurately", "Counts grouped quantities across tens"); subitizing stays bounded to the small-set legacy activities and never receives Number Train evidence. The trip is phone-ready (one compaction block covers portrait and short landscape; only the display train/journey/path shrink — numeral choices and load controls keep child-safe sizes), the journey strip announces the current station to assistive tech, and Home mid-round clears all pending timers (test-proven). Future Math world seams (world menu, Number Trail, Balance Garden, the 21–50 range, comparison rounds) are documented in the v0.3.32 work contract — described, not built). Counting-only evidence (no subitizing for structured counting), bounded structural hint (occupied seats pulse while the count is spoken), reduced-motion-guarded, local inline SVG art. The three legacy tap-choice Math activities remain registered and reachable by direct route/parent transfer lane.
 - Art activity: tap-fill coloring activity.
 - Art now has one parent-launchable medium transfer activity that shows a visual
   color request card. A mismatched applied color remains correctable and emits
@@ -42,6 +42,9 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   to copy a printed word with shuffled letter tiles.
 - Art now has a medium visual-prompt activity that asks the child to match a
   request-card swatch before filling the circle.
+- Spatial practice now has one parent-launchable medium scene-prompt activity.
+  The child sees a local illustrated house and identifies the triangle roof,
+  crossing from isolated circle cards to a new target shape in context.
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
 - Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
 - The Bear Cafe bear is now an illustrated inline-SVG character (first slice of the chosen illustrated art standard) that expresses the order arc through its face — waiting while its order is prepared, receiving at the handoff, happy on completion — tinted per caller. Local SVG only (no external assets/network/deps); the emoji `content.character.icon` stays in the data (no schema change). This supersedes the earlier emoji reaction accents.
@@ -90,6 +93,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   variant that references its originating brief.
 - Art now has one approved visual different-prompt-mode transfer variant that
   references its originating brief.
+- Spatial now has one approved scene-based different-prompt-mode transfer
+  variant that references its originating brief.
 - Parent transfer content decisions are stored locally and included in export.
 - Parent activity brief decisions are stored locally and included in export.
 - Parent mastery snapshots are stored locally when the Parent Panel reviews a skill.
