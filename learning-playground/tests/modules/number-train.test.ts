@@ -13,7 +13,7 @@ import {
   destroyNumberTrainActivity,
 } from '../../src/modules/number-train/NumberTrainActivity';
 import {
-  buildFoundationPlan,
+  buildSessionPlan,
   validatePlan,
   NUMBER_TRAIN_ABSOLUTE_MAX,
 } from '../../src/modules/number-train/round-plan';
@@ -72,18 +72,51 @@ describe('number train routing', () => {
   });
 });
 
+const SESSION_CONFIG = { seed: 20260710, round_count: 6, max_quantity: 20 };
+
 describe('number train round plan', () => {
-  test('the foundation plan is deterministic and valid', () => {
-    const first = buildFoundationPlan();
-    const second = buildFoundationPlan();
+  test('the same seed and config reproduce the identical plan', () => {
+    const first = buildSessionPlan(SESSION_CONFIG);
+    const second = buildSessionPlan(SESSION_CONFIG);
 
     expect(first).toEqual(second);
     expect(validatePlan(first)).toEqual([]);
-    expect(first.rounds[0]).toMatchObject({ kind: 'count_train', quantity: 7 });
+    expect(first.rounds).toHaveLength(6);
+  });
+
+  test('a different seed produces a different trip', () => {
+    const first = buildSessionPlan(SESSION_CONFIG);
+    const other = buildSessionPlan({ ...SESSION_CONFIG, seed: SESSION_CONFIG.seed + 1 });
+
+    expect(first).not.toEqual(other);
+    expect(validatePlan(other)).toEqual([]);
+  });
+
+  test('plans across many seeds stay valid, bounded, and gradually harder', () => {
+    for (let seed = 1; seed <= 30; seed += 1) {
+      const plan = buildSessionPlan({ ...SESSION_CONFIG, seed });
+      expect(validatePlan(plan)).toEqual([]);
+
+      let previous = 0;
+      for (const round of plan.rounds) {
+        expect(round.quantity).toBeGreaterThanOrEqual(1);
+        expect(round.quantity).toBeLessThanOrEqual(SESSION_CONFIG.max_quantity);
+        expect(round.quantity).toBeGreaterThanOrEqual(previous);
+        expect(new Set(round.choices).size).toBe(round.choices.length);
+        expect(round.choices).toContain(round.quantity);
+        previous = round.quantity;
+      }
+
+      // Easy confidence start, slight stretch finish.
+      expect(plan.rounds[0].quantity).toBeLessThanOrEqual(5);
+      expect(plan.rounds[plan.rounds.length - 1].quantity).toBeGreaterThanOrEqual(
+        SESSION_CONFIG.max_quantity - 4
+      );
+    }
   });
 
   test('validation rejects out-of-bounds, duplicate, and unanswerable rounds', () => {
-    const base = buildFoundationPlan();
+    const base = buildSessionPlan(SESSION_CONFIG);
 
     expect(
       validatePlan({
@@ -142,42 +175,54 @@ describe('number train runtime', () => {
     vi.unstubAllGlobals();
   });
 
-  test('renders a structured train: one car, ten seats, seven occupied', () => {
+  const plan = buildSessionPlan(SESSION_CONFIG); // same seed/config as the envelope
+
+  test('renders the round-1 quantity as structured cars of ten seats', () => {
     const { root } = setup();
+    const quantity = plan.rounds[0].quantity;
+    const expectedCars = Math.max(1, Math.ceil(quantity / 10));
 
-    const cars = findAllByClass(root, 'number-train__car');
-    expect(cars).toHaveLength(1);
-
-    const seats = findAllByClass(root, 'number-train__seat');
-    expect(seats).toHaveLength(10);
-    expect(seats.filter((seat) => seat.className.includes('is-occupied'))).toHaveLength(7);
+    expect(findAllByClass(root, 'number-train__car')).toHaveLength(expectedCars);
+    expect(findAllByClass(root, 'number-train__seat')).toHaveLength(expectedCars * 10);
+    expect(
+      findAllByClass(root, 'number-train__seat').filter((seat) =>
+        seat.className.includes('is-occupied')
+      )
+    ).toHaveLength(quantity);
     expect(findByClass(root, 'number-train__engine')).toBeDefined();
+    expect(findAllByClass(root, 'number-train__station')).toHaveLength(6);
   });
 
-  test('a correct numeral tap emits counting evidence and locks the round', () => {
+  test('a correct numeral tap emits counting evidence and offers Next station', () => {
     const { root, events } = setup();
+    const quantity = plan.rounds[0].quantity;
 
-    findChoice(root, '7')?.click();
+    findChoice(root, String(quantity))?.click();
 
-    expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
+    expect(events.map((event) => event.outcome)).toEqual(['correct']);
     expect(events[0]?.skill_ids).toEqual(['counting']);
     expect(events[0]?.skill_ids).not.toContain('subitizing');
     expect(events[0]?.metadata).toMatchObject({
       game: 'number-train',
       round_type: 'count_train',
-      target_quantity: 7,
+      round_index: 1,
+      round_total: 6,
+      target_quantity: quantity,
     });
 
-    // Locked: a further tap emits nothing.
-    findChoice(root, '6')?.click();
-    expect(events).toHaveLength(2);
+    // Round locked; the child advances by tapping Next station.
+    findChoice(root, String(plan.rounds[0].choices.find((c) => c !== quantity)))?.click();
+    expect(events).toHaveLength(1);
+    expect(findByText(root, 'Next station')).toBeDefined();
   });
 
   test('two wrong taps trigger a structural counting hint', () => {
     const { root, events } = setup();
+    const quantity = plan.rounds[0].quantity;
+    const wrong = plan.rounds[0].choices.filter((c) => c !== quantity);
 
-    findChoice(root, '6')?.click();
-    findChoice(root, '8')?.click();
+    findChoice(root, String(wrong[0]))?.click();
+    findChoice(root, String(wrong[1]))?.click();
 
     expect(events.map((event) => event.outcome)).toEqual([
       'incorrect',
@@ -185,7 +230,58 @@ describe('number train runtime', () => {
       'hint_used',
     ]);
     expect(findByClass(root, 'number-train')?.className).toContain('is-counting');
-    expect(findChoice(root, '7')?.classList.contains('is-hinted')).toBe(true);
+    expect(findChoice(root, String(quantity))?.classList.contains('is-hinted')).toBe(true);
+  });
+
+  test('a full trip fills every station and emits completed exactly once', () => {
+    const { root, events } = setup();
+
+    for (const round of plan.rounds) {
+      findChoice(root, String(round.quantity))?.click();
+      const next = findByText(root, 'Next station');
+      next?.click();
+    }
+
+    const outcomes = events.map((event) => event.outcome);
+    expect(outcomes.filter((o) => o === 'correct')).toHaveLength(6);
+    expect(outcomes.filter((o) => o === 'completed')).toHaveLength(1);
+    expect(events[events.length - 1]?.outcome).toBe('completed');
+    expect(events[events.length - 1]?.metadata).toMatchObject({ round_index: 6 });
+
+    expect(
+      findAllByClass(root, 'number-train__station').filter((s) =>
+        s.className.includes('is-done')
+      )
+    ).toHaveLength(6);
+    expect(findByText(root, 'Play Again')).toBeDefined();
+    expect(findByText(root, 'Home')).toBeDefined();
+  });
+
+  test('Play Again starts a new deterministic trip from the next seed', () => {
+    const { root, events } = setup();
+
+    for (const round of plan.rounds) {
+      findChoice(root, String(round.quantity))?.click();
+      findByText(root, 'Next station')?.click();
+    }
+    findByText(root, 'Play Again')?.click();
+
+    const replayPlan = buildSessionPlan({
+      ...SESSION_CONFIG,
+      seed: SESSION_CONFIG.seed + 1,
+    });
+    expect(validatePlan(replayPlan)).toEqual([]);
+
+    // The new trip renders round 1 of the replay plan and is playable.
+    const occupied = findAllByClass(root, 'number-train__seat').filter((seat) =>
+      seat.className.includes('is-occupied')
+    );
+    expect(occupied).toHaveLength(replayPlan.rounds[0].quantity);
+
+    const before = events.length;
+    findChoice(root, String(replayPlan.rounds[0].quantity))?.click();
+    expect(events).toHaveLength(before + 1);
+    expect(events[events.length - 1]?.outcome).toBe('correct');
   });
 
   test('destroy removes the screen so re-render starts clean', () => {
@@ -286,7 +382,7 @@ class MockElement {
   baseClassName = '';
   id = '';
   textContent = '';
-  innerHTML = '';
+  private _innerHTML = '';
   disabled = false;
   hidden = false;
   type = '';
@@ -304,6 +400,18 @@ class MockElement {
   set className(value: string) {
     this._className = value;
     if (!this.baseClassName) this.baseClassName = value;
+  }
+
+  get innerHTML(): string {
+    return this._innerHTML;
+  }
+
+  // Real DOM semantics: assigning innerHTML replaces the children. The session
+  // runtime reuses grid/stage nodes across rounds via `innerHTML = ''`, so the
+  // mock must actually clear or stale buttons leak between rounds.
+  set innerHTML(value: string) {
+    this._innerHTML = value;
+    if (value === '') this.children.length = 0;
   }
 
   appendChild(child: MockElement): MockElement {
@@ -378,6 +486,15 @@ function findAllByClass(element: MockElement, className: string): MockElement[] 
     matches.push(...findAllByClass(child, className));
   }
   return matches;
+}
+
+function findByText(element: MockElement, text: string): MockElement | undefined {
+  if (element.tagName === 'BUTTON' && element.textContent === text) return element;
+  for (const child of element.children) {
+    const match = findByText(child, text);
+    if (match) return match;
+  }
+  return undefined;
 }
 
 function findChoice(element: MockElement, choiceId: string): MockElement | undefined {

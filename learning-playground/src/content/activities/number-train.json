@@ -21,14 +21,17 @@
   "content": {
     "game": "number-train",
     "prompt_audio": "All aboard the Number Train! How many passengers are riding?",
-    "max_quantity": 20
+    "max_quantity": 20,
+    "round_count": 6,
+    "seed": 20260710,
+    "arrival_audio": "The train reached the station! What a trip!"
   },
   "success_rules": {
     "max_attempts_before_hint": 2
   },
   "feedback_rules": {
     "correct": {
-      "speech": "Yes! Seven passengers. All aboard!",
+      "speech": "All aboard!",
       "sound": "soft_chime"
     },
     "incorrect": {
@@ -36,7 +39,7 @@
       "sound": "soft_boing"
     },
     "hint": {
-      "speech": "Count each passenger. One, two, three, four, five, six, seven.",
+      "speech": "Count each passenger.",
       "highlight_target": true
     }
   },

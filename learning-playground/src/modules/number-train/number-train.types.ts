@@ -24,3 +24,13 @@ export interface NumberTrainPlan {
   /** Upper bound any round quantity/answer may reach (data model supports 0–50). */
   max_quantity: number;
 }
+
+/** Authored inputs for one deterministic session plan. */
+export interface NumberTrainSessionConfig {
+  /** Stable seed; the same seed and config always produce the same plan. */
+  seed: number;
+  /** Rounds per trip (one journey station each). */
+  round_count: number;
+  /** Upper bound for quantities and answer choices this session. */
+  max_quantity: number;
+}
