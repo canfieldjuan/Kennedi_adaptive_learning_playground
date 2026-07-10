@@ -6,6 +6,7 @@ import type { ParentSettings } from '../types/storage';
 import type { StorageServiceInterface } from '../types/runtime';
 import type { ActivityAttemptEvent } from '../types/events';
 import type { ParentObservation } from '../types/observations';
+import { isParentObservationCategory } from './parent-observation-signals';
 import type {
   ParentDifficultyAction,
   ParentDifficultyOverride,
@@ -436,10 +437,29 @@ function isParentObservation(value: unknown): value is ParentObservation {
     typeof observation.note === 'string' &&
     typeof observation.created_at === 'string' &&
     (
+      observation.category === undefined ||
+      isParentObservationCategory(observation.category)
+    ) &&
+    (
+      observation.skill_ids === undefined ||
+      isParentObservationSkillIds(observation.skill_ids)
+    ) &&
+    (
       observation.updated_at === undefined ||
       typeof observation.updated_at === 'string'
     )
   );
+}
+
+function isParentObservationSkillIds(value: unknown): value is string[] {
+  if (!Array.isArray(value)) return false;
+  if (!value.every((skillId) => (
+    typeof skillId === 'string' &&
+    skillId.trim().length > 0 &&
+    skillId.trim() === skillId
+  ))) return false;
+
+  return new Set(value).size === value.length;
 }
 
 function isParentDifficultyAction(

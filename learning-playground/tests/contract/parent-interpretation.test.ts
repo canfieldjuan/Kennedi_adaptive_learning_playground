@@ -136,6 +136,60 @@ describe('parent interpretation contract', () => {
     expect(interpretation.recommendation).toBe('Not enough data');
   });
 
+  test('scopes structured support observations to the tagged skill', () => {
+    const countingEvents = [1, 2, 3].map((index) => (
+      makeEvent(`event-${index}`, 'correct')
+    ));
+    const vocabularyEvents = [4, 5, 6].map((index) => ({
+      ...makeEvent(`event-${index}`, 'correct'),
+      activity_id: 'video-bear-bakes-bread-response',
+      skill_ids: ['vocabulary'],
+      prompt_text: 'What did Bear bake?',
+      selected_choice_id: 'bread',
+      correct_choice_id: 'bread',
+      selected_answer: 'bread',
+      correct_answer: 'bread',
+      difficulty_level: 2,
+      distractor_strength: 'medium' as const,
+    }));
+    const review: ParentSessionReview = {
+      session_id: 'session-1',
+      completed_activities: [],
+      skills_touched: ['counting', 'vocabulary'],
+      accuracy_by_skill: [
+        { skill_id: 'counting', correct_attempts: 3, total_attempts: 3, accuracy: 1 },
+        { skill_id: 'vocabulary', correct_attempts: 3, total_attempts: 3, accuracy: 1 },
+      ],
+      hints_used: 0,
+      abandoned_activities: [],
+      most_repeated_activity: 'math-count-stars-three',
+      parent_notes: [{
+        observation_id: 'observation-1',
+        session_id: 'session-1',
+        child_id: 'local-child',
+        note: 'Wanted a break.',
+        category: 'frustration',
+        skill_ids: ['counting'],
+        created_at: '2026-01-01T12:10:00.000Z',
+      }],
+    };
+
+    const interpretations = buildParentSkillInterpretations(
+      review,
+      [...countingEvents, ...vocabularyEvents]
+    );
+
+    expect(getInterpretation(interpretations, 'counting')).toMatchObject({
+      status: 'Needs more support',
+      recommendation: 'Review later',
+      recommendation_reason: 'Pause this skill and return when the session feels settled.',
+      mastery_status: 'transfer_ready',
+    });
+    expect(getInterpretation(interpretations, 'vocabulary').status).toBe(
+      'Ready for next challenge'
+    );
+  });
+
   test('keeps guidance language non-comparative and non-pressure-based', () => {
     const events = [
       makeEvent('event-1', 'incorrect', { hintShown: true }),

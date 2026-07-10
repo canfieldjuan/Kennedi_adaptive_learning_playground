@@ -31,6 +31,8 @@ describe('parent observation storage contract', () => {
       session_id: 'session-1',
       child_id: 'local-child',
       note: 'Stayed focused and liked counting.',
+      category: 'independent_success',
+      skill_ids: ['counting'],
       created_at: '2026-01-01T12:00:00.000Z',
     };
 
@@ -44,6 +46,8 @@ describe('parent observation storage contract', () => {
     const observations = storage.getParentObservations();
     expect(observations).toHaveLength(1);
     expect(observations[0].note).toBe('Stayed focused and asked to count again.');
+    expect(observations[0].category).toBe('independent_success');
+    expect(observations[0].skill_ids).toEqual(['counting']);
 
     const exported = JSON.parse(storage.exportProgressData([])) as {
       export_metadata: { export_version: string };
@@ -91,5 +95,50 @@ describe('parent observation storage contract', () => {
     };
     expect(exported.parent_observations).toHaveLength(2);
     expect(exported.data_health.total_observations).toBe(2);
+  });
+
+  test('keeps legacy notes and filters malformed structured observations', () => {
+    const localStore = new MemoryKeyValueStorage();
+    const storage = new StorageService(localStore);
+    localStore.setItem('lp_parent_observations', JSON.stringify([
+      {
+        observation_id: 'legacy-observation',
+        session_id: 'session-1',
+        child_id: 'local-child',
+        note: 'Counting looked steady.',
+        created_at: '2026-01-01T12:00:00.000Z',
+      },
+      {
+        observation_id: 'structured-observation',
+        session_id: 'session-1',
+        child_id: 'local-child',
+        note: 'Needed help after the first try.',
+        category: 'needed_support',
+        skill_ids: ['counting'],
+        created_at: '2026-01-01T12:01:00.000Z',
+      },
+      {
+        observation_id: 'bad-category',
+        session_id: 'session-1',
+        child_id: 'local-child',
+        note: 'Unknown signal.',
+        category: 'advanced',
+        created_at: '2026-01-01T12:02:00.000Z',
+      },
+      {
+        observation_id: 'bad-skill-scope',
+        session_id: 'session-1',
+        child_id: 'local-child',
+        note: 'Blank skill id.',
+        category: 'frustration',
+        skill_ids: [''],
+        created_at: '2026-01-01T12:03:00.000Z',
+      },
+    ]));
+
+    expect(storage.getParentObservations().map((item) => item.observation_id)).toEqual([
+      'legacy-observation',
+      'structured-observation',
+    ]);
   });
 });

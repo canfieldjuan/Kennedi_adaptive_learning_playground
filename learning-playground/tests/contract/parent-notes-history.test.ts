@@ -25,6 +25,8 @@ describe('parent notes history contract', () => {
       {
         observation_id: 'observation-2',
         note: 'Second note.',
+        category_label: 'General note',
+        skill_labels: [],
         created_at: '2026-01-01T12:05:00.000Z',
         updated_at: undefined,
         timestamp_label: '2026-01-01 12:05 UTC',
@@ -32,6 +34,8 @@ describe('parent notes history contract', () => {
       {
         observation_id: 'observation-1',
         note: 'First note.',
+        category_label: 'General note',
+        skill_labels: [],
         created_at: '2026-01-01T12:00:00.000Z',
         updated_at: undefined,
         timestamp_label: '2026-01-01 12:00 UTC',
@@ -50,6 +54,23 @@ describe('parent notes history contract', () => {
     ]);
 
     expect(historyItem.timestamp_label).toBe('2026-01-01 12:10 UTC');
+  });
+
+  test('formats structured category and skill labels for parent review', () => {
+    const [historyItem] = buildParentNoteHistory([{
+      ...makeObservation({
+        observationId: 'observation-1',
+        note: 'Counted the plates without help.',
+        createdAt: '2026-01-01T12:00:00.000Z',
+      }),
+      category: 'independent_success',
+      skill_ids: ['counting'],
+    }]);
+
+    expect(historyItem).toMatchObject({
+      category_label: 'Independent success',
+      skill_labels: ['Counting'],
+    });
   });
 });
 

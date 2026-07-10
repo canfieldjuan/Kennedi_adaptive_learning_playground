@@ -70,7 +70,8 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Progress profiles are derived from local events.
 - Progress tracks mastery signals rather than raw engagement.
 - Skill state now includes attempts, correct attempts, recent accuracy, average response time, confidence, review flag, and promotion state.
-- Parent observations are stored locally and included in parent review/export.
+- Parent observations are stored locally with optional fit/support categories
+  and skill scope, and remain included in parent review/export.
 - Curriculum graph data defines domains, skills, skill levels, prerequisites, unlocks, evidence requirements, and review policy for existing activities.
 - Curriculum skill levels carry difficulty bands, and local progress levels now seed, promote, cap, display, and read-translate legacy stored values through those declared rungs.
 - Mastery evidence cites local event IDs or parent observation IDs.
@@ -144,8 +145,8 @@ The current implementation has passed:
 
 The most recent test state was:
 
-- 41 test files passing
-- 327 tests passing
+- 43 test files passing
+- 348 tests passing
 
 Browser smoke checks confirmed:
 
@@ -200,7 +201,9 @@ Events, observations, and progress currently live in localStorage. That is fine 
 
 ### Parent Notes Model
 
-Parent notes now preserve history for the reviewed session. A later version may want editing or categorization, but the lightweight local note history is in place.
+Parent observations preserve history for the reviewed session and now show a
+parent-only fit/support category plus optional skill scope. Legacy free-text
+notes remain readable and exportable.
 
 ### Active Parent Guidance
 
@@ -216,7 +219,7 @@ The app no longer treats one-context fluency as likely mastery. Core evidence-be
 
 ## Where We Are Headed
 
-Phase 2 is complete. Phase 3 established skill graph, mastery, transfer coverage, and content gap work. The first v0.3 adapter work integrated Kennedi's Orders without changing the home grid, the next slice added a Parent Panel Bear Cafe launch path for testing, v0.3.2 moved Bear Cafe into the child home grid, v0.3.3 made Bear Cafe delivered orders visible in Recent Attempts, v0.3.4 added the delivery handoff beat, v0.3.5 added Bear Cafe reaction states, v0.3.6 added the cook/plating beat, v0.3.7 synthesized real feedback cues, v0.3.8 added the completion celebration burst, v0.3.9 added idle nudge, v0.3.10 aligned parent-visible progress levels to curriculum rungs, v0.3.11 translates legacy stored progress levels before review/export, v0.3.12 models per-skill evidence for compound Bear Cafe rounds and proves the illustrated bear style, v0.3.13 illustrates Bear Cafe foods, v0.3.14 illustrates Bear Cafe decorations, v0.3.15 adds the home-screen Bear Cafe scene backdrop, v0.3.16 adds the dedicated phonics-match runtime foundation and Bear Cafe choice accessibility polish, v0.3.17 adds the multi-word initial-sound chain, v0.3.18 adds Pip as the recurring phonics character, v0.3.19 adds the first sound-blending rung, v0.3.20 adds word building, v0.3.21 unifies Word-game card art, v0.3.22 makes phonics rung coverage and content-gap briefs skill-aware, v0.3.23 adds truthful spoken prompt-mode transfer for blending, v0.3.24 adds symbolic prompt-mode transfer for word building, v0.3.25 establishes the dedicated Number Train Math runtime, v0.3.26 adds the deterministic Number Train multi-round session, v0.3.27 adds visual request-card transfer for Art, v0.3.28 adds Number Train's Load-the-Train construction rounds, v0.3.29 adds Number Train's Missing Station sequence round, v0.3.30 aligns Number Train curriculum and per-skill evidence, v0.3.31 adds scene-based spatial transfer, v0.3.32 polishes Number Train's mobile layout and extension seams, v0.3.33 validates Video Vault intake and exposure-only evidence, and v0.3.34 adds the first local clip with a separate vocabulary response.
+Phase 2 is complete. Phase 3 established skill graph, mastery, transfer coverage, and content gap work. The first v0.3 adapter work integrated Kennedi's Orders without changing the home grid, the next slice added a Parent Panel Bear Cafe launch path for testing, v0.3.2 moved Bear Cafe into the child home grid, v0.3.3 made Bear Cafe delivered orders visible in Recent Attempts, v0.3.4 added the delivery handoff beat, v0.3.5 added Bear Cafe reaction states, v0.3.6 added the cook/plating beat, v0.3.7 synthesized real feedback cues, v0.3.8 added the completion celebration burst, v0.3.9 added idle nudge, v0.3.10 aligned parent-visible progress levels to curriculum rungs, v0.3.11 translates legacy stored progress levels before review/export, v0.3.12 models per-skill evidence for compound Bear Cafe rounds and proves the illustrated bear style, v0.3.13 illustrates Bear Cafe foods, v0.3.14 illustrates Bear Cafe decorations, v0.3.15 adds the home-screen Bear Cafe scene backdrop, v0.3.16 adds the dedicated phonics-match runtime foundation and Bear Cafe choice accessibility polish, v0.3.17 adds the multi-word initial-sound chain, v0.3.18 adds Pip as the recurring phonics character, v0.3.19 adds the first sound-blending rung, v0.3.20 adds word building, v0.3.21 unifies Word-game card art, v0.3.22 makes phonics rung coverage and content-gap briefs skill-aware, v0.3.23 adds truthful spoken prompt-mode transfer for blending, v0.3.24 adds symbolic prompt-mode transfer for word building, v0.3.25 establishes the dedicated Number Train Math runtime, v0.3.26 adds the deterministic Number Train multi-round session, v0.3.27 adds visual request-card transfer for Art, v0.3.28 adds Number Train's Load-the-Train construction rounds, v0.3.29 adds Number Train's Missing Station sequence round, v0.3.30 aligns Number Train curriculum and per-skill evidence, v0.3.31 adds scene-based spatial transfer, v0.3.32 polishes Number Train's mobile layout and extension seams, v0.3.33 validates Video Vault intake and exposure-only evidence, v0.3.34 adds the first local clip with a separate vocabulary response, v0.3.35 adds the continuous Bear Cafe environment, v0.3.36 adds Pip's Word Workshop, and v0.3.37 adds structured parent observation signals and skill scope.
 
 ### MVP Phase 2 Definition of Done
 
@@ -250,7 +253,7 @@ Parent can answer:
 
 ### Current Phase Status
 
-Phase 3 has continued through v0.3.34 with transfer quality, activity variant briefs, durable parent brief decisions, the parent-only activity brief design queue, mastery snapshot persistence, parent-visible review schedule records, truth-checked initial-sound, blending, word-building, Art, spatial, math, and video-response variants, a validated local Video Vault intake and exposure-only evidence boundary, one local narrated clip paired with an independently scored vocabulary response, the dedicated Word-game initial-sound, blending, and word-building chains, the phone-ready Number Train Math multi-round foundation with quantity-construction and number-sequence rounds plus honest per-skill evidence, cohesive Word-game card art, skill-aware phonics activity briefs, approved-activity coverage checks for phonics rungs, the current-main Kennedi's Orders adapter, parent-readable Bear Cafe evidence, curriculum-grounded progress level rungs, read-time legacy level translation, and compound-round per-skill evidence.
+Phase 3 has continued through v0.3.37 with transfer quality, activity variant briefs, durable parent brief decisions, the parent-only activity brief design queue, mastery snapshot persistence, parent-visible review schedule records, structured parent observation fit signals and skill scope, truth-checked initial-sound, blending, word-building, Art, spatial, math, and video-response variants, a validated local Video Vault intake and exposure-only evidence boundary, one local narrated clip paired with an independently scored vocabulary response, the dedicated Word-game initial-sound, blending, and word-building chains inside Pip's Word Workshop, the phone-ready Number Train Math multi-round foundation with quantity-construction and number-sequence rounds plus honest per-skill evidence, cohesive Word-game card art, skill-aware phonics activity briefs, approved-activity coverage checks for phonics rungs, the current-main Kennedi's Orders adapter and continuous cafe environment, parent-readable Bear Cafe evidence, curriculum-grounded progress level rungs, read-time legacy level translation, and compound-round per-skill evidence.
 
 What this lane now covers:
 
@@ -285,6 +288,8 @@ What this lane now covers:
   provenance, with tests proving video completion cannot advance vocabulary mastery.
 - First approved local Video Vault clip with local narration and a manual route
   to a separate three-picture vocabulary response; exposure remains unscored.
+- Parent-only structured observation categories and optional skill scope, with
+  polarity-aware mastery evidence and legacy note compatibility.
 - First truth-checked medium math transfer variant: visual dot card to numeral match.
 - Dedicated Number Train foundation for structured counting from the Math home tile.
 - Parent-approved transfer launch from Parent Guidance into an existing activity route.
@@ -321,7 +326,6 @@ Good candidates:
 
 - Observe the first video/response pair before adding any coverage-driven
   vocabulary breadth or delayed review content.
-- Add more nuanced parent observation categories.
 - Add accessibility polish for the child activity screens.
 - Plan a future IndexedDB move for larger local histories.
 - No streaks, grind loops, hidden routing, or child-facing pressure.
@@ -330,6 +334,6 @@ Good candidates:
 
 The app is now best described as:
 
-> A working local-first preschool-safe learning playground with playable MVP activities, a dedicated phonics-match Word-game runtime foundation, a dedicated Number Train Math foundation, a fixed initial-sound word chain, Pip as a recurring phonics character, a first sound-blending rung, targeted transfer variants, truth-checked phonics and math transfer variants, a direct-route Kennedi's Orders adapter plus Parent Panel and child home Bear Cafe launch paths, parent-approved transfer launch, parent-controlled local progress with curriculum-grounded rung labels, read-time legacy level translation, compound-round per-skill evidence, local event logging, parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage with context strength tiers, coverage-driven activity briefs, a parent-only activity brief design queue, local parent brief decisions, persisted mastery snapshots, parent-visible review schedules, configurable local parent gate friction, illustrated Bear Cafe bear/foods/decorations/home backdrop, Bear Cafe delivered-order evidence in Recent Attempts, Bear Cafe accessible choice state, and a parent session review layer.
+> A working local-first preschool-safe learning playground with playable MVP activities, a dedicated phonics-match Word-game runtime foundation, a dedicated Number Train Math foundation, a fixed initial-sound word chain, Pip as a recurring phonics character, a first sound-blending rung, targeted transfer variants, truth-checked phonics and math transfer variants, a direct-route Kennedi's Orders adapter plus Parent Panel and child home Bear Cafe launch paths, parent-approved transfer launch, parent-controlled local progress with curriculum-grounded rung labels, read-time legacy level translation, compound-round per-skill evidence, local event logging, structured parent observations, parent difficulty action records, active parent-approved guidance state, bounded application for supported tap-choice activities, applied-guidance fit review, curriculum graph, mastery engine, transfer coverage with context strength tiers, coverage-driven activity briefs, a parent-only activity brief design queue, local parent brief decisions, persisted mastery snapshots, parent-visible review schedules, configurable local parent gate friction, illustrated Bear Cafe bear/foods/decorations/home backdrop, Bear Cafe delivered-order evidence in Recent Attempts, Bear Cafe accessible choice state, and a parent session review layer.
 
-The current v0.3.34 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants including truthful spoken blending, symbolic word-building transfer, visual Art request matching, contextual spatial matching, and a separate vocabulary response after local video exposure, validated repo-bundled exposure-only video intake, skill-aware content briefs, activity-band coverage validation, parent-clicked transfer launch, durable parent decisions, an activity brief design queue, mastery snapshots, review schedules, curriculum-aligned progress rungs with legacy-profile read migration, compound-round per-skill evidence, the dedicated Word-game initial-sound, blending, and word-building chains, the phone-ready Number Train Math multi-round foundation with quantity construction, number sequences, and per-skill evidence, cohesive local Word-game art, the scoped Bear Cafe adapter, and parent-readable evidence while keeping accounts, backend auth, cloud sync, and automatic adaptive routing out of scope.
+The current v0.3.37 base grounds parent recommendations in a curriculum graph, mastery evidence, transfer coverage, transfer quality, approved local transfer variants including truthful spoken blending, symbolic word-building transfer, visual Art request matching, contextual spatial matching, and a separate vocabulary response after local video exposure, validated repo-bundled exposure-only video intake, polarity-aware structured parent observations with optional skill scope, skill-aware content briefs, activity-band coverage validation, parent-clicked transfer launch, durable parent decisions, an activity brief design queue, mastery snapshots, review schedules, curriculum-aligned progress rungs with legacy-profile read migration, compound-round per-skill evidence, the dedicated Word-game initial-sound, blending, and word-building chains inside Pip's Word Workshop, the phone-ready Number Train Math multi-round foundation with quantity construction, number sequences, and per-skill evidence, cohesive local Word-game art, the scoped Bear Cafe adapter with its continuous cafe environment, and parent-readable evidence while keeping accounts, backend auth, cloud sync, and automatic adaptive routing out of scope.

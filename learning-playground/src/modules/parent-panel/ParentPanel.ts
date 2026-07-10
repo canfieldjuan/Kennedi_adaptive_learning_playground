@@ -4,7 +4,10 @@
 
 import type { StorageServiceInterface, SpeechServiceInterface } from '../../types/runtime';
 import type { ParentSettings } from '../../types/storage';
-import type { ParentObservation } from '../../types/observations';
+import type {
+  ParentObservation,
+  ParentObservationCategory,
+} from '../../types/observations';
 import type {
   ParentDifficultyAction,
   ParentDifficultyActionType,
@@ -45,6 +48,10 @@ import {
   buildParentNoteHistory,
   type ParentNoteHistoryItem,
 } from '../../core/parent-notes-history';
+import {
+  isParentObservationCategory,
+  PARENT_OBSERVATION_CATEGORIES,
+} from '../../core/parent-observation-signals';
 import {
   buildParentDifficultyActionHistory,
   formatParentDifficultyActionLabel,
@@ -2282,6 +2289,45 @@ function createParentNotesEditor(
     wrapper.appendChild(createParentNotesHistory(noteHistory));
   }
 
+  const controls = document.createElement('div');
+  controls.className = 'parent-notes__controls';
+
+  const categoryField = document.createElement('label');
+  categoryField.className = 'parent-notes__field';
+  categoryField.textContent = 'Observation type';
+  const categorySelect = document.createElement('select');
+  categorySelect.className = 'parent-notes__select';
+  categorySelect.id = 'parent-observation-category';
+  for (const category of PARENT_OBSERVATION_CATEGORIES) {
+    const option = document.createElement('option');
+    option.value = category.value;
+    option.textContent = category.label;
+    categorySelect.appendChild(option);
+  }
+  categorySelect.value = 'general';
+  categoryField.appendChild(categorySelect);
+  controls.appendChild(categoryField);
+
+  const skillField = document.createElement('label');
+  skillField.className = 'parent-notes__field';
+  skillField.textContent = 'Applies to';
+  const skillSelect = document.createElement('select');
+  skillSelect.className = 'parent-notes__select';
+  skillSelect.id = 'parent-observation-skill';
+  const sessionOption = document.createElement('option');
+  sessionOption.value = '';
+  sessionOption.textContent = 'Whole session';
+  skillSelect.appendChild(sessionOption);
+  for (const skillId of [...review.skills_touched].sort((a, b) => a.localeCompare(b))) {
+    const option = document.createElement('option');
+    option.value = skillId;
+    option.textContent = formatSkillLabel(skillId);
+    skillSelect.appendChild(option);
+  }
+  skillField.appendChild(skillSelect);
+  controls.appendChild(skillField);
+  wrapper.appendChild(controls);
+
   const textarea = document.createElement('textarea');
   textarea.className = 'parent-notes__textarea';
   textarea.id = 'parent-session-note';
@@ -2296,6 +2342,12 @@ function createParentNotesEditor(
   saveButton.addEventListener('click', () => {
     const note = textarea.value.trim();
     if (!note) return;
+    const category: ParentObservationCategory = isParentObservationCategory(
+      categorySelect.value
+    ) ? categorySelect.value : 'general';
+    const selectedSkillId = review.skills_touched.includes(skillSelect.value)
+      ? skillSelect.value
+      : undefined;
 
     const nowIso = new Date().toISOString();
     const observation: ParentObservation = {
@@ -2303,6 +2355,8 @@ function createParentNotesEditor(
       session_id: review.session_id,
       child_id: context.childId,
       note,
+      category,
+      ...(selectedSkillId ? { skill_ids: [selectedSkillId] } : {}),
       created_at: nowIso,
     };
 
@@ -2329,6 +2383,20 @@ function createParentNotesHistory(
     meta.className = 'parent-notes__meta';
     meta.textContent = note.timestamp_label;
     item.appendChild(meta);
+
+    const tags = document.createElement('div');
+    tags.className = 'parent-notes__tags';
+    const category = document.createElement('span');
+    category.className = 'parent-notes__tag';
+    category.textContent = note.category_label;
+    tags.appendChild(category);
+    for (const skillLabel of note.skill_labels) {
+      const skill = document.createElement('span');
+      skill.className = 'parent-notes__tag parent-notes__tag--skill';
+      skill.textContent = skillLabel;
+      tags.appendChild(skill);
+    }
+    item.appendChild(tags);
 
     const text = document.createElement('p');
     text.className = 'parent-notes__note';

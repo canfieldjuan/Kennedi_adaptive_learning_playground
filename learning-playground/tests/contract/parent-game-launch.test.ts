@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { renderParentPanel } from '../../src/modules/parent-panel/ParentPanel';
 import type { StorageServiceInterface } from '../../src/types/runtime';
 import type { ChildProgressProfile } from '../../src/types/progress';
+import type { ParentObservation } from '../../src/types/observations';
 
 describe('parent game launch contract', () => {
   beforeEach(() => {
@@ -66,6 +67,114 @@ describe('parent game launch contract', () => {
     });
 
     expect(collectText(root)).toContain('1: Counts structured quantities accurately');
+  });
+
+  test('parent notes expose structured fit and skill controls only in the parent panel', () => {
+    const root = document.createElement('div');
+
+    renderParentPanel(root, createMockStorage(), {
+      childId: 'local-child',
+      sessionId: 'session-1',
+    });
+
+    const text = collectText(root);
+    expect(text).toContain('Observation type');
+    expect(text).toContain('General note');
+    expect(text).toContain('Independent success');
+    expect(text).toContain('Real-world transfer');
+    expect(text).toContain('Applies to');
+    expect(text).toContain('Whole session');
+  });
+
+  test('parent notes save the selected category and session skill', () => {
+    localStorage.setItem('lp_activity_events', JSON.stringify([{
+      event_id: 'event-1',
+      session_id: 'session-1',
+      child_id: 'local-child',
+      activity_id: 'math-count-stars-three',
+      activity_version: 1,
+      skill_ids: ['counting'],
+      timestamp: '2026-01-01T12:00:00.000Z',
+      prompt_text: 'How many stars do you see?',
+      outcome: 'correct',
+      selected_choice_id: 'three',
+      correct_choice_id: 'three',
+      selected_answer: '3',
+      correct_answer: '3',
+      attempt_number: 1,
+      response_time_ms: 1000,
+      difficulty_level: 1,
+      choice_count: 3,
+      distractor_strength: 'easy',
+      input_type: 'tap',
+      hint_shown: false,
+    }]));
+    const saved: ParentObservation[] = [];
+    const storage: StorageServiceInterface = {
+      ...createMockStorage(),
+      saveParentObservation: (observation) => saved.push(observation),
+    };
+    const root = document.createElement('div');
+
+    renderParentPanel(root, storage, {
+      childId: 'local-child',
+      sessionId: 'session-1',
+    });
+
+    const categorySelect = findElementById(root, 'parent-observation-category');
+    const skillSelect = findElementById(root, 'parent-observation-skill');
+    const textarea = findElementById(root, 'parent-session-note');
+    const saveButton = findElementByText(root, 'Save Notes');
+    expect(collectText(root)).toContain('Counting');
+    expect(categorySelect).toBeDefined();
+    expect(skillSelect).toBeDefined();
+    expect(textarea).toBeDefined();
+    expect(saveButton).toBeDefined();
+
+    categorySelect!.value = 'too_hard';
+    skillSelect!.value = 'counting';
+    textarea!.value = 'Needed a calmer counting round.';
+    saveButton!.click();
+
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatchObject({
+      session_id: 'session-1',
+      child_id: 'local-child',
+      note: 'Needed a calmer counting round.',
+      category: 'too_hard',
+      skill_ids: ['counting'],
+    });
+  });
+
+  test('parent notes fail closed when select values are not offered by the session', () => {
+    const saved: ParentObservation[] = [];
+    const storage: StorageServiceInterface = {
+      ...createMockStorage(),
+      saveParentObservation: (observation) => saved.push(observation),
+    };
+    const root = document.createElement('div');
+
+    renderParentPanel(root, storage, {
+      childId: 'local-child',
+      sessionId: 'session-1',
+    });
+
+    const categorySelect = findElementById(root, 'parent-observation-category');
+    const skillSelect = findElementById(root, 'parent-observation-skill');
+    const textarea = findElementById(root, 'parent-session-note');
+    const saveButton = findElementByText(root, 'Save Notes');
+
+    categorySelect!.value = 'unsupported-category';
+    skillSelect!.value = 'unsupported-skill';
+    textarea!.value = 'A note with malformed control values.';
+    saveButton!.click();
+
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatchObject({
+      category: 'general',
+      note: 'A note with malformed control values.',
+    });
+    expect(saved[0].skill_ids).toBeUndefined();
   });
 
   test('Bear Cafe replaces Videos on the four-slot child home grid', () => {
@@ -256,6 +365,21 @@ function findElementByText(
 
   for (const child of mockElement.children) {
     const match = findElementByText(child as unknown as Element, text);
+    if (match) return match;
+  }
+
+  return undefined;
+}
+
+function findElementById(
+  element: Element,
+  id: string
+): MockElement | undefined {
+  const mockElement = element as unknown as MockElement;
+  if (mockElement.id === id) return mockElement;
+
+  for (const child of mockElement.children) {
+    const match = findElementById(child as unknown as Element, id);
     if (match) return match;
   }
 

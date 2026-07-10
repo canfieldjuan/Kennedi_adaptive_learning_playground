@@ -26,6 +26,7 @@ import {
   getSkillOutcome,
   isHintForSkill,
 } from './skill-outcomes';
+import { isParentSupportObservationForSkill } from './parent-observation-signals';
 
 export type ParentSkillStatus =
   | 'Ready for next challenge'
@@ -72,7 +73,7 @@ interface SkillSignal {
   hintsUsed: number;
   abandonedCount: number;
   repeatedErrorPattern?: string;
-  hasParentFrustrationNote: boolean;
+  hasParentSupportSignal: boolean;
 }
 
 export function buildParentSkillInterpretations(
@@ -206,9 +207,9 @@ function buildSkillSignal(
       getSkillOutcome(event, summary.skill_id) === 'abandoned'
     )).length,
     repeatedErrorPattern: getRepeatedErrorPattern(events, summary.skill_id),
-    hasParentFrustrationNote: hasFrustrationNote(
-      review.parent_notes.map((observation) => observation.note)
-    ),
+    hasParentSupportSignal: review.parent_notes.some((observation) => (
+      isParentSupportObservationForSkill(observation, summary.skill_id)
+    )),
   };
 }
 
@@ -216,7 +217,7 @@ function getStatus(signal: SkillSignal): ParentSkillStatus {
   const { summary, hintsUsed, abandonedCount, repeatedErrorPattern } = signal;
 
   if (summary.total_attempts < 3) return 'Not enough data yet';
-  if (signal.hasParentFrustrationNote) return 'Needs more support';
+  if (signal.hasParentSupportSignal) return 'Needs more support';
   if (repeatedErrorPattern) return 'Needs more support';
   if (abandonedCount > 0 && summary.accuracy < 0.8) return 'Needs more support';
   if (summary.accuracy >= 0.8 && hintsUsed === 0 && abandonedCount === 0) {
@@ -230,15 +231,18 @@ function getRecommendation(
   signal: SkillSignal,
   mastery?: MasteryEvaluation
 ): ParentAdaptiveRecommendation {
+  const { summary, hintsUsed, abandonedCount, repeatedErrorPattern } = signal;
+
+  if (summary.total_attempts >= 3 && signal.hasParentSupportSignal) {
+    return 'Review later';
+  }
+
   if (mastery) {
     const masteryRecommendation = getMasteryRecommendation(mastery);
     if (masteryRecommendation) return masteryRecommendation;
   }
 
-  const { summary, hintsUsed, abandonedCount, repeatedErrorPattern } = signal;
-
   if (summary.total_attempts < 3) return 'Not enough data';
-  if (signal.hasParentFrustrationNote) return 'Review later';
   if (repeatedErrorPattern || summary.accuracy < 0.5 || hintsUsed >= 2) {
     return 'Add support';
   }
@@ -257,8 +261,8 @@ function getStatusReason(
   if (status === 'Not enough data yet') {
     return `${summary.total_attempts} counted attempt(s) so far.`;
   }
-  if (signal.hasParentFrustrationNote) {
-    return 'Parent note suggests this may need a calmer setup or a break.';
+  if (signal.hasParentSupportSignal) {
+    return 'Parent observation suggests this may need a calmer setup or a break.';
   }
   if (repeatedErrorPattern) {
     return `Repeated answer: ${repeatedErrorPattern}.`;
@@ -287,6 +291,13 @@ function getRecommendationReason(
   }
   if (recommendation === 'Try transfer activity') {
     return 'Another approved context is available. The parent can choose when to offer it.';
+  }
+  if (
+    recommendation === 'Review later' &&
+    signal.summary.total_attempts >= 3 &&
+    signal.hasParentSupportSignal
+  ) {
+    return 'Pause this skill and return when the session feels settled.';
   }
 
   if (mastery) {
@@ -338,12 +349,6 @@ function getRepeatedErrorPattern(
     .sort(([answerA, countA], [answerB, countB]) => (
       countB - countA || answerA.localeCompare(answerB)
     ))[0]?.[0];
-}
-
-function hasFrustrationNote(notes: string[]): boolean {
-  return notes.some((note) => (
-    /frustrat|upset|too hard|tired|needed a break|need a break|cry/i.test(note)
-  ));
 }
 
 function formatPercent(value: number): string {
