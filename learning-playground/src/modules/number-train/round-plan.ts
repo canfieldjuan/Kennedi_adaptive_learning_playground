@@ -1,33 +1,61 @@
 /**
  * Number Train round planning — deterministic and local.
  *
- * Slice 1 ships one fixed foundation round; the seeded multi-round session
- * generator lands in the next slice. The validation contract starts here so
- * every future generator is held to the same rules: quantities within bounds,
- * a present correct answer, and no duplicate choices.
+ * `buildSessionPlan` generates a short graduated trip from a stable seed: no
+ * `Math.random`, no clock, so the same seed and config always reproduce the
+ * same plan (testable, replayable). `validatePlan` is the contract every
+ * generator is held to: quantities within bounds, a present correct answer,
+ * no duplicate choices, no negatives, nothing above the configured maximum.
  */
 
-import type { NumberTrainPlan, NumberTrainRound } from './number-train.types';
+import type {
+  NumberTrainPlan,
+  NumberTrainRound,
+  NumberTrainSessionConfig,
+} from './number-train.types';
 
 /** Hard ceiling of the Number Train data model (sessions author below this). */
 export const NUMBER_TRAIN_ABSOLUTE_MAX = 50;
 
+const COUNT_PROMPT = 'How many passengers are riding?';
+
 /**
- * The fixed slice-1 plan: one Count-the-Train round, quantity 7 in a single
- * car, numeral choices 6 / 7 / 8. Deterministic by construction.
+ * Build one deterministic session: `round_count` Count-the-Train rounds whose
+ * quantities ramp from an easy confidence start (~3) to a slight stretch near
+ * `max_quantity`, never decreasing, with seed-jittered variety. Distractors
+ * are plausible neighbors (±1/±2) clamped to `0..max`. Throws if the generated
+ * plan violates the validation contract (fail closed).
  */
-export function buildFoundationPlan(maxQuantity: number = 20): NumberTrainPlan {
-  const plan: NumberTrainPlan = {
-    max_quantity: clampMaxQuantity(maxQuantity),
-    rounds: [
-      {
-        kind: 'count_train',
-        quantity: 7,
-        choices: [6, 7, 8],
-        prompt: 'How many passengers are riding?',
-      },
-    ],
-  };
+export function buildSessionPlan(config: NumberTrainSessionConfig): NumberTrainPlan {
+  const maxQuantity = clampMaxQuantity(config.max_quantity);
+  const roundCount = clampRoundCount(config.round_count);
+  const random = mulberry32(config.seed);
+
+  const rounds: NumberTrainRound[] = [];
+  let previousQuantity = 0;
+
+  for (let index = 0; index < roundCount; index += 1) {
+    // Ramp: lerp from an easy start to just under the max, ±1 seeded jitter.
+    const progress = roundCount === 1 ? 1 : index / (roundCount - 1);
+    const rampTarget = 3 + progress * (maxQuantity - 4);
+    const jitter = Math.floor(random() * 3) - 1;
+    let quantity = clamp(Math.round(rampTarget) + jitter, 1, maxQuantity);
+
+    // Difficulty increases gradually: never step below an earlier round, and
+    // avoid identical back-to-back quantities where the range allows it.
+    if (quantity < previousQuantity) quantity = previousQuantity;
+    if (quantity === previousQuantity && quantity < maxQuantity) quantity += 1;
+    previousQuantity = quantity;
+
+    rounds.push({
+      kind: 'count_train',
+      quantity,
+      choices: buildChoices(quantity, maxQuantity, random),
+      prompt: COUNT_PROMPT,
+    });
+  }
+
+  const plan: NumberTrainPlan = { max_quantity: maxQuantity, rounds };
 
   const errors = validatePlan(plan);
   if (errors.length > 0) {
@@ -35,6 +63,55 @@ export function buildFoundationPlan(maxQuantity: number = 20): NumberTrainPlan {
   }
 
   return plan;
+}
+
+/** Three choices: the answer plus two neighbor distractors, seed-ordered. */
+function buildChoices(
+  quantity: number,
+  maxQuantity: number,
+  random: () => number
+): number[] {
+  const candidates = [quantity - 2, quantity - 1, quantity + 1, quantity + 2]
+    .filter((value) => value >= 0 && value <= maxQuantity && value !== quantity);
+
+  // Pick two distinct distractors by seed.
+  const distractors: number[] = [];
+  const pool = [...candidates];
+  while (distractors.length < 2 && pool.length > 0) {
+    const pick = Math.floor(random() * pool.length);
+    distractors.push(pool.splice(pick, 1)[0]);
+  }
+
+  const choices = [quantity, ...distractors];
+  // Seeded order so the correct answer's position varies between rounds.
+  for (let i = choices.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    [choices[i], choices[j]] = [choices[j], choices[i]];
+  }
+  return choices;
+}
+
+/**
+ * mulberry32 — tiny deterministic PRNG. Pure function of the seed; no
+ * dependency, no clock, so plans are reproducible in tests and on replay.
+ */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function clamp(value: number, lo: number, hi: number): number {
+  return Math.min(Math.max(value, lo), hi);
+}
+
+function clampRoundCount(value: number): number {
+  if (!Number.isInteger(value)) return 6;
+  return clamp(value, 1, 12);
 }
 
 /**

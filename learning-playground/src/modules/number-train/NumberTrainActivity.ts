@@ -1,13 +1,15 @@
 /**
- * Number Train runtime — the first real Math game (arc slice 1: foundation).
+ * Number Train runtime — the first real Math game (arc slice 2: session).
  *
- * The child rides a train of structured quantities: each car holds ten seats in
- * a stable 2×5 layout so groups of five and ten are visually obvious (7 = seven
- * occupied seats; 14 = one full car and four seats). This slice ships the shell
- * and one fixed Count-the-Train round; the deterministic multi-round session,
- * Load-the-Train, and Missing Station land in later slices. Local and
- * deterministic; no reward loops — progress will be the train reaching a
- * station, never points.
+ * The child rides one continuous train trip: a deterministic, seeded session of
+ * graduated Count-the-Train rounds. Each car holds ten seats in a stable 2×5
+ * layout so groups of five and ten are visually obvious (7 = seven occupied
+ * seats; 14 = one full car and four seats). A journey strip of station markers
+ * shows the trip's progress — the train reaching the station is the progress
+ * representation; there are no points, streaks, or timers. The trip ends in a
+ * one-time deterministic arrival with large Play Again / Home controls; replay
+ * builds a new valid plan from the next stable seed. Load-the-Train and
+ * Missing Station rounds land in later slices.
  */
 
 import type { LearningActivity } from '../../types/activity';
@@ -16,8 +18,12 @@ import type {
   AudioServiceInterface,
   SpeechServiceInterface,
 } from '../../types/runtime';
-import type { CountTrainRound, NumberTrainPlan } from './number-train.types';
-import { buildFoundationPlan } from './round-plan';
+import type {
+  CountTrainRound,
+  NumberTrainPlan,
+  NumberTrainSessionConfig,
+} from './number-train.types';
+import { buildSessionPlan } from './round-plan';
 import { trainEngineSvg, passengerSvg } from './train-art';
 
 interface NumberTrainOptions {
@@ -39,6 +45,7 @@ const SEATS_PER_CAR = 10;
 
 let container: HTMLElement | null = null;
 let cleanupHandlers: Array<() => void> = [];
+let timeoutHandles: number[] = [];
 
 export function renderNumberTrainActivity(
   parent: HTMLElement,
@@ -46,214 +53,349 @@ export function renderNumberTrainActivity(
 ): void {
   destroyNumberTrainActivity();
 
-  let plan: NumberTrainPlan;
-  try {
-    plan = buildFoundationPlan(getMaxQuantity(options.activity));
-  } catch {
-    renderActivityUnavailable(parent);
-    return;
-  }
-
-  const round = plan.rounds[0];
-  if (!round || round.kind !== 'count_train') {
-    renderActivityUnavailable(parent);
-    return;
-  }
-
-  let attemptNumber = 0;
-  let hintShown = false;
-  let isComplete = false;
-  let attemptStartedAt = Date.now();
-
+  const config = getSessionConfig(options.activity);
+  const correctFeedback = getFeedbackRule(options.activity.feedback_rules.correct);
+  const incorrectFeedback = getFeedbackRule(options.activity.feedback_rules.incorrect);
+  const hintFeedback = getFeedbackRule(options.activity.feedback_rules.hint);
   const maxAttemptsBeforeHint = getNumberRule(
     options.activity.success_rules.max_attempts_before_hint,
     2
   );
-  const correctFeedback = getFeedbackRule(options.activity.feedback_rules.correct);
-  const incorrectFeedback = getFeedbackRule(options.activity.feedback_rules.incorrect);
-  const hintFeedback = getFeedbackRule(options.activity.feedback_rules.hint);
 
   container = document.createElement('div');
   container.className = 'child-container activity-screen number-train-screen';
   container.id = `activity-${options.activity.id}`;
+  parent.appendChild(container);
 
-  const topBar = document.createElement('div');
-  topBar.className = 'activity-topbar';
+  let replayIndex = 0;
 
-  const homeButton = document.createElement('button');
-  homeButton.className = 'activity-icon-button';
-  homeButton.type = 'button';
-  homeButton.textContent = 'Home';
-  homeButton.setAttribute('aria-label', 'Return home');
-  homeButton.addEventListener('click', () => {
-    window.location.hash = '#home';
-  });
-  topBar.appendChild(homeButton);
+  startSession(replayIndex);
 
-  const repeatButton = document.createElement('button');
-  repeatButton.className = 'activity-icon-button';
-  repeatButton.type = 'button';
-  repeatButton.textContent = 'Repeat';
-  repeatButton.setAttribute('aria-label', 'Repeat prompt');
-  repeatButton.addEventListener('click', () => {
-    options.speech.repeatLast();
-  });
-  topBar.appendChild(repeatButton);
+  /**
+   * (Re)build the whole trip for one seed offset. Play Again advances the
+   * offset so every replay is a fresh but still deterministic plan.
+   */
+  function startSession(seedOffset: number): void {
+    if (!container) return;
+    runSessionCleanup();
+    container.innerHTML = '';
 
-  container.appendChild(topBar);
+    let plan: NumberTrainPlan;
+    try {
+      plan = buildSessionPlan({ ...config, seed: config.seed + seedOffset });
+    } catch {
+      renderSessionUnavailable();
+      return;
+    }
 
-  const title = document.createElement('h1');
-  title.className = 'activity-title';
-  title.textContent = options.activity.title;
-  container.appendChild(title);
+    const topBar = document.createElement('div');
+    topBar.className = 'activity-topbar';
 
-  const prompt = document.createElement('p');
-  prompt.className = 'activity-prompt';
-  prompt.textContent = round.prompt;
-  container.appendChild(prompt);
+    const homeButton = document.createElement('button');
+    homeButton.className = 'activity-icon-button';
+    homeButton.type = 'button';
+    homeButton.textContent = 'Home';
+    homeButton.setAttribute('aria-label', 'Return home');
+    homeButton.addEventListener('click', () => {
+      window.location.hash = '#home';
+    });
+    topBar.appendChild(homeButton);
 
-  const train = buildTrainVisual(round.quantity);
-  container.appendChild(train);
+    const repeatButton = document.createElement('button');
+    repeatButton.className = 'activity-icon-button';
+    repeatButton.type = 'button';
+    repeatButton.textContent = 'Repeat';
+    repeatButton.setAttribute('aria-label', 'Repeat prompt');
+    repeatButton.addEventListener('click', () => {
+      options.speech.repeatLast();
+    });
+    topBar.appendChild(repeatButton);
+    container.appendChild(topBar);
 
-  const grid = document.createElement('div');
-  grid.className = 'activity-choice-grid number-train__choices';
-  grid.setAttribute('aria-label', 'Number choices');
+    const title = document.createElement('h1');
+    title.className = 'activity-title';
+    title.textContent = options.activity.title;
+    container.appendChild(title);
 
-  const choiceButtons = new Map<number, HTMLButtonElement>();
+    // Journey strip: one station marker per round; the trip's only progress
+    // representation (no score, no points).
+    const journey = document.createElement('div');
+    journey.className = 'number-train__journey';
+    journey.setAttribute('role', 'img');
+    journey.setAttribute('aria-label', `Trip with ${plan.rounds.length} stations`);
+    const stations: HTMLElement[] = [];
+    for (let index = 0; index < plan.rounds.length; index += 1) {
+      const station = document.createElement('span');
+      station.className = 'number-train__station';
+      journey.appendChild(station);
+      stations.push(station);
+    }
+    container.appendChild(journey);
 
-  for (const choice of round.choices) {
-    const button = document.createElement('button');
-    button.className = 'activity-choice number-train__number-choice';
-    button.type = 'button';
-    button.setAttribute('aria-label', String(choice));
-    button.dataset.choiceId = String(choice);
+    const prompt = document.createElement('p');
+    prompt.className = 'activity-prompt';
+    container.appendChild(prompt);
 
-    const label = document.createElement('span');
-    label.className = 'activity-choice__label number-train__numeral';
-    label.textContent = String(choice);
-    button.appendChild(label);
+    const stage = document.createElement('div');
+    stage.className = 'number-train__stage';
+    container.appendChild(stage);
 
-    const onChoiceClick = () => {
-      if (isComplete) return;
+    const grid = document.createElement('div');
+    grid.className = 'activity-choice-grid number-train__choices';
+    grid.setAttribute('aria-label', 'Number choices');
+    container.appendChild(grid);
 
-      attemptNumber += 1;
-      const responseTimeMs = Date.now() - attemptStartedAt;
-      const isCorrect = choice === round.quantity;
+    const feedback = document.createElement('p');
+    feedback.className = 'activity-feedback';
+    feedback.setAttribute('aria-live', 'polite');
+    container.appendChild(feedback);
 
+    const completeActions = document.createElement('div');
+    completeActions.className = 'activity-complete-actions';
+    completeActions.hidden = true;
+    container.appendChild(completeActions);
+
+    renderRound(0);
+
+    function renderRound(roundIndex: number): void {
+      const round = plan.rounds[roundIndex];
+      if (!round || round.kind !== 'count_train') {
+        renderSessionUnavailable();
+        return;
+      }
+
+      let attemptNumber = 0;
+      let hintShown = false;
+      let roundDone = false;
+      let attemptStartedAt = Date.now();
+
+      for (const [index, station] of stations.entries()) {
+        station.classList.remove('is-current');
+        if (index === roundIndex) station.classList.add('is-current');
+        if (index < roundIndex) station.classList.add('is-done');
+      }
+
+      prompt.textContent = round.prompt;
+      feedback.textContent = '';
+      completeActions.hidden = true;
+      completeActions.innerHTML = '';
+
+      stage.innerHTML = '';
+      const train = buildTrainVisual(round.quantity);
+      stage.appendChild(train);
+
+      grid.innerHTML = '';
+      const choiceButtons = new Map<number, HTMLButtonElement>();
+
+      for (const choice of round.choices) {
+        const button = document.createElement('button');
+        button.className = 'activity-choice number-train__number-choice';
+        button.type = 'button';
+        button.setAttribute('aria-label', String(choice));
+        button.dataset.choiceId = String(choice);
+
+        const label = document.createElement('span');
+        label.className = 'activity-choice__label number-train__numeral';
+        label.textContent = String(choice);
+        button.appendChild(label);
+
+        const onChoiceClick = () => {
+          if (roundDone) return;
+
+          attemptNumber += 1;
+          const responseTimeMs = Date.now() - attemptStartedAt;
+          const isCorrect = choice === round.quantity;
+
+          options.onEvent(
+            createAttemptEvent({
+              options,
+              round,
+              plan,
+              roundIndex,
+              outcome: isCorrect ? 'correct' : 'incorrect',
+              selected: choice,
+              attemptNumber,
+              responseTimeMs,
+              hintShown,
+            })
+          );
+
+          if (isCorrect) {
+            roundDone = true;
+            button.classList.add('is-correct');
+            for (const other of choiceButtons.values()) other.disabled = true;
+            stations[roundIndex]?.classList.add('is-done');
+
+            const isLastRound = roundIndex === plan.rounds.length - 1;
+            showFeedback(
+              feedback,
+              `Yes! ${round.quantity} ${round.quantity === 1 ? 'passenger' : 'passengers'}. ${correctFeedback.speech ?? 'All aboard!'}`,
+              'success'
+            );
+            options.speech.speak(
+              `Yes! ${round.quantity} ${round.quantity === 1 ? 'passenger' : 'passengers'}. ${correctFeedback.speech ?? 'All aboard!'}`
+            );
+            if (correctFeedback.sound) options.audio.play(correctFeedback.sound);
+
+            if (isLastRound) {
+              finishSession(round, roundIndex, attemptNumber, responseTimeMs, hintShown);
+            } else {
+              const nextButton = document.createElement('button');
+              nextButton.className = 'child-button number-train__next';
+              nextButton.type = 'button';
+              nextButton.textContent = 'Next station';
+              nextButton.addEventListener('click', () => {
+                renderRound(roundIndex + 1);
+              });
+              completeActions.appendChild(nextButton);
+              completeActions.hidden = false;
+            }
+            return;
+          }
+
+          button.classList.add('is-incorrect');
+          const handle = window.setTimeout(() => {
+            button.classList.remove('is-incorrect');
+          }, 500);
+          timeoutHandles.push(handle);
+
+          showFeedback(
+            feedback,
+            incorrectFeedback.speech ?? 'Let us count again.',
+            'support'
+          );
+          speakAndPlay(options, incorrectFeedback);
+
+          if (!hintShown && attemptNumber >= maxAttemptsBeforeHint) {
+            hintShown = true;
+            train.classList.add('is-counting');
+            const hintText = buildCountingHint(round.quantity);
+            showFeedback(feedback, hintText, 'hint');
+            options.speech.speak(hintText);
+            if (hintFeedback.sound) options.audio.play(hintFeedback.sound);
+            if (hintFeedback.highlight_target !== false) {
+              choiceButtons.get(round.quantity)?.classList.add('is-hinted');
+            }
+
+            options.onEvent(
+              createAttemptEvent({
+                options,
+                round,
+                plan,
+                roundIndex,
+                outcome: 'hint_used',
+                selected: choice,
+                attemptNumber,
+                responseTimeMs,
+                hintShown,
+              })
+            );
+          }
+
+          attemptStartedAt = Date.now();
+        };
+
+        button.addEventListener('click', onChoiceClick);
+        cleanupHandlers.push(() => button.removeEventListener('click', onChoiceClick));
+        choiceButtons.set(choice, button);
+        grid.appendChild(button);
+      }
+
+      options.speech.speak(round.prompt);
+    }
+
+    /** One-time deterministic arrival: the trip ends, no reward loop. */
+    function finishSession(
+      round: CountTrainRound,
+      roundIndex: number,
+      attemptNumber: number,
+      responseTimeMs: number,
+      hintShown: boolean
+    ): void {
       options.onEvent(
         createAttemptEvent({
           options,
           round,
           plan,
-          outcome: isCorrect ? 'correct' : 'incorrect',
-          selected: choice,
+          roundIndex,
+          outcome: 'completed',
+          selected: round.quantity,
           attemptNumber,
           responseTimeMs,
           hintShown,
         })
       );
 
-      if (isCorrect) {
-        isComplete = true;
-        button.classList.add('is-correct');
-        for (const other of choiceButtons.values()) other.disabled = true;
-        showFeedback(feedback, correctFeedback.speech ?? 'That is right.', 'success');
-        speakAndPlay(options, correctFeedback);
+      container?.classList.add('is-arrived');
+      stage.classList.add('number-train__stage--arrived');
+      const arrivalText = getArrivalAudio(options.activity);
+      showFeedback(feedback, arrivalText, 'success');
+      options.speech.speak(arrivalText);
 
-        options.onEvent(
-          createAttemptEvent({
-            options,
-            round,
-            plan,
-            outcome: 'completed',
-            selected: choice,
-            attemptNumber,
-            responseTimeMs,
-            hintShown,
-          })
-        );
+      const playAgainButton = document.createElement('button');
+      playAgainButton.className = 'child-button number-train__play-again';
+      playAgainButton.type = 'button';
+      playAgainButton.textContent = 'Play Again';
+      playAgainButton.addEventListener('click', () => {
+        container?.classList.remove('is-arrived');
+        replayIndex += 1;
+        startSession(replayIndex);
+      });
+      completeActions.appendChild(playAgainButton);
 
-        completeActions.hidden = false;
-        return;
-      }
-
-      button.classList.add('is-incorrect');
-      window.setTimeout(() => {
-        button.classList.remove('is-incorrect');
-      }, 500);
-
-      showFeedback(feedback, incorrectFeedback.speech ?? 'Let us count again.', 'support');
-      speakAndPlay(options, incorrectFeedback);
-
-      if (!hintShown && attemptNumber >= maxAttemptsBeforeHint) {
-        hintShown = true;
-        // Structural hint: emphasize the occupied seats so the child can count
-        // them, speak the count, and highlight the matching numeral.
-        train.classList.add('is-counting');
-        showFeedback(feedback, hintFeedback.speech ?? 'Count each passenger.', 'hint');
-        speakAndPlay(options, hintFeedback);
-        if (hintFeedback.highlight_target !== false) {
-          choiceButtons.get(round.quantity)?.classList.add('is-hinted');
-        }
-
-        options.onEvent(
-          createAttemptEvent({
-            options,
-            round,
-            plan,
-            outcome: 'hint_used',
-            selected: choice,
-            attemptNumber,
-            responseTimeMs,
-            hintShown,
-          })
-        );
-      }
-
-      attemptStartedAt = Date.now();
-    };
-
-    button.addEventListener('click', onChoiceClick);
-    cleanupHandlers.push(() => button.removeEventListener('click', onChoiceClick));
-    choiceButtons.set(choice, button);
-    grid.appendChild(button);
+      const doneHomeButton = document.createElement('button');
+      doneHomeButton.className = 'child-button';
+      doneHomeButton.type = 'button';
+      doneHomeButton.textContent = 'Home';
+      doneHomeButton.addEventListener('click', () => {
+        window.location.hash = '#home';
+      });
+      completeActions.appendChild(doneHomeButton);
+      completeActions.hidden = false;
+    }
   }
 
-  container.appendChild(grid);
+  function renderSessionUnavailable(): void {
+    if (!container) return;
+    container.innerHTML = '';
 
-  const feedback = document.createElement('p');
-  feedback.className = 'activity-feedback';
-  feedback.setAttribute('aria-live', 'polite');
-  container.appendChild(feedback);
+    const title = document.createElement('h1');
+    title.className = 'activity-title';
+    title.textContent = 'Activity needs setup';
+    container.appendChild(title);
 
-  const completeActions = document.createElement('div');
-  completeActions.className = 'activity-complete-actions';
-  completeActions.hidden = true;
-
-  const doneHomeButton = document.createElement('button');
-  doneHomeButton.className = 'child-button';
-  doneHomeButton.type = 'button';
-  doneHomeButton.textContent = 'Home';
-  doneHomeButton.addEventListener('click', () => {
-    window.location.hash = '#home';
-  });
-  completeActions.appendChild(doneHomeButton);
-  container.appendChild(completeActions);
-
-  parent.appendChild(container);
-  options.speech.speak(round.prompt);
+    const homeButton = document.createElement('button');
+    homeButton.className = 'child-button';
+    homeButton.type = 'button';
+    homeButton.textContent = 'Home';
+    homeButton.addEventListener('click', () => {
+      window.location.hash = '#home';
+    });
+    container.appendChild(homeButton);
+  }
 }
 
 export function destroyNumberTrainActivity(): void {
-  for (const cleanup of cleanupHandlers) {
-    cleanup();
-  }
-  cleanupHandlers = [];
+  runSessionCleanup();
 
   if (container) {
     container.remove();
     container = null;
   }
+}
+
+function runSessionCleanup(): void {
+  for (const cleanup of cleanupHandlers) {
+    cleanup();
+  }
+  cleanupHandlers = [];
+
+  for (const handle of timeoutHandles) {
+    if (typeof window !== 'undefined' && typeof window.clearTimeout === 'function') {
+      window.clearTimeout(handle);
+    }
+  }
+  timeoutHandles = [];
 }
 
 /**
@@ -305,9 +447,36 @@ function buildTrainVisual(quantity: number): HTMLElement {
   return train;
 }
 
-function getMaxQuantity(activity: LearningActivity): number {
-  const value = activity.content.max_quantity;
-  return typeof value === 'number' ? value : 20;
+/**
+ * Structural counting hint. Up to ten: count along seat by seat. Above ten:
+ * teach the tens structure — one full car is ten, then count on.
+ */
+function buildCountingHint(quantity: number): string {
+  if (quantity <= SEATS_PER_CAR) {
+    const counts = Array.from({ length: quantity }, (_, i) => String(i + 1));
+    return `Count each passenger: ${counts.join(', ')}.`;
+  }
+  const countOn = Array.from(
+    { length: quantity - SEATS_PER_CAR + 1 },
+    (_, i) => String(SEATS_PER_CAR + i)
+  );
+  return `One full car is ten passengers. Count on: ${countOn.join(', ')}.`;
+}
+
+function getSessionConfig(activity: LearningActivity): NumberTrainSessionConfig {
+  const content = activity.content as Record<string, unknown>;
+  return {
+    seed: typeof content.seed === 'number' ? content.seed : 1,
+    round_count: typeof content.round_count === 'number' ? content.round_count : 6,
+    max_quantity: typeof content.max_quantity === 'number' ? content.max_quantity : 20,
+  };
+}
+
+function getArrivalAudio(activity: LearningActivity): string {
+  const value = activity.content.arrival_audio;
+  return typeof value === 'string'
+    ? value
+    : 'The train reached the station! What a trip!';
 }
 
 function getNumberRule(value: unknown, fallback: number): number {
@@ -347,6 +516,7 @@ function createAttemptEvent(params: {
   options: NumberTrainOptions;
   round: CountTrainRound;
   plan: NumberTrainPlan;
+  roundIndex: number;
   outcome: ActivityAttemptEvent['outcome'];
   selected: number;
   attemptNumber: number;
@@ -378,7 +548,7 @@ function createAttemptEvent(params: {
     metadata: {
       game: 'number-train',
       round_type: round.kind,
-      round_index: 1,
+      round_index: params.roundIndex + 1,
       round_total: plan.rounds.length,
       target_quantity: round.quantity,
     },
@@ -390,25 +560,4 @@ function createEventId(): string {
     return globalThis.crypto.randomUUID();
   }
   return `event-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function renderActivityUnavailable(parent: HTMLElement): void {
-  container = document.createElement('div');
-  container.className = 'child-container activity-screen';
-
-  const title = document.createElement('h1');
-  title.className = 'activity-title';
-  title.textContent = 'Activity needs setup';
-  container.appendChild(title);
-
-  const homeButton = document.createElement('button');
-  homeButton.className = 'child-button';
-  homeButton.type = 'button';
-  homeButton.textContent = 'Home';
-  homeButton.addEventListener('click', () => {
-    window.location.hash = '#home';
-  });
-  container.appendChild(homeButton);
-
-  parent.appendChild(container);
 }

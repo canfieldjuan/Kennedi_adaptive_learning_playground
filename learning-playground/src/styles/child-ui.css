@@ -569,6 +569,53 @@
   50% { transform: scale(1.14); }
 }
 
+/* Journey strip — one station marker per round; the trip's only progress
+   representation (train position, never points). */
+.number-train__journey {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 520px;
+}
+
+.number-train__station {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(58, 36, 97, 0.55);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.number-train__station.is-current {
+  border-color: rgba(58, 36, 97, 0.95);
+  box-shadow: 0 0 0 5px rgba(107, 90, 160, 0.25);
+}
+
+.number-train__station.is-done {
+  border-color: rgba(58, 36, 97, 0.95);
+  background: var(--child-accent-green);
+}
+
+.number-train__stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+
+/* One-time deterministic arrival beat: the train eases into the station. */
+.number-train__stage--arrived .number-train {
+  animation: trainArrive 900ms ease-out;
+}
+
+@keyframes trainArrive {
+  0% { transform: translateX(-14px); }
+  70% { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+
 .activity-choice-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1576,7 +1623,8 @@
   .word-builder__slot.is-filled,
   .word-builder__tile.is-wrong,
   .word-builder__picture-image.is-alive,
-  .number-train.is-counting .number-train__seat.is-occupied {
+  .number-train.is-counting .number-train__seat.is-occupied,
+  .number-train__stage--arrived .number-train {
     animation: none;
   }
 }
