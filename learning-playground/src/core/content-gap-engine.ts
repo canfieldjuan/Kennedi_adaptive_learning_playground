@@ -228,7 +228,7 @@ function getSuggestedActivityTemplate(
   }
 
   if (skill.id === 'word_building') {
-    if (contextType === 'different_prompt_mode') return 'build_word_from_spoken_prompt';
+    if (contextType === 'different_prompt_mode') return 'copy_word_from_symbolic_model';
     if (contextType === 'different_interaction_model') return 'arrange_letters_to_match_picture';
     return 'build_new_word_examples';
   }
@@ -321,7 +321,7 @@ function getSuggestedActivityPattern(
   }
 
   if (skill.id === 'word_building') {
-    if (contextType === 'different_prompt_mode') return 'Build the Word You Hear';
+    if (contextType === 'different_prompt_mode') return 'Copy the Word';
     if (contextType === 'different_interaction_model') return 'Letter Tile Build';
     if (contextType === 'delayed_review') return "Yesterday's Word Build";
     return 'New Word Build';

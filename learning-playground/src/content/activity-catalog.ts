@@ -7,6 +7,7 @@ import blendHat from './activities/blend-hat.json';
 import blendListenDog from './activities/blend-listen-dog.json';
 import buildCat from './activities/build-cat.json';
 import buildDog from './activities/build-dog.json';
+import buildModelMap from './activities/build-model-map.json';
 import buildSun from './activities/build-sun.json';
 import kennedisOrdersBanana from './activities/kennedis-orders-banana-001.json';
 import kennedisOrdersBFoods from './activities/kennedis-orders-b-foods-001.json';
@@ -48,6 +49,7 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   buildCat,
   buildDog,
   buildSun,
+  buildModelMap,
   shapesFindCircle,
   shapesFindCircleHeart,
   mathCountStarsThree,

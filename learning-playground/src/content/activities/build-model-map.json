@@ -1,0 +1,54 @@
+{
+  "id": "build-model-map",
+  "version": 1,
+  "title": "Copy the Word",
+  "domain": "phonics",
+  "skill_ids": ["word_building"],
+  "originating_brief_id": "brief-word_building-different_prompt_mode",
+  "transfer": {
+    "skill_ids": ["word_building"],
+    "context_type": "different_prompt_mode",
+    "context_id": "copy-printed-word",
+    "example_set_id": "map-model-1",
+    "prompt_mode": "symbolic"
+  },
+  "difficulty": {
+    "level": 4,
+    "choice_count": 3,
+    "distractor_strength": "medium"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 90,
+  "content": {
+    "prompt_audio": "Copy this word. Tap the matching letters in order.",
+    "word_model": "map",
+    "target_word": "map",
+    "tiles": ["p", "m", "a"]
+  },
+  "success_rules": {
+    "target_word": "map",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You built map!",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Check the word card and try the next letter.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Find the next letter on the word card.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}
