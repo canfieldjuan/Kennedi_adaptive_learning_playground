@@ -1753,6 +1753,10 @@
 
 /* The gallery shelf: the just-made piece slides in ahead of up to three
    earlier ones (all re-rendered from event descriptors — no stored images). */
+.bear-art-studio__shelf[hidden] {
+  display: none;
+}
+
 .bear-art-studio__shelf {
   display: flex;
   justify-content: center;
