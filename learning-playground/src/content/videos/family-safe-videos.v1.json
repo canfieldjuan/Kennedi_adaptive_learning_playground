@@ -3,5 +3,9 @@
   "version": 1,
   "title": "Family Safe Videos",
   "description": "Parent-approved local video manifest. Starts empty until local assets are added.",
+  "intake_mode": "repo_bundled",
+  "parent_imports_supported": false,
+  "approved_by_parent": true,
+  "evidence_role": "exposure_only",
   "items": []
 }
