@@ -2,7 +2,7 @@
  * Parent Panel — settings and local progress behind parent gate.
  */
 
-import type { StorageServiceInterface } from '../../types/runtime';
+import type { StorageServiceInterface, SpeechServiceInterface } from '../../types/runtime';
 import type { ParentSettings } from '../../types/storage';
 import type { ParentObservation } from '../../types/observations';
 import type {
@@ -24,6 +24,7 @@ import type {
   ParentReviewScheduleRecord,
 } from '../../types/mastery-records';
 import type { SkillMasteryState } from '../../types/progress';
+import { SpeechService, listSpeechVoices } from '../../core/speech';
 import {
   buildParentSessionReview,
   type ParentSessionReview,
@@ -111,6 +112,7 @@ interface SettingRow {
 interface ParentPanelContext {
   childId: string;
   sessionId: string;
+  speech?: SpeechServiceInterface;
 }
 
 export function renderParentPanel(
@@ -220,6 +222,12 @@ export function renderParentPanel(
 
   _container.appendChild(createParentGameLaunchSection());
   _container.appendChild(createParentGateSettingsSection(
+    settings,
+    storage,
+    parent,
+    context
+  ));
+  _container.appendChild(createVoiceSettingsSection(
     settings,
     storage,
     parent,
@@ -552,6 +560,124 @@ function createParentGateSettingsSection(
     destroyParentPanel();
     renderParentPanel(parent, storage, context);
   }
+}
+
+function createVoiceSettingsSection(
+  settings: ParentSettings,
+  storage: StorageServiceInterface,
+  parent: HTMLElement,
+  context: ParentPanelContext
+): HTMLElement {
+  const section = document.createElement('div');
+  section.className = 'parent-section parent-voice-settings';
+
+  const title = document.createElement('h2');
+  title.className = 'parent-section__title';
+  title.textContent = 'Voice';
+  section.appendChild(title);
+
+  const summary = document.createElement('p');
+  summary.className = 'parent-voice-settings__summary';
+  summary.textContent =
+    'Choose the spoken-prompt voice. Local device voice only — no cloud, no recording.';
+  section.appendChild(summary);
+
+  const voices = listSpeechVoices();
+
+  const form = document.createElement('form');
+  form.className = 'parent-voice-settings__form';
+
+  const label = document.createElement('label');
+  label.className = 'parent-voice-settings__label';
+  label.htmlFor = 'parent-voice-setting';
+  label.textContent = 'Prompt Voice';
+  form.appendChild(label);
+
+  const select = document.createElement('select');
+  select.className = 'parent-voice-settings__select';
+  select.id = 'parent-voice-setting';
+
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = 'Device default';
+  if (!settings.speech_voice_uri) defaultOption.selected = true;
+  select.appendChild(defaultOption);
+
+  for (const voice of voices) {
+    const option = document.createElement('option');
+    option.value = voice.voiceURI;
+    option.textContent = `${voice.name} (${voice.lang})`;
+    if (settings.speech_voice_uri === voice.voiceURI) option.selected = true;
+    select.appendChild(option);
+  }
+  form.appendChild(select);
+
+  const note = document.createElement('p');
+  note.className = 'parent-voice-settings__note';
+  note.textContent = voices.length > 0
+    ? 'Preview with Test, then Save to use it for prompts. Speech must be On.'
+    : 'Voice options load on your device; the device default is used until then.';
+  form.appendChild(note);
+
+  // Some browsers load Web Speech voices asynchronously; repopulate the picker
+  // once they arrive so the parent isn't stuck seeing only "Device default".
+  if (voices.length === 0 && typeof window !== 'undefined' && window.speechSynthesis) {
+    const synth = window.speechSynthesis;
+    const onVoicesChanged = (): void => {
+      const loaded = listSpeechVoices();
+      if (loaded.length === 0) return;
+      synth.removeEventListener('voiceschanged', onVoicesChanged);
+      for (const voice of loaded) {
+        const option = document.createElement('option');
+        option.value = voice.voiceURI;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        if (settings.speech_voice_uri === voice.voiceURI) option.selected = true;
+        select.appendChild(option);
+      }
+      note.textContent =
+        'Preview with Test, then Save to use it for prompts. Speech must be On.';
+    };
+    synth.addEventListener('voiceschanged', onVoicesChanged);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'parent-voice-settings__actions';
+
+  const testButton = document.createElement('button');
+  testButton.className = 'parent-voice-settings__test';
+  testButton.type = 'button';
+  testButton.textContent = '🔊 Test voice';
+  testButton.addEventListener('click', () => {
+    // Preview honors the parent speech toggle (silent when speech is off).
+    const preview = new SpeechService(settings.speech_enabled, select.value || undefined);
+    preview.speak('Hi! Let us play and learn.');
+  });
+  actions.appendChild(testButton);
+
+  const saveButton = document.createElement('button');
+  saveButton.className = 'parent-panel__back';
+  saveButton.type = 'submit';
+  saveButton.textContent = 'Save Voice';
+  actions.appendChild(saveButton);
+
+  form.appendChild(actions);
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const voiceURI = select.value || undefined;
+    storage.saveSettings({
+      ...settings,
+      speech_voice_uri: voiceURI,
+    });
+    // Apply to the live speech service so child prompts use the new voice
+    // immediately, not only after a page reload.
+    context.speech?.setVoiceURI?.(voiceURI);
+    destroyParentPanel();
+    renderParentPanel(parent, storage, context);
+  });
+
+  section.appendChild(form);
+  return section;
 }
 
 function createDataManagementSection(
