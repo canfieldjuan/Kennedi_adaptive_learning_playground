@@ -336,10 +336,10 @@ describe('transfer coverage', () => {
     expect(recommendation).toMatchObject({
       skill_id: 'word_building',
       suggested_context_type: 'different_prompt_mode',
-      suggested_activity_template: 'build_word_from_spoken_prompt',
+      suggested_activity_template: 'copy_word_from_symbolic_model',
       activity_variant_brief: {
         suggested_game_family: 'word_game',
-        suggested_activity_pattern: 'Build the Word You Hear',
+        suggested_activity_pattern: 'Copy the Word',
       },
     });
     expect(recommendation.suggested_activity_template).not.toContain('initial_sound');

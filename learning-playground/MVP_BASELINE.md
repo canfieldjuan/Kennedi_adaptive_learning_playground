@@ -19,6 +19,10 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   activity only after weak visual blending evidence makes transfer appropriate.
 - The ten Word-game picture cards (bear, cat, sun, moon, top, dog, fish, ball, bat, hat) are now one **cohesive illustrated set** matching Pip and the Bear Cafe — ink outline `#3a2461`, warm flat fills, friendly rounded forms (previously a mix of flat no-outline and dark-outline clip-art). Pure local-SVG asset swap: same file paths and subjects, so every activity is unchanged; no code, logic, or schema change.
 - The Word game's top rung is a **word builder**: the child spells a pictured word by tapping letter tiles into slots in order (c + a + t), each correct letter snaps into the next slot, and completing the word cheers Pip + pops the picture. It is a new tap-then-place interaction added as a **mode of the phonics Word-game runtime** (`WordBuilderActivity`, a separate runtime that reuses Pip; the matcher is untouched) — not a new top-level game type; routed by `interaction_model: tap_then_place` + `domain: phonics` (Bear Cafe's tap_then_place is matched first by its game id). Three chained builds (build-cat → build-dog → build-sun) over existing picture cards; the blending chain now climbs into them (blend-bat's "Next" → build-cat). New `word_building` curriculum skill (prerequisite blending, non-overlapping difficulty bands). Emits the same attempt events; parent-approved, no auto-difficulty routing, deterministic completion (no reward loop); the tile-snap is reduced-motion-guarded.
+- Word building now has one parent-launchable medium transfer activity that
+  replaces the picture prompt with a printed model word. The child copies
+  `map` from shuffled tiles using the same runtime; the fixed picture-building
+  chain remains unchanged.
 - Existing phonics chain steps now carry versioned difficulty grades that make
   every declared phonics rung reachable without relaxing current-rung evidence
   checks. The rung labels describe the approved word sequence rather than
@@ -31,6 +35,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Math now has a medium transfer activity that asks from a visual dot card to the matching numeral.
 - Blending now has a medium different-prompt-mode activity that asks the child
   to combine spoken sounds and choose the matching picture.
+- Word building now has a medium symbolic-prompt activity that asks the child
+  to copy a printed word with shuffled letter tiles.
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
 - Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
 - The Bear Cafe bear is now an illustrated inline-SVG character (first slice of the chosen illustrated art standard) that expresses the order arc through its face — waiting while its order is prepared, receiving at the handoff, happy on completion — tinted per caller. Local SVG only (no external assets/network/deps); the emoji `content.character.icon` stays in the data (no schema change). This supersedes the earlier emoji reaction accents.
@@ -75,6 +81,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Core evidence-bearing MVP skills now have one approved same-format/new-example transfer variant.
 - Phonics now has one approved reverse-mapping transfer variant that references its originating brief.
 - Math now has one approved different-prompt-mode transfer variant that references its originating brief.
+- Word building now has one approved symbolic different-prompt-mode transfer
+  variant that references its originating brief.
 - Parent transfer content decisions are stored locally and included in export.
 - Parent activity brief decisions are stored locally and included in export.
 - Parent mastery snapshots are stored locally when the Parent Panel reviews a skill.
