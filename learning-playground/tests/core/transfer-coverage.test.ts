@@ -345,6 +345,50 @@ describe('transfer coverage', () => {
     expect(recommendation.suggested_activity_template).not.toContain('initial_sound');
   });
 
+  test('Art gaps recommend a visual color request instead of another free-choice clone', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('color_fill');
+    expect(skill).toBeDefined();
+    const activities = [
+      makeActivity('art-color-circle', 'same_format_same_examples', 'color_fill', 'art'),
+      makeActivity(
+        'art-color-circle-cool-colors',
+        'same_format_new_examples',
+        'color_fill',
+        'art'
+      ),
+    ];
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1', 'art-color-circle', 'color_fill'),
+        makeEvent('event-2', 'art-color-circle-cool-colors', 'color_fill'),
+        makeEvent('event-3', 'art-color-circle', 'color_fill'),
+      ],
+      activities,
+    });
+
+    const recommendation = evaluateTransferCoverage(
+      'color_fill',
+      activities,
+      evidence,
+      graph
+    ).recommended_content_actions[0];
+
+    expect(recommendation).toMatchObject({
+      skill_id: 'color_fill',
+      suggested_context_type: 'different_prompt_mode',
+      suggested_activity_template: 'match_visual_color_request',
+      activity_variant_brief: {
+        suggested_game_family: 'color_lab',
+        suggested_activity_pattern: 'Color From Request Card',
+      },
+    });
+    expect(recommendation.suggested_activity_template).not.toBe(
+      'same_color_skill_new_shape'
+    );
+  });
+
   test('delayed review brief declares retention evidence threshold', () => {
     const graph = loadCurriculumGraph();
     const skill = graph.getSkill('initial_sound');

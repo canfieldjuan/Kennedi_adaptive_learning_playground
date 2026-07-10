@@ -145,6 +145,45 @@ describe('transfer activity recommendation', () => {
     });
   });
 
+  test('recommends the visual color request after both weak Art contexts succeed', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('color_fill');
+    expect(skill).toBeDefined();
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeColorEvent('event-1', 'art-color-circle', 'sunny-yellow', 'Yellow'),
+        makeColorEvent(
+          'event-2',
+          'art-color-circle-cool-colors',
+          'apple-red',
+          'Red'
+        ),
+        makeColorEvent('event-3', 'art-color-circle', 'sky-blue', 'Blue'),
+      ],
+      activities: APPROVED_ACTIVITIES,
+    });
+    const coverage = evaluateTransferCoverage(
+      'color_fill',
+      APPROVED_ACTIVITIES,
+      evidence,
+      graph
+    );
+
+    expect(coverage.status).toBe('ready_for_transfer');
+    expect(coverage.successful_strengths).toEqual(['weak']);
+    expect(getTransferActivityRecommendation({
+      skillId: 'color_fill',
+      activities: APPROVED_ACTIVITIES,
+      coverage,
+    })).toMatchObject({
+      skill_id: 'color_fill',
+      activity_id: 'art-match-blue-card',
+      activity_title: 'Match the Color Card',
+      context_type: 'different_prompt_mode',
+    });
+  });
+
   test('does not recommend a launch activity while coverage is blocked by content gap', () => {
     const graph = loadCurriculumGraph();
     const skill = graph.getSkill('counting');
@@ -309,6 +348,35 @@ function makeWordBuildingEvent(
     difficulty_level: difficultyLevel,
     choice_count: 3,
     distractor_strength: 'easy',
+    input_type: 'tap',
+    hint_shown: false,
+  };
+}
+
+function makeColorEvent(
+  eventId: string,
+  activityId: string,
+  colorId: string,
+  colorLabel: string
+): ActivityAttemptEvent {
+  return {
+    event_id: eventId,
+    session_id: 'session-1',
+    child_id: 'local-child',
+    activity_id: activityId,
+    activity_version: 1,
+    skill_ids: ['color_fill'],
+    timestamp: `2026-01-01T12:00:0${eventId.slice(-1)}.000Z`,
+    prompt_text: 'Pick a color for the circle.',
+    outcome: 'correct',
+    selected_choice_id: colorId,
+    selected_answer: colorLabel,
+    correct_answer: colorLabel,
+    attempt_number: 1,
+    response_time_ms: 1100,
+    difficulty_level: 1,
+    choice_count: 4,
+    distractor_strength: 'none',
     input_type: 'tap',
     hint_shown: false,
   };

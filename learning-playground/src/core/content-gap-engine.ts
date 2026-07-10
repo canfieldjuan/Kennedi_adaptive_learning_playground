@@ -247,6 +247,7 @@ function getSuggestedActivityTemplate(
 
   if (skill.domain === 'art') {
     if (contextType === 'parent_observed_real_world') return 'parent_observed_color_choice';
+    if (contextType === 'different_prompt_mode') return 'match_visual_color_request';
     return 'same_color_skill_new_shape';
   }
 

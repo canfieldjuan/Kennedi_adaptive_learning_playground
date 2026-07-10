@@ -45,13 +45,43 @@ export function renderColoringActivity(
     return;
   }
 
+  const configuredTargetColorId = getOptionalStringContent(
+    options.activity.content.target_color_id
+  );
+  const successTargetColorId = getOptionalStringContent(
+    options.activity.success_rules.correct_color_id
+  );
+  const hasTargetMode = configuredTargetColorId !== undefined ||
+    successTargetColorId !== undefined;
+  const targetColor = configuredTargetColorId === undefined
+    ? undefined
+    : colors.find((color) => color.id === configuredTargetColorId);
+
+  if (
+    hasTargetMode &&
+    (
+      targetColor === undefined ||
+      successTargetColorId === undefined ||
+      successTargetColorId !== configuredTargetColorId
+    )
+  ) {
+    renderColoringUnavailable(parent);
+    return;
+  }
+
   let selectedColor: ColorOption | null = null;
   let isComplete = false;
   let attemptNumber = 0;
-  const startedAt = Date.now();
+  let hintShown = false;
+  let attemptStartedAt = Date.now();
 
   const correctFeedback = getFeedbackRule(options.activity.feedback_rules.correct);
+  const incorrectFeedback = getFeedbackRule(options.activity.feedback_rules.incorrect);
   const hintFeedback = getFeedbackRule(options.activity.feedback_rules.hint);
+  const maxAttemptsBeforeHint = getNumberRule(
+    options.activity.success_rules.max_attempts_before_hint,
+    2
+  );
   const defaultColor = getStringContent(
     options.activity.content.default_color,
     '#ffffff'
@@ -59,7 +89,10 @@ export function renderColoringActivity(
   const promptText = getPrompt(options.activity);
 
   container = document.createElement('div');
-  container.className = 'child-container activity-screen coloring-screen';
+  container.className = [
+    'child-container activity-screen coloring-screen',
+    targetColor ? 'coloring-screen--request' : '',
+  ].filter(Boolean).join(' ');
   container.id = `activity-${options.activity.id}`;
 
   const topBar = document.createElement('div');
@@ -95,6 +128,20 @@ export function renderColoringActivity(
   prompt.className = 'activity-prompt';
   prompt.textContent = promptText;
   container.appendChild(prompt);
+
+  if (targetColor) {
+    const requestCard = document.createElement('div');
+    requestCard.className = 'coloring-request-card';
+    requestCard.setAttribute('role', 'img');
+    requestCard.setAttribute('aria-label', `Match the ${targetColor.label} color`);
+
+    const requestSwatch = document.createElement('span');
+    requestSwatch.className = 'coloring-request-card__swatch';
+    requestSwatch.style.setProperty('--request-color', targetColor.value);
+    requestSwatch.setAttribute('aria-hidden', 'true');
+    requestCard.appendChild(requestSwatch);
+    container.appendChild(requestCard);
+  }
 
   const swatchGrid = document.createElement('div');
   swatchGrid.className = 'coloring-swatches';
@@ -153,12 +200,61 @@ export function renderColoringActivity(
     }
 
     attemptNumber += 1;
-    isComplete = true;
     shapeButton.style.setProperty('--shape-fill', selectedColor.value);
+    const responseTimeMs = Date.now() - attemptStartedAt;
+    const isCorrect = targetColor === undefined || selectedColor.id === targetColor.id;
+
+    if (!isCorrect) {
+      shapeButton.classList.add('is-wrong');
+      window.setTimeout(() => shapeButton.classList.remove('is-wrong'), 500);
+      options.onEvent(createColorEvent({
+        activity: options.activity,
+        childId: options.childId,
+        sessionId: options.sessionId,
+        outcome: 'incorrect',
+        promptText,
+        attemptNumber,
+        responseTimeMs,
+        color: selectedColor,
+        targetColor,
+        hintShown,
+      }));
+
+      showFeedback(
+        feedback,
+        incorrectFeedback.speech ?? 'Check the color card and try again.',
+        'support'
+      );
+      speakAndPlay(options, incorrectFeedback);
+
+      if (!hintShown && attemptNumber >= maxAttemptsBeforeHint) {
+        hintShown = true;
+        swatchButtons.get(targetColor.id)?.classList.add('is-hinted');
+        showFeedback(feedback, hintFeedback.speech ?? 'Find the matching color.', 'hint');
+        speakAndPlay(options, hintFeedback);
+        options.onEvent(createColorEvent({
+          activity: options.activity,
+          childId: options.childId,
+          sessionId: options.sessionId,
+          outcome: 'hint_used',
+          promptText,
+          attemptNumber,
+          responseTimeMs,
+          color: selectedColor,
+          targetColor,
+          hintShown: true,
+        }));
+      }
+
+      attemptStartedAt = Date.now();
+      return;
+    }
+
+    isComplete = true;
+    shapeButton.classList.remove('is-wrong');
     shapeButton.classList.add('is-complete');
     disableSwatches(swatchButtons);
 
-    const responseTimeMs = Date.now() - startedAt;
     options.onEvent(createColorEvent({
       activity: options.activity,
       childId: options.childId,
@@ -168,6 +264,8 @@ export function renderColoringActivity(
       attemptNumber,
       responseTimeMs,
       color: selectedColor,
+      targetColor,
+      hintShown,
     }));
     options.onEvent(createColorEvent({
       activity: options.activity,
@@ -178,6 +276,8 @@ export function renderColoringActivity(
       attemptNumber,
       responseTimeMs,
       color: selectedColor,
+      targetColor,
+      hintShown,
     }));
 
     showFeedback(feedback, correctFeedback.speech ?? 'You colored it.', 'success');
@@ -247,6 +347,16 @@ function getStringContent(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback;
 }
 
+function getOptionalStringContent(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim().length > 0
+    ? value.trim()
+    : undefined;
+}
+
+function getNumberRule(value: unknown, fallback: number): number {
+  return typeof value === 'number' ? value : fallback;
+}
+
 function getFeedbackRule(value: unknown): FeedbackRule {
   if (typeof value !== 'object' || value === null) return {};
 
@@ -300,6 +410,8 @@ function createColorEvent(params: {
   attemptNumber: number;
   responseTimeMs: number;
   color: ColorOption;
+  targetColor?: ColorOption;
+  hintShown: boolean;
 }): ActivityAttemptEvent {
   return {
     event_id: createEventId(),
@@ -312,18 +424,26 @@ function createColorEvent(params: {
     prompt_text: params.promptText,
     outcome: params.outcome,
     selected_choice_id: params.color.id,
+    ...(params.targetColor ? { correct_choice_id: params.targetColor.id } : {}),
     selected_answer: params.color.label,
-    correct_answer: params.color.label,
+    correct_answer: params.targetColor?.label ?? params.color.label,
     attempt_number: params.attemptNumber,
     response_time_ms: params.responseTimeMs,
     difficulty_level: params.activity.difficulty.level,
     choice_count: params.activity.difficulty.choice_count,
     distractor_strength: params.activity.difficulty.distractor_strength,
     input_type: 'tap',
-    hint_shown: false,
+    hint_shown: params.hintShown,
     metadata: {
       color_label: params.color.label,
       color_value: params.color.value,
+      ...(params.targetColor
+        ? {
+            target_color_id: params.targetColor.id,
+            target_color_label: params.targetColor.label,
+            target_color_value: params.targetColor.value,
+          }
+        : {}),
     },
   };
 }

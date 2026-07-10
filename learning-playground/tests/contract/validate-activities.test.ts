@@ -233,6 +233,32 @@ describe('activity schema contract', () => {
     expect(hasDifferentPromptModeContent(mismatchedModel)).toBe(false);
   });
 
+  test('approved visual color request implements its brief honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'art-match-blue-card'
+    ));
+
+    expect(activity).toMatchObject({
+      title: 'Match the Color Card',
+      skill_ids: ['color_fill'],
+      originating_brief_id: 'brief-color_fill-different_prompt_mode',
+      transfer: {
+        context_type: 'different_prompt_mode',
+        context_id: 'match-color-request-card',
+        example_set_id: 'blue-request-1',
+        prompt_mode: 'visual',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasDifferentPromptModeContent(activity!)).toBe(true);
+
+    const mismatchedRule = {
+      ...activity!,
+      success_rules: { ...activity!.success_rules, correct_color_id: 'berry-pink' },
+    };
+    expect(hasDifferentPromptModeContent(mismatchedRule)).toBe(false);
+  });
+
   test('approved Bear Cafe category-sort activity implements its brief honestly', () => {
     const activity = allActivities.find((item) => (
       item.id === 'kennedis-orders-b-foods-001'
@@ -302,6 +328,9 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
   if (activity.domain === 'phonics' && activity.skill_ids.includes('word_building')) {
     return hasSymbolicWordBuildingPrompt(activity);
   }
+  if (activity.domain === 'art' && activity.skill_ids.includes('color_fill')) {
+    return hasVisualColorRequest(activity);
+  }
   if (activity.domain !== 'math') return false;
 
   const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
@@ -331,6 +360,31 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
     correctChoice?.label === String(targetQuantity) &&
     choices.length >= 2 &&
     choices.every((choice) => /^\d+$/.test(choice.label))
+  );
+}
+
+function hasVisualColorRequest(activity: ActivityJson): boolean {
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const targetColorId = getString(activity.content.target_color_id);
+  const successColorId = getString(activity.success_rules.correct_color_id);
+  const shape = getString(activity.content.shape);
+  const colors = getRecordArray(activity.content.colors);
+  const matchingColors = colors.filter((color) => getString(color.id) === targetColorId);
+  const targetLabel = matchingColors.length === 1
+    ? getString(matchingColors[0].label).toLowerCase()
+    : '';
+
+  return (
+    activity.interaction_model === 'color_fill' &&
+    activity.transfer.prompt_mode === 'visual' &&
+    promptAudio.includes('color card') &&
+    targetColorId.length > 0 &&
+    successColorId === targetColorId &&
+    shape.length > 0 &&
+    colors.length >= 3 &&
+    matchingColors.length === 1 &&
+    targetLabel.length > 0 &&
+    !promptAudio.includes(targetLabel)
   );
 }
 

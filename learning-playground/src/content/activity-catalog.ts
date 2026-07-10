@@ -1,6 +1,7 @@
 import type { LearningActivity } from '../types/activity';
 import artColorCircleCoolColors from './activities/art-color-circle-cool-colors.json';
 import artColorCircle from './activities/art-color-circle.json';
+import artMatchBlueCard from './activities/art-match-blue-card.json';
 import blendBat from './activities/blend-bat.json';
 import blendCat from './activities/blend-cat.json';
 import blendHat from './activities/blend-hat.json';
@@ -61,6 +62,7 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   numberTrain,
   artColorCircle,
   artColorCircleCoolColors,
+  artMatchBlueCard,
   kennedisOrdersBanana,
   kennedisOrdersTwoCookies,
   kennedisOrdersPinkBerries,

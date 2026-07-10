@@ -80,9 +80,18 @@ describe('mobile child UI contract', () => {
   });
 
   test('reflows coloring palette and shape side by side in phone landscape', () => {
+    expect(childUiCss).toContain('"title title"');
+    expect(childUiCss).toContain('"prompt prompt"');
+    expect(childUiCss).toContain('.coloring-screen--request');
+    expect(childUiCss).toContain('"title request"');
+    expect(childUiCss).toContain('"prompt request"');
     expect(childUiCss).toContain('"swatches shape"');
     expect(childUiCss).toContain('grid-template-columns: repeat(2, minmax(64px, 1fr))');
     expect(childUiCss).toContain('width: min(42dvh, 180px)');
     expect(childUiCss).toContain('min-height: 58px');
+  });
+
+  test('keeps color-request mismatch motion guarded', () => {
+    expect(childUiCss).toContain('.coloring-shape.is-wrong,');
   });
 });
