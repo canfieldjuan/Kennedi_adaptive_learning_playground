@@ -67,9 +67,14 @@ export function renderTapChoiceActivity(
   const incorrectFeedback = getFeedbackRule(options.activity.feedback_rules.incorrect);
   const hintFeedback = getFeedbackRule(options.activity.feedback_rules.hint);
   const promptText = getPrompt(options.activity);
+  const promptImages = getPromptImages(options.activity);
+  const promptVisualLayout = getPromptVisualLayout(options.activity, promptImages);
 
   container = document.createElement('div');
-  container.className = 'child-container activity-screen';
+  container.className = [
+    'child-container activity-screen',
+    promptVisualLayout === 'scene' ? 'activity-screen--scene-prompt' : '',
+  ].filter(Boolean).join(' ');
   container.id = `activity-${options.activity.id}`;
 
   const topBar = document.createElement('div');
@@ -107,10 +112,12 @@ export function renderTapChoiceActivity(
   prompt.textContent = promptText;
   container.appendChild(prompt);
 
-  const promptImages = getPromptImages(options.activity);
   if (promptImages.length > 0) {
     const promptVisual = document.createElement('div');
-    promptVisual.className = 'activity-prompt-visual';
+    promptVisual.className = [
+      'activity-prompt-visual',
+      promptVisualLayout === 'scene' ? 'activity-prompt-visual--scene' : '',
+    ].filter(Boolean).join(' ');
     promptVisual.setAttribute('aria-hidden', 'true');
 
     for (const imagePath of promptImages) {
@@ -321,6 +328,15 @@ function getPromptImages(activity: LearningActivity): string[] {
   return promptImages.filter((imagePath): imagePath is string => (
     typeof imagePath === 'string'
   ));
+}
+
+function getPromptVisualLayout(
+  activity: LearningActivity,
+  promptImages: string[]
+): 'scene' | undefined {
+  return activity.content.prompt_visual_layout === 'scene' && promptImages.length === 1
+    ? 'scene'
+    : undefined;
 }
 
 function getNumberRule(value: unknown, fallback: number): number {

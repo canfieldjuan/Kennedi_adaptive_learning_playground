@@ -389,6 +389,55 @@ describe('transfer coverage', () => {
     );
   });
 
+  test('spatial gaps recommend a scene prompt instead of another isolated shape card', () => {
+    const graph = loadCurriculumGraph();
+    const skill = graph.getSkill('shape_match');
+    expect(skill).toBeDefined();
+    const activities = [
+      makeActivity(
+        'shapes-find-circle',
+        'same_format_same_examples',
+        'shape_match',
+        'spatial'
+      ),
+      makeActivity(
+        'shapes-find-circle-heart',
+        'same_format_new_examples',
+        'shape_match',
+        'spatial'
+      ),
+    ];
+    const evidence = buildEvidenceForSkill({
+      skill: skill!,
+      events: [
+        makeEvent('event-1', 'shapes-find-circle', 'shape_match'),
+        makeEvent('event-2', 'shapes-find-circle-heart', 'shape_match'),
+        makeEvent('event-3', 'shapes-find-circle', 'shape_match'),
+      ],
+      activities,
+    });
+
+    const recommendation = evaluateTransferCoverage(
+      'shape_match',
+      activities,
+      evidence,
+      graph
+    ).recommended_content_actions[0];
+
+    expect(recommendation).toMatchObject({
+      skill_id: 'shape_match',
+      suggested_context_type: 'different_prompt_mode',
+      suggested_activity_template: 'find_shape_in_scene',
+      activity_variant_brief: {
+        suggested_game_family: 'dress_up_stage',
+        suggested_activity_pattern: 'Find Shape in Scene',
+      },
+    });
+    expect(recommendation.suggested_activity_template).not.toBe(
+      'same_shape_new_examples'
+    );
+  });
+
   test('delayed review brief declares retention evidence threshold', () => {
     const graph = loadCurriculumGraph();
     const skill = graph.getSkill('initial_sound');

@@ -259,6 +259,35 @@ describe('activity schema contract', () => {
     expect(hasDifferentPromptModeContent(mismatchedRule)).toBe(false);
   });
 
+  test('approved spatial scene prompt implements its brief honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'shapes-roof-in-scene'
+    ));
+
+    expect(activity).toMatchObject({
+      title: 'Roof Shape Match',
+      skill_ids: ['shape_match'],
+      originating_brief_id: 'brief-shape_match-different_prompt_mode',
+      transfer: {
+        context_type: 'different_prompt_mode',
+        context_id: 'identify-shape-in-scene',
+        example_set_id: 'little-house-roof-1',
+        prompt_mode: 'mixed',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasDifferentPromptModeContent(activity!)).toBe(true);
+
+    const answerInPrompt = {
+      ...activity!,
+      content: {
+        ...activity!.content,
+        prompt_audio: 'Find the triangle roof.',
+      },
+    };
+    expect(hasDifferentPromptModeContent(answerInPrompt)).toBe(false);
+  });
+
   test('approved Bear Cafe category-sort activity implements its brief honestly', () => {
     const activity = allActivities.find((item) => (
       item.id === 'kennedis-orders-b-foods-001'
@@ -331,6 +360,9 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
   if (activity.domain === 'art' && activity.skill_ids.includes('color_fill')) {
     return hasVisualColorRequest(activity);
   }
+  if (activity.domain === 'spatial' && activity.skill_ids.includes('shape_match')) {
+    return hasShapeScenePrompt(activity);
+  }
   if (activity.domain !== 'math') return false;
 
   const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
@@ -385,6 +417,41 @@ function hasVisualColorRequest(activity: ActivityJson): boolean {
     matchingColors.length === 1 &&
     targetLabel.length > 0 &&
     !promptAudio.includes(targetLabel)
+  );
+}
+
+function hasShapeScenePrompt(activity: ActivityJson): boolean {
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const promptImages = getStringArray(activity.content.prompt_images);
+  const promptVisualLayout = getString(activity.content.prompt_visual_layout);
+  const targetShape = getString(activity.content.target_shape).toLowerCase();
+  const scene = isRecord(activity.content.prompt_scene)
+    ? activity.content.prompt_scene
+    : {};
+  const sceneImage = getString(scene.image);
+  const targetObjectLabel = getString(scene.target_object_label).toLowerCase();
+  const sceneTargetShape = getString(scene.target_shape_id).toLowerCase();
+  const choices = getChoices(activity);
+  const correctChoiceId = getString(activity.success_rules.correct_choice_id);
+  const correctChoice = choices.find((choice) => (
+    choice.id === correctChoiceId || choice.correct === true
+  ));
+
+  return (
+    activity.interaction_model === 'tap_to_match' &&
+    activity.transfer.prompt_mode === 'mixed' &&
+    promptVisualLayout === 'scene' &&
+    promptImages.length === 1 &&
+    promptImages[0] === sceneImage &&
+    sceneImage.startsWith('/assets/images/') &&
+    targetObjectLabel.length > 0 &&
+    promptAudio.includes(targetObjectLabel) &&
+    targetShape.length > 0 &&
+    sceneTargetShape === targetShape &&
+    correctChoice?.id === targetShape &&
+    correctChoice.label.toLowerCase() === targetShape &&
+    choices.length >= 3 &&
+    !promptAudio.includes(targetShape)
   );
 }
 

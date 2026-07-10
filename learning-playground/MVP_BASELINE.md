@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.30 Number Train skills baseline
+Version: v0.3.31 spatial scene transfer baseline
 
 ## Current Working MVP
 
@@ -42,6 +42,9 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   to copy a printed word with shuffled letter tiles.
 - Art now has a medium visual-prompt activity that asks the child to match a
   request-card swatch before filling the circle.
+- Spatial practice now has one parent-launchable medium scene-prompt activity.
+  The child sees a local illustrated house and identifies the triangle roof,
+  crossing from isolated circle cards to a new target shape in context.
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
 - Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
 - The Bear Cafe bear is now an illustrated inline-SVG character (first slice of the chosen illustrated art standard) that expresses the order arc through its face — waiting while its order is prepared, receiving at the handoff, happy on completion — tinted per caller. Local SVG only (no external assets/network/deps); the emoji `content.character.icon` stays in the data (no schema change). This supersedes the earlier emoji reaction accents.
@@ -90,6 +93,8 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   variant that references its originating brief.
 - Art now has one approved visual different-prompt-mode transfer variant that
   references its originating brief.
+- Spatial now has one approved scene-based different-prompt-mode transfer
+  variant that references its originating brief.
 - Parent transfer content decisions are stored locally and included in export.
 - Parent activity brief decisions are stored locally and included in export.
 - Parent mastery snapshots are stored locally when the Parent Panel reviews a skill.
