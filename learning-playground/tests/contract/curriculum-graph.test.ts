@@ -17,6 +17,8 @@ const activities = APPROVED_ACTIVITIES as LearningActivity[];
 const PHONICS_SKILL_IDS = (curriculumData as CurriculumGraphData).skills
   .filter((skill) => skill.domain === 'phonics')
   .map((skill) => skill.id);
+const ALL_SKILL_IDS = (curriculumData as CurriculumGraphData).skills
+  .map((skill) => skill.id);
 
 describe('curriculum graph contract', () => {
   test('every existing activity skill exists in the curriculum graph', () => {
@@ -95,6 +97,24 @@ describe('curriculum graph contract', () => {
       activities,
       PHONICS_SKILL_IDS
     )).toEqual([]);
+  });
+
+  test('pins every current non-phonics approved-content gap', () => {
+    expect(validateCurriculumActivityCoverage(
+      curriculumData as CurriculumGraphData,
+      activities,
+      ALL_SKILL_IDS
+    )).toEqual([
+      'Skill vocabulary level 2 has no approved activity in difficulty band 4-5',
+      'Skill counting level 1 has no approved activity in difficulty band 2-3',
+      'Skill subitizing level 2 has no approved activity in difficulty band 4-5',
+      'Skill numeral_recognition level 1 has no approved activity in difficulty band 2-3',
+      'Skill numeral_recognition level 2 has no approved activity in difficulty band 4-5',
+      'Skill quantity_construction level 1 has no approved activity in difficulty band 2-3',
+      'Skill quantity_construction level 2 has no approved activity in difficulty band 4-5',
+      'Skill number_sequence level 1 has no approved activity in difficulty band 2-3',
+      'Skill number_sequence level 2 has no approved activity in difficulty band 4-5',
+    ]);
   });
 
   test('reports a phonics rung with no approved activity in its difficulty band', () => {

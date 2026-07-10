@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.42 Bear Art Studio baseline
+Version: v0.3.43 difficulty coverage truth baseline
 
 ## Current Working MVP
 
@@ -86,6 +86,11 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Recent Attempts includes Bear Cafe delivered-order completion evidence so parent review can show the order prompt, selected tray, correct order, outcome, hint state, and response time after child-started Cafe play without duplicating its matching tray-check success, hiding a later unfinished identical order, or crowding out earlier struggle evidence.
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Parent Guidance includes skill graph evidence, mastery status, suggested next action, evidence summary, graph rule, and source references.
+- Parent Guidance now joins each stored current curriculum rung to the approved
+  activity catalog. It shows whether that rung has playable content, its
+  inclusive difficulty band, approved activity count, playable/missing rung
+  counts, and explicitly labels missing activity coverage as an app content gap
+  rather than a judgment about the child.
 - Parent Guidance shows transfer quality so weak-only coverage is visible to the adult.
 - Parent Guidance shows coverage-driven activity briefs when richer transfer evidence is missing.
 - Parent Panel groups latest activity brief decisions into an approved/held/archived design queue.
