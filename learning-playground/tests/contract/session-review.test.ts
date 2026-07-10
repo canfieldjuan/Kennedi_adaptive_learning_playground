@@ -152,7 +152,7 @@ describe('parent session review contract', () => {
     });
   });
 
-  test('keeps the version reference attached to the selected repeat metric', () => {
+  test('selects the repeat metric by activity id and version together', () => {
     const events: ActivityAttemptEvent[] = [
       makeEvent({ activityId: 'cafe', activityVersion: 1, outcome: 'correct', skillIds: ['counting'] }),
       makeEvent({ activityId: 'cafe', activityVersion: 1, outcome: 'completed', skillIds: ['counting'] }),
@@ -165,8 +165,11 @@ describe('parent session review contract', () => {
 
     const review = buildParentSessionReview(events, [], 'session-1');
 
-    expect(review.most_repeated_activity).toBe('cafe');
-    expect(review.most_repeated_activity_ref?.activity_id).toBe('cafe');
+    expect(review.most_repeated_activity).toBe('words');
+    expect(review.most_repeated_activity_ref).toEqual({
+      activity_id: 'words',
+      activity_version: 1,
+    });
   });
 });
 

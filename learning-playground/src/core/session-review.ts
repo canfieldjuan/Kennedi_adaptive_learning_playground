@@ -46,7 +46,7 @@ export function buildParentSessionReview(
   const sessionObservations = observations
     .filter((observation) => observation.session_id === sessionId)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
-  const mostRepeatedActivity = getMostRepeatedActivity(sessionEvents);
+  const mostRepeatedActivityRef = getMostRepeatedActivityReference(sessionEvents);
 
   return {
     session_id: sessionId,
@@ -68,11 +68,8 @@ export function buildParentSessionReview(
         .filter((event) => event.outcome === 'abandoned')
         .map((event) => event.activity_id)
     ),
-    most_repeated_activity: mostRepeatedActivity,
-    most_repeated_activity_ref: getMostRepeatedActivityReference(
-      sessionEvents,
-      mostRepeatedActivity
-    ),
+    most_repeated_activity: mostRepeatedActivityRef?.activity_id,
+    most_repeated_activity_ref: mostRepeatedActivityRef,
     parent_notes: sessionObservations,
   };
 }
@@ -114,34 +111,13 @@ function buildAccuracyBySkill(
     .sort((a, b) => a.skill_id.localeCompare(b.skill_id));
 }
 
-function getMostRepeatedActivity(
-  events: ActivityAttemptEvent[]
-): string | undefined {
-  const counts = new Map<string, number>();
-
-  for (const event of events) {
-    if (event.metadata?.event_name === 'food_selected') continue;
-    counts.set(event.activity_id, (counts.get(event.activity_id) ?? 0) + 1);
-  }
-
-  return [...counts.entries()]
-    .sort(([activityA, countA], [activityB, countB]) => (
-      countB - countA || activityA.localeCompare(activityB)
-    ))[0]?.[0];
-}
-
 function getMostRepeatedActivityReference(
-  events: ActivityAttemptEvent[],
-  activityId: string | undefined
+  events: ActivityAttemptEvent[]
 ): ActivityReviewReference | undefined {
-  if (!activityId) return undefined;
   const counts = new Map<string, { reference: ActivityReviewReference; count: number }>();
 
   for (const event of events) {
-    if (
-      event.activity_id !== activityId ||
-      event.metadata?.event_name === 'food_selected'
-    ) continue;
+    if (event.metadata?.event_name === 'food_selected') continue;
     const key = `${event.activity_id}\u0000${event.activity_version}`;
     const current = counts.get(key);
     counts.set(key, {

@@ -6,6 +6,7 @@ import activitySchema from '../../src/contracts/activity.schema.json';
 import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import { appendEvent, type EventLogStorage } from '../../src/core/event-log';
 import { loadCurriculumGraph } from '../../src/core/curriculum-graph';
+import { eventAppliesToSkill } from '../../src/core/skill-outcomes';
 import {
   BEAR_CAFE_CHILD_CONTROL_LABELS,
   createKennedisOrdersEvent,
@@ -609,6 +610,50 @@ describe("Kennedi's Orders adapter contract", () => {
         reason: 'first_sound_sort',
       },
     ]);
+  });
+
+  test('partial quantity selections stay out of counted skill accuracy', () => {
+    const activity = getActivity('kennedis-orders-two-cookies-001');
+    const content = getRequiredContent(activity);
+    const partialEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { cookie: 3 } },
+      attemptNumber: 1,
+      responseTimeMs: 700,
+      hintShown: false,
+      eventName: 'food_selected',
+      selectedChoiceId: 'cookie',
+      selectedAnswer: 'cookie',
+    });
+    const fulfilledEvent = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'correct',
+      tray: { foodCounts: { cookie: 4 } },
+      attemptNumber: 1,
+      responseTimeMs: 900,
+      hintShown: false,
+      eventName: 'food_selected',
+      selectedChoiceId: 'cookie',
+      selectedAnswer: 'cookie',
+    });
+
+    expect(partialEvent.skill_outcomes).toEqual([]);
+    expect(eventAppliesToSkill(partialEvent, 'counting')).toBe(false);
+    expect(fulfilledEvent.skill_outcomes).toEqual([
+      {
+        skill_id: 'counting',
+        outcome: 'correct',
+        reason: 'food_selected',
+      },
+    ]);
+    expect(eventAppliesToSkill(fulfilledEvent, 'counting')).toBe(true);
   });
 
   test('completed bake time event marks the cafe shift complete', () => {
