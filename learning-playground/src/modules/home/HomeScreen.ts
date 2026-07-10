@@ -6,12 +6,12 @@
 
 import type { SpeechServiceInterface } from '../../types/runtime';
 import { createCafeBackdrop } from './cafe-scene';
+import { HOME_CARD_ICONS } from './home-icons';
 
 let _container: HTMLElement | null = null;
 
 interface HomeOption {
   id: string;
-  icon: string;
   label: string;
   color: string;
   speechLabel: string;
@@ -21,7 +21,6 @@ interface HomeOption {
 const HOME_OPTIONS: HomeOption[] = [
   {
     id: 'home-words',
-    icon: '📖',
     label: 'Words',
     color: 'pink',
     speechLabel: 'Words',
@@ -29,7 +28,6 @@ const HOME_OPTIONS: HomeOption[] = [
   },
   {
     id: 'home-cafe',
-    icon: '☎️',
     label: 'Cafe',
     color: 'blue',
     speechLabel: 'Bear Cafe',
@@ -37,7 +35,6 @@ const HOME_OPTIONS: HomeOption[] = [
   },
   {
     id: 'home-math',
-    icon: '🔢',
     label: 'Math',
     color: 'green',
     speechLabel: 'Math',
@@ -45,7 +42,6 @@ const HOME_OPTIONS: HomeOption[] = [
   },
   {
     id: 'home-art',
-    icon: '🎨',
     label: 'Art',
     color: 'orange',
     speechLabel: 'Art',
@@ -84,9 +80,11 @@ export function renderHomeScreen(
     card.setAttribute('aria-label', option.label);
     card.setAttribute('role', 'link');
 
+    // Illustrated icon in the arc standard (visual arc stage 6) — the cafe
+    // and math icons are the games' own art, so the card previews the game.
     const icon = document.createElement('span');
     icon.className = 'home-card__icon';
-    icon.textContent = option.icon;
+    icon.innerHTML = HOME_CARD_ICONS[option.id] ?? '';
     icon.setAttribute('aria-hidden', 'true');
 
     const label = document.createElement('span');

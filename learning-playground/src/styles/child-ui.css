@@ -110,30 +110,45 @@
   outline-offset: 4px;
 }
 
-/* Card color variants */
+/* Card color variants — warm cream cards in the illustrated system (visual
+   arc cohesion pass), so the grid belongs to the cafe backdrop behind it. */
 .home-card[data-color="pink"] {
   border-color: var(--child-accent-pink);
-  background: linear-gradient(135deg, var(--child-bg-card) 0%, rgba(253, 121, 168, 0.15) 100%);
+  background:
+    linear-gradient(135deg, #fffdf7 0%, rgba(253, 121, 168, 0.2) 100%),
+    #fffdf7;
 }
 .home-card[data-color="blue"] {
   border-color: var(--child-accent-blue);
-  background: linear-gradient(135deg, var(--child-bg-card) 0%, rgba(116, 185, 255, 0.15) 100%);
+  background:
+    linear-gradient(135deg, #fffdf7 0%, rgba(116, 185, 255, 0.24) 100%),
+    #fffdf7;
 }
 .home-card[data-color="green"] {
   border-color: var(--child-accent-green);
-  background: linear-gradient(135deg, var(--child-bg-card) 0%, rgba(0, 184, 148, 0.15) 100%);
+  background:
+    linear-gradient(135deg, #fffdf7 0%, rgba(0, 184, 148, 0.18) 100%),
+    #fffdf7;
 }
 .home-card[data-color="orange"] {
   border-color: var(--child-accent-orange);
-  background: linear-gradient(135deg, var(--child-bg-card) 0%, rgba(225, 112, 85, 0.15) 100%);
+  background:
+    linear-gradient(135deg, #fffdf7 0%, rgba(225, 112, 85, 0.2) 100%),
+    #fffdf7;
 }
 
-/* — Card icon — */
+/* — Card icon (inline SVG in the arc standard) — */
 .home-card__icon {
-  font-size: 3.5rem;
-  line-height: 1;
-  filter: drop-shadow(0 4px 8px var(--child-shadow));
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 4px 8px rgba(58, 36, 97, 0.2));
   animation: float 3s ease-in-out infinite;
+}
+
+.home-card__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .home-card:nth-child(2) .home-card__icon { animation-delay: 0.5s; }
@@ -146,7 +161,7 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--child-text-soft);
+  color: #3a2461;
 }
 
 /* — Child button — */
@@ -180,15 +195,17 @@
 }
 
 /* — Greeting — */
+/* Ink on the cream cafe wall — the old gradient-clip text vanished there
+   (visual arc cohesion pass). */
 .home-greeting {
   font-size: 1.75rem;
   font-weight: 900;
   text-align: center;
   margin-bottom: var(--space-lg);
-  background: linear-gradient(135deg, var(--child-accent-yellow), var(--child-accent-pink));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #3a2461;
+  text-shadow:
+    0 0 10px rgba(252, 239, 221, 0.95),
+    0 2px 14px rgba(252, 239, 221, 0.9);
 }
 
 /* — Parent gate hint — */
@@ -1381,6 +1398,48 @@
   }
 }
 
+/* Shape garden — the direct-route Shapes lane gets a light garden tint only
+   (visual arc cohesion pass; the audit ruled out a scene module here): soft
+   garden air, ink text, warm cream cards. Other tap-choice domains keep the
+   dark surface. */
+.activity-screen--shape-garden {
+  background:
+    linear-gradient(180deg, rgba(233, 243, 226, 0.97), rgba(246, 250, 240, 0.95)),
+    var(--child-bg);
+}
+
+.activity-screen--shape-garden .activity-icon-button {
+  background: rgba(58, 36, 97, 0.12);
+  color: #3a2461;
+}
+
+.activity-screen--shape-garden .activity-title {
+  color: #3a2461;
+}
+
+.activity-screen--shape-garden .activity-prompt {
+  color: rgba(58, 36, 97, 0.75);
+}
+
+.activity-screen--shape-garden .activity-feedback {
+  color: #3a2461;
+}
+
+.activity-screen--shape-garden .activity-prompt-visual {
+  border: 4px solid rgba(58, 36, 97, 0.25);
+  background: #fffdf7;
+}
+
+.activity-screen--shape-garden .activity-choice {
+  border-color: rgba(58, 36, 97, 0.25);
+  background: #fffdf7;
+  box-shadow: 0 8px 20px rgba(58, 36, 97, 0.14);
+}
+
+.activity-screen--shape-garden .activity-choice__label {
+  color: #3a2461;
+}
+
 /* — Video Vault — */
 .video-vault-screen {
   justify-content: flex-start;
@@ -2013,9 +2072,14 @@
   position: absolute;
   left: 50%;
   top: 42%;
-  font-size: 1.4rem;
   opacity: 0; /* hidden until the burst plays; stays hidden under reduced motion */
   animation: cafeCelebrateBurst 1400ms ease-out var(--delay, 0ms);
+}
+
+.bear-cafe-celebrate__piece .bear-cafe-celebrate-svg {
+  display: block;
+  width: 22px;
+  height: 22px;
 }
 
 @keyframes cafeCelebrateBurst {
@@ -2217,6 +2281,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .home-card__icon,
   .bear-cafe-phone__button,
   .bear-cafe-phone__icon--ringing,
   .bear-cafe-ready,
@@ -2398,7 +2463,8 @@
   }
 
   .home-card__icon {
-    font-size: clamp(2.5rem, 12vw, 3.5rem);
+    width: clamp(44px, 12vw, 64px);
+    height: clamp(44px, 12vw, 64px);
   }
 
   .home-card__label {
@@ -2878,7 +2944,8 @@
   }
 
   .home-card__icon {
-    font-size: 2.75rem;
+    width: 48px;
+    height: 48px;
   }
 
   .home-card__label {
@@ -3218,7 +3285,8 @@
   }
 
   .home-card__icon {
-    font-size: 4.5rem;
+    width: 80px;
+    height: 80px;
   }
 
   .home-card__label {

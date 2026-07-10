@@ -21,6 +21,7 @@ import type {
 } from '../../src/types/runtime';
 
 const PLATING_DURATION_MS = 800;
+const HANDOFF_DURATION_MS = 900;
 
 describe('bear cafe environment', () => {
   let timers: Array<{ cb: () => void; ms: number }> = [];
@@ -99,6 +100,32 @@ describe('bear cafe environment', () => {
     expect(completions).toHaveLength(1);
     expect(completions[0]?.metadata?.event_name).toBe('order_delivered');
     expect(findByClass(root, 'bear-cafe-environment')?.dataset.stage).toBe('handoff');
+  });
+
+  test('the completion celebration bursts illustrated confetti, not emoji', () => {
+    const { root } = setup();
+
+    findByAria(root, 'Baby Polar Bear is calling')?.click();
+    findByAria(root, 'Choose banana, none on tray')?.click();
+    findByAria(root, 'Check order')?.click();
+    timers.find((timer) => timer.ms === PLATING_DURATION_MS)?.cb();
+    findByAria(root, 'Deliver order')?.click();
+    timers.find((timer) => timer.ms === HANDOFF_DURATION_MS)?.cb();
+
+    const celebrate = findByClass(root, 'bear-cafe-celebrate');
+    expect(celebrate).toBeDefined();
+    expect(celebrate?.attributes['aria-hidden']).toBe('true');
+
+    // Same deterministic burst — 12 pieces — but every piece is inline SVG
+    // in the arc standard; no emoji glyph remains in the polished scene.
+    const pieces = findAllByClass(root, 'bear-cafe-celebrate__piece');
+    expect(pieces).toHaveLength(12);
+    for (const piece of pieces) {
+      expect(piece.innerHTML).toContain('bear-cafe-celebrate-svg');
+    }
+    expect(collectMarkup(celebrate!)).not.toMatch(
+      /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u
+    );
   });
 });
 

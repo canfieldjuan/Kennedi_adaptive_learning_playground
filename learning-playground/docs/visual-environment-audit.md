@@ -265,3 +265,26 @@ Each game PR carries its own work contract, scene plan traceability, tests
 (ownership / aria-hidden / pointer-events / unchanged behavior /
 reduced-motion / no external URLs), and the capture set the environment
 contract requires.
+
+---
+
+## Cohesion pass — verification (arc complete, v0.3.40)
+
+Delivered in order: contract + audit (#57), Bear Cafe (#58, v0.3.35), Word
+Workshop (#60, v0.3.36), Art studio (#61, v0.3.38), Number Train station
+(#62, v0.3.39), cohesion pass (v0.3.40). Cross-game checks at close:
+
+- **One language everywhere:** ink `#3a2461` outlines, warm flat fills,
+  rounded forms across all five scenes, the home grid, and the Shapes tint;
+  every scene layer inert (`aria-hidden`, `pointer-events: none`) and
+  emoji-free (home icons and the cafe celebration were the last two emoji
+  surfaces in child mode; both are inline SVG now).
+- **Home harmonized, not rebuilt:** warm cream/ink cards with accent borders
+  over the cafe backdrop; the cafe and math icons are the games' own art, so
+  each card previews its game; greeting legible ink on the cream wall.
+- **Shapes:** light garden tint on the spatial-domain tap-choice lane only —
+  no scene module, no home addition, per this audit's decision.
+- **Per-scene distinctness preserved:** cafe interior / warm workshop /
+  neutral studio / open-air station read as different places in one world.
+- Capture sets under `docs/captures/`: `bear-cafe/`, `word-workshop/`,
+  `art-studio/`, `train-station/`, `cohesion/`.

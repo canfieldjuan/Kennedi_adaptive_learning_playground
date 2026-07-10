@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.39 Number Train station environment baseline
+Version: v0.3.40 visual cohesion baseline (visual arc complete)
 
 ## Current Working MVP
 
@@ -8,7 +8,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 
 ## Child Modules
 
-- Home shell with exactly four primary choices: Words, Cafe, Math, Art.
+- Home shell with exactly four primary choices: Words, Cafe, Math, Art. The cards are warm cream/ink with accent borders over the cafe backdrop, and each carries a small illustrated inline-SVG icon (book, cafe phone, train engine, paint palette — the cafe and math icons are the games' own art). No emoji remains anywhere in child mode (the Bear Cafe completion now bursts illustrated SVG confetti); the direct-route Shapes lane gets a light "shape garden" tint (spatial domain only). Structure, routes, labels, speech-on-tap, and tap targets unchanged (visual arc stage 6).
 - The three Words modes now play inside **Pip's Word Workshop** (visual arc stage 3): one game-owned illustrated scene (soft warm wall, window, plain-spine bookshelf, pin-board with abstract shapes, rug and prop corners — inert: `aria-hidden`, `pointer-events: none`, and guaranteed letter-free so nothing reads as a choice) behind the matcher, blending, and word builder. Cards hang on a warm display board, sound chips sit on a rail, builder slots sit on a table board, and text/cards switch to ink-on-warm; minor props hide on phones; no gameplay, event, or hint changes and no new animation.
 - Words activity: initial-sound phonics matcher. It runs on its own `phonics-match` runtime module (the foundation of the Word-game arc), not the shared generic tap-choice grid; Math/Shapes still use tap-choice.
 - The Word game is now a multi-word session: after a correct match the child gets a "Next word" button that advances through a fixed, parent-approved chain of initial-sound words — /b/ bear → /m/ moon → /s/ sun → /c/ cat → /t/ top — each a new illustrated card with the same tap-a-picture mechanic (`same_format_new_examples` transfer). The chain is hand-authored via `content.next_activity_id` (no auto-difficulty routing, no reward loop); the last word ends on Home only. Parent transfer recommendation is unchanged (the reverse_mapping "rich transfer" activity is still recommended first).
