@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.21 Word-game card-art cohesion baseline
+Version: v0.3.22 Voice tuning baseline
 
 ## Current Working MVP
 
@@ -50,6 +50,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent Guidance can show a concrete approved transfer activity and let the parent start or hold it.
 - Local progress export and reset.
 - Local parent gate phrase setting.
+- Voice setting: the parent can choose the spoken-prompt voice from the device's installed speech voices (with a Test-voice preview), stored locally as `speech_voice_uri`. Child voice stays on-device browser speech synthesis (no cloud, no model voice, no recording); when the chosen voice is unavailable or unset, the device default is used; the existing Speech Prompts on/off still applies.
 - Active parent-approved guidance state by skill, applied only to supported tap-choice activities.
 - Applied Guidance Review summarizes local attempts after active guidance affects a supported activity.
 - Curriculum graph and mastery engine reason over prerequisites, transfer, retention, and review timing.

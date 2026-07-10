@@ -64,7 +64,7 @@ for (const activity of APPROVED_ACTIVITIES) {
 // — Services —
 const storage = new StorageService();
 const settings = storage.getSettings();
-const speech = new SpeechService(settings.speech_enabled);
+const speech = new SpeechService(settings.speech_enabled, settings.speech_voice_uri);
 const audio = new AudioService(settings.sound_enabled);
 const sessionId = createSessionId();
 const childId = 'local-child';
