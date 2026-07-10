@@ -652,20 +652,64 @@
   font-size: 2.4rem;
 }
 
-@media (max-width: 768px) {
+/* Compact Number Train for phones (portrait and short landscape): the display
+   train, journey, and number path shrink; the tappable numeral choices and
+   load controls stay on their shared child-safe sizing. */
+@media (max-width: 768px),
+  (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  .number-train {
+    gap: 6px;
+  }
+
   .number-train__engine {
-    width: 72px;
-    height: 72px;
+    width: 64px;
+    height: 64px;
+  }
+
+  .number-train__car {
+    padding: 6px;
+    margin-bottom: 8px;
   }
 
   .number-train__seat {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
   }
 
   .number-train__passenger-svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .number-train__journey {
+    gap: var(--space-sm);
+  }
+
+  .number-train__station {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+  }
+
+  .number-train__engine--path {
+    width: 48px;
+    height: 48px;
+  }
+
+  .number-train__path-stop {
+    min-width: 46px;
+    min-height: 52px;
+    font-size: 1.35rem;
+  }
+
+  .number-train__numeral {
+    font-size: 1.9rem;
+  }
+
+  .number-train__choices .number-train__load-control,
+  .number-train__choices .number-train__check {
+    min-height: 72px;
+    font-size: 1.1rem;
   }
 }
 
