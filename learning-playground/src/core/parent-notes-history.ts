@@ -1,8 +1,12 @@
 import type { ParentObservation } from '../types/observations';
+import { formatSkillLabel } from './parent-review-format';
+import { formatParentObservationCategory } from './parent-observation-signals';
 
 export interface ParentNoteHistoryItem {
   observation_id: string;
   note: string;
+  category_label: string;
+  skill_labels: string[];
   created_at: string;
   updated_at?: string;
   timestamp_label: string;
@@ -19,6 +23,8 @@ export function buildParentNoteHistory(
     .map((observation) => ({
       observation_id: observation.observation_id,
       note: observation.note,
+      category_label: formatParentObservationCategory(observation.category),
+      skill_labels: (observation.skill_ids ?? []).map(formatSkillLabel),
       created_at: observation.created_at,
       updated_at: observation.updated_at,
       timestamp_label: formatNoteTimestamp(observation.updated_at ?? observation.created_at),

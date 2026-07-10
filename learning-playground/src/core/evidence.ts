@@ -4,6 +4,7 @@ import {
   type LearningActivity,
 } from '../types/activity';
 import type { ParentObservation } from '../types/observations';
+import { isStructuredMasteryObservationForSkill } from './parent-observation-signals';
 import type { CurriculumSkill } from './curriculum-graph';
 import {
   eventAppliesToSkill,
@@ -243,6 +244,10 @@ function buildParentObservationEvidence(
     skill.label.toLowerCase(),
   ];
   const matchingObservations = observations.filter((observation) => {
+    if (observation.category !== undefined) {
+      return isStructuredMasteryObservationForSkill(observation, skill.id);
+    }
+
     const note = observation.note.toLowerCase();
     return skillTerms.some((term) => note.includes(term));
   });
@@ -255,7 +260,7 @@ function buildParentObservationEvidence(
     source_ids: matchingObservations.map((observation) => observation.observation_id),
     source_type: 'parent_observation',
     activity_ids: [],
-    summary: `${matchingObservations.length} parent observation(s) mention this skill.`,
+    summary: `${matchingObservations.length} parent observation(s) reference this skill.`,
     strength: 1,
     timestamp: matchingObservations[matchingObservations.length - 1]?.created_at,
   };

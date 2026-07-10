@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.36 Word Workshop baseline
+Version: v0.3.37 structured parent observation signals baseline
 
 ## Current Working MVP
 
@@ -70,7 +70,7 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Parent Panel includes a Bear Cafe launch button for parent-led play.
 - Settings summary for display name, difficulty mode, session length, audio, speech, video, and enabled domains.
 - Local progress summary by skill.
-- Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and parent notes.
+- Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and structured parent observations.
 - Recent Attempts includes Bear Cafe delivered-order completion evidence so parent review can show the order prompt, selected tray, correct order, outcome, hint state, and response time after child-started Cafe play without duplicating its matching tray-check success, hiding a later unfinished identical order, or crowding out earlier struggle evidence.
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Parent Guidance includes skill graph evidence, mastery status, suggested next action, evidence summary, graph rule, and source references.
@@ -122,11 +122,16 @@ The Learning Playground is a local-first adaptive learning playground for a pres
 - Progress and mastery evidence prefer per-skill outcomes when present and fall back to the global event outcome for older local events.
 - Progress level starts at the lowest declared curriculum rung, promotes only from evidence in the current rung's difficulty band, and clamps current-version out-of-range values to the declared max rung.
 - Stored progress profiles are normalized on read, so stale pre-v0.3.10 raw levels are translated onto the current curriculum ladder before Parent Panel review or export.
-- Parent observations are stored in localStorage and included in export.
+- Parent observations are stored in localStorage and included in export. New
+  observations can carry a parent-only fit/support category and optional skill
+  scope; legacy free-text notes remain valid.
 - Parent difficulty action history and active guidance state are stored in localStorage and included in export.
 - Attempt event metadata records when parent-approved guidance affected a supported activity.
 - Applied-fit review is derived from local event metadata and active guidance records.
-- Mastery evidence is derived from local events and parent observations, with source IDs cited.
+- Mastery evidence is derived from local events and parent observations, with
+  source IDs cited. Structured observation evidence is limited to tagged
+  independent success or real-world transfer; difficulty and frustration
+  signals never become positive mastery evidence.
 - Transfer coverage and parent transfer decisions are local-first and export with progress data.
 - Parent-started transfer activity decisions include the selected activity when available.
 - Parent activity brief decisions, mastery snapshots, and review schedule records are local-first and export with progress data.

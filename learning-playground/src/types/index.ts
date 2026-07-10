@@ -30,7 +30,7 @@ export type {
   SessionSummary,
 } from './progress';
 
-export type { ParentObservation } from './observations';
+export type { ParentObservation, ParentObservationCategory } from './observations';
 
 export type {
   ParentDifficultyAction,
