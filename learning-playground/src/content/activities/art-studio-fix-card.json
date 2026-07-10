@@ -1,0 +1,67 @@
+{
+  "id": "art-studio-fix-card",
+  "version": 1,
+  "title": "Fix the Art Card",
+  "domain": "art",
+  "skill_ids": ["color_fill"],
+  "originating_brief_id": "brief-color_fill-different_prompt_mode",
+  "transfer": {
+    "skill_ids": ["color_fill"],
+    "context_type": "different_prompt_mode",
+    "context_id": "fix-the-art",
+    "example_set_id": "fix-star-card-1",
+    "prompt_mode": "visual"
+  },
+  "difficulty": {
+    "level": 3,
+    "choice_count": 4,
+    "distractor_strength": "medium"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 75,
+  "content": {
+    "game": "bear-art-studio",
+    "art_mode": "fix_art",
+    "character": { "id": "baby-polar-bear", "name": "Baby Polar Bear" },
+    "prompt_audio": "Oops! One thing on the card does not match Baby Polar Bear's picture. Fix it.",
+    "regions": [
+      { "id": "star", "shape": "star", "color_id": "sunny-yellow" },
+      { "id": "heart", "shape": "heart", "color_id": "berry-pink" },
+      { "id": "flower", "shape": "flower", "color_id": "leaf-green" }
+    ],
+    "wrong_region_id": "star",
+    "wrong_color_id": "tomato-red",
+    "colors": [
+      { "id": "sunny-yellow", "label": "Yellow", "value": "#fdcb6e" },
+      { "id": "berry-pink", "label": "Pink", "value": "#fd79a8" },
+      { "id": "leaf-green", "label": "Green", "value": "#00b894" },
+      { "id": "tomato-red", "label": "Red", "value": "#e05d5d" }
+    ]
+  },
+  "success_rules": {
+    "completion_action": "fix_mismatch",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You fixed it! Now it matches.",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Look at Baby Polar Bear's picture. Which one looks different?",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Find the one that does not match, then paint it.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

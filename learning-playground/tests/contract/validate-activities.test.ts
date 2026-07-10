@@ -143,8 +143,12 @@ describe('activity schema contract', () => {
         continue;
       }
 
+      if (activity.transfer.context_type === 'different_interaction_model') {
+        expect(hasDifferentInteractionModelContent(activity)).toBe(true);
+        continue;
+      }
+
       expect([
-        'different_interaction_model',
         'delayed_review',
         'parent_observed_real_world',
       ]).not.toContain(activity.transfer.context_type);
@@ -409,7 +413,11 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
     return hasSymbolicWordBuildingPrompt(activity);
   }
   if (activity.domain === 'art' && activity.skill_ids.includes('color_fill')) {
-    return hasVisualColorRequest(activity);
+    return (
+      hasBearArtStudioVisualColorRequest(activity) ||
+      hasBearArtStudioFixCard(activity) ||
+      hasVisualColorRequest(activity)
+    );
   }
   if (activity.domain === 'spatial' && activity.skill_ids.includes('shape_match')) {
     return hasShapeScenePrompt(activity);
@@ -465,6 +473,86 @@ function hasLanguageVocabularyResponse(activity: ActivityJson): boolean {
     declaredCorrectChoices.length === 1 &&
     correctChoice === declaredCorrectChoices[0] &&
     !promptAudio.includes(correctChoice.label.toLowerCase())
+  );
+}
+
+function isBearArtStudioActivity(activity: ActivityJson): boolean {
+  return getString(activity.content.game) === 'bear-art-studio';
+}
+
+// Bear Art Studio color request: the asked color arrives only on the bear's
+// visual request card — it is in the palette exactly once and its label is
+// never spoken in the prompt, so the child must decode it visually.
+function hasBearArtStudioVisualColorRequest(activity: ActivityJson): boolean {
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const targetColorId = getString(activity.content.target_color_id);
+  const colors = getRecordArray(activity.content.colors);
+  const matchingColors = colors.filter((color) => getString(color.id) === targetColorId);
+  const targetLabel = matchingColors.length === 1
+    ? getString(matchingColors[0].label).toLowerCase()
+    : '';
+
+  return (
+    isBearArtStudioActivity(activity) &&
+    getString(activity.content.art_mode) === 'color_request' &&
+    activity.interaction_model === 'tap_then_place' &&
+    activity.transfer.prompt_mode === 'visual' &&
+    targetColorId.length > 0 &&
+    getString(activity.success_rules.correct_color_id) === targetColorId &&
+    colors.length >= 3 &&
+    matchingColors.length === 1 &&
+    targetLabel.length > 0 &&
+    !promptAudio.includes(targetLabel)
+  );
+}
+
+// Bear Art Studio fix card: the mismatch is discoverable only by comparing
+// the board to the request card — exactly one region painted wrong and the
+// intended color never named in the prompt.
+function hasBearArtStudioFixCard(activity: ActivityJson): boolean {
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const regions = getRecordArray(activity.content.regions);
+  const wrongRegionId = getString(activity.content.wrong_region_id);
+  const wrongColorId = getString(activity.content.wrong_color_id);
+  const colors = getRecordArray(activity.content.colors);
+  const wrongRegion = regions.find((region) => getString(region.id) === wrongRegionId);
+  const intendedColorId = wrongRegion ? getString(wrongRegion.color_id) : '';
+  const intendedColors = colors.filter((color) => getString(color.id) === intendedColorId);
+  const intendedLabel = intendedColors.length === 1
+    ? getString(intendedColors[0].label).toLowerCase()
+    : '';
+
+  return (
+    isBearArtStudioActivity(activity) &&
+    getString(activity.content.art_mode) === 'fix_art' &&
+    activity.interaction_model === 'tap_then_place' &&
+    activity.transfer.prompt_mode === 'visual' &&
+    regions.length >= 2 &&
+    wrongRegion !== undefined &&
+    wrongColorId.length > 0 &&
+    wrongColorId !== intendedColorId &&
+    colors.some((color) => getString(color.id) === wrongColorId) &&
+    intendedLabel.length > 0 &&
+    !promptAudio.includes(intendedLabel)
+  );
+}
+
+// The only honest different_interaction_model content so far: counting
+// exercised by constructing a sticker quantity on the art board (checked
+// only on Check), versus the numeral-tap and train baselines.
+function hasDifferentInteractionModelContent(activity: ActivityJson): boolean {
+  const targetQuantity = getNumber(activity.content.target_quantity);
+  const slotCount = getNumber(activity.content.slot_count);
+
+  return (
+    isBearArtStudioActivity(activity) &&
+    getString(activity.content.art_mode) === 'quantity_decorate' &&
+    activity.interaction_model === 'tap_then_place' &&
+    activity.skill_ids.includes('counting') &&
+    Number.isInteger(targetQuantity) &&
+    targetQuantity > 0 &&
+    Number.isInteger(slotCount) &&
+    slotCount >= targetQuantity
   );
 }
 

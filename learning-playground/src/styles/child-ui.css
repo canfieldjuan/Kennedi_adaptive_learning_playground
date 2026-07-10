@@ -1398,6 +1398,295 @@
   }
 }
 
+/* Bear Art Studio — the Art game. Rides the coloring-studio scene (the
+   container carries both classes) so the all-neutral rule holds: color
+   belongs to the palette, the stickers, and the child's art. */
+.bear-art-studio__requester {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.bear-art-studio__bear {
+  display: block;
+  width: 76px;
+  flex-shrink: 0;
+}
+
+.bear-art-studio__bear svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.bear-art-studio__request {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 68px;
+  padding: var(--space-sm) var(--space-md);
+  border: 4px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-lg);
+  background: #fffdf7;
+  box-shadow: 0 6px 18px rgba(58, 36, 97, 0.14);
+}
+
+.bear-art-studio__request-item {
+  display: block;
+  width: 46px;
+}
+
+.bear-art-studio__request-item--mini {
+  width: 34px;
+}
+
+.bear-art-studio__request-item svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.bear-art-studio__request-dot {
+  display: block;
+  width: 30px;
+  aspect-ratio: 1;
+  border: 3px solid rgba(58, 36, 97, 0.4);
+  border-radius: var(--radius-round);
+  background: var(--request-dot-color, #ffffff);
+}
+
+.bear-art-studio__board {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+
+/* The art surface: a big cream card the child paints and decorates. */
+.bear-art-studio__card {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+  width: min(92vw, 440px);
+  padding: var(--space-lg);
+  border: 5px solid rgba(58, 36, 97, 0.4);
+  border-radius: var(--radius-lg);
+  background: var(--art-card-color, #fbf8f1);
+  box-shadow: 0 10px 30px rgba(58, 36, 97, 0.18);
+  transition: background var(--transition-normal);
+}
+
+.bear-art-studio__card--fix {
+  display: flex;
+  justify-content: center;
+}
+
+.bear-art-studio__card.is-complete {
+  box-shadow:
+    0 0 0 10px rgba(0, 184, 148, 0.16),
+    0 14px 42px rgba(58, 36, 97, 0.2);
+}
+
+.bear-art-studio__slot {
+  display: grid;
+  place-items: center;
+  min-height: 76px;
+  padding: var(--space-xs);
+  border: 3px dashed rgba(58, 36, 97, 0.35);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.65);
+  transition: transform var(--transition-bounce);
+}
+
+.bear-art-studio__slot:hover,
+.bear-art-studio__slot:focus-visible {
+  transform: scale(1.05);
+  outline: none;
+  border-color: rgba(58, 36, 97, 0.6);
+}
+
+.bear-art-studio__slot.is-filled {
+  border-style: solid;
+  border-color: rgba(58, 36, 97, 0.5);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.bear-art-studio__slot.is-hinted {
+  border-color: var(--child-accent-yellow);
+  box-shadow: 0 0 0 5px rgba(253, 203, 110, 0.35);
+}
+
+.bear-art-studio__slot svg {
+  display: block;
+  width: 52px;
+  height: 52px;
+}
+
+/* Color-request mode: one big paintable subject on the easel. */
+.bear-art-studio__subject {
+  width: min(64vw, 250px);
+  padding: var(--space-md);
+  border: 5px solid rgba(58, 36, 97, 0.4);
+  border-radius: var(--radius-lg);
+  background: #fbf8f1;
+  box-shadow: 0 10px 30px rgba(58, 36, 97, 0.18);
+  transition: transform var(--transition-bounce);
+}
+
+.bear-art-studio__subject:hover,
+.bear-art-studio__subject:focus-visible {
+  transform: scale(1.03);
+  outline: 4px solid var(--child-accent-yellow);
+  outline-offset: 5px;
+}
+
+.bear-art-studio__subject.is-complete {
+  box-shadow:
+    0 0 0 10px rgba(0, 184, 148, 0.16),
+    0 14px 42px rgba(58, 36, 97, 0.2);
+}
+
+.bear-art-studio__subject svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Fix mode: the painted regions the child compares against the card. */
+.bear-art-studio__region {
+  width: 104px;
+  padding: var(--space-sm);
+  border: 3px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  transition: transform var(--transition-bounce);
+}
+
+.bear-art-studio__region:hover,
+.bear-art-studio__region:focus-visible {
+  transform: scale(1.06);
+  outline: none;
+  border-color: rgba(58, 36, 97, 0.35);
+}
+
+.bear-art-studio__region.is-hinted {
+  border-color: var(--child-accent-yellow);
+  box-shadow: 0 0 0 5px rgba(253, 203, 110, 0.35);
+}
+
+.bear-art-studio__region.is-complete {
+  border-color: var(--child-accent-green);
+  box-shadow: 0 0 0 6px rgba(0, 184, 148, 0.2);
+}
+
+.bear-art-studio__region svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Pattern mode: the scarf strip; the next segment invites the tap. */
+.bear-art-studio__scarf {
+  display: flex;
+  gap: 6px;
+  padding: var(--space-md);
+  border: 4px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-lg);
+  background: #fffdf7;
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.16);
+}
+
+.bear-art-studio__segment {
+  display: block;
+  width: 52px;
+  height: 76px;
+  border: 3px dashed rgba(58, 36, 97, 0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.bear-art-studio__segment.is-filled {
+  border-style: solid;
+  border-color: rgba(58, 36, 97, 0.5);
+  background: var(--segment-color, #ffffff);
+}
+
+.bear-art-studio__segment.is-next {
+  border-color: var(--child-accent-yellow);
+  box-shadow: 0 0 0 5px rgba(253, 203, 110, 0.35);
+}
+
+.bear-art-studio__scarf.is-complete {
+  box-shadow:
+    0 0 0 8px rgba(0, 184, 148, 0.16),
+    0 10px 30px rgba(58, 36, 97, 0.2);
+}
+
+/* Supply tray: swatches reuse the coloring palette chips; stickers get
+   the same large, forgiving targets. */
+.bear-art-studio__tray {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.bear-art-studio__stickers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.bear-art-studio__sticker {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  aspect-ratio: 1;
+  border: 3px solid rgba(58, 36, 97, 0.25);
+  border-radius: var(--radius-md);
+  background: #fffdf7;
+  box-shadow: 0 6px 18px rgba(58, 36, 97, 0.14);
+  transition: transform var(--transition-bounce);
+}
+
+.bear-art-studio__sticker:hover,
+.bear-art-studio__sticker:focus-visible {
+  transform: scale(1.06);
+  outline: none;
+}
+
+.bear-art-studio__sticker.is-selected {
+  border-color: rgba(58, 36, 97, 0.7);
+  box-shadow:
+    0 0 0 5px rgba(58, 36, 97, 0.14),
+    0 8px 22px rgba(58, 36, 97, 0.18);
+}
+
+.bear-art-studio__sticker svg {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+.bear-art-studio__actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+  min-height: 56px;
+}
+
+/* Gentle miss: the same soft bounce the rest of the app uses. */
+.bear-art-studio__subject.is-wrong,
+.bear-art-studio__card.is-wrong,
+.bear-art-studio__segment.is-wrong,
+.bear-art-studio__region.is-wrong {
+  animation: gentleBounce 480ms ease;
+}
+
 /* Shape garden — the direct-route Shapes lane gets a light garden tint only
    (visual arc cohesion pass; the audit ruled out a scene module here): soft
    garden air, ink text, warm cream cards. Other tap-choice domains keep the
@@ -2306,6 +2595,10 @@
   .word-builder__model.is-alive,
   .coloring-shape.is-wrong,
   .coloring-studio .coloring-shape.is-complete .coloring-shape__circle::after,
+  .bear-art-studio__subject.is-wrong,
+  .bear-art-studio__card.is-wrong,
+  .bear-art-studio__segment.is-wrong,
+  .bear-art-studio__region.is-wrong,
   .number-train.is-counting .number-train__seat.is-occupied,
   .number-train__seat.is-next-hint,
   .number-train__path.is-walking .number-train__path-stop,
@@ -2914,6 +3207,58 @@
 
   .coloring-studio .coloring-swatches {
     padding: var(--space-sm);
+  }
+
+  .bear-art-studio__bear {
+    width: 56px;
+  }
+
+  .bear-art-studio__request {
+    min-height: 56px;
+  }
+
+  .bear-art-studio__request-item {
+    width: 36px;
+  }
+
+  .bear-art-studio__request-item--mini {
+    width: 26px;
+  }
+
+  .bear-art-studio__card {
+    gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+
+  .bear-art-studio__slot {
+    min-height: 60px;
+  }
+
+  .bear-art-studio__slot svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .bear-art-studio__subject {
+    width: min(52vw, 190px);
+  }
+
+  .bear-art-studio__region {
+    width: 82px;
+  }
+
+  .bear-art-studio__segment {
+    width: 42px;
+    height: 60px;
+  }
+
+  .bear-art-studio__sticker {
+    width: 58px;
+  }
+
+  .bear-art-studio__sticker svg {
+    width: 38px;
+    height: 38px;
   }
 
   .bear-cafe-delivery,

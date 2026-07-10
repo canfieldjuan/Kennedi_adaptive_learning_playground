@@ -48,8 +48,13 @@ describe('parent interpretation contract', () => {
     expect(interpretation.transfer_missing_context_types).not.toContain(
       'different_prompt_mode'
     );
-    expect(interpretation.transfer_missing_context_types).toContain(
+    // Bear Art Studio's sticker-count activity now covers
+    // different_interaction_model for counting; only retention remains.
+    expect(interpretation.transfer_missing_context_types).not.toContain(
       'different_interaction_model'
+    );
+    expect(interpretation.transfer_missing_context_types).toContain(
+      'delayed_review'
     );
   });
 

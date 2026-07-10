@@ -1,0 +1,59 @@
+{
+  "id": "art-studio-three-stars",
+  "version": 1,
+  "title": "Three Stars for Mama",
+  "domain": "math",
+  "skill_ids": ["counting"],
+  "originating_brief_id": "brief-counting-different_interaction_model",
+  "transfer": {
+    "skill_ids": ["counting"],
+    "context_type": "different_interaction_model",
+    "context_id": "sticker-count-decorate",
+    "example_set_id": "three-stars-card",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 1,
+    "choice_count": 6,
+    "distractor_strength": "easy"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 75,
+  "content": {
+    "game": "bear-art-studio",
+    "art_mode": "quantity_decorate",
+    "character": { "id": "mama-bear", "name": "Mama Bear" },
+    "prompt_audio": "Mama Bear wants three stars on her card. Add three stars, then press Check.",
+    "target_sticker_id": "star",
+    "target_quantity": 3,
+    "slot_count": 6,
+    "next_activity_id": "art-studio-pattern-scarf",
+    "next_label": "Next art"
+  },
+  "success_rules": {
+    "completion_action": "check_quantity",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "Three stars! Mama Bear loves it.",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let's count the stars together.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Count each star as you tap. Mama Bear wants three.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

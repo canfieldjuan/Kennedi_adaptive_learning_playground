@@ -45,7 +45,7 @@ const HOME_OPTIONS: HomeOption[] = [
     label: 'Art',
     color: 'orange',
     speechLabel: 'Art',
-    route: '#activity/art-color-circle',
+    route: '#activity/art-studio-free-decorate',
   },
 ];
 
