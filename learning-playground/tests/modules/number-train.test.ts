@@ -61,7 +61,7 @@ describe('number train routing', () => {
     const routes: Record<string, string> = {
       'home-words': '#activity/phonics-find-b',
       'home-cafe': '#activity/kennedis-orders-banana-001',
-      'home-art': '#activity/art-color-circle',
+      'home-art': '#activity/art-studio-free-decorate',
     };
 
     for (const [id, expected] of Object.entries(routes)) {

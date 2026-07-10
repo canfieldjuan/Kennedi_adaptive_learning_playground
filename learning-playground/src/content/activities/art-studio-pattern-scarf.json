@@ -1,0 +1,64 @@
+{
+  "id": "art-studio-pattern-scarf",
+  "version": 1,
+  "title": "Daddy Bear's Pattern Scarf",
+  "domain": "art",
+  "skill_ids": ["color_fill"],
+  "transfer": {
+    "skill_ids": ["color_fill"],
+    "context_type": "same_format_new_examples",
+    "context_id": "pattern-scarf",
+    "example_set_id": "pink-yellow-scarf-1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 4,
+    "choice_count": 4,
+    "distractor_strength": "medium"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 90,
+  "content": {
+    "game": "bear-art-studio",
+    "art_mode": "pattern",
+    "character": { "id": "daddy-bear", "name": "Daddy Bear" },
+    "prompt_audio": "Daddy Bear wants a pattern scarf. Pink, yellow, pink, yellow. Keep it going!",
+    "pattern_colors": ["berry-pink", "sunny-yellow"],
+    "pattern_length": 6,
+    "pattern_prefill": 3,
+    "colors": [
+      { "id": "berry-pink", "label": "Pink", "value": "#fd79a8" },
+      { "id": "sunny-yellow", "label": "Yellow", "value": "#fdcb6e" },
+      { "id": "leaf-green", "label": "Green", "value": "#00b894" },
+      { "id": "sky-blue", "label": "Blue", "value": "#74b9ff" }
+    ],
+    "next_activity_id": "art-studio-fix-card",
+    "next_label": "Next art"
+  },
+  "success_rules": {
+    "completion_action": "finish_pattern",
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "You finished the pattern! Daddy Bear is cozy.",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let's check the pattern. What comes next?",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Look at the scarf start. Pink, then yellow.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

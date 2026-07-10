@@ -319,7 +319,8 @@
       ],
       "activity_contexts": [
         "math-count-stars-three",
-        "number-train"
+        "number-train",
+        "art-studio-three-stars"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",
@@ -622,7 +623,11 @@
       "prerequisites": [],
       "unlocks": [],
       "activity_contexts": [
-        "art-color-circle"
+        "art-color-circle",
+        "art-studio-free-decorate",
+        "art-studio-pink-request",
+        "art-studio-pattern-scarf",
+        "art-studio-fix-card"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",

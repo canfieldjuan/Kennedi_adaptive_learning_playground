@@ -55,6 +55,10 @@ import {
   destroyWordBuilderActivity,
 } from '../modules/phonics-match/WordBuilderActivity';
 import {
+  renderBearArtStudioActivity,
+  destroyBearArtStudioActivity,
+} from '../modules/bear-art-studio/BearArtStudioActivity';
+import {
   renderNumberTrainActivity,
   destroyNumberTrainActivity,
 } from '../modules/number-train/NumberTrainActivity';
@@ -92,6 +96,7 @@ function handleRoute(route: Route): void {
   destroyParentPanel();
   destroyTapChoiceActivity();
   destroyColoringActivity();
+  destroyBearArtStudioActivity();
   destroyVideoVault();
   destroyKennedisOrdersActivity();
   destroyPhonicsMatchActivity();
@@ -178,6 +183,23 @@ function renderActivityRoute(activityId: string): void {
     runtimeActivity.content.game === 'kennedis-orders'
   ) {
     renderKennedisOrdersActivity(app, {
+      activity: runtimeActivity,
+      childId,
+      sessionId,
+      speech,
+      audio,
+      onEvent: handleActivityEvent,
+    });
+    return;
+  }
+
+  // Bear Art Studio (art) — the dedicated Art game runtime, keyed by its
+  // game id exactly like Bear Cafe above.
+  if (
+    runtimeActivity.interaction_model === 'tap_then_place' &&
+    runtimeActivity.content.game === 'bear-art-studio'
+  ) {
+    renderBearArtStudioActivity(app, {
       activity: runtimeActivity,
       childId,
       sessionId,
