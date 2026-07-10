@@ -133,6 +133,11 @@ function validateVideoItem(
     issues.push(`${prefix} evidence_role must be exposure_only`);
   }
 
+  const responseActivityId = getNonEmptyString(value.response_activity_id);
+  if (!responseActivityId || !/^[a-z0-9-]+$/.test(responseActivityId)) {
+    issues.push(`${prefix} response_activity_id must be a local activity id`);
+  }
+
   if (value.thumbnail_path !== undefined) {
     const thumbnailPath = getNonEmptyString(value.thumbnail_path);
     if (

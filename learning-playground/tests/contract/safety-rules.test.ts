@@ -14,6 +14,7 @@ import artColorCircle from '../../src/content/activities/art-color-circle.json';
 import mathCountStarsThree from '../../src/content/activities/math-count-stars-three.json';
 import phonicsFindB from '../../src/content/activities/phonics-find-b.json';
 import shapesFindCircle from '../../src/content/activities/shapes-find-circle.json';
+import videoBearBakesBreadResponse from '../../src/content/activities/video-bear-bakes-bread-response.json';
 import videoVault from '../../src/content/activities/video-vault.json';
 import animalsPack from '../../src/content/packs/animals.v1.json';
 import shapesPack from '../../src/content/packs/shapes.v1.json';
@@ -51,6 +52,7 @@ interface VideoManifestJson {
     approved_by_parent: boolean;
     mime_type: string;
     evidence_role: string;
+    response_activity_id: string;
     thumbnail_path?: string;
     autoplay?: boolean;
     autoplay_next?: boolean;
@@ -64,6 +66,7 @@ const allActivities: ActivityJson[] = [
   shapesFindCircle as unknown as ActivityJson,
   mathCountStarsThree as unknown as ActivityJson,
   artColorCircle as unknown as ActivityJson,
+  videoBearBakesBreadResponse as unknown as ActivityJson,
   videoVault as unknown as ActivityJson,
 ];
 
@@ -136,6 +139,7 @@ describe('safety contract', () => {
         expect(item.approved_by_parent).toBe(true);
         expect(['video/mp4', 'video/webm']).toContain(item.mime_type);
         expect(item.evidence_role).toBe('exposure_only');
+        expect(item.response_activity_id).toMatch(/^[a-z0-9-]+$/);
         expect(item.path).toMatch(/^\/assets\/videos?\//);
         expect(item.path).not.toMatch(/https?:\/\//);
         expect(item.thumbnail_path ?? '').not.toMatch(/https?:\/\//);
@@ -155,6 +159,22 @@ describe('safety contract', () => {
             existsSync(new URL(`../../public${item.thumbnail_path}`, import.meta.url))
           ).toBe(true);
         }
+      }
+    }
+  });
+
+  test('each video links to a separate approved local response activity', () => {
+    for (const manifest of allVideoManifests) {
+      for (const item of manifest.items) {
+        const responseActivity = allActivities.find((activity) => (
+          activity.id === item.response_activity_id
+        ));
+        expect(responseActivity).toBeDefined();
+        expect(responseActivity?.id).not.toBe(videoVault.id);
+        expect(responseActivity?.safety.requires_parent_approval).toBe(true);
+        expect(responseActivity?.safety.external_links_allowed).toBe(false);
+        expect(responseActivity?.content.source_manifest_id).toBe(manifest.id);
+        expect(responseActivity?.content.source_video_id).toBe(item.id);
       }
     }
   });

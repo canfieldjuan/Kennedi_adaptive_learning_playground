@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540">
+  <rect width="960" height="540" fill="#d9f1ed"/>
+  <rect y="384" width="960" height="156" fill="#f6c453"/>
+  <circle cx="112" cy="99" r="45" fill="#f4a261"/>
+  <path d="M54 63h218v170H54z" fill="#fff9e8" stroke="#305f68" stroke-width="10"/>
+  <path d="M163 68v160M59 148h208" fill="none" stroke="#8fcac1" stroke-width="9"/>
+  <g transform="translate(296 71)" stroke="#3d2b2a" stroke-linejoin="round">
+    <circle cx="184" cy="122" r="90" fill="#9b6a47" stroke-width="12"/>
+    <circle cx="121" cy="51" r="38" fill="#9b6a47" stroke-width="12"/>
+    <circle cx="247" cy="51" r="38" fill="#9b6a47" stroke-width="12"/>
+    <circle cx="121" cy="51" r="18" fill="#e8b38e" stroke="none"/>
+    <circle cx="247" cy="51" r="18" fill="#e8b38e" stroke="none"/>
+    <ellipse cx="184" cy="159" rx="49" ry="38" fill="#e8c49e" stroke="none"/>
+    <ellipse cx="184" cy="134" rx="14" ry="11" fill="#3d2b2a" stroke="none"/>
+    <circle cx="157" cy="106" r="9" fill="#3d2b2a" stroke="none"/>
+    <circle cx="211" cy="106" r="9" fill="#3d2b2a" stroke="none"/>
+    <path d="M160 168q24 23 48 0" fill="none" stroke-width="8" stroke-linecap="round"/>
+    <path d="M101 202q83-48 166 0l47 237H54z" fill="#6ab6a8" stroke-width="12"/>
+    <path d="M104 226l80 80 80-80" fill="#fff4d6" stroke-width="9"/>
+  </g>
+  <path d="M386 353q-83 12-113 65M574 353q83 12 113 65" fill="none" stroke="#9b6a47" stroke-width="34" stroke-linecap="round"/>
+  <ellipse cx="480" cy="437" rx="214" ry="46" fill="#fff9e8" stroke="#305f68" stroke-width="10"/>
+  <ellipse cx="480" cy="426" rx="145" ry="33" fill="#d8a646"/>
+  <path d="M357 417q12-112 123-112t123 112z" fill="#d99b4a" stroke="#fff0bc" stroke-width="10"/>
+  <path d="M416 334l-22 58m86-73v68m64-53l22 58" fill="none" stroke="#fff0bc" stroke-width="11" stroke-linecap="round"/>
+  <g fill="#ed6a5a">
+    <path d="M726 126l9 23 24 8-20 15 1 25-20-14-23 9 7-24-16-19 25-1z"/>
+    <path d="M805 240l6 15 16 5-13 10 1 17-14-10-15 6 5-16-11-13 17-1z"/>
+  </g>
+  <g fill="#305f68">
+    <circle cx="745" cy="276" r="10"/>
+    <circle cx="211" cy="307" r="9"/>
+    <circle cx="758" cy="360" r="7"/>
+  </g>
+</svg>

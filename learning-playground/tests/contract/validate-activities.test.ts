@@ -323,6 +323,26 @@ describe('activity schema contract', () => {
     expect(activity).toBeDefined();
     expect(hasDifferentPromptModeContent(activity!)).toBe(true);
   });
+
+  test('approved video response implements a separate vocabulary check honestly', () => {
+    const activity = allActivities.find((item) => (
+      item.id === 'video-bear-bakes-bread-response'
+    ));
+
+    expect(activity).toMatchObject({
+      title: "Bear's Bakery",
+      skill_ids: ['vocabulary'],
+      originating_brief_id: 'brief-vocabulary-different_prompt_mode',
+      transfer: {
+        context_type: 'different_prompt_mode',
+        context_id: 'recall-object-from-local-video',
+        example_set_id: 'bear-bakes-bread-v1',
+        prompt_mode: 'mixed',
+      },
+    });
+    expect(activity).toBeDefined();
+    expect(hasDifferentPromptModeContent(activity!)).toBe(true);
+  });
 });
 
 function hasReverseMappingContent(activity: ActivityJson): boolean {
@@ -351,6 +371,9 @@ function hasReverseMappingContent(activity: ActivityJson): boolean {
 
 function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
   if (isKennedisOrdersFixOrder(activity)) return true;
+  if (activity.domain === 'language' && activity.skill_ids.includes('vocabulary')) {
+    return hasVideoVocabularyResponse(activity);
+  }
   if (activity.domain === 'phonics' && activity.skill_ids.includes('blending')) {
     return hasSpokenBlendingPrompt(activity);
   }
@@ -392,6 +415,31 @@ function hasDifferentPromptModeContent(activity: ActivityJson): boolean {
     correctChoice?.label === String(targetQuantity) &&
     choices.length >= 2 &&
     choices.every((choice) => /^\d+$/.test(choice.label))
+  );
+}
+
+function hasVideoVocabularyResponse(activity: ActivityJson): boolean {
+  const promptAudio = getString(activity.content.prompt_audio).toLowerCase();
+  const sourceManifestId = getString(activity.content.source_manifest_id);
+  const sourceVideoId = getString(activity.content.source_video_id);
+  const choices = getChoices(activity);
+  const correctChoiceId = getString(activity.success_rules.correct_choice_id);
+  const correctChoice = choices.find((choice) => (
+    choice.id === correctChoiceId || choice.correct === true
+  ));
+
+  return (
+    activity.interaction_model === 'tap_to_match' &&
+    activity.transfer.prompt_mode === 'mixed' &&
+    sourceManifestId.length > 0 &&
+    sourceVideoId.length > 0 &&
+    promptAudio.includes('what') &&
+    promptAudio.includes('bear') &&
+    choices.length === 3 &&
+    choices.every((choice) => choice.image?.startsWith('/assets/images/')) &&
+    correctChoice?.id === 'bread' &&
+    correctChoice.label.toLowerCase() === 'bread' &&
+    !promptAudio.includes('bread')
   );
 }
 
