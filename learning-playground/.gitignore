@@ -25,3 +25,6 @@ dist-ssr
 .vercel
 playwright-report
 test-results
+.content-foundry/
+__pycache__/
+*.py[cod]

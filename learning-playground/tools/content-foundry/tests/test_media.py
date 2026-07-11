@@ -1,0 +1,262 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+TOOLS_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(TOOLS_ROOT))
+
+from content_foundry.config import FoundryConfig
+from content_foundry.drafts import DraftStore
+from content_foundry.errors import ValidationError
+from content_foundry.media import MediaTools, validate_storyboard
+
+
+class StoryboardValidationTests(unittest.TestCase):
+    def test_valid_storyboard_returns_normalized_fields(self) -> None:
+        title, scenes, cues, brief = validate_storyboard({
+            "title": " Bear Bread ", "scenes": [{"path": "scene.png", "duration_ms": 500}],
+            "narration": [{"path": "voice.wav", "start_ms": 0}], "source_brief_id": "brief-1",
+        })
+        self.assertEqual(title, "Bear Bread")
+        self.assertEqual(len(scenes), 1)
+        self.assertEqual(len(cues), 1)
+        self.assertEqual(brief, "brief-1")
+
+    def test_storyboard_caps_and_boolean_defeats_are_rejected(self) -> None:
+        base = {"title": "Clip", "scenes": [{"path": "scene.png", "duration_ms": 500}], "narration": [{"path": "voice.wav", "start_ms": 0}]}
+        cases = []
+        value = json.loads(json.dumps(base)); value["scenes"][0]["duration_ms"] = True; cases.append(value)
+        value = json.loads(json.dumps(base)); value["narration"][0]["start_ms"] = False; cases.append(value)
+        value = json.loads(json.dumps(base)); value["scenes"] = [{"path": "scene.png", "duration_ms": 10000}] * 4; cases.append(value)
+        value = json.loads(json.dumps(base)); value["narration"][0]["start_ms"] = 500; cases.append(value)
+        for value in cases:
+            with self.subTest(value=value), self.assertRaises(ValidationError):
+                validate_storyboard(value)
+
+    def test_short_motion_contact_sheet_samples_across_the_clip(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            config = FoundryConfig(root, "http://127.0.0.1:8188", root / "drafts", root / "imports", root / "references", 60)
+            media = MediaTools(config, DraftStore(config.drafts_root))
+            with patch.object(media, "probe", return_value={"format": {"duration": "3.375"}}), patch.object(media, "_run") as run:
+                media.create_contact_sheet(root / "motion.mp4", root / "contact.png")
+            args = run.call_args.args[0]
+            filter_value = args[args.index("-vf") + 1]
+            sample_rate = float(filter_value.split(",", 1)[0].removeprefix("fps="))
+            self.assertAlmostEqual(sample_rate * 3.375, 8, places=6)
+
+    def test_overlapping_narration_uses_a_float_mix_before_normalization(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            config = FoundryConfig(root, "http://127.0.0.1:8188", root / "drafts", root / "imports", root / "references", 60)
+            media = MediaTools(config, DraftStore(config.drafts_root))
+            measurement = {"input_i": -12.0, "input_tp": 3.0, "input_lra": 0.0, "input_thresh": -22.0, "target_offset": 0.0}
+            completed = subprocess.CompletedProcess([], 0, b"", b"")
+            with patch.object(media, "_run", return_value=completed) as run, patch.object(
+                media, "_loudnorm_measurement", return_value=measurement
+            ):
+                media._assemble_video(
+                    [(root / "scene.png", 1000)],
+                    [(root / "voice-a.wav", 0), (root / "voice-b.wav", 0)],
+                    root / "clip.webm",
+                    1.0,
+                )
+            commands = [call.args[0] for call in run.call_args_list]
+            mix_command = next(command for command in commands if "pcm_f32le" in command)
+            self.assertIn("amix=inputs=2:duration=longest:normalize=0", mix_command[mix_command.index("-filter_complex") + 1])
+
+    def test_storyboard_uses_the_same_snapshots_for_hashing_and_assembly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            imports, drafts, references = root / "imports", root / "drafts", root / "references"
+            imports.mkdir(); references.mkdir()
+            scene = imports / "scene.png"
+            voice = imports / "voice.wav"
+            scene_bytes = b"reviewed scene"
+            voice_bytes = b"reviewed voice"
+            scene.write_bytes(scene_bytes)
+            voice.write_bytes(voice_bytes)
+            storyboard = {
+                "title": "Snapshot contract",
+                "scenes": [{"path": "scene.png", "duration_ms": 1000}],
+                "narration": [{"path": "voice.wav", "start_ms": 0}],
+            }
+            (imports / "storyboard.json").write_text(json.dumps(storyboard), encoding="utf-8")
+            config = FoundryConfig(root, "http://127.0.0.1:8188", drafts, imports, references, 60)
+            media = MediaTools(config, DraftStore(drafts))
+
+            def probe(path: Path) -> dict:
+                if path.suffix == ".png":
+                    return {"streams": [{"codec_type": "video", "width": 960, "height": 544}]}
+                return {"streams": [{"codec_type": "audio"}]}
+
+            def assemble(scenes: list[tuple[Path, int]], narration: list[tuple[Path, int]], output: Path, _seconds: float) -> None:
+                scene.write_bytes(b"replacement scene")
+                voice.write_bytes(b"replacement voice")
+                self.assertEqual(scenes[0][0].read_bytes(), scene_bytes)
+                self.assertEqual(narration[0][0].read_bytes(), voice_bytes)
+                output.write_bytes(b"clip")
+
+            def contact(_video: Path, destination: Path) -> None:
+                destination.write_bytes(b"contact")
+
+            def command(args: list[str]) -> subprocess.CompletedProcess[str]:
+                Path(args[-1]).write_bytes(b"poster")
+                return subprocess.CompletedProcess(args, 0, "", "")
+
+            with patch.object(media, "probe", side_effect=probe), patch.object(
+                media, "audio_peak", return_value=-6.0
+            ), patch.object(media, "_assemble_video", side_effect=assemble), patch.object(
+                media, "create_contact_sheet", side_effect=contact
+            ), patch.object(media, "inspect_learning_clip", return_value={"duration_seconds": 1.0}), patch.object(
+                media, "_run", side_effect=command
+            ):
+                result = media.assemble_storyboard("storyboard.json")
+
+            inputs = result["manifest"]["inputs"]
+            self.assertEqual(inputs["scenes"][0]["sha256"], hashlib.sha256(scene_bytes).hexdigest())
+            self.assertEqual(inputs["narration"][0]["sha256"], hashlib.sha256(voice_bytes).hexdigest())
+
+    def test_storyboard_rejects_oversized_and_high_frame_rate_scenes_before_assembly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            config = FoundryConfig(root, "http://127.0.0.1:8188", root / "drafts", root / "imports", root / "references", 60)
+            media = MediaTools(config, DraftStore(config.drafts_root))
+            source = root / "scene.mp4"
+            source.write_bytes(b"scene")
+            cases = (
+                ({"codec_type": "video", "width": 12000, "height": 12000, "avg_frame_rate": "24/1"}, "1920x1080"),
+                ({"codec_type": "video", "width": 960, "height": 544, "avg_frame_rate": "120/1"}, "60 fps"),
+            )
+            for stream, message in cases:
+                with self.subTest(stream=stream), patch.object(media, "probe", return_value={"streams": [stream]}), self.assertRaisesRegex(
+                    ValidationError, message
+                ):
+                    media._inspect_scene_input(source)
+
+    def test_storyboard_accepts_the_inclusive_scene_bounds(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            config = FoundryConfig(root, "http://127.0.0.1:8188", root / "drafts", root / "imports", root / "references", 60)
+            media = MediaTools(config, DraftStore(config.drafts_root))
+            source = root / "scene.mp4"
+            source.write_bytes(b"scene")
+            stream = {
+                "codec_type": "video", "width": 1920, "height": 1080,
+                "avg_frame_rate": "0/0", "r_frame_rate": "60/1",
+            }
+            with patch.object(media, "probe", return_value={"streams": [stream]}):
+                self.assertEqual(media._inspect_scene_input(source), {"width": 1920, "height": 1080, "fps": 60.0})
+
+
+class MediaIntegrationTests(unittest.TestCase):
+    def run_command(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.run(args, check=True, capture_output=True, timeout=60)
+
+    def max_volume(self, path: Path, *, start: float, duration: float) -> float:
+        result = self.run_command([
+            "ffmpeg", "-hide_banner", "-nostats", "-ss", str(start), "-t", str(duration),
+            "-i", str(path), "-map", "0:a:0", "-af", "volumedetect", "-f", "null", "-",
+        ])
+        match = re.search(rb"max_volume:\s*(-?[0-9.]+) dB", result.stderr)
+        self.assertIsNotNone(match)
+        return float(match.group(1))
+
+    def test_three_scene_human_narration_clip_meets_media_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            imports, drafts, references = root / "imports", root / "drafts", root / "references"
+            imports.mkdir(); references.mkdir()
+            for index, color in enumerate(("#6f4e9c", "#f0b84b", "#4f9d69"), start=1):
+                self.run_command(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", f"color=c={color}:s=960x544:d=0.1", "-frames:v", "1", str(imports / f"scene-{index}.png")])
+                self.run_command(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", f"sine=frequency={350 + index * 100}:duration=0.65", "-af", "volume=0.5", "-ar", "48000", "-ac", "1", str(imports / f"voice-{index}.wav")])
+            storyboard = {
+                "title": "Synthetic three-scene contract clip", "source_brief_id": "test-brief",
+                "scenes": [{"path": f"scene-{index}.png", "duration_ms": 1500} for index in range(1, 4)],
+                "narration": [{"path": f"voice-{index}.wav", "start_ms": (index - 1) * 1500} for index in range(1, 4)],
+            }
+            (imports / "storyboard.json").write_text(json.dumps(storyboard), encoding="utf-8")
+            config = FoundryConfig(root, "http://127.0.0.1:8188", drafts, imports, references, 60)
+            result = MediaTools(config, DraftStore(drafts)).assemble_storyboard("storyboard.json")
+            draft_dir, manifest = Path(result["draft_dir"]), result["manifest"]
+            self.assertEqual(manifest["status"], "draft")
+            self.assertTrue(manifest["qa"]["requires_parent_visual_review"])
+            self.assertEqual(manifest["qa"]["checks"][-1]["status"], "pass")
+            self.assertEqual({item["role"] for item in manifest["outputs"]}, {"learning_clip", "poster", "contact_sheet"})
+            for output in manifest["outputs"]:
+                self.assertTrue((draft_dir / output["path"]).is_file())
+                self.assertEqual(len(output["sha256"]), 64)
+            details = manifest["qa"]["checks"][-1]["details"]
+            self.assertEqual((details["video"]["codec_name"], details["video"]["width"], details["video"]["height"]), ("vp9", 960, 544))
+            self.assertEqual((details["audio"]["codec_name"], int(details["audio"]["sample_rate"]), details["audio"]["channels"]), ("opus", 48000, 1))
+            self.assertLessEqual(details["duration_seconds"], 30.1)
+            self.assertGreaterEqual(details["integrated_lufs"], -19.0)
+            self.assertLessEqual(details["integrated_lufs"], -17.0)
+            self.assertLessEqual(details["true_peak_dbtp"], -2.0)
+
+    def test_short_video_source_is_extended_to_the_declared_scene_duration(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            imports, drafts, references = root / "imports", root / "drafts", root / "references"
+            imports.mkdir(); references.mkdir()
+            scene = imports / "short.mp4"
+            voice = imports / "voice.wav"
+            output = root / "clip.webm"
+            self.run_command([
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                "-i", "color=c=#4f9d69:s=960x544:d=0.4:r=24", "-c:v", "libx264", str(scene),
+            ])
+            self.run_command([
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=2", "-af", "volume=0.5",
+                "-ar", "48000", "-ac", "1", str(voice),
+            ])
+            config = FoundryConfig(root, "http://127.0.0.1:8188", drafts, imports, references, 60)
+            MediaTools(config, DraftStore(drafts))._assemble_video(
+                [(scene, 2000)], [(voice, 0)], output, 2.0
+            )
+
+            probe = self.run_command([
+                "ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+                "-show_entries", "stream=nb_read_frames", "-of", "default=nw=1:nk=1", str(output),
+            ])
+            self.assertGreaterEqual(int(probe.stdout.strip()), 47)
+
+    def test_stereo_narration_stays_silent_until_its_storyboard_start(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            imports, drafts, references = root / "imports", root / "drafts", root / "references"
+            imports.mkdir(); references.mkdir()
+            self.run_command([
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                "-i", "color=c=#6f4e9c:s=960x544:d=0.1", "-frames:v", "1", str(imports / "scene.png"),
+            ])
+            self.run_command([
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=1.2",
+                "-af", "pan=stereo|c0=c0|c1=c0,volume=0.5", "-ar", "48000", str(imports / "stereo.wav"),
+            ])
+            storyboard = {
+                "title": "Stereo delay contract",
+                "scenes": [{"path": "scene.png", "duration_ms": 3000}],
+                "narration": [{"path": "stereo.wav", "start_ms": 1000}],
+            }
+            (imports / "storyboard.json").write_text(json.dumps(storyboard), encoding="utf-8")
+            config = FoundryConfig(root, "http://127.0.0.1:8188", drafts, imports, references, 60)
+            result = MediaTools(config, DraftStore(drafts)).assemble_storyboard("storyboard.json")
+            clip = Path(result["draft_dir"]) / "learning-clip.webm"
+
+            self.assertLessEqual(self.max_volume(clip, start=0, duration=0.75), -60)
+            self.assertGreater(self.max_volume(clip, start=1.05, duration=0.45), -40)
+
+
+if __name__ == "__main__":
+    unittest.main()
