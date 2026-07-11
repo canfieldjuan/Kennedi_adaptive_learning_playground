@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="1240" height="560" viewBox="0 0 1240 560" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
-  <rect x="0" y="0" width="1240" height="560" fill="#f9e8d0"/>
+<svg width="1240" height="840" viewBox="0 0 1240 840" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+  <rect x="0" y="0" width="1240" height="840" fill="#f9e8d0"/>
   <g id="window-four-pane" inkscape:label="Window, four panes with sunny hills" inkscape:groupmode="layer">
   <g transform="translate(40 40)">
     <rect x="0" y="0" width="264" height="300" rx="20" fill="#b3743e"/>
@@ -105,6 +105,40 @@
       <path d="M 42 8 q 14 -4 12 6 q -2 8 -12 6" fill="none"/>
       <path d="M 0 0 h 42 l -4 36 q -1 8 -10 8 h -14 q -9 0 -10 -8 z" fill="#ffffff" stroke-linejoin="round"/>
       <path d="M 3 9 h 36" stroke="#f2c6d6" stroke-width="6" stroke-linecap="round"/>
+    </g>
+  </g>
+  </g>
+  <g id="bookshelf-low" inkscape:label="Low bookshelf, plain color spines (no letters)" inkscape:groupmode="layer">
+  <g transform="translate(40 620)">
+    <rect x="0" y="0" width="300" height="170" rx="16" fill="#c88a52" stroke="#3a2461" stroke-width="5"/>
+    <rect x="14" y="14" width="272" height="118" rx="10" fill="#f4e6cf"/>
+    <rect x="0" y="132" width="300" height="18" rx="8" fill="#b3743e"/>
+    <g stroke="#3a2461" stroke-width="3">
+      <rect x="28" y="30" width="30" height="100" rx="7" fill="#e28f8f"/>
+      <rect x="66" y="42" width="28" height="88" rx="7" fill="#8fb7e2"/>
+      <rect x="102" y="24" width="32" height="106" rx="7" fill="#9fd0a8"/>
+      <rect x="142" y="40" width="28" height="90" rx="7" fill="#f0c65f"/>
+      <rect x="178" y="30" width="30" height="100" rx="7" fill="#c3a3e0"/>
+      <rect x="216" y="48" width="26" height="82" rx="7" fill="#f2b09b"/>
+    </g>
+  </g>
+  </g>
+  <g id="pin-board" inkscape:label="Pin board with abstract shapes (never letters)" inkscape:groupmode="layer">
+  <g transform="translate(400 620)">
+    <rect x="0" y="0" width="150" height="120" rx="14" fill="#c88a52" stroke="#3a2461" stroke-width="5"/>
+    <rect x="10" y="10" width="130" height="100" rx="9" fill="#f9e2c6"/>
+    <circle cx="42" cy="44" r="14" fill="#f5a86b" stroke="#3a2461" stroke-width="3"/>
+    <rect x="70" y="32" width="54" height="22" rx="8" fill="#cfe3f4" stroke="#3a2461" stroke-width="3"/>
+    <path d="M 30 82 q 18 -14 36 0 q 18 14 36 0" fill="none" stroke="#c3a3e0" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  </g>
+  <g id="pencil-pot" inkscape:label="Pot of pencils" inkscape:groupmode="layer">
+  <g transform="translate(620 640)">
+    <g stroke="#3a2461" stroke-width="5">
+      <line x1="16" y1="-2" x2="6" y2="-34" stroke="#f0c65f" stroke-width="8" stroke-linecap="round"/>
+      <line x1="28" y1="-2" x2="30" y2="-40" stroke="#e28f8f" stroke-width="8" stroke-linecap="round"/>
+      <line x1="40" y1="-2" x2="48" y2="-30" stroke="#8fb7e2" stroke-width="8" stroke-linecap="round"/>
+      <path d="M 0 0 h 56 l -8 46 h -40 Z" fill="#cfe3f4" stroke-linejoin="round"/>
     </g>
   </g>
   </g>
