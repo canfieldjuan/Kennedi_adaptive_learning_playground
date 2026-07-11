@@ -3,7 +3,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
   closeSync, constants, fstatSync, fsyncSync, linkSync, lstatSync, openSync,
-  readSync, realpathSync, unlinkSync, writeSync,
+  readlinkSync, readSync, realpathSync, symlinkSync, unlinkSync, writeSync,
 } from 'node:fs';
 import { basename, isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -99,18 +99,20 @@ export function runCli({ argv = process.argv.slice(2), stdout = process.stdout }
 
 function acquire(input, paths, { createToken, now }) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    if (pathPresent(paths.transition)) {
-      const marker = readRecordIfPresent(paths.transition);
-      if (marker === null) continue;
-      validateBlockingTransition(marker, input, paths);
-      return baseResult(input, 'busy');
-    }
     if (pathPresent(paths.completed)) {
       const completed = readRecordIfPresent(paths.completed);
       if (completed === null) continue;
       validateCompleted(completed, input);
       validateCapacitySlot(readRecord(paths.capacitySlot(completed.capacity_slot)), input, completed);
+      reclaimPublication(paths.completedPublication, paths.root);
       return baseResult(input, 'duplicate');
+    }
+    if (pathPresent(paths.transition)) {
+      const marker = readRecordIfPresent(paths.transition);
+      if (marker === null) continue;
+      validateBlockingTransition(marker, input, paths);
+      reclaimPublication(paths.transitionPublication, paths.root);
+      return baseResult(input, 'busy');
     }
     if (pathPresent(paths.active)) {
       const active = readRecordIfPresent(paths.active);
@@ -154,41 +156,47 @@ function acquire(input, paths, { createToken, now }) {
 }
 
 function complete(input, paths, { now }) {
-  if (pathPresent(paths.completed)) {
-    const completed = readRecord(paths.completed);
-    validateCompleted(completed, input, input.claimToken);
-    validateCapacitySlot(readRecord(paths.capacitySlot(completed.capacity_slot)), input, completed);
-    const active = readRecordIfPresent(paths.active);
-    if (active === null) {
-      const marker = readRecordIfPresent(paths.transition);
-      if (transitionBelongsTo(marker, input, 'complete', completed.capacity_slot)) {
-        finishInterruptedTransition(input, paths, 'complete', completed.capacity_slot);
-      }
-      return baseResult(input, 'completed');
-    }
-    validateActive(active, input);
-    if (!activeBelongsTo(active, input)) return baseResult(input, 'completed');
-  }
-  const active = readRecord(paths.active);
-  validateOwnedActive(active, input);
-  validateCapacitySlot(readRecord(paths.capacitySlot(active.capacity_slot)), input, active);
-  return withTransition(input, paths, 'complete', active, () => {
-    const completed = completedRecord(input, active.claim_token, active.capacity_slot, now());
+  for (let attempt = 0; attempt < 2; attempt += 1) {
     if (pathPresent(paths.completed)) {
-      validateCompleted(readRecord(paths.completed), input, active.claim_token);
-    } else {
-      try {
-        createRecord(paths.completed, completed, paths.root);
-      } catch (error) {
-        if (hasCode(error, 'publication_busy')) return baseResult(input, 'busy');
-        if (!hasCode(error, 'record_exists')) throw error;
-        validateCompleted(readRecord(paths.completed), input, active.claim_token);
+      const completed = readRecordIfPresent(paths.completed);
+      if (completed === null) continue;
+      validateCompleted(completed, input, input.claimToken);
+      validateCapacitySlot(readRecord(paths.capacitySlot(completed.capacity_slot)), input, completed);
+      reclaimPublication(paths.completedPublication, paths.root);
+      const active = readRecordIfPresent(paths.active);
+      if (active === null) {
+        const marker = readRecordIfPresent(paths.transition);
+        if (transitionBelongsTo(marker, input, 'complete', completed.capacity_slot)) {
+          finishInterruptedTransition(input, paths, 'complete', completed.capacity_slot);
+        }
+        return baseResult(input, 'completed');
       }
+      validateActive(active, input);
+      if (!activeBelongsTo(active, input)) return baseResult(input, 'completed');
     }
-    unlinkIfPresent(paths.active);
-    syncDirectory(paths.root);
-    return baseResult(input, 'completed');
-  });
+    const active = readRecordIfPresent(paths.active);
+    if (active === null) continue;
+    validateOwnedActive(active, input);
+    validateCapacitySlot(readRecord(paths.capacitySlot(active.capacity_slot)), input, active);
+    return withTransition(input, paths, 'complete', active, () => {
+      const completed = completedRecord(input, active.claim_token, active.capacity_slot, now());
+      if (pathPresent(paths.completed)) {
+        validateCompleted(readRecord(paths.completed), input, active.claim_token);
+      } else {
+        try {
+          createRecord(paths.completed, completed, paths.root, paths.completedPublication);
+        } catch (error) {
+          if (hasCode(error, 'publication_busy')) return baseResult(input, 'busy');
+          if (!hasCode(error, 'record_exists')) throw error;
+          validateCompleted(readRecord(paths.completed), input, active.claim_token);
+        }
+      }
+      unlinkIfPresent(paths.active);
+      syncDirectory(paths.root);
+      return baseResult(input, 'completed');
+    });
+  }
+  fail('claim_race', 'Claim state changed repeatedly during completion');
 }
 
 function activeBelongsTo(record, input) {
@@ -207,22 +215,44 @@ function transitionBelongsTo(record, input, action, expectedSlot) {
 }
 
 function abandon(input, paths, { now }) {
-  if (!pathPresent(paths.active) && pathPresent(paths.transition)) {
-    const marker = finishInterruptedTransition(input, paths, 'abandon');
-    if (marker !== null) {
-      releaseCapacitySlot(paths, input, marker.capacity_slot, input.claimToken);
+  const ownedRelease = findOwnedCapacityRelease(paths, input, input.claimToken);
+  if (ownedRelease !== null) {
+    const active = readRecordIfPresent(paths.active);
+    const marker = readRecordIfPresent(paths.transition);
+    if (active !== null) validateActive(active, input);
+    if (marker !== null) validateBlockingTransition(marker, input, paths);
+    const ownsActive = active !== null && active.capacity_slot === ownedRelease
+      && activeBelongsTo(active, input);
+    const ownsMarker = transitionBelongsTo(marker, input, 'abandon', ownedRelease);
+    if (!ownsActive && !ownsMarker) {
+      finishCapacityRelease(paths, input, ownedRelease, input.claimToken);
+      return abandonedResult(input, now());
     }
+  }
+  if (!pathPresent(paths.active) && pathPresent(paths.transition)) {
+    const marker = readRecord(paths.transition);
+    validateTransition(marker, input, 'abandon');
+    prepareCapacityRelease(paths, input, marker.capacity_slot, input.claimToken);
+    finishInterruptedTransition(input, paths, 'abandon', marker.capacity_slot);
+    finishCapacityRelease(paths, input, marker.capacity_slot, input.claimToken);
     return abandonedResult(input, now());
   }
   const active = readRecord(paths.active);
   validateOwnedActive(active, input);
   validateCapacitySlot(readRecord(paths.capacitySlot(active.capacity_slot)), input, active);
-  return withTransition(input, paths, 'abandon', active, () => {
+  const result = withTransition(input, paths, 'abandon', active, () => {
+    if (!reclaimPublication(paths.activePublication(active.capacity_slot), paths.root)) {
+      return baseResult(input, 'busy');
+    }
+    prepareCapacityRelease(paths, input, active.capacity_slot, active.claim_token);
     unlinkIfPresent(paths.active);
-    releaseCapacitySlot(paths, input, active.capacity_slot, active.claim_token);
     syncDirectory(paths.root);
     return abandonedResult(input, now());
   });
+  if (result.decision === 'abandoned') {
+    finishCapacityRelease(paths, input, active.capacity_slot, active.claim_token);
+  }
+  return result;
 }
 
 function validateRoot(path) {
@@ -257,9 +287,12 @@ function claimPaths(root, input) {
     active: resolve(root, `${activeKey}.active.json`),
     transition: resolve(root, `${activeKey}.transition.json`),
     completed: resolve(root, `${completedKey}.completed.json`),
+    completedPublication: resolve(root, `.${completedKey}.completed.json.tmp`),
     capacitySlot: (index) => resolve(root, `.capacity-slot-${index}.json`),
+    capacityPublication: (index) => resolve(root, `.capacity-slot-${index}.json.tmp`),
     capacityOrphan: (index) => resolve(root, `.capacity-slot-${index}.orphan.json`),
     activePublication: (index) => resolve(root, `.${activeKey}.active.slot-${index}.tmp`),
+    transitionPublication: resolve(root, `.${activeKey}.transition.json.tmp`),
   };
 }
 
@@ -276,18 +309,23 @@ function withTransition(input, paths, action, active, operation) {
     capacity_slot: active.capacity_slot,
     claim_token_sha256: digest([input.claimToken]),
   };
-  try {
-    createRecord(paths.transition, marker, paths.root);
-  } catch (error) {
-    if (hasCode(error, 'publication_busy')) return baseResult(input, 'busy');
-    if (hasCode(error, 'record_exists')) {
-      const existing = readRecordIfPresent(paths.transition);
-      if (existing === null) {
-        fail('transition_race', 'Claim transition changed during recovery');
+  if (pathPresent(paths.transition)) {
+    validateTransition(readRecord(paths.transition), input, action, active.capacity_slot);
+    reclaimPublication(paths.transitionPublication, paths.root);
+  } else {
+    try {
+      createRecord(paths.transition, marker, paths.root, paths.transitionPublication);
+    } catch (error) {
+      if (hasCode(error, 'publication_busy')) return baseResult(input, 'busy');
+      if (hasCode(error, 'record_exists')) {
+        const existing = readRecordIfPresent(paths.transition);
+        if (existing === null) {
+          fail('transition_race', 'Claim transition changed during recovery');
+        }
+        validateTransition(existing, input, action, active.capacity_slot);
+      } else {
+        throw error;
       }
-      validateTransition(existing, input, action, active.capacity_slot);
-    } else {
-      throw error;
     }
   }
   let result;
@@ -352,7 +390,7 @@ function reserveCapacitySlot(paths, input, token, reservedAt) {
       reserved_at: reservedAt,
     };
     try {
-      createRecord(path, record, paths.root);
+      createRecord(path, record, paths.root, paths.capacityPublication(slot));
       return slot;
     } catch (error) {
       if (!hasCode(error, 'record_exists') && !hasCode(error, 'publication_busy')) throw error;
@@ -370,8 +408,79 @@ function releaseCapacitySlot(paths, input, slot, token) {
     capacity_slot: slot,
     claim_token_sha256: digest([token]),
   });
+  if (!reclaimPublication(paths.activePublication(slot), paths.root)
+    || !reclaimPublication(paths.capacityPublication(slot), paths.root)) {
+    fail('publication_busy', 'Another process is publishing this claim');
+  }
   unlinkIfPresent(path);
   syncDirectory(paths.root);
+}
+
+function prepareCapacityRelease(paths, input, slot, token) {
+  const slotPath = paths.capacitySlot(slot);
+  const record = readRecord(slotPath);
+  validateCapacitySlot(record, input, {
+    capacity_slot: slot,
+    claim_token_sha256: digest([token]),
+  });
+  try {
+    linkSync(slotPath, paths.capacityOrphan(slot));
+    syncDirectory(paths.root);
+  } catch (error) {
+    if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
+    validateCapacityReleaseInode(paths, slot, record, input, token);
+  }
+}
+
+function finishCapacityRelease(paths, input, slot, token) {
+  const orphanPath = paths.capacityOrphan(slot);
+  const record = readRecordIfPresent(orphanPath);
+  if (record === null) return;
+  validateCapacitySlot(record, input, {
+    capacity_slot: slot,
+    claim_token_sha256: digest([token]),
+  });
+  validateCapacityReleaseInode(paths, slot, record, input, token);
+  unlinkIfPresent(paths.capacitySlot(slot));
+  if (!reclaimPublication(paths.activePublication(slot), paths.root)
+    || !reclaimPublication(paths.capacityPublication(slot), paths.root)) {
+    fail('publication_busy', 'Another process is publishing this claim');
+  }
+  unlinkIfPresent(orphanPath);
+  syncDirectory(paths.root);
+}
+
+function validateCapacityReleaseInode(paths, slot, record, input, token) {
+  const orphanPath = paths.capacityOrphan(slot);
+  const orphan = readRecord(orphanPath);
+  validateCapacitySlot(orphan, input, {
+    capacity_slot: slot,
+    claim_token_sha256: digest([token]),
+  });
+  const slotPath = paths.capacitySlot(slot);
+  if (!pathPresent(slotPath)) return;
+  const slotMetadata = lstatSync(slotPath);
+  const orphanMetadata = lstatSync(orphanPath);
+  if (slotMetadata.dev !== orphanMetadata.dev || slotMetadata.ino !== orphanMetadata.ino
+    || record.capacity_slot !== orphan.capacity_slot) {
+    fail('capacity_reclamation_race', 'Capacity slot changed during owned release');
+  }
+}
+
+function findOwnedCapacityRelease(paths, input, token) {
+  let owned = null;
+  const expectedHash = digest([token]);
+  for (let slot = 0; slot < MAX_WAKE_RECORDS; slot += 1) {
+    const record = readRecordIfPresent(paths.capacityOrphan(slot));
+    if (!isRecord(record) || record.repository !== input.repository
+      || record.pull_request !== input.prNumber || record.expected_head_sha !== input.expectedHead
+      || record.wake_source !== input.wakeSource || record.wake_id !== input.wakeId
+      || record.claim_token_sha256 !== expectedHash) continue;
+    validateCapacitySlot(record, input, { capacity_slot: slot, claim_token_sha256: expectedHash });
+    if (owned !== null) fail('capacity_slot', 'Multiple owned capacity releases exist');
+    owned = slot;
+  }
+  return owned;
 }
 
 function validateCapacitySlot(record, input, owner) {
@@ -440,7 +549,8 @@ function finishCapacityReclamation(paths, slot) {
     wakeSource: record.wake_source,
     wakeId: record.wake_id,
   });
-  unlinkIfPresent(ownerPaths.activePublication(slot));
+  if (!reclaimPublication(ownerPaths.activePublication(slot), paths.root)
+    || !reclaimPublication(paths.capacityPublication(slot), paths.root)) return;
   unlinkIfPresent(orphanPath);
   syncDirectory(paths.root);
 }
@@ -583,18 +693,11 @@ function createRecord(path, record, root, publicationPath = resolve(root, `.${ba
   const bytes = Buffer.from(`${JSON.stringify(record)}\n`, 'utf8');
   if (bytes.length > MAX_RECORD_BYTES) fail('record_size', 'Claim record is oversized');
   const temporary = publicationPath;
+  const ownership = acquirePublication(temporary, root);
   let descriptor;
-  let ownsTemporary = false;
+  let failure;
   try {
     descriptor = openSync(temporary, WRITE_FLAGS, 0o600);
-    ownsTemporary = true;
-  } catch (error) {
-    if (error && typeof error === 'object' && error.code === 'EEXIST') {
-      fail('publication_busy', 'Another process is publishing this record');
-    }
-    throw error;
-  }
-  try {
     let offset = 0;
     while (offset < bytes.length) {
       offset += writeSync(descriptor, bytes, offset, bytes.length - offset);
@@ -612,16 +715,90 @@ function createRecord(path, record, root, publicationPath = resolve(root, `.${ba
     }
     syncDirectory(root);
   } catch (error) {
+    failure = error;
     if (descriptor !== undefined) {
       try { closeSync(descriptor); } catch { /* best effort after failed write */ }
     }
-    if (ownsTemporary) {
-      try { unlinkSync(temporary); } catch { /* bounded target contains residue */ }
+  }
+  try {
+    finishPublication(temporary, ownership, root);
+  } catch (error) {
+    if (failure === undefined) failure = error;
+  }
+  if (failure !== undefined) throw failure;
+}
+
+function acquirePublication(publicationPath, root) {
+  const lockPath = `${publicationPath}.lock`;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const ownerId = `${process.pid}:${randomUUID()}`;
+      symlinkSync(ownerId, lockPath);
+      const ownership = readPublicationLock(lockPath);
+      if (ownership === null || ownership.ownerId !== ownerId) {
+        fail('publication_lock', 'Publication lock ownership is contradictory');
+      }
+      unlinkIfPresent(publicationPath);
+      syncDirectory(root);
+      return { ...ownership, lockPath };
+    } catch (error) {
+      if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
+      if (!reclaimPublication(publicationPath, root)) {
+        fail('publication_busy', 'Another process is publishing this record');
+      }
     }
+  }
+  fail('publication_busy', 'Publication ownership changed repeatedly');
+}
+
+function reclaimPublication(publicationPath, root) {
+  const lockPath = `${publicationPath}.lock`;
+  const ownership = readPublicationLock(lockPath);
+  if (ownership === null) {
+    unlinkIfPresent(publicationPath);
+    syncDirectory(root);
+    return true;
+  }
+  if (processIsAlive(ownership.publisherPid)) return false;
+  unlinkIfPresent(publicationPath);
+  const current = readPublicationLock(lockPath);
+  if (current === null) return true;
+  if (!sameFile(ownership, current) || current.ownerId !== ownership.ownerId) return false;
+  unlinkIfPresent(lockPath);
+  syncDirectory(root);
+  return true;
+}
+
+function finishPublication(publicationPath, ownership, root) {
+  unlinkIfPresent(publicationPath);
+  const current = readPublicationLock(ownership.lockPath);
+  if (current === null || !sameFile(ownership, current)
+    || current.ownerId !== ownership.ownerId) {
+    fail('publication_lock', 'Publication lock changed before cleanup');
+  }
+  unlinkIfPresent(ownership.lockPath);
+  syncDirectory(root);
+}
+
+function readPublicationLock(lockPath) {
+  let metadata;
+  try {
+    metadata = lstatSync(lockPath);
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ENOENT') return null;
     throw error;
   }
-  try { unlinkSync(temporary); } catch { /* target is already durably published */ }
-  syncDirectory(root);
+  if (!metadata.isSymbolicLink()) fail('publication_lock', 'Publication lock is malformed');
+  const value = readlinkSync(lockPath);
+  const match = /^([1-9][0-9]*):([0-9a-f-]{36})$/i.exec(value);
+  if (match === null) fail('publication_lock', 'Publication lock owner is malformed');
+  const publisherPid = Number(match[1]);
+  if (!Number.isSafeInteger(publisherPid)) fail('publication_lock', 'Publication lock owner is invalid');
+  return { dev: metadata.dev, ino: metadata.ino, publisherPid, ownerId: value };
+}
+
+function sameFile(left, right) {
+  return left.dev === right.dev && left.ino === right.ino;
 }
 
 function syncDirectory(root) {

@@ -20,9 +20,10 @@ a symbolic-link path. Every acquisition must first reserve one of 4,096 atomic
 capacity slots. Slots survive completion and are released on abandonment, so
 parallel different-head acquires cannot exceed the wake-record bound. Atomic
 publication reports temporary contention separately from an already-published
-record. Active publication residue is keyed by its reserved capacity slot and
-is removed with that slot only when its publisher is provably dead and no
-active, transition, or completed owner exists.
+record. Every bounded publication path has an atomic owner lock containing a
+process id and nonce. A retry removes partial publication state only when that
+exact owner is provably dead; live and malformed ownership fail closed. Active
+publication residue is also removed before its capacity slot is released.
 
 ## Claim Identity
 
@@ -36,8 +37,9 @@ the same delivery cannot start another worker.
 
 ## Acquire Contract
 
-`acquire` first checks for an exact completed receipt and otherwise publishes a
-fully written active record with an exclusive atomic link. Exactly one
+`acquire` checks its exact completed receipt before any shared transition and
+otherwise publishes a fully written active record with an exclusive atomic
+link. Exactly one
 contender returns `acquired`; the same active or completed wake returns
 `duplicate`; a different
 wake for that head returns `busy`.
@@ -55,7 +57,8 @@ after the receipt write, retrying with the same token finishes removal
 idempotently. An exclusive transition marker serializes conflicting complete
 or abandon calls and blocks a new acquire until the transition finishes. A
 retry with the same action and token validates and resumes an existing marker;
-same-action finalization is idempotent under overlapping retries.
+same-action finalization is idempotent under overlapping retries, including a
+receipt that appears between the initial receipt and active-record reads.
 
 A matching completed receipt is authoritative for that wake's completion retry
 even if a newer wake now owns the shared PR/head active record. The retry never
@@ -63,7 +66,10 @@ mutates the newer owner.
 
 `abandon` requires the exact active claim token and removes only the active
 record. It writes no completed receipt, so the wake may be retried. The same
-token can finish marker cleanup after an interrupted abandon.
+token can finish marker cleanup after an interrupted abandon. Its capacity slot
+remains present until the abandon transition marker is removed. An inode-stable
+release quarantine then prevents slot replacement until the old slot and its
+owned publication residue are removed; a retry never mutates a newer owner.
 
 ## Output and Exit Contract
 

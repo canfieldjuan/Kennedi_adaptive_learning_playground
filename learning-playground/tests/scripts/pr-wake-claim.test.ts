@@ -1,9 +1,11 @@
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
 import { execFile } from 'node:child_process';
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
-import { chmodSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, linkSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
 import { tmpdir } from 'node:os';
+// @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
+import process from 'node:process';
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
 import { join } from 'node:path';
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
@@ -98,6 +100,20 @@ describe('wake claim ownership', () => {
     });
   });
 
+  test('an exact receipt wins over a newer shared transition marker', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed());
+    const newer = { ...input, wakeId: 'delivery-2' };
+    executeClaimAction(newer, fixed());
+    const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
+    writeFileSync(join(input.claimRoot, active.replace('.active.json', '.transition.json')),
+      JSON.stringify(transition(newer, 'complete', capacitySlot)));
+
+    expect(executeClaimAction(input, fixed()).decision).toBe('duplicate');
+  });
+
   test('completion retry clears an interrupted transition marker', () => {
     const input = parsed();
     executeClaimAction(input, fixed());
@@ -131,6 +147,124 @@ describe('wake claim ownership', () => {
     expect(executeClaimAction({ ...input, action: 'abandon', claimToken: TOKEN }, fixed()).decision)
       .toBe('abandoned');
     expect(executeClaimAction(input, fixed()).decision).toBe('acquired');
+  });
+
+  test('abandon removes active publication residue before releasing its slot', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const slot = activeState(input.claimRoot).capacity_slot;
+    const publication = join(input.claimRoot, `.${active.replace('.json', `.slot-${slot}.tmp`)}`);
+    writeFileSync(publication, '{"stale":');
+
+    expect(executeClaimAction({ ...input, action: 'abandon', claimToken: TOKEN }, fixed()).decision)
+      .toBe('abandoned');
+    expect(readdirSync(input.claimRoot)).not.toContain(publication.split('/').at(-1));
+    expect(executeClaimAction(input, fixed()).decision).toBe('acquired');
+  });
+
+  test('abandon finishes its quarantined slot after marker cleanup', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const slot = activeState(input.claimRoot).capacity_slot;
+    const slotPath = join(input.claimRoot, `.capacity-slot-${slot}.json`);
+    linkSync(slotPath, join(input.claimRoot, `.capacity-slot-${slot}.orphan.json`));
+    unlinkSync(join(input.claimRoot, active));
+
+    expect(executeClaimAction({ ...input, action: 'abandon', claimToken: TOKEN }, fixed()).decision)
+      .toBe('abandoned');
+    expect(pathNames(input.claimRoot).some((name) => name.startsWith('.capacity-slot-')))
+      .toBe(false);
+  });
+
+  test('old abandon cleanup never touches a newer active owner with a reused token', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const slot = activeState(input.claimRoot).capacity_slot;
+    const slotPath = join(input.claimRoot, `.capacity-slot-${slot}.json`);
+    linkSync(slotPath, join(input.claimRoot, `.capacity-slot-${slot}.orphan.json`));
+    unlinkSync(join(input.claimRoot, active));
+    expect(executeClaimAction(input, fixed()).decision).toBe('acquired');
+
+    expect(executeClaimAction({ ...input, action: 'abandon', claimToken: TOKEN }, fixed()).decision)
+      .toBe('abandoned');
+    expect(activeState(input.claimRoot)).toMatchObject({
+      wake_id: 'delivery-1', claim_token: TOKEN,
+    });
+  });
+
+  test('recovers dead capacity publication ownership', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const slot = activeState(input.claimRoot).capacity_slot;
+    executeClaimAction({ ...input, action: 'abandon', claimToken: TOKEN }, fixed());
+    const publication = join(input.claimRoot, `.capacity-slot-${slot}.json.tmp`);
+    writeDeadPublication(publication);
+
+    expect(executeClaimAction(input, fixed()).decision).toBe('acquired');
+    expect(pathNames(input.claimRoot)).not.toContain(`${publication.split('/').at(-1)}.lock`);
+  });
+
+  test('recovers dead transition publication ownership', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const publication = join(input.claimRoot,
+      `.${active.replace('.active.json', '.transition.json.tmp')}`);
+    writeDeadPublication(publication);
+
+    expect(executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed()).decision)
+      .toBe('completed');
+    expect(pathNames(input.claimRoot)).not.toContain(`${publication.split('/').at(-1)}.lock`);
+  });
+
+  test('does not steal live transition publication ownership', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const publication = join(input.claimRoot,
+      `.${active.replace('.active.json', '.transition.json.tmp')}`);
+    writeFileSync(publication, '{"partial":');
+    symlinkSync(`${process.pid}:44444444-4444-4444-8444-444444444444`,
+      `${publication}.lock`);
+
+    expect(executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed()).decision)
+      .toBe('busy');
+    expect(pathNames(input.claimRoot)).toContain(active);
+  });
+
+  test('fails closed on malformed publication ownership', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const publication = join(input.claimRoot,
+      `.${active.replace('.active.json', '.transition.json.tmp')}`);
+    writeFileSync(publication, '{"partial":');
+    symlinkSync('not-a-publisher', `${publication}.lock`);
+
+    expect(() => executeClaimAction({
+      ...input, action: 'complete', claimToken: TOKEN,
+    }, fixed())).toThrowError(expect.objectContaining({ code: 'publication_lock' }));
+  });
+
+  test('recovers dead completed-receipt publication ownership', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const activePath = join(input.claimRoot, active);
+    const activeContents = readFileSync(activePath, 'utf8');
+    executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed());
+    const receipt = pathNames(input.claimRoot).find((name) => name.endsWith('.completed.json'))!;
+    unlinkSync(join(input.claimRoot, receipt));
+    writeFileSync(activePath, activeContents);
+    const publication = join(input.claimRoot, `.${receipt}.tmp`);
+    writeDeadPublication(publication);
+
+    expect(executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed()).decision)
+      .toBe('completed');
+    expect(pathNames(input.claimRoot)).not.toContain(`${publication.split('/').at(-1)}.lock`);
   });
 
   test('abandon retry clears an interrupted transition marker', () => {
@@ -231,6 +365,18 @@ describe('wake claim state validation', () => {
     const capacitySlot = activeState(input.claimRoot).capacity_slot;
     writeFileSync(join(input.claimRoot, active.replace('.active.json', '.transition.json')),
       JSON.stringify(transition(input, 'complete', capacitySlot)));
+
+    expect(executeClaimAction({ ...input, wakeId: 'delivery-2' }, fixed()).decision).toBe('busy');
+  });
+
+  test('an abandon transition remains blocking after active removal while its slot exists', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
+    unlinkSync(join(input.claimRoot, active));
+    writeFileSync(join(input.claimRoot, active.replace('.active.json', '.transition.json')),
+      JSON.stringify(transition(input, 'abandon', capacitySlot)));
 
     expect(executeClaimAction({ ...input, wakeId: 'delivery-2' }, fixed()).decision).toBe('busy');
   });
@@ -410,6 +556,16 @@ describe('wake claim CLI', () => {
     expect(readdirSync(input.claimRoot).filter((name: string) => name.endsWith('.active.json'))).toHaveLength(0);
   });
 
+  test('a burst of real completion retries never loses both receipt and active state', async () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const args = cli({ action: 'complete', claimRoot: input.claimRoot, claimToken: TOKEN });
+    const results = await Promise.all(Array.from({ length: 8 }, () => runProcess(args)));
+
+    expect(results.every(({ output }) => ['completed', 'busy'].includes(output.decision))).toBe(true);
+    expect(results.some(({ output }) => output.decision === 'completed')).toBe(true);
+  });
+
   test('two real abandon processes leave no active claim or capacity slot', async () => {
     const input = parsed();
     executeClaimAction(input, fixed());
@@ -453,6 +609,15 @@ function root() {
 
 function fixed() {
   return { createToken: () => TOKEN, now: () => '2026-07-11T02:00:00.000Z' };
+}
+
+function pathNames(claimRoot: string) {
+  return readdirSync(claimRoot) as string[];
+}
+
+function writeDeadPublication(publication: string) {
+  writeFileSync(publication, '{"partial":');
+  symlinkSync('2147483647:33333333-3333-4333-8333-333333333333', `${publication}.lock`);
 }
 
 function activeName(claimRoot: string) {
