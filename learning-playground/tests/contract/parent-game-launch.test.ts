@@ -380,6 +380,9 @@ function createMockStorage(profile: ChildProgressProfile = {
     getParentReviewScheduleRecords: () => [],
     saveParentReviewScheduleRecord: () => undefined,
     clearParentReviewScheduleRecords: () => undefined,
+    getStoryHistory: () => [],
+    appendStoryHistory: () => undefined,
+    clearStoryHistory: () => undefined,
     exportProgressData: () => '{}',
   };
 }
