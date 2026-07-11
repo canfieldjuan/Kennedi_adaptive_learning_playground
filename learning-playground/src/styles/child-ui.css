@@ -3272,6 +3272,16 @@
   }
 }
 
+/* The studio column (topbar, requester, board, tray, actions, feedback)
+   sums past short viewports at the default rhythm — tighten it so the
+   whole art table fits without scrolling. */
+@media (max-height: 950px) {
+  .bear-art-studio {
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
+  }
+}
+
 /* — Animations — */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
