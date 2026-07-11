@@ -2101,6 +2101,10 @@
   box-shadow: 0 2px 10px rgba(58, 36, 97, 0.14);
 }
 
+.story-stage__caption:empty {
+  display: none;
+}
+
 .story-stage__controls {
   display: grid;
   place-items: center;
@@ -2158,6 +2162,72 @@
   min-width: 240px;
 }
 
+/* — Tell It Together: the adult cue panel. Deliberately quiet next to the
+   child surfaces — small type, parchment ground — and never a story
+   decision target. — */
+.story-stage__cue {
+  width: min(94vw, 620px);
+  padding: var(--space-xs) var(--space-md);
+  border: 2px dashed rgba(58, 36, 97, 0.35);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 253, 247, 0.85);
+  color: #3a2461;
+}
+
+.story-stage__cue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.story-stage__cue-title {
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.story-stage__cue-toggle {
+  padding: 2px 12px;
+  border: 2px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: #3a2461;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.story-stage__cue-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.story-stage__cue-line {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.story-stage__cue-line--beat {
+  font-weight: 900;
+}
+
+.story-stage__cue-fallback {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 4px 14px;
+  border: 2px solid rgba(58, 36, 97, 0.35);
+  border-radius: var(--radius-lg);
+  background: rgba(58, 36, 97, 0.08);
+  color: #3a2461;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
 /* The phase region (setup ↔ story) keeps the screen's column rhythm. */
 .story-stage__body {
   display: flex;
@@ -2165,6 +2235,17 @@
   align-items: center;
   gap: var(--space-lg);
   width: 100%;
+}
+
+/* Adult-facing mode line on the setup screen: informative, never a control. */
+.story-stage__mode-badge {
+  padding: 2px 14px;
+  border-radius: var(--radius-lg);
+  background: rgba(58, 36, 97, 0.1);
+  color: rgba(58, 36, 97, 0.75);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 /* — Pick Three setup: one focused step, big cards, one forward control — */

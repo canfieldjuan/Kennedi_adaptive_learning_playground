@@ -15,10 +15,21 @@
  *    Start control launches the story. Steps only offer entities some
  *    family supports given the picks so far, so every reachable trio
  *    resolves to a real story.
- * 2. STORY — the resolved tale plays exactly as slice 2 shipped it: each
- *    scene shows its illustration and a one-line caption, narrates one
- *    beat, and waits; no autoplay between scenes; endings offer Tell It
- *    Again, New Story (back to setup), and Home.
+ * 2. STORY — the resolved tale: each scene shows its illustration and a
+ *    one-line caption, narrates one beat, and waits; no autoplay between
+ *    scenes; endings offer Tell It Again, New Story (back to setup), and
+ *    Home.
+ *
+ * Two narration modes (arc slice 5, parent-owned via ParentSettings —
+ * the child never chooses):
+ *
+ * - 'narrated' (default): the game speaks every beat, exactly as above.
+ * - 'together': the adult improvises. Scenes stay quiet; a compact adult
+ *   cue panel (beat / keep true / ask / silly, collapsible) sits between
+ *   the scene and the child controls, and a "Play the story line"
+ *   fallback speaks + reveals the authored narration so the session is
+ *   never stranded. The panel carries no story decision — child choices
+ *   are untouched.
  */
 
 import type { SpeechServiceInterface } from '../../types/runtime';
@@ -33,9 +44,18 @@ import { findFamilyFor, selectableEntities } from './story-selection';
 import type { SceneArtContext } from './story-art';
 import { storyCardSvg, storyChoiceSvg, storySceneSvg } from './story-art';
 
+export type StoryMode = 'narrated' | 'together';
+
 interface StoryStageOptions {
   speech: SpeechServiceInterface;
+  /** Parent-owned narration mode; anything but 'together' plays narrated. */
+  storyMode?: StoryMode;
 }
+
+const MODE_LABELS: Record<StoryMode, string> = {
+  narrated: 'Tell Me a Story',
+  together: 'Tell It Together',
+};
 
 interface SetupCardEntity {
   id: string;
@@ -65,6 +85,8 @@ export function renderStoryStage(
   activeSpeech = options.speech;
 
   const pack = FIRST_STORY_PACK;
+  const storyMode: StoryMode =
+    options.storyMode === 'together' ? 'together' : 'narrated';
 
   container = document.createElement('div');
   container.className = 'child-container activity-screen story-stage';
@@ -137,6 +159,13 @@ export function renderStoryStage(
 
     const setup = document.createElement('div');
     setup.className = 'story-stage__setup';
+
+    // Adult-facing: the active narration mode is visible before the
+    // story starts. Informative only — the child never chooses modes.
+    const modeBadge = document.createElement('p');
+    modeBadge.className = 'story-stage__mode-badge';
+    modeBadge.textContent = MODE_LABELS[storyMode];
+    setup.appendChild(modeBadge);
 
     const stepTitle = document.createElement('h2');
     stepTitle.className = 'story-stage__step-title';
@@ -308,11 +337,20 @@ export function renderStoryStage(
     body.appendChild(stage);
 
     // The one-line story caption — deliberately readable text so an adult
-    // can tell the story aloud when speech is disabled.
+    // can tell the story aloud when speech is disabled. In together mode
+    // it starts empty: the adult owns the words until the fallback
+    // reveals the authored line.
     const caption = document.createElement('p');
     caption.className = 'story-stage__caption';
     caption.setAttribute('aria-live', 'polite');
     body.appendChild(caption);
+
+    // Adult cue surface (together mode only): between the scene and the
+    // child controls, never a story-decision target.
+    const cuePanel = document.createElement('aside');
+    cuePanel.className = 'story-stage__cue';
+    if (storyMode === 'together') body.appendChild(cuePanel);
+    let cueCollapsed = false;
 
     const controls = document.createElement('div');
     controls.className = 'story-stage__controls';
@@ -321,8 +359,81 @@ export function renderStoryStage(
     let endingReached = false;
 
     function speakScene(scene: ResolvedScene): void {
+      // Stop always — a fallback playback must never overlap the next
+      // scene — but only narrated mode speaks automatically.
       options.speech.stop();
+      if (storyMode === 'together') return;
       options.speech.speak(scene.narration);
+    }
+
+    function renderCue(scene: ResolvedScene): void {
+      cuePanel.innerHTML = '';
+
+      const header = document.createElement('div');
+      header.className = 'story-stage__cue-header';
+
+      const cueTitle = document.createElement('span');
+      cueTitle.className = 'story-stage__cue-title';
+      cueTitle.textContent = 'Storyteller cue';
+      header.appendChild(cueTitle);
+
+      const toggle = document.createElement('button');
+      toggle.className = 'story-stage__cue-toggle';
+      toggle.type = 'button';
+      toggle.textContent = cueCollapsed ? 'Show' : 'Hide';
+      toggle.setAttribute('aria-label', cueCollapsed ? 'Show cues' : 'Hide cues');
+      const onToggle = () => {
+        cueCollapsed = !cueCollapsed;
+        renderCue(scene);
+      };
+      toggle.addEventListener('click', onToggle);
+      cleanupHandlers.push(() => toggle.removeEventListener('click', onToggle));
+      header.appendChild(toggle);
+      cuePanel.appendChild(header);
+
+      if (cueCollapsed) return;
+
+      const cueBody = document.createElement('div');
+      cueBody.className = 'story-stage__cue-body';
+
+      const beat = document.createElement('p');
+      beat.className = 'story-stage__cue-line story-stage__cue-line--beat';
+      beat.textContent = scene.cue.beat;
+      cueBody.appendChild(beat);
+
+      const keepTrue = document.createElement('p');
+      keepTrue.className = 'story-stage__cue-line';
+      keepTrue.textContent = `Keep true: ${scene.cue.keepTrue}`;
+      cueBody.appendChild(keepTrue);
+
+      const ask = document.createElement('p');
+      ask.className = 'story-stage__cue-line';
+      ask.textContent = `Ask: ${scene.cue.ask}`;
+      cueBody.appendChild(ask);
+
+      if (scene.cue.silly !== undefined) {
+        const silly = document.createElement('p');
+        silly.className = 'story-stage__cue-line';
+        silly.textContent = `Silly twist: ${scene.cue.silly}`;
+        cueBody.appendChild(silly);
+      }
+
+      // The never-stranded control: play (and reveal) the authored line.
+      const fallback = document.createElement('button');
+      fallback.className = 'story-stage__cue-fallback';
+      fallback.type = 'button';
+      fallback.textContent = 'Play the story line';
+      fallback.setAttribute('aria-label', 'Play the story line');
+      const onFallback = () => {
+        options.speech.stop();
+        options.speech.speak(scene.narration);
+        caption.textContent = scene.narration;
+      };
+      fallback.addEventListener('click', onFallback);
+      cleanupHandlers.push(() => fallback.removeEventListener('click', onFallback));
+      cueBody.appendChild(fallback);
+
+      cuePanel.appendChild(cueBody);
     }
 
     function renderScene(sceneId: string, step: number): void {
@@ -335,7 +446,8 @@ export function renderStoryStage(
       }
 
       scenePicture.innerHTML = storySceneSvg(scene.art, artCtx);
-      caption.textContent = scene.narration;
+      caption.textContent = storyMode === 'together' ? '' : scene.narration;
+      if (storyMode === 'together') renderCue(scene);
       controls.innerHTML = '';
 
       if (scene.kind === 'decision' && scene.choices) {
@@ -390,9 +502,11 @@ export function renderStoryStage(
           container?.classList.remove('story-stage--ended');
           renderScene(tale.entrySceneId, 0);
           options.speech.stop();
-          options.speech.speak(tale.opening);
-          const entry = scenesById.get(tale.entrySceneId);
-          if (entry) options.speech.speak(entry.narration);
+          if (storyMode === 'narrated') {
+            options.speech.speak(tale.opening);
+            const entry = scenesById.get(tale.entrySceneId);
+            if (entry) options.speech.speak(entry.narration);
+          }
         };
         againButton.addEventListener('click', onAgain);
         cleanupHandlers.push(() => againButton.removeEventListener('click', onAgain));
@@ -445,9 +559,11 @@ export function renderStoryStage(
 
     renderScene(tale.entrySceneId, 0);
     options.speech.stop();
-    options.speech.speak(tale.opening);
-    const entry = scenesById.get(tale.entrySceneId);
-    if (entry) options.speech.speak(entry.narration);
+    if (storyMode === 'narrated') {
+      options.speech.speak(tale.opening);
+      const entry = scenesById.get(tale.entrySceneId);
+      if (entry) options.speech.speak(entry.narration);
+    }
   }
 
   renderSetup();

@@ -23,6 +23,8 @@ export interface ParentSettings {
   video_enabled: boolean;
   max_activity_choices: number;
   difficulty_mode: "fixed" | "adaptive";
+  /** Story Stage narration ownership: the game narrates, or the adult improvises over cues. */
+  story_mode: "narrated" | "together";
   allowed_domains: LearningDomain[];
   parent_gate_enabled: boolean;
   parent_gate_phrase: string;

@@ -50,6 +50,7 @@ const DEFAULT_SETTINGS: ParentSettings = {
   video_enabled: true,
   max_activity_choices: 4,
   difficulty_mode: 'adaptive',
+  story_mode: 'narrated',
   allowed_domains: [
     'literacy', 'phonics', 'math', 'logic', 'spatial',
     'memory', 'science', 'music', 'art', 'emotional',

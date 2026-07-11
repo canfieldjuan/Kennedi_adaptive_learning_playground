@@ -957,3 +957,32 @@
 .parent-gate-dialog__cancel:hover {
   opacity: 0.85;
 }
+
+/* — Story Stage mode (narration ownership) — */
+.parent-story-mode__explanation {
+  margin-bottom: var(--space-md);
+  color: var(--parent-text-soft, #5a5670);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  max-width: 620px;
+}
+
+.parent-story-mode__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.parent-story-mode__option {
+  padding: 10px 18px;
+  border: 2px solid rgba(90, 86, 112, 0.4);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+}
+
+.parent-story-mode__option--active {
+  border-color: #6c5ce7;
+  background: rgba(108, 92, 231, 0.14);
+}

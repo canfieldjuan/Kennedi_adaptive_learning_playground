@@ -232,7 +232,13 @@ export function renderParentPanel(
     ])
   );
 
-  _container.appendChild(createParentGameLaunchSection(settings.video_enabled));
+  _container.appendChild(createParentGameLaunchSection(settings));
+  _container.appendChild(createStoryModeSection(
+    settings,
+    storage,
+    parent,
+    context
+  ));
   _container.appendChild(createParentGateSettingsSection(
     settings,
     storage,
@@ -347,7 +353,8 @@ function createLocalDataSnapshotSection(
   return section;
 }
 
-function createParentGameLaunchSection(videoEnabled: boolean): HTMLElement {
+function createParentGameLaunchSection(settings: ParentSettings): HTMLElement {
+  const videoEnabled = settings.video_enabled;
   const section = document.createElement('div');
   section.className = 'parent-section parent-game-launch';
 
@@ -380,13 +387,15 @@ function createParentGameLaunchSection(videoEnabled: boolean): HTMLElement {
     route: VIDEO_VAULT_ROUTE,
     disabled: !videoEnabled,
   }));
+  const storyModeLabel =
+    settings.story_mode === 'together' ? 'Tell It Together' : 'Tell Me a Story';
   section.appendChild(createParentGameLaunchCard({
     title: 'Story Stage',
-    status: "Tell Me a Story — Poppy and Biscuit's Forest Adventure",
+    status: `${storyModeLabel} — Pick Three story builder`,
     metrics: [
-      { label: 'Entry', value: 'Fixed narrated tale' },
+      { label: 'Entry', value: 'Pick Three setup' },
+      { label: 'Mode', value: storyModeLabel },
       { label: 'Evidence', value: 'None (creative play)' },
-      { label: 'Home Grid', value: 'Hidden' },
     ],
     buttonLabel: 'Start Story Stage',
     activityId: 'story-stage',
@@ -541,6 +550,62 @@ function createPhase2ReviewItem(item: Phase2ChecklistItem): HTMLElement {
   }
 
   return row;
+}
+
+/**
+ * Story Stage narration ownership (spec: the child never chooses modes).
+ * Living inside the parent panel keeps the choice parent-gated by
+ * location — there is deliberately no per-scene gating in the story.
+ */
+function createStoryModeSection(
+  settings: ParentSettings,
+  storage: StorageServiceInterface,
+  parent: HTMLElement,
+  context: ParentPanelContext
+): HTMLElement {
+  const section = document.createElement('div');
+  section.className = 'parent-section parent-story-mode';
+
+  const title = document.createElement('h2');
+  title.className = 'parent-section__title';
+  title.textContent = 'Story Stage Mode';
+  section.appendChild(title);
+
+  const explanation = document.createElement('p');
+  explanation.className = 'parent-story-mode__explanation';
+  explanation.textContent =
+    'Tell Me a Story narrates every scene. Tell It Together stays quiet and shows you storyteller cues instead — you tell the story, and a Play control can read the written line if you get stuck.';
+  section.appendChild(explanation);
+
+  const options = document.createElement('div');
+  options.className = 'parent-story-mode__options';
+  const modes: Array<{ value: ParentSettings['story_mode']; label: string }> = [
+    { value: 'narrated', label: 'Tell Me a Story' },
+    { value: 'together', label: 'Tell It Together' },
+  ];
+  for (const mode of modes) {
+    const active = settings.story_mode === mode.value;
+    const button = document.createElement('button');
+    button.className = active
+      ? 'parent-story-mode__option parent-story-mode__option--active'
+      : 'parent-story-mode__option';
+    button.type = 'button';
+    button.textContent = mode.label;
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    button.addEventListener('click', () => {
+      if (settings.story_mode === mode.value) return;
+      storage.saveSettings({
+        ...settings,
+        story_mode: mode.value,
+      });
+      destroyParentPanel();
+      renderParentPanel(parent, storage, context);
+    });
+    options.appendChild(button);
+  }
+  section.appendChild(options);
+
+  return section;
 }
 
 function createParentGateSettingsSection(
