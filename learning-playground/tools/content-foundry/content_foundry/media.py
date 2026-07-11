@@ -195,10 +195,12 @@ class MediaTools:
                 segment = temp / f"scene-{index:02d}.mp4"
                 seconds = duration_ms / 1000
                 if source.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}:
-                    args = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-loop", "1", "-t", f"{seconds:.3f}", "-i", str(source)]
+                    args = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-loop", "1", "-i", str(source)]
+                    segment_filter = video_filter
                 else:
-                    args = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(source), "-t", f"{seconds:.3f}"]
-                self._run(args + ["-vf", video_filter, "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", str(segment)])
+                    args = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(source)]
+                    segment_filter = f"{video_filter},tpad=stop_mode=clone:stop_duration={seconds:.3f}"
+                self._run(args + ["-vf", segment_filter, "-t", f"{seconds:.3f}", "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", str(segment)])
                 segments.append(segment)
             concat_file = temp / "segments.txt"
             concat_file.write_text("".join(f"file '{item.as_posix()}'\n" for item in segments), encoding="utf-8")

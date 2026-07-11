@@ -47,21 +47,22 @@ class ContentFoundryService:
         quality: str = "final", seed: int = -1, reference_strength: float = 0.8,
         source_brief_id: str | None = None,
     ) -> dict[str, Any]:
-        reference = self._image_input(reference_path)
         if isinstance(reference_strength, bool) or not isinstance(reference_strength, (int, float)) or not 0.3 <= reference_strength <= 1.2:
             raise ValidationError("reference strength must be between 0.3 and 1.2")
         width, height = resolve_preset(preset)
         steps = resolve_quality(quality)
         actual_seed = resolve_seed(seed)
         final_prompt = illustrated_prompt(prompt)
+        reference = self._bounded_image_input(reference_path)
+        reference_name, reference_record = self.client.upload_with_record(reference)
         graph, workflow = self.registry.render("flux_illustrated_redux", {
-            "reference_image": self.client.upload(reference), "prompt": final_prompt,
+            "reference_image": reference_name, "prompt": final_prompt,
             "reference_strength": reference_strength, "width": width, "height": height,
             "seed": actual_seed, "steps": steps, "filename_prefix": "content-foundry/illustrated",
         })
         return self._run_image_draft(
             kind="illustrated_scene", graph=graph, workflow=workflow,
-            inputs={"prompt": final_prompt, "preset": preset, "quality": quality, "seed": actual_seed, "reference": source_record(reference), "reference_strength": reference_strength},
+            inputs={"prompt": final_prompt, "preset": preset, "quality": quality, "seed": actual_seed, "reference": reference_record, "reference_strength": reference_strength},
             expected=(width, height), source_brief_id=source_brief_id,
         )
 
@@ -94,8 +95,10 @@ class ContentFoundryService:
         steps = resolve_quality(quality)
         final_prompt = illustrated_prompt(prompt)
         workflow_id = "flux_inpaint_canny" if preserve_structure else "flux_inpaint"
+        image_name, image_record = self.client.upload_with_record(image)
+        mask_name, mask_record = self.client.upload_with_record(mask)
         values: dict[str, Any] = {
-            "image": self.client.upload(image), "mask": self.client.upload(mask), "prompt": final_prompt,
+            "image": image_name, "mask": mask_name, "prompt": final_prompt,
             "seed": actual_seed, "steps": steps, "filename_prefix": "content-foundry/edit",
         }
         if preserve_structure:
@@ -107,8 +110,8 @@ class ContentFoundryService:
                 "prompt": final_prompt,
                 "quality": quality,
                 "seed": actual_seed,
-                "image": source_record(image),
-                "mask": source_record(mask),
+                "image": image_record,
+                "mask": mask_record,
                 "preserve_structure": preserve_structure,
                 "control_strength": control_strength if preserve_structure else None,
             },
@@ -119,17 +122,18 @@ class ContentFoundryService:
         self, *, image_path: str, motion_prompt: str, seed: int = -1,
         source_brief_id: str | None = None,
     ) -> dict[str, Any]:
-        image = self._image_input(image_path)
         prompt = validate_motion_prompt(motion_prompt)
         actual_seed = resolve_seed(seed)
+        image = self._bounded_image_input(image_path)
+        image_name, image_record = self.client.upload_with_record(image)
         graph, workflow = self.registry.render("wan_safe_motion", {
-            "image": self.client.upload(image), "prompt": prompt,
+            "image": image_name, "prompt": prompt,
             "negative_prompt": SAFE_MOTION_NEGATIVE, "seed": actual_seed,
             "filename_prefix": "content-foundry/motion",
         })
         draft_id, draft_dir, manifest = self.store.create(
             kind="safe_motion", workflow=workflow,
-            inputs={"prompt": prompt, "negative_prompt": SAFE_MOTION_NEGATIVE, "seed": actual_seed, "source": source_record(image), "target": "960x544", "frames": 81, "fps": 24},
+            inputs={"prompt": prompt, "negative_prompt": SAFE_MOTION_NEGATIVE, "seed": actual_seed, "source": image_record, "target": "960x544", "frames": 81, "fps": 24},
             source_brief_id=source_brief_id,
         )
         try:
@@ -188,9 +192,15 @@ class ContentFoundryService:
             raise ValidationError("image inputs must be PNG, JPEG, or WebP")
         return path
 
-
-def source_record(path: Path) -> dict[str, Any]:
-    return {"name": path.name, "bytes": path.stat().st_size, "sha256": sha256_file(path)}
+    def _bounded_image_input(self, value: str) -> Path:
+        path = self._image_input(value)
+        stream = first_stream(self.media.probe(path), "video")
+        if stream is None:
+            raise ValidationError("image input must be a decodable image")
+        dimensions = (int(stream.get("width", 0)), int(stream.get("height", 0)))
+        if dimensions not in PRESETS.values():
+            raise ValidationError("image input dimensions must match a supported Foundry image preset")
+        return path
 
 
 def result(draft_id: str, draft_dir: Path, manifest: dict[str, Any]) -> dict[str, Any]:

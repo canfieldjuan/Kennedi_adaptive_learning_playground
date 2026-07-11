@@ -190,6 +190,94 @@ asset, activity, curriculum, parent UI, package, or dependency file changed.
 All earlier manifest, timing, contact-sheet, safety, and approval behavior is
 retained.
 
+## Third Review Follow-Up Contract
+
+### Root Cause
+
+Four resource and integrity boundaries remain incomplete. Timeout cleanup is
+tied to a local extension route instead of ComfyUI's standard queue and
+interrupt surfaces. A short video scene is capped but not extended to its
+declared timeline, so narration can outlive the visual track. Upload provenance
+is hashed from a second filesystem read after upload, allowing a concurrent
+replacement to make the manifest describe bytes ComfyUI never received.
+Finally, generation and motion source images are byte-capped but not decoded and
+dimension-capped before upload, allowing compressed oversized images to consume
+unbounded backend resources.
+
+### Correct Fix Must Touch
+
+- Replace timeout cleanup with standard queue inspection, pending deletion, a
+  post-delete race check, and prompt-targeted interruption for a running job.
+  Re-read history after cleanup so a job that completed during the race is
+  collected rather than falsely reported cancelled.
+- Extend short video sources by cloning their last frame to the requested scene
+  duration while retaining the existing output duration cap.
+- Read each uploaded source exactly once, hash and size those exact bytes, and
+  use the resulting immutable record in every generation, edit, mask, and
+  motion manifest.
+- Decode and reject generation and motion source images outside the fixed
+  approved preset dimensions before any upload.
+- Add focused tests for queue/delete/interrupt races, short-video extension,
+  byte-identical upload provenance, and pre-upload image dimension rejection.
+
+### Must Not Change
+
+Do not change the child runtime, activities, curriculum, parent UI, mastery or
+transfer rules, public assets, fixed image presets, final media QA, ambient
+motion policy, manual approval boundary, package dependencies, or ComfyUI
+installation. Do not issue an unqualified global interrupt, broaden accepted
+dimensions, publish generated work, resolve review threads, or merge from this
+fix worker.
+
+### Third Review Follow-Up Cold Audit
+
+#### Gaps
+
+No untraced change, missing contract requirement, or protected-surface change
+was found. The review claim that the configured ComfyUI lacks
+`/api/jobs/{id}/cancel` was contradicted by its local `server.py`; the
+portability concern still traces to this contract and is resolved with standard
+queue surfaces rather than retaining the extension route.
+
+#### Change-By-Change Reconstruction
+
+- `comfy_client.py:37` reads upload bytes once, enforces the byte cap on that
+  exact buffer, derives its manifest record at lines 41-45, and sends the same
+  buffer at lines 55-57. Timeout handling at lines 79-90 performs cleanup and a
+  final history read. Lines 92-112 delete only the accepted pending prompt,
+  re-read the queue for a pending-to-running race, and send the accepted prompt
+  id with a running interruption.
+- `media.py:194` builds each declared scene duration. Video sources receive a
+  last-frame `tpad` at lines 200-203 and every segment retains an output `-t`
+  cap, so short visuals no longer end before narration.
+- `service.py:56`, `service.py:98`, and `service.py:127` route generation, both
+  edit sources, and motion through upload records produced from the transmitted
+  bytes. The returned records are the manifest provenance at lines 65,
+  113-114, and 136. Lines 195-203 decode and preset-cap generation and motion
+  inputs before upload; the prior edit dimension guard remains at lines 84-93.
+- `test_drafts_client.py:176` proves the exact upload buffer remains capped;
+  lines 186-216 exercise pending deletion, the pending-to-running race,
+  prompt-targeted interruption, and final history lookup.
+- `test_media.py:121` assembles a real 0.4-second video into a two-second scene
+  and requires at least 47 decoded output frames.
+- `test_service_contract.py:122` proves both generation and motion reject
+  decoded oversized images before upload. Lines 137-158 mutate the source after
+  upload and prove manifest provenance still names, sizes, and hashes the exact
+  original bytes.
+
+Every implementation and test change traces to Correct Fix Must Touch. The
+diff contains no child runtime, activity, curriculum, parent UI, mastery,
+transfer, public asset, workflow preset, dependency, approval, or ComfyUI
+installation change. The standard interrupt request remains prompt-scoped; no
+unqualified global interrupt was added.
+
+Verification after a clean rebase onto `origin/main`: `npm test` passed 41
+Content Foundry tests with one intentional live-Comfy skip plus 55 Vitest files
+and 719 app tests.
+`npm run typecheck`, `npm run build`, and `git diff --check` passed.
+
+Gap audit: DONE.
+
 Verification: `npm test` passed 37 Foundry tests with one intentional live-Comfy
 skip plus 53 Vitest files and 669 app tests. `npm run typecheck`,
 `npm run build`, and `git diff --check` passed. Live node/model compatibility

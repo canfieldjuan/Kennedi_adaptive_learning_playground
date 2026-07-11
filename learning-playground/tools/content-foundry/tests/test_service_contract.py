@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import sys
 import tempfile
 import unittest
@@ -24,8 +25,17 @@ class FakeComfyClient:
         return {"test": "ready"}
 
     def upload(self, path: Path) -> str:
+        name, _record = self.upload_with_record(path)
+        return name
+
+    def upload_with_record(self, path: Path) -> tuple[str, dict]:
+        data = path.read_bytes()
         self.uploads.append(path)
-        return f"uploaded-{path.name}"
+        return f"uploaded-{path.name}", {
+            "name": path.name,
+            "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+        }
 
     def run(self, graph: dict, output_dir: Path) -> list[Path]:
         self.graphs.append(graph)
@@ -42,6 +52,13 @@ class FakeMedia:
 
     def probe(self, _path: Path) -> dict:
         return {"streams": [{"codec_type": "video", "width": self.width, "height": self.height}]}
+
+
+class MutatingComfyClient(FakeComfyClient):
+    def upload_with_record(self, path: Path) -> tuple[str, dict]:
+        name, record = super().upload_with_record(path)
+        path.write_bytes(b"replacement")
+        return name, record
 
 
 class ServiceContractTests(unittest.TestCase):
@@ -101,6 +118,44 @@ class ServiceContractTests(unittest.TestCase):
             with self.assertRaisesRegex(ValidationError, "supported Foundry image preset"):
                 service.edit_illustrated_scene(image_path="source.png", mask_path="mask.png", prompt="Repair")
             self.assertEqual(client.uploads, [])
+
+    def test_generation_and_motion_reject_oversized_dimensions_before_upload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            local = Path(temp_name)
+            imports = local / "imports"; imports.mkdir(); (imports / "source.png").write_bytes(b"source")
+            client = FakeComfyClient()
+            config = FoundryConfig(PROJECT_ROOT, "http://127.0.0.1:8188", local / "drafts", imports, TOOLS_ROOT / "references", 60)
+            service = ContentFoundryService(config, client=client)  # type: ignore[arg-type]
+            service.media = FakeMedia(12000, 12000)  # type: ignore[assignment]
+
+            with self.assertRaisesRegex(ValidationError, "supported Foundry image preset"):
+                service.generate_illustrated_scene(prompt="Bear waves", reference_path="source.png")
+            with self.assertRaisesRegex(ValidationError, "supported Foundry image preset"):
+                service.animate_scene_safe(image_path="source.png", motion_prompt="gentle steam")
+            self.assertEqual(client.uploads, [])
+
+    def test_manifest_records_the_exact_bytes_used_for_upload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            local = Path(temp_name)
+            imports = local / "imports"; imports.mkdir()
+            source = imports / "source.png"
+            original = b"original upload bytes"
+            source.write_bytes(original)
+            client = MutatingComfyClient()
+            config = FoundryConfig(PROJECT_ROOT, "http://127.0.0.1:8188", local / "drafts", imports, TOOLS_ROOT / "references", 60)
+            service = ContentFoundryService(config, client=client)  # type: ignore[arg-type]
+            service.media = FakeMedia()  # type: ignore[assignment]
+
+            result = service.generate_illustrated_scene(
+                prompt="Bear waves", reference_path="source.png", quality="draft", seed=0
+            )
+
+            self.assertEqual(source.read_bytes(), b"replacement")
+            self.assertEqual(result["manifest"]["inputs"]["reference"], {
+                "name": "source.png",
+                "bytes": len(original),
+                "sha256": hashlib.sha256(original).hexdigest(),
+            })
 
     def test_structure_guidance_strength_is_recorded_in_the_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as temp_name:

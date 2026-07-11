@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import multiprocessing
 import threading
 import sys
@@ -13,7 +14,7 @@ TOOLS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(TOOLS_ROOT))
 
 from content_foundry.comfy_client import ComfyClient
-from content_foundry.config import MAX_OUTPUT_COUNT
+from content_foundry.config import MAX_IMAGE_INPUT_BYTES, MAX_OUTPUT_COUNT
 from content_foundry.drafts import DraftStore, validate_manifest
 from content_foundry.errors import ComfyUIError, ValidationError
 
@@ -172,25 +173,47 @@ class ComfyClientTests(unittest.TestCase):
         with self.assertRaises(ComfyUIError):
             self.client._collect_outputs(too_many, Path("unused"))
 
+    def test_upload_caps_the_exact_bytes_read_from_disk(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            source = Path(temp_name) / "oversized.png"
+            source.write_bytes(b"x" * (MAX_IMAGE_INPUT_BYTES + 1))
+            with patch.object(self.client, "_json_request") as request, self.assertRaisesRegex(
+                ComfyUIError, "image input exceeds the size limit"
+            ):
+                self.client.upload_with_record(source)
+            request.assert_not_called()
+
     def test_timeout_cancels_only_the_accepted_prompt(self) -> None:
         calls = []
+        queue_reads = 0
 
-        def request(method: str, path: str, **_kwargs: object) -> dict:
-            calls.append((method, path))
+        def request(method: str, path: str, **kwargs: object) -> dict:
+            nonlocal queue_reads
+            calls.append((method, path, kwargs.get("body")))
             if path == "/prompt":
                 return {"prompt_id": "11111111-1111-4111-8111-111111111111"}
-            if path == "/api/jobs/11111111-1111-4111-8111-111111111111/cancel":
-                return {"cancelled": True}
+            if method == "GET" and path == "/queue":
+                queue_reads += 1
+                if queue_reads == 1:
+                    return {"queue_pending": [[0, "11111111-1111-4111-8111-111111111111", {}, {}, []]], "queue_running": []}
+                return {"queue_pending": [], "queue_running": [[0, "11111111-1111-4111-8111-111111111111", {}, {}, []]]}
+            if method == "POST" and path in {"/queue", "/interrupt"}:
+                return {}
+            if path == "/history/11111111-1111-4111-8111-111111111111":
+                return {}
             self.fail(f"unexpected request: {method} {path}")
 
         with patch.object(self.client, "_json_request", side_effect=request), patch(
             "content_foundry.comfy_client.time.monotonic", side_effect=[0, 31]
         ), self.assertRaisesRegex(ComfyUIError, "timed out.*was cancelled"):
             self.client.run({"1": {"class_type": "Test", "inputs": {}}}, Path("unused"))
-        self.assertEqual(calls, [
-            ("POST", "/prompt"),
-            ("POST", "/api/jobs/11111111-1111-4111-8111-111111111111/cancel"),
+        self.assertEqual([(method, path) for method, path, _body in calls], [
+            ("POST", "/prompt"), ("GET", "/queue"), ("POST", "/queue"),
+            ("GET", "/queue"), ("POST", "/interrupt"),
+            ("GET", "/history/11111111-1111-4111-8111-111111111111"),
         ])
+        self.assertEqual(json.loads(calls[2][2]), {"delete": ["11111111-1111-4111-8111-111111111111"]})
+        self.assertEqual(json.loads(calls[4][2]), {"prompt_id": "11111111-1111-4111-8111-111111111111"})
 
     def test_output_descriptor_rejects_unsafe_filename_subfolder_and_type(self) -> None:
         with tempfile.TemporaryDirectory() as temp_name:

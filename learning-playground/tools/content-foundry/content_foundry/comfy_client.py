@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import mimetypes
 import time
@@ -10,7 +11,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from .config import MAX_OUTPUT_BYTES, MAX_OUTPUT_COUNT, validate_loopback_url
+from .config import MAX_IMAGE_INPUT_BYTES, MAX_OUTPUT_BYTES, MAX_OUTPUT_COUNT, validate_loopback_url
 from .errors import ComfyUIError
 
 
@@ -30,6 +31,18 @@ class ComfyClient:
         }
 
     def upload(self, path: Path) -> str:
+        name, _record = self.upload_with_record(path)
+        return name
+
+    def upload_with_record(self, path: Path) -> tuple[str, dict[str, Any]]:
+        data = path.read_bytes()
+        if len(data) > MAX_IMAGE_INPUT_BYTES:
+            raise ComfyUIError("image input exceeds the size limit")
+        record = {
+            "name": path.name,
+            "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+        }
         boundary = uuid.uuid4().hex
         stored_name = f"{uuid.uuid4().hex}{path.suffix.lower()}"
         content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
@@ -40,13 +53,13 @@ class ComfyClient:
         ).encode("utf-8")
         suffix = f"\r\n--{boundary}--\r\n".encode("utf-8")
         response = self._json_request(
-            "POST", "/upload/image", body=prefix + path.read_bytes() + suffix,
+            "POST", "/upload/image", body=prefix + data + suffix,
             content_type=f"multipart/form-data; boundary={boundary}",
         )
         name = response.get("name")
         if not safe_filename(name):
             raise ComfyUIError("ComfyUI returned an invalid uploaded filename")
-        return name
+        return name, record
 
     def run(self, graph: dict[str, Any], output_dir: Path) -> list[Path]:
         queued = self._json_request(
@@ -63,19 +76,40 @@ class ComfyClient:
             if prompt_id in history:
                 return self._collect_outputs(history[prompt_id], output_dir)
             time.sleep(1)
-        cancel_path = f"/api/jobs/{urllib.parse.quote(prompt_id, safe='')}/cancel"
         try:
-            cancellation = self._json_request("POST", cancel_path)
+            cancelled = self._cancel_prompt(prompt_id)
         except ComfyUIError as exc:
             raise ComfyUIError(
                 f"ComfyUI job timed out after {self.timeout_seconds} seconds and cancellation failed: {exc}"
             ) from exc
-        if cancellation.get("cancelled") is True:
-            raise ComfyUIError(f"ComfyUI job timed out after {self.timeout_seconds} seconds and was cancelled")
         history = self._json_request("GET", f"/history/{urllib.parse.quote(prompt_id, safe='')}")
         if prompt_id in history:
             return self._collect_outputs(history[prompt_id], output_dir)
+        if cancelled:
+            raise ComfyUIError(f"ComfyUI job timed out after {self.timeout_seconds} seconds and was cancelled")
         raise ComfyUIError(f"ComfyUI job timed out after {self.timeout_seconds} seconds and is no longer active")
+
+    def _cancel_prompt(self, prompt_id: str) -> bool:
+        queue = self._json_request("GET", "/queue")
+        cancelled = False
+        if queue_has_prompt(queue.get("queue_pending"), prompt_id):
+            self._json_request(
+                "POST",
+                "/queue",
+                body=json.dumps({"delete": [prompt_id]}).encode("utf-8"),
+                content_type="application/json",
+            )
+            cancelled = True
+            queue = self._json_request("GET", "/queue")
+        if queue_has_prompt(queue.get("queue_running"), prompt_id):
+            self._json_request(
+                "POST",
+                "/interrupt",
+                body=json.dumps({"prompt_id": prompt_id}).encode("utf-8"),
+                content_type="application/json",
+            )
+            cancelled = True
+        return cancelled
 
     def _collect_outputs(self, entry: Any, output_dir: Path) -> list[Path]:
         if not isinstance(entry, dict):
@@ -186,4 +220,11 @@ def safe_filename(value: Any) -> bool:
         and Path(value).name == value
         and "\\" not in value
         and not any(ord(char) < 32 or ord(char) == 127 for char in value)
+    )
+
+
+def queue_has_prompt(items: Any, prompt_id: str) -> bool:
+    return isinstance(items, list) and any(
+        isinstance(item, list) and len(item) > 1 and item[1] == prompt_id
+        for item in items
     )

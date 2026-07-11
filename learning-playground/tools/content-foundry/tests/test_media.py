@@ -118,6 +118,34 @@ class MediaIntegrationTests(unittest.TestCase):
             self.assertLessEqual(details["integrated_lufs"], -17.0)
             self.assertLessEqual(details["true_peak_dbtp"], -2.0)
 
+    def test_short_video_source_is_extended_to_the_declared_scene_duration(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            imports, drafts, references = root / "imports", root / "drafts", root / "references"
+            imports.mkdir(); references.mkdir()
+            scene = imports / "short.mp4"
+            voice = imports / "voice.wav"
+            output = root / "clip.webm"
+            self.run_command([
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                "-i", "color=c=#4f9d69:s=960x544:d=0.4:r=24", "-c:v", "libx264", str(scene),
+            ])
+            self.run_command([
+                "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=2", "-af", "volume=0.5",
+                "-ar", "48000", "-ac", "1", str(voice),
+            ])
+            config = FoundryConfig(root, "http://127.0.0.1:8188", drafts, imports, references, 60)
+            MediaTools(config, DraftStore(drafts))._assemble_video(
+                [(scene, 2000)], [(voice, 0)], output, 2.0
+            )
+
+            probe = self.run_command([
+                "ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+                "-show_entries", "stream=nb_read_frames", "-of", "default=nw=1:nk=1", str(output),
+            ])
+            self.assertGreaterEqual(int(probe.stdout.strip()), 47)
+
     def test_stereo_narration_stays_silent_until_its_storyboard_start(self) -> None:
         with tempfile.TemporaryDirectory() as temp_name:
             root = Path(temp_name)
