@@ -851,33 +851,6 @@
   }
 }
 
-/* Short landscape has no vertical room for the grown train: keep the display
-   train at its original compact size there so everything stays above the
-   fold; portrait phones keep the larger, countable train. */
-@media (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
-  .number-train__engine {
-    width: 64px;
-    height: 64px;
-  }
-
-  .number-train__seat {
-    width: 28px;
-    height: 28px;
-  }
-
-  .number-train__passenger-svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .number-train__choices .number-train__number-choice {
-    min-height: 84px;
-  }
-
-  .number-train__choices .number-train__numeral {
-    font-size: 2.2rem;
-  }
-}
 
 /* Compact Number Train for phones (portrait and short landscape): the display
    train, journey, and number path shrink; the tappable numeral choices and
@@ -937,6 +910,34 @@
   .number-train__choices .number-train__check {
     min-height: 72px;
     font-size: 1.1rem;
+  }
+}
+
+/* Short landscape has no vertical room for the grown train: keep the display
+   train at its original compact size there so everything stays above the
+   fold; portrait phones keep the larger, countable train. */
+@media (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  .number-train__engine {
+    width: 64px;
+    height: 64px;
+  }
+
+  .number-train__seat {
+    width: 28px;
+    height: 28px;
+  }
+
+  .number-train__passenger-svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .number-train__choices .number-train__number-choice {
+    min-height: 84px;
+  }
+
+  .number-train__choices .number-train__numeral {
+    font-size: 2.2rem;
   }
 }
 
