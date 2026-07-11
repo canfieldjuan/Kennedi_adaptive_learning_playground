@@ -22,6 +22,11 @@ import type {
   SpeechServiceInterface,
 } from '../../types/runtime';
 import { renderBearArt } from '../kennedis-orders/bear-art';
+import {
+  derivePieceFromCompletion,
+  type GalleryPiece,
+} from '../../core/art-gallery';
+import { galleryMiniSvg } from './gallery-art';
 import { createStudioEnvironment } from '../coloring-book/studio-environment';
 import {
   isStudioShapeId,
@@ -56,6 +61,8 @@ interface BearArtStudioOptions {
   speech: SpeechServiceInterface;
   audio: AudioServiceInterface;
   onEvent: (event: ActivityAttemptEvent) => void;
+  /** Earlier finished pieces, derived from the event log by the app shell. */
+  gallery?: GalleryPiece[];
 }
 
 let container: HTMLElement | null = null;
@@ -153,6 +160,14 @@ export function renderBearArtStudioActivity(
   feedback.setAttribute('aria-live', 'polite');
   container.appendChild(feedback);
 
+  // The gallery shelf appears only on finish: the just-made piece slides in
+  // ahead of up to three earlier pieces (derived from the event log).
+  const shelf = document.createElement('div');
+  shelf.className = 'bear-art-studio__shelf';
+  shelf.setAttribute('aria-label', 'Your art gallery');
+  shelf.hidden = true;
+  container.appendChild(shelf);
+
   const completeActions = document.createElement('div');
   completeActions.className = 'activity-complete-actions';
   completeActions.hidden = true;
@@ -189,6 +204,7 @@ export function renderBearArtStudioActivity(
     tray,
     actions,
     feedback,
+    shelf,
     completeActions,
     correctFeedback,
     incorrectFeedback,
@@ -246,6 +262,7 @@ interface SharedRefs {
   tray: HTMLElement;
   actions: HTMLElement;
   feedback: HTMLElement;
+  shelf: HTMLElement;
   completeActions: HTMLElement;
   correctFeedback: FeedbackRule;
   incorrectFeedback: FeedbackRule;
@@ -267,6 +284,9 @@ function finishPiece(shared: SharedRefs, message: string, piece?: HTMLElement): 
     sound: shared.correctFeedback.sound,
   });
   shared.completeActions.hidden = false;
+  // The shelf and the Next/Home buttons must be visible without hunting:
+  // instant (non-animated) scroll, so reduced-motion needs no special case.
+  shared.completeActions.scrollIntoView?.({ block: 'nearest' });
 }
 
 function wiggle(element: HTMLElement): void {
@@ -288,7 +308,7 @@ function emitStudioEvent(shared: SharedRefs, params: {
   metadata?: Record<string, string | number | boolean>;
 }): void {
   const { activity } = shared.options;
-  shared.options.onEvent({
+  const event: ActivityAttemptEvent = {
     event_id: createEventId(),
     session_id: shared.options.sessionId,
     child_id: shared.options.childId,
@@ -318,7 +338,37 @@ function emitStudioEvent(shared: SharedRefs, params: {
       art_mode: shared.content.mode,
       ...(params.metadata ?? {}),
     },
-  });
+  };
+  shared.options.onEvent(event);
+
+  if (event.outcome === 'completed' && event.metadata) {
+    const livePiece = derivePieceFromCompletion({
+      eventId: event.event_id,
+      activityId: event.activity_id,
+      timestamp: event.timestamp,
+      metadata: event.metadata,
+    });
+    if (livePiece) showGalleryShelf(shared, livePiece);
+  }
+}
+
+function showGalleryShelf(shared: SharedRefs, livePiece: GalleryPiece): void {
+  const earlier = (shared.options.gallery ?? []).slice(0, 3);
+  shared.shelf.innerHTML = '';
+
+  const addMini = (piece: GalleryPiece, isNew: boolean) => {
+    const mini = document.createElement('span');
+    mini.className = isNew
+      ? 'bear-art-studio__mini bear-art-studio__mini--new'
+      : 'bear-art-studio__mini';
+    mini.setAttribute('aria-hidden', 'true');
+    mini.innerHTML = galleryMiniSvg(piece);
+    shared.shelf.appendChild(mini);
+  };
+
+  addMini(livePiece, true);
+  for (const piece of earlier) addMini(piece, false);
+  shared.shelf.hidden = false;
 }
 
 function buildSwatches(
@@ -575,6 +625,8 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
       hintShown: false,
       metadata: {
         stickers_placed: stickerList.length,
+        sticker_ids: stickerList.join(','),
+        card_color_id: cardColor?.id ?? 'none',
         art_surface_id: isShirt ? 'bear-shirt' : 'decorate-card',
       },
     });

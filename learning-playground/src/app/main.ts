@@ -14,6 +14,7 @@ import type { Route } from './router';
 import { createSessionId, SessionTimer } from './session';
 import { registerActivity, getActivity } from '../core/activity-registry';
 import { appendEvent, getEvents } from '../core/event-log';
+import { deriveArtGallery } from '../core/art-gallery';
 import {
   createParentGateState,
   getParentGatePhrase,
@@ -206,6 +207,7 @@ function renderActivityRoute(activityId: string): void {
       speech,
       audio,
       onEvent: handleActivityEvent,
+      gallery: deriveArtGallery(getEvents()),
     });
     return;
   }
