@@ -261,6 +261,48 @@ const checks = [
     ],
   },
   {
+    file: 'docs/contracts/pr-merge-executor.contract.md',
+    requiredText: [
+      '# Active-Builder Guarded Merge Executor Contract', '## Trusted Inputs',
+      '## Local Guard', '## Live Guard', '## Merge Guard',
+      '## Output and Exit Contract', '## Non-Scope', '`--match-head-commit`',
+    ],
+  },
+  {
+    file: 'scripts/pr-merge-executor.mjs',
+    requiredText: [
+      "EXECUTION_DECISION_TYPE = 'kennedi.pr-merge-execution'",
+      'MAX_AUTHORITY_BYTES = 64 * 1024', "input.wakeSource !== 'scheduled'",
+      "field('Status') !== 'scheduled_confirmation'", 'parseReadinessProof(producer.stdout)',
+      'decideConfirmation(confirmationInput, proof)', "'--match-head-commit'",
+      'await assertLocalState(input', 'merge_outcome_unknown',
+      'metadata.isFile()', 'authorizationSource.length === 0',
+      "'api', '--hostname', 'github.com'", "type === 'merge_queue'",
+      '`github.com/${input.repository}`', '!isRecord(receipt)',
+      "receipt.state !== 'MERGED'", 'merge_performed: true', 'merge_performed:',
+    ],
+    forbiddenText: [
+      '--admin', '--delete-branch', 'shell: true', 'workflow_dispatch',
+      'resolveReviewThread', 'updateSubscription',
+    ],
+  },
+  {
+    file: 'tests/scripts/pr-merge-executor.test.ts',
+    requiredText: [
+      'executes one exact-head merge and verifies its receipt',
+      'rejects mismatched authority field %s', 'rejects duplicated authority fields',
+      'rejects an oversized authority record', 'rejects %s wake authority',
+      'rejects blank or none authorization source %j',
+      'requires a regular authorization file',
+      'authorizes invocation from a worktree subdirectory by Git root',
+      'rejects unsupported branch rules %j',
+      'rejects an authority flag on the command line', 'blocks before merge for %s',
+      'rechecks local state immediately before merge',
+      'fails closed for %s', 'does not claim success when the merge command fails',
+      'rejects malformed post-merge receipt %j as unknown',
+    ],
+  },
+  {
     file: 'tests/scripts/pr-attention.test.ts',
     requiredText: [
       'review activity outranks pending checks',
