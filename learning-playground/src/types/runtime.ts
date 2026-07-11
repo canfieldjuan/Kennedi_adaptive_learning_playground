@@ -5,6 +5,7 @@
 
 import type { LearningActivity } from './activity';
 import type { ActivityAttemptEvent } from './events';
+import type { StoryHistoryRecord } from './story-history';
 import type { ParentObservation } from './observations';
 import type {
   ParentDifficultyAction,
@@ -71,6 +72,9 @@ export interface StorageServiceInterface {
   getParentReviewScheduleRecords(): ParentReviewScheduleRecord[];
   saveParentReviewScheduleRecord(record: ParentReviewScheduleRecord): void;
   clearParentReviewScheduleRecords(): void;
+  getStoryHistory(): StoryHistoryRecord[];
+  appendStoryHistory(record: StoryHistoryRecord): void;
+  clearStoryHistory(): void;
   exportProgressData(events: ActivityAttemptEvent[]): string;
 }
 

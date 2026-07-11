@@ -33,6 +33,7 @@
  */
 
 import type { SpeechServiceInterface } from '../../types/runtime';
+import type { StoryHistoryRecord } from '../../types/story-history';
 import { FIRST_STORY_PACK } from './first-tale';
 import type {
   ResolvedScene,
@@ -46,10 +47,16 @@ import { storyCardSvg, storyChoiceSvg, storySceneSvg } from './story-art';
 
 export type StoryMode = 'narrated' | 'together';
 
+/** The narrow, non-evaluative history sink (spec §21) — never the event log. */
+export interface StoryHistorySink {
+  append(record: StoryHistoryRecord): void;
+}
+
 interface StoryStageOptions {
   speech: SpeechServiceInterface;
   /** Parent-owned narration mode; anything but 'together' plays narrated. */
   storyMode?: StoryMode;
+  history?: StoryHistorySink;
 }
 
 const MODE_LABELS: Record<StoryMode, string> = {
@@ -76,6 +83,23 @@ const SETUP_STEPS: Array<{
 let container: HTMLElement | null = null;
 let cleanupHandlers: Array<() => void> = [];
 let activeSpeech: SpeechServiceInterface | null = null;
+let activeHistory: StoryHistorySink | null = null;
+let pendingRecord: StoryHistoryRecord | null = null;
+
+function storySessionId(): string {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+  return `story-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+/** Leaving mid-story records the session as left early — facts only. */
+function flushPendingRecord(): void {
+  if (pendingRecord && activeHistory) {
+    activeHistory.append(pendingRecord);
+  }
+  pendingRecord = null;
+}
 
 export function renderStoryStage(
   parent: HTMLElement,
@@ -83,6 +107,7 @@ export function renderStoryStage(
 ): void {
   destroyStoryStage();
   activeSpeech = options.speech;
+  activeHistory = options.history ?? null;
 
   const pack = FIRST_STORY_PACK;
   const storyMode: StoryMode =
@@ -296,8 +321,23 @@ export function renderStoryStage(
 
   // ——— Phase 2: the resolved story ———
 
+  function openStoryRecord(tale: ResolvedStory): void {
+    pendingRecord = {
+      story_session_id: storySessionId(),
+      mode: storyMode,
+      family_id: tale.familyId,
+      character_id: tale.selection.characterId,
+      setting_id: tale.selection.settingId,
+      problem_id: tale.selection.problemId,
+      choice_path: [],
+      started_at: new Date().toISOString(),
+      status: 'left_early',
+    };
+  }
+
   function beginStory(tale: ResolvedStory): void {
     const scenesById = new Map(tale.scenes.map((scene) => [scene.id, scene]));
+    openStoryRecord(tale);
     // Scenes compose over the selection: the picked setting is the
     // backdrop and the picked character is the hero in every beat.
     const artCtx: SceneArtContext = {
@@ -471,6 +511,7 @@ export function renderStoryStage(
           button.appendChild(label);
 
           const onChoice = () => {
+            pendingRecord?.choice_path.push(choice.id);
             renderScene(choice.next, step + 1);
             const nextScene = scenesById.get(choice.next);
             if (nextScene) speakScene(nextScene);
@@ -488,6 +529,15 @@ export function renderStoryStage(
           endingReached = true;
           container.classList.add('story-stage--ended');
         }
+        if (pendingRecord) {
+          activeHistory?.append({
+            ...pendingRecord,
+            status: 'completed',
+            ending_id: scene.endingId,
+            completed_at: new Date().toISOString(),
+          });
+          pendingRecord = null;
+        }
         const endRow = document.createElement('div');
         endRow.className = 'activity-complete-actions story-stage__end';
         endRow.hidden = false;
@@ -500,6 +550,7 @@ export function renderStoryStage(
         const onAgain = () => {
           endingReached = false;
           container?.classList.remove('story-stage--ended');
+          openStoryRecord(tale);
           renderScene(tale.entrySceneId, 0);
           options.speech.stop();
           if (storyMode === 'narrated') {
@@ -574,6 +625,9 @@ export function destroyStoryStage(): void {
     cleanup();
   }
   cleanupHandlers = [];
+
+  flushPendingRecord();
+  activeHistory = null;
 
   // Leaving the story mid-scene must never leave narration running.
   activeSpeech?.stop();

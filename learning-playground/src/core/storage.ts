@@ -12,6 +12,7 @@ import type {
   ParentDifficultyOverride,
 } from '../types/parent-actions';
 import type { ParentTransferDecision } from '../types/transfer';
+import type { StoryHistoryRecord } from '../types/story-history';
 import type { ParentActivityBriefDecision } from '../types/activity-briefs';
 import type {
   ParentMasterySnapshot,
@@ -34,6 +35,7 @@ const TRANSFER_DECISIONS_KEY = 'lp_parent_transfer_decisions';
 const ACTIVITY_BRIEF_DECISIONS_KEY = 'lp_parent_activity_brief_decisions';
 const MASTERY_SNAPSHOTS_KEY = 'lp_parent_mastery_snapshots';
 const REVIEW_SCHEDULE_RECORDS_KEY = 'lp_parent_review_schedule_records';
+const STORY_HISTORY_KEY = 'lp_story_history';
 const DEFAULT_CHILD_ID = 'local-child';
 
 export interface KeyValueStorage {
@@ -411,6 +413,32 @@ export class StorageService implements StorageServiceInterface {
     this.localStore.removeItem(REVIEW_SCHEDULE_RECORDS_KEY);
   }
 
+  getStoryHistory(): StoryHistoryRecord[] {
+    try {
+      const raw = this.localStore.getItem(STORY_HISTORY_KEY);
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(isStoryHistoryRecord);
+    } catch {
+      return [];
+    }
+  }
+
+  appendStoryHistory(record: StoryHistoryRecord): void {
+    try {
+      const records = this.getStoryHistory();
+      records.push(record);
+      this.localStore.setItem(STORY_HISTORY_KEY, JSON.stringify(records));
+    } catch (err) {
+      console.error('[Storage] Failed to append story history:', err);
+    }
+  }
+
+  clearStoryHistory(): void {
+    this.localStore.removeItem(STORY_HISTORY_KEY);
+  }
+
   exportProgressData(events: ActivityAttemptEvent[]): string {
     return buildProgressExportJson({
       settings: this.getSettings(),
@@ -423,8 +451,29 @@ export class StorageService implements StorageServiceInterface {
       activityBriefDecisions: this.getParentActivityBriefDecisions(),
       masterySnapshots: this.getParentMasterySnapshots(),
       reviewScheduleRecords: this.getParentReviewScheduleRecords(),
+      storyHistory: this.getStoryHistory(),
     });
   }
+}
+
+function isStoryHistoryRecord(value: unknown): value is StoryHistoryRecord {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.story_session_id === 'string' &&
+    (record.mode === 'narrated' || record.mode === 'together') &&
+    typeof record.family_id === 'string' &&
+    typeof record.character_id === 'string' &&
+    typeof record.setting_id === 'string' &&
+    typeof record.problem_id === 'string' &&
+    Array.isArray(record.choice_path) &&
+    record.choice_path.every((choice) => typeof choice === 'string') &&
+    (record.ending_id === undefined || typeof record.ending_id === 'string') &&
+    typeof record.started_at === 'string' &&
+    (record.completed_at === undefined || typeof record.completed_at === 'string') &&
+    (record.status === 'completed' || record.status === 'left_early')
+  );
 }
 
 function isParentObservation(value: unknown): value is ParentObservation {

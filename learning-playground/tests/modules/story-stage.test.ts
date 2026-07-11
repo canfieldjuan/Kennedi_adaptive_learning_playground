@@ -577,6 +577,102 @@ describe('story stage runtime', () => {
     expect(findByAria(root, 'Play the story line')).toBeUndefined();
   });
 
+  function setupWithHistory(mode?: 'narrated' | 'together'): {
+    root: MockElement;
+    records: unknown[];
+  } {
+    const records: unknown[] = [];
+    const root = document.createElement('div') as unknown as MockElement;
+    renderStoryStage(root as unknown as HTMLElement, {
+      speech: speech as unknown as SpeechServiceInterface,
+      ...(mode ? { storyMode: mode } : {}),
+      history: { append: (record) => records.push(record) },
+    });
+    return { root, records };
+  }
+
+  test('a completed story appends one non-evaluative history record', () => {
+    const { root, records } = setupWithHistory();
+    startFirstStory(root);
+    expect(records).toHaveLength(0); // nothing until an ending
+
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Follow the sparkly path')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Blow gentle bubbles')?.click();
+
+    expect(records).toHaveLength(1);
+    const record = records[0] as Record<string, unknown>;
+    expect(record).toMatchObject({
+      mode: 'narrated',
+      family_id: 'lost-friend',
+      character_id: 'poppy',
+      setting_id: 'enchanted-forest',
+      problem_id: 'missing-friend',
+      choice_path: ['sparkly-path', 'bubbles'],
+      ending_id: 'found-with-bubbles',
+      status: 'completed',
+    });
+    expect(typeof record.story_session_id).toBe('string');
+    expect(typeof record.started_at).toBe('string');
+    expect(typeof record.completed_at).toBe('string');
+    // §20: the record never grows correctness or evaluation keys.
+    for (const banned of ['correct', 'score', 'mastery', 'skill', 'evidence']) {
+      expect(Object.keys(record).some((key) => key.includes(banned))).toBe(false);
+    }
+  });
+
+  test('together mode is recorded on the session', () => {
+    const { root, records } = setupWithHistory('together');
+    startFirstStory(root);
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Ask the friendly owl')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Sing a soft song')?.click();
+    expect((records[0] as Record<string, unknown>).mode).toBe('together');
+    expect((records[0] as Record<string, unknown>).ending_id).toBe('found-with-song');
+  });
+
+  test('leaving mid-story flushes a left_early record; setup-only visits record nothing', () => {
+    const first = setupWithHistory();
+    destroyStoryStage();
+    expect(first.records).toHaveLength(0); // abandoned setup: no story existed
+
+    const { root, records } = setupWithHistory();
+    startFirstStory(root);
+    findByAria(root, 'What happens next?')?.click();
+    destroyStoryStage();
+    expect(records).toHaveLength(1);
+    const record = records[0] as Record<string, unknown>;
+    expect(record).toMatchObject({ status: 'left_early', choice_path: [] });
+    expect(record.completed_at).toBeUndefined();
+    expect(record.ending_id).toBeUndefined();
+  });
+
+  test('Tell it again opens a second session with a distinct id', () => {
+    const { root, records } = setupWithHistory();
+    startFirstStory(root);
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Follow the sparkly path')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Blow gentle bubbles')?.click();
+    findByAria(root, 'Tell it again')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Ask the friendly owl')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Sing a soft song')?.click();
+
+    expect(records).toHaveLength(2);
+    const [a, b] = records as Array<Record<string, unknown>>;
+    expect(a.story_session_id).not.toBe(b.story_session_id);
+    expect(b.choice_path).toEqual(['ask-owl', 'song']);
+    expect(b.status).toBe('completed');
+  });
+
   test('the runtime has no event sink and decorative layers are hidden', () => {
     const root = setup();
     startFirstStory(root);

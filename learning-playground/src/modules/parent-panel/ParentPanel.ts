@@ -48,6 +48,8 @@ import {
   buildParentNoteHistory,
   type ParentNoteHistoryItem,
 } from '../../core/parent-notes-history';
+import { buildRecentStories } from '../../core/story-history';
+import { FIRST_STORY_PACK } from '../story-stage/first-tale';
 import {
   isParentObservationCategory,
   PARENT_OBSERVATION_CATEGORIES,
@@ -239,6 +241,7 @@ export function renderParentPanel(
     parent,
     context
   ));
+  _container.appendChild(createRecentStoriesSection(storage));
   _container.appendChild(createParentGateSettingsSection(
     settings,
     storage,
@@ -553,6 +556,53 @@ function createPhase2ReviewItem(item: Phase2ChecklistItem): HTMLElement {
 }
 
 /**
+ * Recent Stories (spec §21): simple, parent-readable, non-evaluative —
+ * which story, which mode, completed or left early, when. No trait
+ * inference from the child's choices, ever.
+ */
+function createRecentStoriesSection(
+  storage: StorageServiceInterface
+): HTMLElement {
+  const section = document.createElement('div');
+  section.className = 'parent-section parent-recent-stories';
+
+  const title = document.createElement('h2');
+  title.className = 'parent-section__title';
+  title.textContent = 'Recent Stories';
+  section.appendChild(title);
+
+  const items = buildRecentStories(storage.getStoryHistory(), FIRST_STORY_PACK);
+  if (items.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'parent-recent-stories__empty';
+    empty.textContent = 'No stories yet — Story Stage sessions will show up here.';
+    section.appendChild(empty);
+    return section;
+  }
+
+  const list = document.createElement('ul');
+  list.className = 'parent-recent-stories__list';
+  for (const item of items) {
+    const row = document.createElement('li');
+    row.className = 'parent-recent-stories__item';
+
+    const line = document.createElement('p');
+    line.className = 'parent-recent-stories__title';
+    line.textContent = `${item.title} — ${item.problemLabel}`;
+    row.appendChild(line);
+
+    const meta = document.createElement('p');
+    meta.className = 'parent-recent-stories__meta';
+    meta.textContent = `${item.modeLabel} · ${item.statusLabel} · ${item.startedOn}`;
+    row.appendChild(meta);
+    list.appendChild(row);
+  }
+  section.appendChild(list);
+
+  return section;
+}
+
+/**
  * Story Stage narration ownership (spec: the child never chooses modes).
  * Living inside the parent panel keeps the choice parent-gated by
  * location — there is deliberately no per-scene gating in the story.
@@ -858,6 +908,7 @@ function createDataManagementSection(
       storage.clearParentActivityBriefDecisions();
       storage.clearParentMasterySnapshots();
       storage.clearParentReviewScheduleRecords();
+      storage.clearStoryHistory();
       alert('Progress data cleared.');
       destroyParentPanel();
       renderParentPanel(parent, storage, context);

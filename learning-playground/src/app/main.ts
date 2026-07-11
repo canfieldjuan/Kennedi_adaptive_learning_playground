@@ -146,6 +146,11 @@ function handleRoute(route: Route): void {
         speech,
         storyMode:
           storage.getSettings().story_mode === 'together' ? 'together' : 'narrated',
+        // The §21 non-evaluative story record — a separate local store,
+        // never the attempt-event log.
+        history: {
+          append: (record) => storage.appendStoryHistory(record),
+        },
       });
       break;
     case 'activity':
