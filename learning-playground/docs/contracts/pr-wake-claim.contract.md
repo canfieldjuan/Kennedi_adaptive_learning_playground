@@ -59,6 +59,11 @@ or abandon calls and blocks a new acquire until the transition finishes. A
 retry with the same action and token validates and resumes an existing marker;
 same-action finalization is idempotent under overlapping retries, including a
 receipt that appears between the initial receipt and active-record reads.
+One PID-and-nonce execution owner is held from marker validation through marker
+cleanup. A retry may recover that owner only when its process is provably dead.
+After taking execution ownership, the worker re-reads the active record and may
+mutate it only when it still belongs to the exact token and capacity slot
+captured before the transition.
 
 A matching completed receipt is authoritative for that wake's completion retry
 even if a newer wake now owns the shared PR/head active record. The retry never

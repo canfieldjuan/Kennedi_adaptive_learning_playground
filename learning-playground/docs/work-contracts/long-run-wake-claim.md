@@ -77,6 +77,25 @@ that boundary would violate issue #54's duplicate-wake invariant.
 - Live or malformed publication ownership, stale active-claim takeover, merge
   authority, workflow wiring, and every prior non-scope remain fail closed.
 
+### 2026-07-10 fourth cold-review correction
+
+- Root cause: the transition marker records durable intent but does not
+  exclusively own transition execution. Overlapping same-action workers can
+  both run against one marker and either worker can remove it. Both completion
+  and abandonment also mutate the active path using a record captured before
+  transition ownership, so a newer wake can replace that path in the gap and
+  be removed by the stale worker.
+- The correction must add one exclusive PID-and-nonce transition execution
+  owner with dead-owner recovery, hold it through marker cleanup, and re-read
+  and validate the exact active owner only after execution ownership is held.
+  A matching completion receipt may terminate an old completion retry without
+  touching a newer active owner; every other contradictory owner fails closed.
+- Deterministic tests must force a successor active record into the
+  pre-transition gap for both completion and abandonment, and must prove that
+  overlapping same-action execution cannot remove the live owner's marker.
+- Do not change claim identity, capacity, replay meaning, stale active-claim
+  policy, event wiring, merge authority, or any prior non-scope surface.
+
 ## Cold Diff Audit
 
 ### Gaps
@@ -85,16 +104,26 @@ that boundary would violate issue #54's duplicate-wake invariant.
   identity, private canonical state, atomic publication, token-bound
   transitions, replay receipts, and bounded reads/growth gate every successful
   decision (`learning-playground/scripts/pr-wake-claim.mjs:34`,
-  `learning-playground/scripts/pr-wake-claim.mjs:100`,
-  `learning-playground/scripts/pr-wake-claim.mjs:258`,
-  `learning-playground/scripts/pr-wake-claim.mjs:299`,
-  `learning-playground/scripts/pr-wake-claim.mjs:657`).
-- CONFIRMED — concurrency is controlled by exclusive hard-link publication for
-  active/capacity records and a second exclusive transition marker for
-  completion or abandonment (`learning-playground/scripts/pr-wake-claim.mjs:127`,
-  `learning-playground/scripts/pr-wake-claim.mjs:299`,
-  `learning-playground/scripts/pr-wake-claim.mjs:360`,
-  `learning-playground/scripts/pr-wake-claim.mjs:692`).
+  `learning-playground/scripts/pr-wake-claim.mjs:101`,
+  `learning-playground/scripts/pr-wake-claim.mjs:269`,
+  `learning-playground/scripts/pr-wake-claim.mjs:311`,
+  `learning-playground/scripts/pr-wake-claim.mjs:750`).
+- CONFIRMED — one recoverable PID-and-nonce execution owner now spans marker
+  validation, current-active revalidation, state mutation, and marker cleanup.
+  Live owners return `busy`; only provably dead owners are recovered
+  (`learning-playground/scripts/pr-wake-claim.mjs:311`,
+  `learning-playground/scripts/pr-wake-claim.mjs:326`,
+  `learning-playground/scripts/pr-wake-claim.mjs:357`,
+  `learning-playground/scripts/pr-wake-claim.mjs:404`,
+  `learning-playground/scripts/pr-wake-claim.mjs:412`).
+- CONFIRMED — stale completion and abandonment snapshots cannot mutate a
+  successor active owner. Completion returns from its exact receipt while a
+  contradictory abandon fails closed, and interrupted marker cleanup observes
+  the same execution owner (`learning-playground/scripts/pr-wake-claim.mjs:357`,
+  `learning-playground/scripts/pr-wake-claim.mjs:376`,
+  `learning-playground/tests/scripts/pr-wake-claim.test.ts:103`,
+  `learning-playground/tests/scripts/pr-wake-claim.test.ts:218`,
+  `learning-playground/tests/scripts/pr-wake-claim.test.ts:463`).
 - CONFIRMED — all three live-review paths are closed: same-token/action retries
   validate and resume existing transitions, capacity admission uses one of
   4,096 atomically exclusive slots, and lstat presence checks expose dangling
@@ -153,7 +182,7 @@ that boundary would violate issue #54's duplicate-wake invariant.
   `learning-playground/scripts/pr-wake-claim.mjs:280`,
   `learning-playground/scripts/pr-wake-claim.mjs:657`,
   `learning-playground/scripts/pr-wake-claim.mjs:692`).
-- Fifty-six tests attack both sides of ownership, replay, token, transition,
+- Sixty-two tests attack both sides of ownership, replay, token, transition,
   malformed-state, symlink, permission, capacity, exit, and real-process race
   boundaries (`learning-playground/tests/scripts/pr-wake-claim.test.ts:27`,
   `learning-playground/tests/scripts/pr-wake-claim.test.ts:135`,
@@ -173,8 +202,8 @@ that boundary would violate issue #54's duplicate-wake invariant.
 
 ### Verification
 
-- `npx vitest run tests/scripts/pr-wake-claim.test.ts` — 56 passed.
-- `npm test` — 53 files / 652 tests passed.
+- `npx vitest run tests/scripts/pr-wake-claim.test.ts` — 62 passed.
+- `npm test` — 53 files / 658 tests passed.
 - `npm run typecheck` — passed.
 - `npm run build` — passed.
 - `npm run test:viewport` — 6 browser scenarios passed.

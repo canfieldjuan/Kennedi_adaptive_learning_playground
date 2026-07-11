@@ -73,12 +73,13 @@ export function parseCliArgs(argv) {
 export function executeClaimAction(input, {
   createToken = randomUUID,
   now = () => new Date().toISOString(),
+  beforeTransition = () => {},
 } = {}) {
   const root = validateRoot(input.claimRoot);
   const paths = claimPaths(root, input);
   if (input.action === 'acquire') return acquire(input, paths, { createToken, now });
-  if (input.action === 'complete') return complete(input, paths, { now });
-  return abandon(input, paths, { now });
+  if (input.action === 'complete') return complete(input, paths, { now, beforeTransition });
+  return abandon(input, paths, { now, beforeTransition });
 }
 
 export function runCli({ argv = process.argv.slice(2), stdout = process.stdout } = {}) {
@@ -155,7 +156,7 @@ function acquire(input, paths, { createToken, now }) {
   fail('claim_race', 'Claim state changed repeatedly during acquire');
 }
 
-function complete(input, paths, { now }) {
+function complete(input, paths, { now, beforeTransition }) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     if (pathPresent(paths.completed)) {
       const completed = readRecordIfPresent(paths.completed);
@@ -178,17 +179,20 @@ function complete(input, paths, { now }) {
     if (active === null) continue;
     validateOwnedActive(active, input);
     validateCapacitySlot(readRecord(paths.capacitySlot(active.capacity_slot)), input, active);
-    return withTransition(input, paths, 'complete', active, () => {
-      const completed = completedRecord(input, active.claim_token, active.capacity_slot, now());
+    beforeTransition(active);
+    return withTransition(input, paths, 'complete', active, (ownedActive) => {
+      const completed = completedRecord(
+        input, ownedActive.claim_token, ownedActive.capacity_slot, now()
+      );
       if (pathPresent(paths.completed)) {
-        validateCompleted(readRecord(paths.completed), input, active.claim_token);
+        validateCompleted(readRecord(paths.completed), input, ownedActive.claim_token);
       } else {
         try {
           createRecord(paths.completed, completed, paths.root, paths.completedPublication);
         } catch (error) {
           if (hasCode(error, 'publication_busy')) return baseResult(input, 'busy');
           if (!hasCode(error, 'record_exists')) throw error;
-          validateCompleted(readRecord(paths.completed), input, active.claim_token);
+          validateCompleted(readRecord(paths.completed), input, ownedActive.claim_token);
         }
       }
       unlinkIfPresent(paths.active);
@@ -214,7 +218,7 @@ function transitionBelongsTo(record, input, action, expectedSlot) {
     && record.claim_token_sha256 === digest([input.claimToken]);
 }
 
-function abandon(input, paths, { now }) {
+function abandon(input, paths, { now, beforeTransition }) {
   const ownedRelease = findOwnedCapacityRelease(paths, input, input.claimToken);
   if (ownedRelease !== null) {
     const active = readRecordIfPresent(paths.active);
@@ -232,19 +236,26 @@ function abandon(input, paths, { now }) {
   if (!pathPresent(paths.active) && pathPresent(paths.transition)) {
     const marker = readRecord(paths.transition);
     validateTransition(marker, input, 'abandon');
-    prepareCapacityRelease(paths, input, marker.capacity_slot, input.claimToken);
-    finishInterruptedTransition(input, paths, 'abandon', marker.capacity_slot);
+    const recovery = finishInterruptedTransition(
+      input,
+      paths,
+      'abandon',
+      marker.capacity_slot,
+      () => prepareCapacityRelease(paths, input, marker.capacity_slot, input.claimToken)
+    );
+    if (recovery === 'busy') return baseResult(input, 'busy');
     finishCapacityRelease(paths, input, marker.capacity_slot, input.claimToken);
     return abandonedResult(input, now());
   }
   const active = readRecord(paths.active);
   validateOwnedActive(active, input);
   validateCapacitySlot(readRecord(paths.capacitySlot(active.capacity_slot)), input, active);
-  const result = withTransition(input, paths, 'abandon', active, () => {
-    if (!reclaimPublication(paths.activePublication(active.capacity_slot), paths.root)) {
+  beforeTransition(active);
+  const result = withTransition(input, paths, 'abandon', active, (ownedActive) => {
+    if (!reclaimPublication(paths.activePublication(ownedActive.capacity_slot), paths.root)) {
       return baseResult(input, 'busy');
     }
-    prepareCapacityRelease(paths, input, active.capacity_slot, active.claim_token);
+    prepareCapacityRelease(paths, input, ownedActive.capacity_slot, ownedActive.claim_token);
     unlinkIfPresent(paths.active);
     syncDirectory(paths.root);
     return abandonedResult(input, now());
@@ -293,6 +304,7 @@ function claimPaths(root, input) {
     capacityOrphan: (index) => resolve(root, `.capacity-slot-${index}.orphan.json`),
     activePublication: (index) => resolve(root, `.${activeKey}.active.slot-${index}.tmp`),
     transitionPublication: resolve(root, `.${activeKey}.transition.json.tmp`),
+    transitionExecution: resolve(root, `.${activeKey}.transition.execution`),
   };
 }
 
@@ -309,37 +321,87 @@ function withTransition(input, paths, action, active, operation) {
     capacity_slot: active.capacity_slot,
     claim_token_sha256: digest([input.claimToken]),
   };
-  if (pathPresent(paths.transition)) {
-    validateTransition(readRecord(paths.transition), input, action, active.capacity_slot);
-    reclaimPublication(paths.transitionPublication, paths.root);
-  } else {
-    try {
-      createRecord(paths.transition, marker, paths.root, paths.transitionPublication);
-    } catch (error) {
-      if (hasCode(error, 'publication_busy')) return baseResult(input, 'busy');
-      if (hasCode(error, 'record_exists')) {
-        const existing = readRecordIfPresent(paths.transition);
-        if (existing === null) {
-          fail('transition_race', 'Claim transition changed during recovery');
-        }
-        validateTransition(existing, input, action, active.capacity_slot);
-      } else {
-        throw error;
-      }
-    }
+  let execution;
+  try {
+    execution = acquirePublication(paths.transitionExecution, paths.root);
+  } catch (error) {
+    if (hasCode(error, 'publication_busy')) return baseResult(input, 'busy');
+    throw error;
   }
   let result;
   let failure;
-  try { result = operation(); } catch (error) { failure = error; }
+  let ownsMarker = false;
   try {
     if (pathPresent(paths.transition)) {
-      const current = readRecordIfPresent(paths.transition);
-      if (current !== null) {
-        validateTransition(current, input, action, active.capacity_slot);
-        unlinkIfPresent(paths.transition);
+      validateTransition(readRecord(paths.transition), input, action, active.capacity_slot);
+      reclaimPublication(paths.transitionPublication, paths.root);
+    } else {
+      try {
+        createRecord(paths.transition, marker, paths.root, paths.transitionPublication);
+      } catch (error) {
+        if (hasCode(error, 'publication_busy')) {
+          result = baseResult(input, 'busy');
+        } else if (hasCode(error, 'record_exists')) {
+          const existing = readRecordIfPresent(paths.transition);
+          if (existing === null) {
+            fail('transition_race', 'Claim transition changed during recovery');
+          }
+          validateTransition(existing, input, action, active.capacity_slot);
+        } else {
+          throw error;
+        }
       }
     }
-    syncDirectory(paths.root);
+    ownsMarker = result === undefined;
+    if (ownsMarker) {
+      const currentActive = readRecordIfPresent(paths.active);
+      if (currentActive === null || !activeBelongsTo(currentActive, input)) {
+        const completed = action === 'complete'
+          ? readRecordIfPresent(paths.completed)
+          : null;
+        if (completed !== null) {
+          validateCompleted(completed, input, input.claimToken);
+          validateCapacitySlot(
+            readRecord(paths.capacitySlot(completed.capacity_slot)), input, completed
+          );
+          reclaimPublication(paths.completedPublication, paths.root);
+          result = baseResult(input, 'completed');
+        } else if (currentActive === null) {
+          fail('claim_race', 'Active claim changed before transition ownership');
+        } else {
+          validateOwnedActive(currentActive, input);
+        }
+      }
+      if (result === undefined) {
+        validateOwnedActive(currentActive, input);
+        if (currentActive.capacity_slot !== active.capacity_slot) {
+          fail('active_record', 'Active claim changed before transition ownership');
+        }
+        validateCapacitySlot(
+          readRecord(paths.capacitySlot(currentActive.capacity_slot)), input, currentActive
+        );
+        result = operation(currentActive);
+      }
+    }
+  } catch (error) {
+    failure = error;
+  }
+  if (ownsMarker) {
+    try {
+      if (pathPresent(paths.transition)) {
+        const current = readRecordIfPresent(paths.transition);
+        if (current !== null) {
+          validateTransition(current, input, action, active.capacity_slot);
+          unlinkIfPresent(paths.transition);
+        }
+      }
+      syncDirectory(paths.root);
+    } catch (error) {
+      if (failure === undefined) failure = error;
+    }
+  }
+  try {
+    finishPublication(paths.transitionExecution, execution, paths.root);
   } catch (error) {
     if (failure === undefined) failure = error;
   }
@@ -347,14 +409,35 @@ function withTransition(input, paths, action, active, operation) {
   return result;
 }
 
-function finishInterruptedTransition(input, paths, action, expectedSlot) {
-  if (!pathPresent(paths.transition)) return null;
-  const marker = readRecordIfPresent(paths.transition);
-  if (marker === null) return null;
-  validateTransition(marker, input, action, expectedSlot);
-  unlinkIfPresent(paths.transition);
-  syncDirectory(paths.root);
-  return marker;
+function finishInterruptedTransition(
+  input, paths, action, expectedSlot, beforeRemove = () => {}
+) {
+  let execution;
+  try {
+    execution = acquirePublication(paths.transitionExecution, paths.root);
+  } catch (error) {
+    if (hasCode(error, 'publication_busy')) return 'busy';
+    throw error;
+  }
+  let failure;
+  try {
+    const marker = readRecordIfPresent(paths.transition);
+    if (marker !== null) {
+      validateTransition(marker, input, action, expectedSlot);
+      beforeRemove(marker);
+      unlinkIfPresent(paths.transition);
+      syncDirectory(paths.root);
+    }
+  } catch (error) {
+    failure = error;
+  }
+  try {
+    finishPublication(paths.transitionExecution, execution, paths.root);
+  } catch (error) {
+    if (failure === undefined) failure = error;
+  }
+  if (failure !== undefined) throw failure;
+  return 'finished';
 }
 
 function reserveCapacitySlot(paths, input, token, reservedAt) {

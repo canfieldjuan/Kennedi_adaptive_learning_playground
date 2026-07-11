@@ -100,6 +100,26 @@ describe('wake claim ownership', () => {
     });
   });
 
+  test('a stale completion snapshot cannot remove a successor active claim', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    let injected = false;
+
+    const result = executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, {
+      ...fixed(),
+      beforeTransition: () => {
+        if (injected) return;
+        injected = true;
+        executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed());
+        expect(executeClaimAction({ ...input, wakeId: 'delivery-2' }, fixed()).decision)
+          .toBe('acquired');
+      },
+    });
+
+    expect(result.decision).toBe('completed');
+    expect(activeState(input.claimRoot)).toMatchObject({ wake_id: 'delivery-2' });
+  });
+
   test('an exact receipt wins over a newer shared transition marker', () => {
     const input = parsed();
     executeClaimAction(input, fixed());
@@ -195,6 +215,25 @@ describe('wake claim ownership', () => {
     });
   });
 
+  test('a stale abandon snapshot cannot remove a successor active claim', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    let injected = false;
+
+    expect(() => executeClaimAction({ ...input, action: 'abandon', claimToken: TOKEN }, {
+      ...fixed(),
+      beforeTransition: () => {
+        if (injected) return;
+        injected = true;
+        executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed());
+        expect(executeClaimAction({ ...input, wakeId: 'delivery-2' }, fixed()).decision)
+          .toBe('acquired');
+      },
+    })).toThrowError(expect.objectContaining({ code: 'claim_token_mismatch' }));
+
+    expect(activeState(input.claimRoot)).toMatchObject({ wake_id: 'delivery-2' });
+  });
+
   test('recovers dead capacity publication ownership', () => {
     const input = parsed();
     executeClaimAction(input, fixed());
@@ -233,6 +272,46 @@ describe('wake claim ownership', () => {
     expect(executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed()).decision)
       .toBe('busy');
     expect(pathNames(input.claimRoot)).toContain(active);
+  });
+
+  test('does not share a live transition execution owner or remove its marker', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
+    const transitionPath = join(
+      input.claimRoot, active.replace('.active.json', '.transition.json')
+    );
+    const executionPath = join(
+      input.claimRoot, `.${active.replace('.active.json', '.transition.execution')}`
+    );
+    writeFileSync(transitionPath, JSON.stringify(transition(input, 'complete', capacitySlot)));
+    symlinkSync(`${process.pid}:55555555-5555-4555-8555-555555555555`, `${executionPath}.lock`);
+
+    expect(executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed()).decision)
+      .toBe('busy');
+    expect(pathNames(input.claimRoot)).toContain(transitionPath.split('/').at(-1));
+    expect(pathNames(input.claimRoot)).toContain(active);
+  });
+
+  test('recovers a dead transition execution owner and its marker', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
+    const transitionPath = join(
+      input.claimRoot, active.replace('.active.json', '.transition.json')
+    );
+    const executionPath = join(
+      input.claimRoot, `.${active.replace('.active.json', '.transition.execution')}`
+    );
+    writeFileSync(transitionPath, JSON.stringify(transition(input, 'complete', capacitySlot)));
+    symlinkSync('2147483647:66666666-6666-4666-8666-666666666666', `${executionPath}.lock`);
+
+    expect(executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed()).decision)
+      .toBe('completed');
+    expect(pathNames(input.claimRoot)).not.toContain(transitionPath.split('/').at(-1));
+    expect(pathNames(input.claimRoot)).not.toContain(`${executionPath.split('/').at(-1)}.lock`);
   });
 
   test('fails closed on malformed publication ownership', () => {
@@ -379,6 +458,47 @@ describe('wake claim state validation', () => {
       JSON.stringify(transition(input, 'abandon', capacitySlot)));
 
     expect(executeClaimAction({ ...input, wakeId: 'delivery-2' }, fixed()).decision).toBe('busy');
+  });
+
+  test('interrupted abandon recovery respects a live transition execution owner', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
+    const transitionPath = join(
+      input.claimRoot, active.replace('.active.json', '.transition.json')
+    );
+    const executionPath = join(
+      input.claimRoot, `.${active.replace('.active.json', '.transition.execution')}`
+    );
+    unlinkSync(join(input.claimRoot, active));
+    writeFileSync(transitionPath, JSON.stringify(transition(input, 'abandon', capacitySlot)));
+    symlinkSync(`${process.pid}:77777777-7777-4777-8777-777777777777`, `${executionPath}.lock`);
+
+    expect(executeClaimAction({ ...input, action: 'abandon', claimToken: TOKEN }, fixed()).decision)
+      .toBe('busy');
+    expect(pathNames(input.claimRoot)).toContain(transitionPath.split('/').at(-1));
+    expect(pathNames(input.claimRoot)).toContain(`.capacity-slot-${capacitySlot}.json`);
+  });
+
+  test('receipt recovery does not remove a live transition owner marker', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
+    executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed());
+    const transitionPath = join(
+      input.claimRoot, active.replace('.active.json', '.transition.json')
+    );
+    const executionPath = join(
+      input.claimRoot, `.${active.replace('.active.json', '.transition.execution')}`
+    );
+    writeFileSync(transitionPath, JSON.stringify(transition(input, 'complete', capacitySlot)));
+    symlinkSync(`${process.pid}:88888888-8888-4888-8888-888888888888`, `${executionPath}.lock`);
+
+    expect(executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed()).decision)
+      .toBe('completed');
+    expect(pathNames(input.claimRoot)).toContain(transitionPath.split('/').at(-1));
   });
 
   test.each(['completed', 'transition'] as const)(
