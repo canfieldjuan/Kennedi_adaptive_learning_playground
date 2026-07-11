@@ -47,7 +47,8 @@ wake for that head returns `busy`.
 Empty, oversized, symbolic-link, non-regular, malformed, contradictory, or
 unknown state fails closed. Active claims do not expire and are never stolen by
 elapsed time. A crashed owner therefore requires explicit operator recovery in
-a later slice.
+a later slice. Persisted capacity identity fields are validated independently
+before they can participate in orphan detection or reclamation.
 
 ## Complete and Abandon Contract
 

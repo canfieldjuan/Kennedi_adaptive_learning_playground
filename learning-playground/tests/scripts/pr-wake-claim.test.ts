@@ -1,6 +1,8 @@
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
 import { execFile } from 'node:child_process';
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
+import { createHash } from 'node:crypto';
+// @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
 import { chmodSync, linkSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
 import { tmpdir } from 'node:os';
@@ -585,6 +587,24 @@ describe('wake claim state validation', () => {
       .toHaveLength(0);
   });
 
+  test.each([
+    ['repository', 'invalid/repository/path'],
+    ['pull_request', 0],
+    ['expected_head_sha', 'not-a-sha'],
+    ['wake_source', 'merge'],
+    ['wake_id', '../escape'],
+    ['claim_token_sha256', 'not-a-token-hash'],
+  ])('rejects a dead orphan capacity slot with malformed %s', (field, value) => {
+    const input = parsed();
+    const slot = capacityStart(input);
+    const malformed = { ...capacitySlot(slot, 2_147_483_647), [field]: value };
+    writeFileSync(join(input.claimRoot, `.capacity-slot-${slot}.json`), JSON.stringify(malformed));
+
+    expect(() => executeClaimAction(input, fixed())).toThrowError(
+      expect.objectContaining({ code: 'capacity_slot' })
+    );
+  });
+
   test('reclaims a dead publisher active temporary file with its reservation', () => {
     const input = parsed();
     expect(executeClaimAction(input, fixed()).decision).toBe('acquired');
@@ -777,6 +797,13 @@ function capacitySlot(slot: number, publisherPid: number) {
     publisher_pid: publisherPid,
     reserved_at: '2026-07-11T02:00:00.000Z',
   };
+}
+
+function capacityStart(input: ReturnType<typeof parsed>) {
+  const digest = createHash('sha256').update(JSON.stringify([
+    input.repository, input.prNumber, input.expectedHead, input.wakeSource, input.wakeId,
+  ])).digest('hex');
+  return Number.parseInt(digest.slice(0, 8), 16) % MAX_WAKE_RECORDS;
 }
 
 function invoke(argv: string[]) {

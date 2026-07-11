@@ -96,18 +96,33 @@ that boundary would violate issue #54's duplicate-wake invariant.
 - Do not change claim identity, capacity, replay meaning, stale active-claim
   policy, event wiring, merge authority, or any prior non-scope surface.
 
+### 2026-07-11 fifth live-review correction
+
+- Thread `PRRT_kwDOTPmar86QED1z` remains actionable on the current head: orphan
+  detection constructs its validation input from the persisted capacity record,
+  while capacity validation compares identity fields only to that same input.
+  A dead-publisher slot with an invalid repository, PR, head, wake source, wake
+  id, or token hash can therefore be reclaimed instead of failing closed.
+- The correction must independently validate every persisted capacity identity
+  field against the same bounded repository, positive PR, SHA, wake-source,
+  wake-id, slot, token-hash, publisher, and timestamp domains used at intake.
+  Existing valid dead-publisher reclamation must continue to pass.
+- Do not change capacity size, owner-path derivation, active stale-claim policy,
+  transition execution, publication ownership, event wiring, merge authority,
+  or any prior non-scope surface.
+
 ## Cold Diff Audit
 
 ### Gaps
 
-- CONFIRMED — no P1/P2 remains in the contracted claim primitive. Exact input
-  identity, private canonical state, atomic publication, token-bound
-  transitions, replay receipts, and bounded reads/growth gate every successful
-  decision (`learning-playground/scripts/pr-wake-claim.mjs:34`,
-  `learning-playground/scripts/pr-wake-claim.mjs:101`,
-  `learning-playground/scripts/pr-wake-claim.mjs:269`,
-  `learning-playground/scripts/pr-wake-claim.mjs:311`,
-  `learning-playground/scripts/pr-wake-claim.mjs:750`).
+- CONFIRMED — no P1/P2 remains in the contracted claim primitive. Persisted
+  capacity records independently validate repository, positive PR, exact head,
+  wake source, wake id, slot, token hash, publisher, and timestamp domains
+  before owner comparison or orphan reclamation
+  (`learning-playground/scripts/pr-wake-claim.mjs:569`,
+  `learning-playground/scripts/pr-wake-claim.mjs:593`,
+  `learning-playground/tests/scripts/pr-wake-claim.test.ts:578`,
+  `learning-playground/tests/scripts/pr-wake-claim.test.ts:590`).
 - CONFIRMED — one recoverable PID-and-nonce execution owner now spans marker
   validation, current-active revalidation, state mutation, and marker cleanup.
   Live owners return `busy`; only provably dead owners are recovered
@@ -182,7 +197,7 @@ that boundary would violate issue #54's duplicate-wake invariant.
   `learning-playground/scripts/pr-wake-claim.mjs:280`,
   `learning-playground/scripts/pr-wake-claim.mjs:657`,
   `learning-playground/scripts/pr-wake-claim.mjs:692`).
-- Sixty-two tests attack both sides of ownership, replay, token, transition,
+- Sixty-eight tests attack both sides of ownership, replay, token, transition,
   malformed-state, symlink, permission, capacity, exit, and real-process race
   boundaries (`learning-playground/tests/scripts/pr-wake-claim.test.ts:27`,
   `learning-playground/tests/scripts/pr-wake-claim.test.ts:135`,
@@ -202,8 +217,8 @@ that boundary would violate issue #54's duplicate-wake invariant.
 
 ### Verification
 
-- `npx vitest run tests/scripts/pr-wake-claim.test.ts` — 62 passed.
-- `npm test` — 53 files / 658 tests passed.
+- `npx vitest run tests/scripts/pr-wake-claim.test.ts` — 68 passed.
+- `npm test` — 53 files / 664 tests passed.
 - `npm run typecheck` — passed.
 - `npm run build` — passed.
 - `npm run test:viewport` — 6 browser scenarios passed.

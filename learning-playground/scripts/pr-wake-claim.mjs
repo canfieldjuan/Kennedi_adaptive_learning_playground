@@ -572,7 +572,15 @@ function validateCapacitySlot(record, input, owner) {
     : owner.claim_token_sha256;
   if (!isRecord(record) || record.schema_version !== CLAIM_SCHEMA_VERSION
     || record.record_type !== 'capacity_slot' || record.capacity_slot !== owner.capacity_slot
-    || !validSlot(record.capacity_slot) || record.repository !== input.repository
+    || !validSlot(record.capacity_slot)
+    || typeof record.repository !== 'string' || !REPO.test(record.repository)
+    || !Number.isInteger(record.pull_request) || record.pull_request <= 0
+    || typeof record.expected_head_sha !== 'string' || !SHA.test(record.expected_head_sha)
+    || !WAKE_SOURCES.has(record.wake_source)
+    || typeof record.wake_id !== 'string' || !WAKE_ID.test(record.wake_id)
+    || typeof record.claim_token_sha256 !== 'string'
+    || !/^[0-9a-f]{64}$/.test(record.claim_token_sha256)
+    || record.repository !== input.repository
     || record.pull_request !== input.prNumber || record.expected_head_sha !== input.expectedHead
     || record.wake_source !== input.wakeSource || record.wake_id !== input.wakeId
     || record.claim_token_sha256 !== expectedHash
