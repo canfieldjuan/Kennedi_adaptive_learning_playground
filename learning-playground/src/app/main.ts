@@ -140,8 +140,13 @@ function handleRoute(route: Route): void {
     }
     case 'story-stage':
       // Story Stage is deliberately outside the activity/evidence system:
-      // it takes speech only and can emit no attempt events.
-      renderStoryStage(app, { speech });
+      // it takes speech + the parent-owned narration mode and can emit no
+      // attempt events. Anything unexpected in storage plays narrated.
+      renderStoryStage(app, {
+        speech,
+        storyMode:
+          storage.getSettings().story_mode === 'together' ? 'together' : 'narrated',
+      });
       break;
     case 'activity':
       renderActivityRoute(route.activityId);

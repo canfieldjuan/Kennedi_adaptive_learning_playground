@@ -185,6 +185,7 @@ function makeSettings(): ParentSettings {
     video_enabled: true,
     max_activity_choices: 4,
     difficulty_mode: 'adaptive',
+      story_mode: 'narrated',
     allowed_domains: ['math'],
     parent_gate_enabled: true,
     parent_gate_phrase: 'PARENT',

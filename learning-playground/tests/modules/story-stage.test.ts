@@ -474,6 +474,109 @@ describe('story stage runtime', () => {
     expect(findByAria(root, 'New story')).toBeDefined();
   });
 
+  function setupTogether(): MockElement {
+    const root = document.createElement('div') as unknown as MockElement;
+    renderStoryStage(root as unknown as HTMLElement, {
+      speech: speech as unknown as SpeechServiceInterface,
+      storyMode: 'together',
+    });
+    return root;
+  }
+
+  test('the setup badge shows the active mode to the adult in both modes', () => {
+    const root = setup();
+    expect(findByClass(root, 'story-stage__mode-badge')?.textContent).toBe(
+      'Tell Me a Story'
+    );
+    destroyStoryStage();
+    const together = setupTogether();
+    expect(findByClass(together, 'story-stage__mode-badge')?.textContent).toBe(
+      'Tell It Together'
+    );
+  });
+
+  test('together: Start launches silently with the cue panel instead of narration', () => {
+    const root = setupTogether();
+    startFirstStory(root);
+
+    // Setup selection speech still happened, but NOTHING was narrated
+    // after the summary line — the adult owns the story words.
+    expect(speech.speak.mock.calls.at(-1)?.[0]).toBe('Your story is ready!');
+    expect(currentCaption(root)).toBe('');
+
+    // The cue panel carries the resolved cue for the entry scene.
+    expect(findByClass(root, 'story-stage__cue-line--beat')?.textContent).toBe(
+      'We meet Princess Poppy the explorer at home beside the enchanted forest.'
+    );
+    const lines = findAllByClass(root, 'story-stage__cue-line').map(
+      (line) => line.textContent
+    );
+    expect(lines).toContain('Keep true: Poppy is curious and kind.');
+    expect(lines).toContain(
+      'Ask: What do you think Poppy sees near the enchanted forest?'
+    );
+    expect(lines).toContain('Silly twist: Maybe something sparkles in polka dots.');
+    // Child controls unchanged.
+    expect(findByAria(root, 'What happens next?')).toBeDefined();
+  });
+
+  test('together: a full traversal reaches an ending with zero narration speech', () => {
+    const root = setupTogether();
+    startFirstStory(root);
+    const speaksAfterStart = speech.speak.mock.calls.length;
+
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Ask the friendly owl')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Sing a soft song')?.click();
+
+    expect(speech.speak.mock.calls.length).toBe(speaksAfterStart);
+    expect(currentCaption(root)).toBe('');
+    expect(findByAria(root, 'Tell it again')).toBeDefined();
+
+    // Tell it again restarts silently too.
+    findByAria(root, 'Tell it again')?.click();
+    expect(speech.speak.mock.calls.length).toBe(speaksAfterStart);
+    expect(findByClass(root, 'story-stage__cue-line--beat')?.textContent).toBe(
+      'We meet Princess Poppy the explorer at home beside the enchanted forest.'
+    );
+  });
+
+  test('together: the fallback plays and reveals the authored story line', () => {
+    const root = setupTogether();
+    startFirstStory(root);
+
+    findByAria(root, 'Play the story line')?.click();
+    expect(speech.speak.mock.calls.at(-1)?.[0]).toBe(scene('intro').narration);
+    expect(currentCaption(root)).toBe(scene('intro').narration);
+  });
+
+  test('together: collapse hides the cue lines and persists across scenes', () => {
+    const root = setupTogether();
+    startFirstStory(root);
+
+    findByAria(root, 'Hide cues')?.click();
+    expect(findByClass(root, 'story-stage__cue-line--beat')).toBeUndefined();
+    expect(findByAria(root, 'Play the story line')).toBeUndefined();
+
+    // Advancing keeps the panel collapsed until the adult reveals it.
+    findByAria(root, 'What happens next?')?.click();
+    expect(findByClass(root, 'story-stage__cue-line--beat')).toBeUndefined();
+
+    findByAria(root, 'Show cues')?.click();
+    expect(findByClass(root, 'story-stage__cue-line--beat')?.textContent).toBe(
+      'Biscuit wandered off to play — the adventure begins.'
+    );
+  });
+
+  test('narrated mode renders no cue panel', () => {
+    const root = setup();
+    startFirstStory(root);
+    expect(findByClass(root, 'story-stage__cue')).toBeUndefined();
+    expect(findByAria(root, 'Play the story line')).toBeUndefined();
+  });
+
   test('the runtime has no event sink and decorative layers are hidden', () => {
     const root = setup();
     startFirstStory(root);
