@@ -94,6 +94,7 @@ export function renderVideoVault(
           childId: options.childId,
           sessionId: options.sessionId,
           manifestId: options.videoManifest.id,
+          manifestVersion: options.videoManifest.version,
           promptText,
           video,
           attemptNumber: completedCount,

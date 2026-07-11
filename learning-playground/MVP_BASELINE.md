@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.48 Bear Art Studio surfaces baseline
+Version: v0.3.49 Bear video human narration baseline
 
 ## Current Working MVP
 
@@ -46,8 +46,9 @@ The Learning Playground is a local-first adaptive learning playground for a pres
   color request card. A mismatched applied color remains correctable and emits
   incorrect evidence; legacy free-choice coloring remains unchanged.
 - Video Vault: validated repo-bundled-only video intake, reachable by direct or
-  parent-started observation route, with one short local narrated clip,
-  `Bear Bakes Bread`. Completion is
+  parent-started observation route, with one short local parent-narrated clip,
+  `Bear Bakes Bread`. Its three human-recorded lines are level-matched and
+  aligned to the mixing, baking, and finished-bread visual beats. Completion is
   exposure-only. When the clip ends, a manual question action opens a separate
   three-picture vocabulary response; only that response records correct or
   incorrect evidence.

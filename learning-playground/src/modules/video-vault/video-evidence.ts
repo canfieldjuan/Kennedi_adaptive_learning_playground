@@ -7,6 +7,7 @@ export function createVideoCompletionEvent(params: {
   childId: string;
   sessionId: string;
   manifestId: string;
+  manifestVersion: number;
   promptText: string;
   video: ApprovedVideo;
   attemptNumber: number;
@@ -39,6 +40,7 @@ export function createVideoCompletionEvent(params: {
     hint_shown: false,
     metadata: {
       manifest_id: params.manifestId,
+      manifest_version: params.manifestVersion,
       video_title: params.video.title,
       duration_seconds: params.video.duration_seconds,
       media_source: params.video.source,
