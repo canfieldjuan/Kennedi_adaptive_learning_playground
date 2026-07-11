@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "id": "bear-bakes-bread-mix-proof",
+  "proof_only": true,
+  "production_writes_allowed": false,
+  "comfyui": {
+    "version": "0.25.0",
+    "url": "http://127.0.0.1:8188",
+    "device_name": "NVIDIA GeForce RTX 3090",
+    "custom_nodes_allowed": false
+  },
+  "models": [
+    {
+      "role": "diffusion",
+      "relative_path": "models/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
+      "sha256": "456f901338bd9eadbded3828b819109a9b68e8a525ca5cf8d0049a69fcfeca1e"
+    },
+    {
+      "role": "vae",
+      "relative_path": "models/vae/wan2.2_vae.safetensors",
+      "sha256": "e40321bd36b9709991dae2530eb4ac303dd168276980d3e9bc4b6e2b75fed156"
+    },
+    {
+      "role": "text_encoder",
+      "relative_path": "models/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "sha256": "c3355d30191f1f066b26d93fba017ae9809dce6c627dda5f6a66eaa651204f68"
+    }
+  ],
+  "workflow_api": "workflow-api.json",
+  "workflow_ui": "workflow.json",
+  "output_subdirectory": "candidates/bear-bakes-bread-mix-proof",
+  "bindings": {
+    "diffusion_model": { "node_id": "37", "class_type": "UNETLoader" },
+    "text_encoder": { "node_id": "38", "class_type": "CLIPLoader" },
+    "vae": { "node_id": "39", "class_type": "VAELoader" },
+    "positive_prompt": { "node_id": "6", "class_type": "CLIPTextEncode" },
+    "negative_prompt": { "node_id": "7", "class_type": "CLIPTextEncode" },
+    "source_image": { "node_id": "56", "class_type": "LoadImage" },
+    "video_latent": { "node_id": "55", "class_type": "Wan22ImageToVideoLatent" },
+    "sampling_shift": { "node_id": "48", "class_type": "ModelSamplingSD3" },
+    "sampler": { "node_id": "3", "class_type": "KSampler" },
+    "decode": { "node_id": "8", "class_type": "VAEDecode" },
+    "create_video": { "node_id": "57", "class_type": "CreateVideo" },
+    "save_video": { "node_id": "58", "class_type": "SaveVideo" }
+  },
+  "shots": [
+    {
+      "id": "mix-dough",
+      "input_image": "inputs/mix-dough-1280x704.png",
+      "width": 1280,
+      "height": 704,
+      "frames": 77,
+      "fps": 24,
+      "seeds": [11235813, 27182818, 31415926, 16180339],
+      "positive_prompt": "Original flat vector children's story illustration. Same bear character, face, clothing, palette, shapes, and environment as the input frame. Warm flat colors, dark purple ink outlines, modest paper texture, calm deliberate movement, locked camera, no scene change. Bear slowly stirs the dough in the bowl.",
+      "negative_prompt": "photorealistic, 3d render, cinematic realism, different character, changed face, changed clothing, extra limbs, extra fingers, malformed paws, duplicate bear, duplicate bowl, new objects, text, letters, logo, watermark, camera movement, pan, zoom, cut, scene change, flashing, flicker, fast motion, clutter, dark scene, frightening expression",
+      "sampling": {
+        "steps": 20,
+        "cfg": 5,
+        "sampler_name": "uni_pc",
+        "scheduler": "simple",
+        "denoise": 1,
+        "shift": 8
+      }
+    }
+  ],
+  "assembly": {
+    "enabled": true,
+    "selected_seed": 31415926,
+    "output": "review/bear-mixes-dough-proof.webm",
+    "audio": "none"
+  }
+}

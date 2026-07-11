@@ -97,3 +97,34 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Mobile screenshot path(s):** `docs/captures/bear-cafe/pickup-window-proof-mobile.webp`
 - **Owner look approval:** APPROVED — the owner merged PR #92 on 2026-07-11; status `look_approved`, stage rollout authorized
 - **Restrictions and notes:** Static decorative environment only. Dynamic bear, order, tray, and Deliver control remain runtime-owned. No Canva/Figma library content, stock media, font, icon pack, texture, Content Foundry output, or generative image tool was used. Decrowd revision (2026-07-11, owner feedback "crowded, elements overlap"): awning rebuilt as true half-disc scallops, painted counter plate removed (live order owns the zone), glass shine moved off the customer, wall shelf lowered out of the awning band, base environment props quieted during delivery, mobile delivery centered; editable source and export updated together.
+
+## Bear Bakes Bread Mixing Video Proof
+
+- **Asset family:** Bear Bakes Bread mixing-beat video proof
+- **Game:** Video Vault / Bear Bakes Bread
+- **Status:** `draft`
+- **Production path(s):** None; the selected proof is review-only at `docs/captures/video/bear-mixes-dough-proof.webm`
+- **Editable source path(s):** `design-source/video/bear-bakes-bread/mix-dough-source.svg`, `design-source/video/bear-bakes-bread/workflow.json`, `design-source/video/bear-bakes-bread/workflow-api.json`, `design-source/video/bear-bakes-bread/render-manifest.json`, `design-source/video/bear-bakes-bread/prompts.md`, `design-source/video/bear-bakes-bread/environment.json`
+- **Creator:** Project developer, Codex video-production proof session
+- **Creation date:** 2026-07-11
+- **Creation tool and version:** Inkscape 1.4.4 Flatpak; ComfyUI 0.25.0; Wan2.2 TI2V 5B; FFmpeg 6.1.1
+- **Origin category:** B project-owned source, transformed into an AI-assisted review proof
+- **Original or third-party status:** Project-owned source illustration plus non-exclusive AI-assisted output; no claim that the generated motion is original, exclusive, or independently copyrightable
+- **Project-owned source material used:** Existing Bear Bakes Bread mixing illustration from `public/assets/images/video-bear-mixes-dough.svg`, adapted as the editable 1280x704 source frame
+- **Third-party elements:** Wan2.2 TI2V 5B model, Wan2.2 VAE, and UMT5 text encoder used only as external authoring dependencies; no third-party visual input, LoRA, custom node, cloud node, stock asset, font, character, or voice
+- **Source URL(s):** `https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B`, `https://github.com/Wan-Video/Wan2.2`
+- **License name and version/date:** Apache License 2.0 for the Wan2.2 model files; model publisher states it claims no rights over generated content
+- **License file path:** External model license at the source URLs; model weights and license are not redistributed by this repository
+- **Commercial use permitted:** yes under the published model terms, subject to lawful use and unresolved source-by-source training-data provenance
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes for this review output; model weights are not distributed
+- **Public repository distribution permitted:** yes for this review output under the published model terms; model weights are not distributed
+- **Continued use after subscription ends:** not applicable; all authoring tools and weights are local
+- **Attribution requirement:** Apache-2.0 notice applies to redistributed model files; none are redistributed here
+- **AI assistance:** reference only
+- **AI approval/terms record:** Owner authorized the private one-beat proof on 2026-07-11 after disclosure that training-data provenance is incomplete, no indemnification is provided, outputs are not assumed exclusive or copyrightable, and production use requires a separate owner look decision; see `docs/work-contracts/comfy-bear-video-one-beat-proof.md`
+- **Contact sheet path:** `docs/captures/video/bear-mixes-dough-four-seed-contact-sheet.webp`
+- **Desktop screenshot path(s):** Not applicable; no runtime integration in this proof
+- **Mobile screenshot path(s):** Not applicable; no runtime integration in this proof
+- **Owner look approval:** Pending; seed `31415926` was selected for owner review after all four fixed candidates were inspected
+- **Restrictions and notes:** Review artifact only. The selected seed preserves the bear silhouette and scene while moving the spoon through the bowl; seeds `11235813` and `27182818` showed long final freezes, and seed `27182818` also distorted the reaching arm. Exact model SHA-256 values, prompts, seeds, graph bindings, environment, and generation limits are recorded in the editable source bundle. The current child-visible WebM, human narration, video manifest, runtime, evidence, and approval behavior are unchanged. No unlisted stock or library element remains, and the game does not depend on Inkscape, ComfyUI, Wan2.2, or FFmpeg at runtime.
