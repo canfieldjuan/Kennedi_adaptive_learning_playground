@@ -570,6 +570,16 @@ describe('story stage runtime', () => {
     );
   });
 
+  test('the story-room valance frames setup only, decoratively', () => {
+    const root = setup();
+    const valance = findByClass(root, 'story-stage__valance');
+    expect(valance).toBeDefined();
+    expect(valance?.attributes['aria-hidden']).toBe('true');
+    // The story phase keeps its stage frame — no valance.
+    startFirstStory(root);
+    expect(findByClass(root, 'story-stage__valance')).toBeUndefined();
+  });
+
   test('narrated mode renders no cue panel', () => {
     const root = setup();
     startFirstStory(root);
