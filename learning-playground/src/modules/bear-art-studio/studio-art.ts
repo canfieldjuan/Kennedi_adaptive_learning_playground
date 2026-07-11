@@ -79,6 +79,30 @@ export function shirtSurfaceSvg(fill: string): string {
   </svg>`;
 }
 
+/**
+ * The performing surface: a stage poster with a curtain header and a blank
+ * banner (never letters). The poster body takes the paint fill.
+ */
+export function posterSurfaceSvg(fill: string): string {
+  return `<svg class="studio-poster-svg" viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
+    <rect x="6" y="6" width="148" height="188" rx="10" fill="${fill}" stroke="#3a2461" stroke-width="6"/>
+    <path d="M6 12 q37 26 74 0 q37 26 74 0 v-2 a10 10 0 0 0 -10 -10 h-128 a10 10 0 0 0 -10 10 Z" fill="#e05d5d" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="30" y="158" width="100" height="22" rx="8" fill="#fdf3d0" stroke="#3a2461" stroke-width="4"/>
+  </svg>`;
+}
+
+/**
+ * The bear-house wall surface: a landscape canvas in a wood frame. The
+ * canvas inside the frame takes the paint fill.
+ */
+export function wallFrameSurfaceSvg(fill: string): string {
+  return `<svg class="studio-wall-frame-svg" viewBox="0 0 220 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
+    <rect x="4" y="14" width="212" height="132" rx="12" fill="#c9a06b" stroke="#3a2461" stroke-width="6"/>
+    <rect x="22" y="32" width="176" height="96" rx="6" fill="${fill}" stroke="#3a2461" stroke-width="4"/>
+    <circle cx="110" cy="10" r="6" fill="#b98a52" stroke="#3a2461" stroke-width="3"/>
+  </svg>`;
+}
+
 /** All shapes on one sheet, for render checks only. */
 export const STUDIO_ART_SHEET_SVG = `<svg viewBox="0 0 680 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <rect width="680" height="120" fill="#f4efe6"/>

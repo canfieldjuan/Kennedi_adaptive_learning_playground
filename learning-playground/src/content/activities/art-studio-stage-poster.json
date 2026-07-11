@@ -1,0 +1,92 @@
+{
+  "id": "art-studio-stage-poster",
+  "version": 1,
+  "title": "Poster for the Show",
+  "domain": "art",
+  "skill_ids": [
+    "color_fill"
+  ],
+  "transfer": {
+    "skill_ids": [
+      "color_fill"
+    ],
+    "context_type": "same_format_new_examples",
+    "context_id": "stage-poster",
+    "example_set_id": "show-poster-1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 1,
+    "choice_count": 4,
+    "distractor_strength": "none"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 90,
+  "content": {
+    "game": "bear-art-studio",
+    "art_mode": "free_decorate",
+    "surface": "poster",
+    "character": {
+      "id": "mama-bear",
+      "name": "Mama Bear"
+    },
+    "prompt_audio": "Mama Bear is putting on a show tonight! Make the poster.",
+    "slot_count": 4,
+    "stickers": [
+      "star",
+      "heart",
+      "sun",
+      "moon"
+    ],
+    "colors": [
+      {
+        "id": "berry-pink",
+        "label": "Pink",
+        "value": "#fd79a8"
+      },
+      {
+        "id": "sunny-yellow",
+        "label": "Yellow",
+        "value": "#fdcb6e"
+      },
+      {
+        "id": "sky-blue",
+        "label": "Blue",
+        "value": "#74b9ff"
+      },
+      {
+        "id": "tomato-red",
+        "label": "Red",
+        "value": "#e05d5d"
+      }
+    ],
+    "next_activity_id": "art-studio-wall-picture",
+    "next_label": "Next art"
+  },
+  "success_rules": {
+    "completion_action": "finish_art",
+    "min_decorations": 1
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "What a poster! The show will be wonderful.",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Try a sticker or a color.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Tap a color for the poster, or a sticker, then a spot.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

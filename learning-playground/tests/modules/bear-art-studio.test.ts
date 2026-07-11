@@ -383,7 +383,7 @@ describe('bear art studio runtime', () => {
   test('dress-up renders the paintable shirt and finishes on it', () => {
     const { root, events } = setup('art-studio-dress-bear');
 
-    const shirt = findByClass(root, 'bear-art-studio__shirt');
+    const shirt = findByClass(root, 'bear-art-studio__surface');
     expect(shirt?.innerHTML).toContain('studio-shirt-svg');
     expect(shirt?.attributes['aria-hidden']).toBe('true');
 
@@ -412,13 +412,42 @@ describe('bear art studio runtime', () => {
     expect(subject?.classList.contains('is-gallery')).toBe(true);
   });
 
-  test('the chain runs fix to story to dress-up', () => {
+  test('the chain runs fix, story, poster, wall picture, then dress-up', () => {
     const fix = getActivity('art-studio-fix-card');
     expect(fix.content.next_activity_id).toBe('art-studio-story-outside');
     const story = getActivity('art-studio-story-outside');
-    expect(story.content.next_activity_id).toBe('art-studio-dress-bear');
+    expect(story.content.next_activity_id).toBe('art-studio-stage-poster');
+    const poster = getActivity('art-studio-stage-poster');
+    expect(poster.content.next_activity_id).toBe('art-studio-wall-picture');
+    const wall = getActivity('art-studio-wall-picture');
+    expect(wall.content.next_activity_id).toBe('art-studio-dress-bear');
     const dress = getActivity('art-studio-dress-bear');
     expect(dress.content.next_activity_id).toBeUndefined();
+  });
+
+  test('the poster and wall-frame surfaces render and repaint', () => {
+    const poster = setup('art-studio-stage-poster');
+    const posterSurface = findByClass(poster.root, 'bear-art-studio__surface');
+    expect(posterSurface?.innerHTML).toContain('studio-poster-svg');
+    findByColorId(poster.root, 'tomato-red')?.click();
+    expect(posterSurface?.innerHTML).toContain('#e05d5d');
+    findByAria(poster.root, 'star sticker')?.click();
+    findByAria(poster.root, 'Art spot 1')?.click();
+    findByText(poster.root, 'Finish art')?.click();
+    const posterDone = poster.events.find((e) => e.outcome === 'completed');
+    expect(posterDone?.metadata).toMatchObject({ art_surface_id: 'stage-poster' });
+    destroyBearArtStudioActivity();
+
+    const wall = setup('art-studio-wall-picture');
+    const wallSurface = findByClass(wall.root, 'bear-art-studio__surface');
+    expect(wallSurface?.innerHTML).toContain('studio-wall-frame-svg');
+    findByColorId(wall.root, 'leaf-green')?.click();
+    expect(wallSurface?.innerHTML).toContain('#00b894');
+    findByAria(wall.root, 'moon sticker')?.click();
+    findByAria(wall.root, 'Art spot 6')?.click();
+    findByText(wall.root, 'Finish art')?.click();
+    const wallDone = wall.events.find((e) => e.outcome === 'completed');
+    expect(wallDone?.metadata).toMatchObject({ art_surface_id: 'bear-house-wall' });
   });
 
   test('finishing shows the gallery shelf: live piece first, then history', () => {

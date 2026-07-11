@@ -42,8 +42,9 @@ export interface FreeDecorateContent extends StudioBase {
   colors: StudioColor[];
   stickers: StudioShapeId[];
   slotCount: number;
-  /** 'card' (default) or the dress-up 'shirt' surface. */
-  surface: 'card' | 'shirt';
+  /** 'card' (default), dress-up 'shirt', performing 'poster', or the
+   * bear-house 'wall_frame'. */
+  surface: 'card' | 'shirt' | 'poster' | 'wall_frame';
 }
 
 export interface StoryCardContent extends StudioBase {
