@@ -188,7 +188,7 @@ quality, complexity, or performance benefit.
 
 Every export must:
 
-- have a meaningful filename and correct view box or dimensions;
+- have a meaningful filename and correct `viewBox` or dimensions;
 - render locally without the authoring application;
 - contain no remote references, base64 blobs, proprietary font dependency, or
   unnecessary editor metadata;
