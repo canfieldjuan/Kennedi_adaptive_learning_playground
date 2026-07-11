@@ -48,9 +48,11 @@ describe('the approved story pack', () => {
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
   });
 
-  test('resolved narration is byte-identical to the slice-1 tale', () => {
+  test('the classic trio narration is byte-identical to the slice-1 tale', () => {
     const story = resolveFirstTale();
-    expect(story.title).toBe("Poppy and Biscuit's Forest Adventure");
+    // Title generalized in slice 4 (the family now supports cozy town);
+    // every child-audible narration line below is still byte-stable.
+    expect(story.title).toBe("Poppy and Biscuit's Great Adventure");
     expect(story.opening).toBe(
       'Story time! This is the tale of Princess Poppy the explorer.'
     );
@@ -92,6 +94,106 @@ describe('the approved story pack', () => {
       expect(entry.cue.keepTrue.trim().length).toBeGreaterThan(0);
       expect(entry.cue.ask.trim().length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('the slice-4 content pack', () => {
+  test('carries three families, five characters, four settings, three problems', () => {
+    expect(FIRST_STORY_PACK.families.map((entry) => entry.id)).toEqual([
+      'lost-friend',
+      'broken-thing',
+      'special-delivery',
+    ]);
+    expect(FIRST_STORY_PACK.characters).toHaveLength(5);
+    expect(FIRST_STORY_PACK.settings).toHaveLength(4);
+    expect(FIRST_STORY_PACK.problems).toHaveLength(3);
+  });
+
+  test('every supported combination resolves to a playable story', () => {
+    let combinations = 0;
+    for (const family of FIRST_STORY_PACK.families) {
+      for (const characterId of family.characterIds) {
+        for (const settingId of family.settingIds) {
+          for (const problemId of family.problemIds) {
+            const story = resolveStory(FIRST_STORY_PACK, family.id, {
+              characterId,
+              settingId,
+              problemId,
+            });
+            expect(JSON.stringify(story)).not.toMatch(/\{[a-zA-Z]+\}/);
+            combinations += 1;
+          }
+        }
+      }
+    }
+    // 4×2 lost-friend + 5×3 broken-thing + 5×3 special-delivery.
+    expect(combinations).toBe(38);
+  });
+
+  test('the Broken Thing resolves coherently for a representative selection', () => {
+    const story = resolveStory(FIRST_STORY_PACK, 'broken-thing', {
+      characterId: 'finn',
+      settingId: 'cozy-town',
+      problemId: 'quiet-music-box',
+    });
+    expect(story.title).toBe('Finn and the Little Music Box');
+    const narrationById = new Map(
+      story.scenes.map((entry) => [entry.id, entry.narration])
+    );
+    expect(narrationById.get('intro')).toBe(
+      'Finn the friendly dragon visits the cozy town, where every window twinkles hello. On a little table sits a tiny music box.'
+    );
+    expect(narrationById.get('wind')).toBe(
+      'Finn the friendly dragon winds the little handle, gentle and slow. The box hums one wobbly note — so close! The tiny wheel still wants to sit back in its place.'
+    );
+  });
+
+  test('the Special Delivery resolves coherently for a representative selection', () => {
+    const story = resolveStory(FIRST_STORY_PACK, 'special-delivery', {
+      characterId: 'milo',
+      settingId: 'cloud-village',
+      problemId: 'special-delivery',
+    });
+    expect(story.title).toBe('Milo and the Sunshine Berries');
+    const narrationById = new Map(
+      story.scenes.map((entry) => [entry.id, entry.narration])
+    );
+    expect(narrationById.get('intro')).toBe(
+      'Milo the playful puppy visits the cloud village, where the streets are soft as pillows. Today feels like a very special day.'
+    );
+    expect(narrationById.get('problem')).toBe(
+      'A basket of sunshine berries needs to reach the big surprise party — and Milo gets to carry it!'
+    );
+  });
+
+  test('safety tone: no family blames, frightens, or ends unresolved', () => {
+    for (const family of FIRST_STORY_PACK.families) {
+      const text = JSON.stringify(family).toLowerCase();
+      for (const banned of ['scared', 'afraid', 'danger', 'lost forever', 'fault', 'bad job', 'wrong!']) {
+        expect(text).not.toContain(banned);
+      }
+      const endings = family.scenes.filter((scene) => scene.kind === 'ending');
+      expect(endings.length).toBeGreaterThanOrEqual(2);
+      for (const ending of endings) {
+        expect(ending.narration.endsWith('The end.')).toBe(true);
+      }
+    }
+  });
+
+  test('dry-resolve catches a family template its problem cannot supply', () => {
+    const pack = clonePack();
+    // Wire the friendless music-box problem into the Lost Friend family:
+    // its templates use friend tokens, so the combination cannot resolve.
+    pack.families[0].problemIds.push('quiet-music-box');
+    const errors = validateStoryPack(pack);
+    expect(
+      errors.some(
+        (error) =>
+          error.startsWith('family lost-friend: combination') &&
+          error.includes('quiet-music-box') &&
+          error.includes('does not resolve')
+      )
+    ).toBe(true);
   });
 });
 

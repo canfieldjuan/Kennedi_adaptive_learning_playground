@@ -55,11 +55,16 @@ export function resolveStory(
     '{Hero}': character.introName,
     '{their}': character.possessive,
     '{Their}': capitalize(character.possessive),
-    '{friend}': problem.friendLabel,
-    '{friendPhrase}': problem.friendPhrase,
-    '{friendThem}': problem.friendThem,
     '{setting}': setting.phrase,
+    '{settingDetail}': setting.detail,
   };
+  // Friend tokens exist only when the selected problem is about a friend;
+  // a template using them with a friendless problem throws, and the
+  // validator dry-resolves every supported combination so that state is
+  // unreachable in shipped packs.
+  if (problem.friendLabel !== undefined) tokens['{friend}'] = problem.friendLabel;
+  if (problem.friendPhrase !== undefined) tokens['{friendPhrase}'] = problem.friendPhrase;
+  if (problem.friendThem !== undefined) tokens['{friendThem}'] = problem.friendThem;
 
   const resolveCue = (cue: AdultCue): AdultCue => ({
     beat: substitute(cue.beat, tokens),
