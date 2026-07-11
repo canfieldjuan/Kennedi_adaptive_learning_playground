@@ -15,7 +15,7 @@
   "interaction_model": "tap_to_match",
   "estimated_duration_seconds": 60,
   "content": {
-    "prompt_audio": "Find the word that starts with t.",
+    "prompt_audio": "Find the word that starts with the letter T.",
     "target_sound": "t",
     "next_activity_id": "blend-cat",
     "next_label": "Sound out words",
