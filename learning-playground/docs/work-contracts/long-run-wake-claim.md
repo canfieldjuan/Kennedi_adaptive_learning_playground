@@ -43,6 +43,23 @@ that boundary would violate issue #54's duplicate-wake invariant.
 - Workflow wiring, time-based stale takeover, merge authority, and every prior
   non-scope boundary remain unchanged.
 
+### 2026-07-10 second live review correction
+
+- Threads `PRRT_kwDOTPmar86QDjxd`, `PRRT_kwDOTPmar86QDjxe`, and
+  `PRRT_kwDOTPmar86QDjxf` confirmed three more P2 boundaries: an old completed
+  wake retry rejected a newer active owner, deterministic temporary-file
+  contention was misclassified as a published-record collision, and crashes in
+  the reservation-to-active gap could strand all capacity slots.
+- The correction makes a matching receipt authoritative without touching a
+  newer active owner, distinguishes temporary contention from a published
+  record, and records publisher PIDs so only provably dead and ownerless slot
+  reservations can be reclaimed through an inode-stable orphan link. The
+  orphan cleanup removes the reservation's slot-keyed active-publication
+  residue before permitting slot reuse.
+- Live publishers, active/completed/transition owners, unknown process state,
+  merge authority, workflow wiring, and every prior non-scope remain fail
+  closed.
+
 ## Cold Diff Audit
 
 ### Gaps
@@ -52,24 +69,34 @@ that boundary would violate issue #54's duplicate-wake invariant.
   transitions, replay receipts, and bounded reads/growth gate every successful
   decision (`learning-playground/scripts/pr-wake-claim.mjs:34`,
   `learning-playground/scripts/pr-wake-claim.mjs:100`,
-  `learning-playground/scripts/pr-wake-claim.mjs:200`,
-  `learning-playground/scripts/pr-wake-claim.mjs:236`,
-  `learning-playground/scripts/pr-wake-claim.mjs:439`).
+  `learning-playground/scripts/pr-wake-claim.mjs:228`,
+  `learning-playground/scripts/pr-wake-claim.mjs:266`,
+  `learning-playground/scripts/pr-wake-claim.mjs:547`).
 - CONFIRMED — concurrency is controlled by exclusive hard-link publication for
   active/capacity records and a second exclusive transition marker for
   completion or abandonment (`learning-playground/scripts/pr-wake-claim.mjs:127`,
-  `learning-playground/scripts/pr-wake-claim.mjs:236`,
-  `learning-playground/scripts/pr-wake-claim.mjs:291`,
-  `learning-playground/scripts/pr-wake-claim.mjs:490`).
+  `learning-playground/scripts/pr-wake-claim.mjs:266`,
+  `learning-playground/scripts/pr-wake-claim.mjs:322`,
+  `learning-playground/scripts/pr-wake-claim.mjs:606`).
 - CONFIRMED — all three live-review paths are closed: same-token/action retries
   validate and resume existing transitions, capacity admission uses one of
   4,096 atomically exclusive slots, and lstat presence checks expose dangling
   paths to bounded no-follow reads (`learning-playground/scripts/pr-wake-claim.mjs:102`,
-  `learning-playground/scripts/pr-wake-claim.mjs:249`,
-  `learning-playground/scripts/pr-wake-claim.mjs:291`).
+  `learning-playground/scripts/pr-wake-claim.mjs:280`,
+  `learning-playground/scripts/pr-wake-claim.mjs:322`).
+- CONFIRMED — the second three live-review paths are closed: completed retries
+  return from their exact receipt without mutating a newer active owner,
+  temporary contention cannot masquerade as a published record, and dead-publisher
+  capacity reservations and their active-publication residue are reclaimed only
+  when no final owner path exists
+  (`learning-playground/scripts/pr-wake-claim.mjs:156`,
+  `learning-playground/scripts/pr-wake-claim.mjs:322`,
+  `learning-playground/scripts/pr-wake-claim.mjs:393`,
+  `learning-playground/scripts/pr-wake-claim.mjs:423`,
+  `learning-playground/scripts/pr-wake-claim.mjs:582`).
 - CONFIRMED — no outcome grants merge authority and no GitHub, process-launch,
   polling, or merge surface exists (`learning-playground/scripts/pr-wake-claim.mjs:84`,
-  `learning-playground/scripts/pr-wake-claim.mjs:528`).
+  `learning-playground/scripts/pr-wake-claim.mjs:650`).
 - COULD NOT DETERMINE — no workflow or worker invokes this primitive yet. Event
   wiring and worker lifecycle remain explicit later slices.
 - COULD NOT DETERMINE — a crashed owner before finalization leaves a permanent
@@ -87,19 +114,19 @@ that boundary would violate issue #54's duplicate-wake invariant.
 - Acquisition checks receipts and transitions, distinguishes duplicate from
   busy, reserves one exclusive capacity slot, and publishes one active token
   (`learning-playground/scripts/pr-wake-claim.mjs:100`,
-  `learning-playground/scripts/pr-wake-claim.mjs:291`).
+  `learning-playground/scripts/pr-wake-claim.mjs:322`).
 - Completion writes a durable replay receipt before releasing the head;
   abandonment releases without a receipt; both recover their own interrupted
-  transition markers (`learning-playground/scripts/pr-wake-claim.mjs:152`,
-  `learning-playground/scripts/pr-wake-claim.mjs:181`,
-  `learning-playground/scripts/pr-wake-claim.mjs:236`).
+  transition markers (`learning-playground/scripts/pr-wake-claim.mjs:156`,
+  `learning-playground/scripts/pr-wake-claim.mjs:209`,
+  `learning-playground/scripts/pr-wake-claim.mjs:266`).
 - State paths are digest-derived under a private canonical root; records are
   read through bounded descriptors and published only after full write/fsync
-  (`learning-playground/scripts/pr-wake-claim.mjs:200`,
-  `learning-playground/scripts/pr-wake-claim.mjs:222`,
-  `learning-playground/scripts/pr-wake-claim.mjs:439`,
-  `learning-playground/scripts/pr-wake-claim.mjs:474`).
-- Forty-one tests attack both sides of ownership, replay, token, transition,
+  (`learning-playground/scripts/pr-wake-claim.mjs:228`,
+  `learning-playground/scripts/pr-wake-claim.mjs:250`,
+  `learning-playground/scripts/pr-wake-claim.mjs:547`,
+  `learning-playground/scripts/pr-wake-claim.mjs:582`).
+- Forty-five tests attack both sides of ownership, replay, token, transition,
   malformed-state, symlink, permission, capacity, exit, and real-process race
   boundaries (`learning-playground/tests/scripts/pr-wake-claim.test.ts:27`,
   `learning-playground/tests/scripts/pr-wake-claim.test.ts:135`,
@@ -107,20 +134,20 @@ that boundary would violate issue #54's duplicate-wake invariant.
 
 ### Contract Traceability
 
-- Claim identity and acquire: contract lines 25-45; runtime lines 100-149 and
-  291-347; tests lines 27-75 and 322-345.
-- Complete/abandon and interrupted transitions: contract lines 48-60; runtime
-  lines 152-198 and 236-289; tests lines 77-145 and 347-369.
-- Filesystem safety/resource boundary: contract lines 10-20 and 39-42; runtime
-  lines 200-233, 291-347, and 439-519; tests lines 171-291 and 331-345.
-- Output/authority boundary: contract lines 62-73; runtime lines 84-97 and
-  527-543; tests lines 294-320.
+- Claim identity and acquire: contract lines 27-48; runtime lines 100-153 and
+  322-446; tests lines 27-75 and 367-400.
+- Complete/abandon and interrupted transitions: contract lines 50-66; runtime
+  lines 156-226 and 266-319; tests lines 77-161 and 402-436.
+- Filesystem safety/resource boundary: contract lines 10-25 and 39-48; runtime
+  lines 228-263, 322-455, and 547-648; tests lines 187-336 and 385-400.
+- Output/authority boundary: contract lines 68-79; runtime lines 84-97 and
+  650-666; tests lines 339-365.
 - Durable enrollment: `learning-playground/scripts/check-work-contract.mjs:272`.
 
 ### Verification
 
-- `npx vitest run tests/scripts/pr-wake-claim.test.ts` — 41 passed.
-- `npm test` — 53 files / 637 tests passed after syncing current `main`.
+- `npx vitest run tests/scripts/pr-wake-claim.test.ts` — 45 passed.
+- `npm test` — 53 files / 641 tests passed.
 - `npm run typecheck` — passed.
 - `npm run build` — passed.
 - `npm run test:viewport` — 6 browser scenarios passed.

@@ -19,8 +19,10 @@ as a private, current-user-owned real directory and may not be reached through
 a symbolic-link path. Every acquisition must first reserve one of 4,096 atomic
 capacity slots. Slots survive completion and are released on abandonment, so
 parallel different-head acquires cannot exceed the wake-record bound. Atomic
-publication uses one deterministic temporary path per bounded target so crash
-residue cannot create an unbounded side channel around the slot cap.
+publication reports temporary contention separately from an already-published
+record. Active publication residue is keyed by its reserved capacity slot and
+is removed with that slot only when its publisher is provably dead and no
+active, transition, or completed owner exists.
 
 ## Claim Identity
 
@@ -55,6 +57,10 @@ or abandon calls and blocks a new acquire until the transition finishes. A
 retry with the same action and token validates and resumes an existing marker;
 same-action finalization is idempotent under overlapping retries.
 
+A matching completed receipt is authoritative for that wake's completion retry
+even if a newer wake now owns the shared PR/head active record. The retry never
+mutates the newer owner.
+
 `abandon` requires the exact active claim token and removes only the active
 record. It writes no completed receipt, so the wake may be retried. The same
 token can finish marker cleanup after an interrupted abandon.
@@ -76,5 +82,5 @@ not expose another worker's token.
 
 This primitive does not fetch GitHub state, subscribe, dispatch or launch a
 worker, poll, retry, infer readiness, resolve review threads, grant merge
-authority, merge, mutate branch protection, reclaim stale claims, persist a
-session baton, clean worktrees, or select the next slice.
+authority, merge, mutate branch protection, reclaim stale active claims,
+persist a session baton, clean worktrees, or select the next slice.

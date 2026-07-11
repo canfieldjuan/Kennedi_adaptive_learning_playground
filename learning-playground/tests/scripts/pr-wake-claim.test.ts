@@ -82,6 +82,22 @@ describe('wake claim ownership', () => {
     expect(executeClaimAction(completion, fixed()).decision).toBe('completed');
   });
 
+  test('an old completion retry ignores a newer active wake on the same head', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed());
+    const newer = { ...input, wakeId: 'delivery-2' };
+    const newerToken = '22222222-2222-4222-8222-222222222222';
+    expect(executeClaimAction(newer, { ...fixed(), createToken: () => newerToken }).decision)
+      .toBe('acquired');
+
+    expect(executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed()).decision)
+      .toBe('completed');
+    expect(activeState(input.claimRoot)).toMatchObject({
+      wake_id: 'delivery-2', claim_token: newerToken,
+    });
+  });
+
   test('completion retry clears an interrupted transition marker', () => {
     const input = parsed();
     executeClaimAction(input, fixed());
@@ -280,14 +296,43 @@ describe('wake claim state validation', () => {
     );
   });
 
-  test('fails closed at the completed-record capacity', () => {
+  test('fails closed at the wake-record capacity', () => {
     const input = parsed();
     for (let index = 0; index < MAX_WAKE_RECORDS; index += 1) {
-      writeFileSync(join(input.claimRoot, `.capacity-slot-${index}.json`), '{}');
+      writeFileSync(join(input.claimRoot, `.capacity-slot-${index}.json`),
+        JSON.stringify(capacitySlot(index, 1)));
     }
     expect(() => executeClaimAction(input, fixed())).toThrowError(
       expect.objectContaining({ code: 'claim_root_capacity' })
     );
+  });
+
+  test('reclaims dead-publisher reservations that have no active owner', () => {
+    const input = parsed();
+    for (let index = 0; index < MAX_WAKE_RECORDS; index += 1) {
+      writeFileSync(join(input.claimRoot, `.capacity-slot-${index}.json`),
+        JSON.stringify(capacitySlot(index, 2_147_483_647)));
+    }
+
+    expect(executeClaimAction(input, fixed()).decision).toBe('acquired');
+    expect(readdirSync(input.claimRoot).filter((name: string) => name.endsWith('.orphan.json')))
+      .toHaveLength(0);
+  });
+
+  test('reclaims a dead publisher active temporary file with its reservation', () => {
+    const input = parsed();
+    expect(executeClaimAction(input, fixed()).decision).toBe('acquired');
+    const active = activeName(input.claimRoot);
+    const slot = activeState(input.claimRoot).capacity_slot;
+    const slotPath = join(input.claimRoot, `.capacity-slot-${slot}.json`);
+    const record = JSON.parse(readFileSync(slotPath, 'utf8'));
+    unlinkSync(join(input.claimRoot, active));
+    writeFileSync(slotPath, JSON.stringify({ ...record, publisher_pid: 2_147_483_647 }));
+    const publication = join(input.claimRoot, `.${active.replace('.json', `.slot-${slot}.tmp`)}`);
+    writeFileSync(publication, '{"partial":');
+
+    expect(executeClaimAction(input, fixed()).decision).toBe('acquired');
+    expect(readdirSync(input.claimRoot)).not.toContain(publication.split('/').at(-1));
   });
 });
 
@@ -322,16 +367,26 @@ describe('wake claim CLI', () => {
   test('two real processes cannot both acquire the same PR/head', async () => {
     const args = cli();
     const results = await Promise.all([runProcess(args), runProcess(args)]);
-    const decisions = results.map(({ output }) => output.decision).sort();
-    expect(decisions).toEqual(['acquired', 'duplicate']);
     expect(results.filter(({ exitCode }) => exitCode === 0)).toHaveLength(1);
     expect(results.filter(({ exitCode }) => exitCode === 1)).toHaveLength(1);
+    expect(results.every(({ output }) => ['acquired', 'duplicate', 'busy'].includes(output.decision)))
+      .toBe(true);
+  });
+
+  test('a burst of real acquire processes returns ownership decisions without races', async () => {
+    const args = cli();
+    const results = await Promise.all(Array.from({ length: 8 }, () => runProcess(args)));
+
+    expect(results.filter(({ output }) => output.decision === 'acquired')).toHaveLength(1);
+    expect(results.every(({ output }) => ['acquired', 'duplicate', 'busy'].includes(output.decision)))
+      .toBe(true);
   });
 
   test('parallel different-head acquires cannot exceed the final capacity slot', async () => {
     const claimRoot = root();
     for (let index = 0; index < MAX_WAKE_RECORDS - 1; index += 1) {
-      writeFileSync(join(claimRoot, `.capacity-slot-${index}.json`), '{}');
+      writeFileSync(join(claimRoot, `.capacity-slot-${index}.json`),
+        JSON.stringify(capacitySlot(index, 1)));
     }
     const results = await Promise.all([
       runProcess(cli({ claimRoot, expectedHead: '2'.repeat(40), wakeId: 'delivery-2' })),
@@ -420,6 +475,22 @@ function transition(input: ReturnType<typeof parsed>, action: string, capacitySl
     wake_id: input.wakeId,
     capacity_slot: capacitySlot,
     claim_token_sha256: TOKEN_HASH,
+  };
+}
+
+function capacitySlot(slot: number, publisherPid: number) {
+  return {
+    schema_version: 1,
+    record_type: 'capacity_slot',
+    capacity_slot: slot,
+    repository: 'occupied/repo',
+    pull_request: 999,
+    expected_head_sha: '9'.repeat(40),
+    wake_source: 'check',
+    wake_id: `occupied-${slot}`,
+    claim_token_sha256: TOKEN_HASH,
+    publisher_pid: publisherPid,
+    reserved_at: '2026-07-11T02:00:00.000Z',
   };
 }
 

@@ -127,10 +127,14 @@ function acquire(input, paths, { createToken, now }) {
     const capacitySlot = reserveCapacitySlot(paths, input, token, now());
     const record = activeRecord(input, token, capacitySlot, now());
     try {
-      createRecord(paths.active, record, paths.root);
+      createRecord(paths.active, record, paths.root, paths.activePublication(capacitySlot));
       return { ...baseResult(input, 'acquired'), claim_token: token };
     } catch (error) {
-      if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
+      if (hasCode(error, 'publication_busy')) {
+        releaseCapacitySlot(paths, input, capacitySlot, token);
+        return baseResult(input, 'busy');
+      }
+      if (!hasCode(error, 'record_exists')) throw error;
       releaseCapacitySlot(paths, input, capacitySlot, token);
       try {
         const active = readRecord(paths.active);
@@ -150,12 +154,20 @@ function acquire(input, paths, { createToken, now }) {
 }
 
 function complete(input, paths, { now }) {
-  if (pathPresent(paths.completed) && !pathPresent(paths.active)) {
+  if (pathPresent(paths.completed)) {
     const completed = readRecord(paths.completed);
     validateCompleted(completed, input, input.claimToken);
     validateCapacitySlot(readRecord(paths.capacitySlot(completed.capacity_slot)), input, completed);
-    finishInterruptedTransition(input, paths, 'complete', completed.capacity_slot);
-    return baseResult(input, 'completed');
+    const active = readRecordIfPresent(paths.active);
+    if (active === null) {
+      const marker = readRecordIfPresent(paths.transition);
+      if (transitionBelongsTo(marker, input, 'complete', completed.capacity_slot)) {
+        finishInterruptedTransition(input, paths, 'complete', completed.capacity_slot);
+      }
+      return baseResult(input, 'completed');
+    }
+    validateActive(active, input);
+    if (!activeBelongsTo(active, input)) return baseResult(input, 'completed');
   }
   const active = readRecord(paths.active);
   validateOwnedActive(active, input);
@@ -168,7 +180,8 @@ function complete(input, paths, { now }) {
       try {
         createRecord(paths.completed, completed, paths.root);
       } catch (error) {
-        if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
+        if (hasCode(error, 'publication_busy')) return baseResult(input, 'busy');
+        if (!hasCode(error, 'record_exists')) throw error;
         validateCompleted(readRecord(paths.completed), input, active.claim_token);
       }
     }
@@ -176,6 +189,21 @@ function complete(input, paths, { now }) {
     syncDirectory(paths.root);
     return baseResult(input, 'completed');
   });
+}
+
+function activeBelongsTo(record, input) {
+  return record.wake_source === input.wakeSource && record.wake_id === input.wakeId
+    && record.claim_token === input.claimToken;
+}
+
+function transitionBelongsTo(record, input, action, expectedSlot) {
+  return isRecord(record) && record.schema_version === CLAIM_SCHEMA_VERSION
+    && record.record_type === 'transition' && record.action === action
+    && record.repository === input.repository && record.pull_request === input.prNumber
+    && record.expected_head_sha === input.expectedHead
+    && record.wake_source === input.wakeSource && record.wake_id === input.wakeId
+    && record.capacity_slot === expectedSlot
+    && record.claim_token_sha256 === digest([input.claimToken]);
 }
 
 function abandon(input, paths, { now }) {
@@ -230,6 +258,8 @@ function claimPaths(root, input) {
     transition: resolve(root, `${activeKey}.transition.json`),
     completed: resolve(root, `${completedKey}.completed.json`),
     capacitySlot: (index) => resolve(root, `.capacity-slot-${index}.json`),
+    capacityOrphan: (index) => resolve(root, `.capacity-slot-${index}.orphan.json`),
+    activePublication: (index) => resolve(root, `.${activeKey}.active.slot-${index}.tmp`),
   };
 }
 
@@ -249,7 +279,8 @@ function withTransition(input, paths, action, active, operation) {
   try {
     createRecord(paths.transition, marker, paths.root);
   } catch (error) {
-    if (error && typeof error === 'object' && error.code === 'EEXIST') {
+    if (hasCode(error, 'publication_busy')) return baseResult(input, 'busy');
+    if (hasCode(error, 'record_exists')) {
       const existing = readRecordIfPresent(paths.transition);
       if (existing === null) {
         fail('transition_race', 'Claim transition changed during recovery');
@@ -296,7 +327,17 @@ function reserveCapacitySlot(paths, input, token, reservedAt) {
   for (let offset = 0; offset < MAX_WAKE_RECORDS; offset += 1) {
     const slot = (start + offset) % MAX_WAKE_RECORDS;
     const path = paths.capacitySlot(slot);
-    if (pathPresent(path)) continue;
+    if (pathPresent(paths.capacityOrphan(slot))) {
+      finishCapacityReclamation(paths, slot);
+      if (pathPresent(paths.capacityOrphan(slot))) continue;
+    }
+    if (pathPresent(path)) {
+      const existing = readRecord(path);
+      if (!capacitySlotIsOrphan(existing, paths.root)) continue;
+      if (!beginCapacityReclamation(paths, slot)) continue;
+      finishCapacityReclamation(paths, slot);
+      if (pathPresent(path) || pathPresent(paths.capacityOrphan(slot))) continue;
+    }
     const record = {
       schema_version: CLAIM_SCHEMA_VERSION,
       record_type: 'capacity_slot',
@@ -307,13 +348,14 @@ function reserveCapacitySlot(paths, input, token, reservedAt) {
       wake_source: input.wakeSource,
       wake_id: input.wakeId,
       claim_token_sha256: digest([token]),
+      publisher_pid: process.pid,
       reserved_at: reservedAt,
     };
     try {
       createRecord(path, record, paths.root);
       return slot;
     } catch (error) {
-      if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
+      if (!hasCode(error, 'record_exists') && !hasCode(error, 'publication_busy')) throw error;
     }
   }
   fail('claim_root_capacity', 'Claim root reached its bounded wake-record capacity');
@@ -341,8 +383,74 @@ function validateCapacitySlot(record, input, owner) {
     || !validSlot(record.capacity_slot) || record.repository !== input.repository
     || record.pull_request !== input.prNumber || record.expected_head_sha !== input.expectedHead
     || record.wake_source !== input.wakeSource || record.wake_id !== input.wakeId
-    || record.claim_token_sha256 !== expectedHash || !validTimestamp(record.reserved_at)) {
+    || record.claim_token_sha256 !== expectedHash
+    || !Number.isInteger(record.publisher_pid) || record.publisher_pid <= 0
+    || !validTimestamp(record.reserved_at)) {
     fail('capacity_slot', 'Capacity slot is malformed or contradictory');
+  }
+}
+
+function capacitySlotIsOrphan(record, root) {
+  if (!isRecord(record)) fail('capacity_slot', 'Capacity slot is malformed or contradictory');
+  const input = {
+    repository: record.repository,
+    prNumber: record.pull_request,
+    expectedHead: record.expected_head_sha,
+    wakeSource: record.wake_source,
+    wakeId: record.wake_id,
+  };
+  validateCapacitySlot(record, input, record);
+  if (processIsAlive(record.publisher_pid)) return false;
+  const ownerPaths = claimPaths(root, input);
+  return !pathPresent(ownerPaths.active)
+    && !pathPresent(ownerPaths.completed)
+    && !pathPresent(ownerPaths.transition);
+}
+
+function beginCapacityReclamation(paths, slot) {
+  try {
+    linkSync(paths.capacitySlot(slot), paths.capacityOrphan(slot));
+    syncDirectory(paths.root);
+    return true;
+  } catch (error) {
+    if (error && typeof error === 'object' && ['EEXIST', 'ENOENT'].includes(error.code)) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+function finishCapacityReclamation(paths, slot) {
+  const orphanPath = paths.capacityOrphan(slot);
+  const record = readRecordIfPresent(orphanPath);
+  if (record === null || !capacitySlotIsOrphan(record, paths.root)) return;
+  const orphanMetadata = lstatSync(orphanPath);
+  const slotPath = paths.capacitySlot(slot);
+  if (pathPresent(slotPath)) {
+    const slotMetadata = lstatSync(slotPath);
+    if (slotMetadata.dev !== orphanMetadata.dev || slotMetadata.ino !== orphanMetadata.ino) {
+      fail('capacity_reclamation_race', 'Capacity slot changed during orphan reclamation');
+    }
+    unlinkIfPresent(slotPath);
+  }
+  const ownerPaths = claimPaths(paths.root, {
+    repository: record.repository,
+    prNumber: record.pull_request,
+    expectedHead: record.expected_head_sha,
+    wakeSource: record.wake_source,
+    wakeId: record.wake_id,
+  });
+  unlinkIfPresent(ownerPaths.activePublication(slot));
+  unlinkIfPresent(orphanPath);
+  syncDirectory(paths.root);
+}
+
+function processIsAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return !(error && typeof error === 'object' && error.code === 'ESRCH');
   }
 }
 
@@ -471,15 +579,22 @@ function readRecordIfPresent(path) {
   }
 }
 
-function createRecord(path, record, root) {
+function createRecord(path, record, root, publicationPath = resolve(root, `.${basename(path)}.tmp`)) {
   const bytes = Buffer.from(`${JSON.stringify(record)}\n`, 'utf8');
   if (bytes.length > MAX_RECORD_BYTES) fail('record_size', 'Claim record is oversized');
-  const temporary = resolve(root, `.${basename(path)}.tmp`);
+  const temporary = publicationPath;
   let descriptor;
   let ownsTemporary = false;
   try {
     descriptor = openSync(temporary, WRITE_FLAGS, 0o600);
     ownsTemporary = true;
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'EEXIST') {
+      fail('publication_busy', 'Another process is publishing this record');
+    }
+    throw error;
+  }
+  try {
     let offset = 0;
     while (offset < bytes.length) {
       offset += writeSync(descriptor, bytes, offset, bytes.length - offset);
@@ -487,7 +602,14 @@ function createRecord(path, record, root) {
     fsyncSync(descriptor);
     closeSync(descriptor);
     descriptor = undefined;
-    linkSync(temporary, path);
+    try {
+      linkSync(temporary, path);
+    } catch (error) {
+      if (error && typeof error === 'object' && error.code === 'EEXIST') {
+        fail('record_exists', 'Record is already published');
+      }
+      throw error;
+    }
     syncDirectory(root);
   } catch (error) {
     if (descriptor !== undefined) {
@@ -552,6 +674,7 @@ function validSlot(value) {
 }
 function validTimestamp(value) { return typeof value === 'string' && !Number.isNaN(Date.parse(value)); }
 function isRecord(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
+function hasCode(error, code) { return error instanceof WakeClaimError && error.code === code; }
 function fail(code, message) { throw new WakeClaimError(code, message); }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
