@@ -50,8 +50,8 @@ integration remain intentionally pending and outside this slice.
 - Local ComfyUI 0.25.0 started unchanged on loopback `127.0.0.1:8188`, detected
   the RTX 3090 and RTX 4060 Ti, and loaded its browser UI without a blank page or
   error overlay.
-- `CONTENT_FOUNDRY_LIVE=1 python3 -m unittest
-  tools/content-foundry/tests/test_live_comfy.py -v` passed. Every class and
+- `CONTENT_FOUNDRY_LIVE=1 python3 -m unittest tools/content-foundry/tests/test_live_comfy.py -v`
+  passed. Every class and
   model referenced by all four canonical graphs exists in the live node
   registry.
 - Canonical `flux_illustrated_redux` generated a real 960x544 Scene 1 draft at
@@ -70,8 +70,8 @@ integration remain intentionally pending and outside this slice.
   -18.18 LUFS, and -2.86 dBTP. Poster and eight-frame contact sheet outputs were
   created. Contact-sheet inspection showed the intended mixing, oven, and warm
   loaf progression without text or unsafe imagery.
-- `python3 foundry.py validate-draft
-  draft-96a24f16-6323-45cf-a4fd-1f669f8d92ae` returned `valid: true` with no
+- `python3 foundry.py validate-draft draft-96a24f16-6323-45cf-a4fd-1f669f8d92ae`
+  returned `valid: true` with no
   hash mismatches. Status remains `draft`; parent review is the recorded
   disposition and no publication action was taken.
 
@@ -96,7 +96,9 @@ implementation, or ComfyUI installation file changed.
 - Browser verification: ComfyUI loaded meaningful controls with no blank page
   or framework error overlay.
 - Live compatibility test: passed 1 test against the running node/model registry.
-- Full media decode: `ffmpeg -v error ... -f null -` passed with no errors.
+- Full media decode:
+  `ffmpeg -v error -i .content-foundry/drafts/draft-96a24f16-6323-45cf-a4fd-1f669f8d92ae/learning-clip.webm -f null -`
+  passed with no errors.
 - `npm ci`: installed the locked fresh-worktree dependencies; audit found zero
   vulnerabilities. The first `npm test` attempt had stopped at `vitest: not
   found` before this install and was not counted as verification.
@@ -107,3 +109,35 @@ implementation, or ComfyUI installation file changed.
 - `git diff --check`: passed.
 
 Gap audit: DONE.
+
+## Review Follow-Up Contract
+
+### Root Cause
+
+Three execution commands are recorded in forms that are not reliably reusable:
+two inline code spans cross Markdown line breaks, and the ffmpeg decode command
+contains an ellipsis instead of its actual input path. The evidence is true, but
+its presentation does not satisfy this contract's reproducibility requirement.
+
+### Correct Fix Must Touch
+
+- Keep each affected inline command on one source line so Markdown renders it
+  as one copyable command.
+- Replace the ffmpeg ellipsis with the exact local draft-relative clip path used
+  during verification.
+- Update the cold audit to trace these documentation-only corrections and rerun
+  the work-contract and diff checks.
+
+### Must Not Change
+
+Do not change the recorded draft ids, observations, QA values, review
+disposition, generated local files, Foundry code/workflows/tests, child app,
+dependencies, or any original protected surface.
+
+### Review Follow-Up Cold Audit
+
+No gap remains. The live compatibility command, draft validation command, and
+full ffmpeg decode command are now each complete within one inline code span;
+the decode command names the exact ignored draft-relative file used in the run.
+No execution claim, QA value, draft id, disposition, generated artifact, code,
+workflow, test, dependency, or protected app surface changed.
