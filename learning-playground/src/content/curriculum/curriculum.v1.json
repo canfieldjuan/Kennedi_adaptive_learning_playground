@@ -322,7 +322,9 @@
         "math-count-stars-three",
         "number-train",
         "art-studio-three-stars",
-        "art-studio-five-flowers"
+        "art-studio-five-flowers",
+        "number-train-express",
+        "number-train-summit"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",
@@ -424,7 +426,9 @@
       "prerequisites": [],
       "unlocks": [],
       "activity_contexts": [
-        "number-train"
+        "number-train",
+        "number-train-express",
+        "number-train-summit"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",
@@ -475,7 +479,9 @@
       ],
       "unlocks": [],
       "activity_contexts": [
-        "number-train"
+        "number-train",
+        "number-train-express",
+        "number-train-summit"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",
@@ -526,7 +532,9 @@
       ],
       "unlocks": [],
       "activity_contexts": [
-        "number-train"
+        "number-train",
+        "number-train-express",
+        "number-train-summit"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",
