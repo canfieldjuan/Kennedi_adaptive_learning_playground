@@ -112,6 +112,7 @@ const BEAR_CAFE_FIRST_ACTIVITY_ID = 'kennedis-orders-banana-001';
 const BEAR_CAFE_ROUTE = `#activity/${BEAR_CAFE_FIRST_ACTIVITY_ID}`;
 const VIDEO_VAULT_ACTIVITY_ID = 'video-vault';
 const VIDEO_VAULT_ROUTE = `#activity/${VIDEO_VAULT_ACTIVITY_ID}`;
+const STORY_STAGE_ROUTE = '#story-stage';
 const CURRICULUM_GRAPH = loadCurriculumGraph();
 
 interface SettingRow {
@@ -378,6 +379,18 @@ function createParentGameLaunchSection(videoEnabled: boolean): HTMLElement {
     activityId: VIDEO_VAULT_ACTIVITY_ID,
     route: VIDEO_VAULT_ROUTE,
     disabled: !videoEnabled,
+  }));
+  section.appendChild(createParentGameLaunchCard({
+    title: 'Story Stage',
+    status: "Tell Me a Story — Poppy and Biscuit's Forest Adventure",
+    metrics: [
+      { label: 'Entry', value: 'Fixed narrated tale' },
+      { label: 'Evidence', value: 'None (creative play)' },
+      { label: 'Home Grid', value: 'Hidden' },
+    ],
+    buttonLabel: 'Start Story Stage',
+    activityId: 'story-stage',
+    route: STORY_STAGE_ROUTE,
   }));
 
   return section;

@@ -2002,6 +2002,162 @@
   color: #3a2461;
 }
 
+/* Kennedi's Story Stage — a warm twilight story room: the scene is the
+   star, the caption is one readable line, and the choices are two big
+   illustrated cards. No scores, no timers, no pressure. */
+.story-stage {
+  background:
+    linear-gradient(180deg, rgba(236, 228, 246, 0.97), rgba(247, 240, 235, 0.95)),
+    var(--child-bg);
+}
+
+.story-stage .activity-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.story-stage .activity-icon-button {
+  min-width: 56px;
+  font-size: 0;
+  background: rgba(58, 36, 97, 0.12);
+  color: #3a2461;
+}
+
+.story-stage .activity-icon-button[aria-label="Return home"]::before {
+  content: '⌂';
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.story-stage .activity-icon-button[aria-label="Repeat prompt"]::before {
+  content: '↻';
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+/* Beginning → end, nothing more: neutral dots, no outcomes. */
+.story-stage__path {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.story-stage__path-dot {
+  display: block;
+  width: 14px;
+  aspect-ratio: 1;
+  border: 2.5px solid rgba(58, 36, 97, 0.4);
+  border-radius: var(--radius-round);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.story-stage__path-dot.is-done {
+  background: #b98ac9;
+}
+
+.story-stage__path-dot.is-current {
+  border-color: rgba(58, 36, 97, 0.9);
+  box-shadow: 0 0 0 4px rgba(185, 138, 201, 0.3);
+}
+
+.story-stage__stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+
+.story-stage__scene {
+  width: min(94vw, 640px);
+  border: 6px solid rgba(58, 36, 97, 0.55);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: #dcecf8;
+  box-shadow: 0 14px 40px rgba(58, 36, 97, 0.25);
+}
+
+.story-stage__scene svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.story-stage__caption {
+  max-width: min(94vw, 620px);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 253, 247, 0.9);
+  color: #3a2461;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(58, 36, 97, 0.14);
+}
+
+.story-stage__controls {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 96px;
+}
+
+.story-stage__choices {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+}
+
+.story-stage__choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  width: min(42vw, 210px);
+  padding: var(--space-md);
+  border: 4px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-xl);
+  background: #fffdf7;
+  color: #3a2461;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.16);
+  transition: transform var(--transition-bounce), border-color var(--transition-normal);
+}
+
+.story-stage__choice:hover,
+.story-stage__choice:focus-visible {
+  transform: scale(1.04);
+  border-color: rgba(58, 36, 97, 0.7);
+  outline: none;
+}
+
+.story-stage__choice-art {
+  display: block;
+  width: 92px;
+}
+
+.story-stage__choice-art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.story-stage__choice-label {
+  font-size: 1rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.story-stage__continue {
+  min-width: 240px;
+}
+
 /* — Video Vault — */
 .video-vault-screen {
   justify-content: flex-start;
@@ -3571,6 +3727,27 @@
 
   .bear-art-studio__tool {
     width: 56px;
+  }
+
+  .story-stage__scene {
+    width: min(96vw, 560px);
+  }
+
+  .story-stage__caption {
+    font-size: 1rem;
+  }
+
+  .story-stage__choice {
+    width: min(44vw, 170px);
+    padding: var(--space-sm);
+  }
+
+  .story-stage__choice-art {
+    width: 68px;
+  }
+
+  .story-stage__path-dot {
+    width: 12px;
   }
 
   .bear-art-studio__mini {

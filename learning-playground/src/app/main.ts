@@ -28,6 +28,10 @@ import { applyParentApprovedDifficulty } from '../core/parent-difficulty-applica
 import type { LearningActivity } from '../types/activity';
 import type { ActivityAttemptEvent } from '../types/events';
 import { renderHomeScreen, destroyHomeScreen } from '../modules/home/HomeScreen';
+import {
+  renderStoryStage,
+  destroyStoryStage,
+} from '../modules/story-stage/StoryStageActivity';
 import { renderParentPanel, destroyParentPanel } from '../modules/parent-panel/ParentPanel';
 import { renderParentGate, destroyParentGate } from '../modules/parent-gate/ParentGate';
 import {
@@ -98,6 +102,7 @@ function handleRoute(route: Route): void {
   destroyTapChoiceActivity();
   destroyColoringActivity();
   destroyBearArtStudioActivity();
+  destroyStoryStage();
   destroyVideoVault();
   destroyKennedisOrdersActivity();
   destroyPhonicsMatchActivity();
@@ -133,6 +138,11 @@ function handleRoute(route: Route): void {
       renderParentPanel(app, storage, { childId, sessionId, speech });
       break;
     }
+    case 'story-stage':
+      // Story Stage is deliberately outside the activity/evidence system:
+      // it takes speech only and can emit no attempt events.
+      renderStoryStage(app, { speech });
+      break;
     case 'activity':
       renderActivityRoute(route.activityId);
       break;
