@@ -18,9 +18,11 @@ illustrated word cards:
 - Clear silhouettes, large readable subjects, friendly expressions.
 - Restrained decorative detail with intentional areas of rest — no even
   scatter of props.
-- Cohesive local inline SVG only: no stock clip art, no remote assets, no
-  base64 blobs, no emoji left inside completed illustrated scenes when a
-  local illustrated part can replace them.
+- Cohesive local project-owned art governed by
+  `art-production-assets.contract.md`: inline SVG or optimized local exports,
+  with editable source and provenance. No unverified stock clip art, remote
+  assets, base64 blobs, or emoji left inside completed illustrated scenes when
+  a local illustrated part can replace them.
 - No child-facing text added for scenery; no readable words inside scenes
   (menus, signs, and labels use shapes/icons).
 
@@ -63,8 +65,9 @@ that pressures the child. All motion respects `prefers-reduced-motion`.
 
 ## Implementation
 
-- Local inline SVG in small focused art modules; scenes are **game-owned**
-  (`src/modules/<game>/…`). No universal background component with per-game
+- Runtime scenes are **game-owned** (`src/modules/<game>/…`) and use either
+  small focused inline-art modules or optimized local exports under the
+  production-art contract. No universal background component with per-game
   conditions; shared primitives are extracted only after two real game
   implementations need the same behavior.
 - Decorative layers are `aria-hidden="true"` with `pointer-events: none`,
