@@ -39,12 +39,14 @@ describe('difficulty coverage', () => {
       covered_level_count: 3,
       total_level_count: 3,
     });
-    expect(coverage?.approved_activity_ids).toEqual(['art-studio-five-flowers']);
+    expect(coverage?.approved_activity_ids).toEqual(['art-studio-five-flowers', 'number-train-express']);
   });
 
   test('still reports a content gap when the producing activity is absent', () => {
+    // Both counting level-1 producers must be absent for the gap to exist.
     const activities = APPROVED_ACTIVITIES.filter((activity) => (
-      activity.id !== 'art-studio-five-flowers'
+      activity.id !== 'art-studio-five-flowers' &&
+      activity.id !== 'number-train-express'
     ));
     const coverage = evaluateSkillDifficultyCoverage({
       skill_id: 'counting',
@@ -93,12 +95,9 @@ describe('difficulty coverage', () => {
     expect(listCurriculumDifficultyGaps().map((gap) => (
       `${gap.skill_id}:${gap.level}:${gap.min_difficulty_level}-${gap.max_difficulty_level}`
     ))).toEqual([
-      'number_sequence:1:2-3',
-      'number_sequence:2:4-5',
-      'numeral_recognition:1:2-3',
-      'numeral_recognition:2:4-5',
-      'quantity_construction:1:2-3',
-      'quantity_construction:2:4-5',
+      // The train-skill bands (numeral_recognition / quantity_construction /
+      // number_sequence at levels 1 and 2) are covered by the Number Train
+      // Express (d3) and Summit (d5) trips.
       'subitizing:2:4-5',
       // vocabulary:2:4-5 is covered by art-studio-story-outside (Bear Art
       // Studio story card).

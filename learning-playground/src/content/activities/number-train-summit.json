@@ -1,0 +1,62 @@
+{
+  "id": "number-train-summit",
+  "version": 1,
+  "title": "Number Train to the Summit",
+  "domain": "math",
+  "skill_ids": [
+    "counting",
+    "numeral_recognition",
+    "quantity_construction",
+    "number_sequence"
+  ],
+  "transfer": {
+    "skill_ids": [
+      "counting",
+      "numeral_recognition",
+      "quantity_construction",
+      "number_sequence"
+    ],
+    "context_type": "same_format_new_examples",
+    "context_id": "number-train-summit",
+    "example_set_id": "train-seats-summit-v1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 5,
+    "choice_count": 3,
+    "distractor_strength": "hard"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 120,
+  "content": {
+    "game": "number-train",
+    "prompt_audio": "The summit train carries big groups. Count the full cars of ten!",
+    "max_quantity": 50,
+    "round_count": 6,
+    "seed": 20260712,
+    "arrival_audio": "The summit! What a climb!"
+  },
+  "success_rules": {
+    "max_attempts_before_hint": 2
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "All aboard!",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Let us count the passengers again.",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Count each passenger.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}
