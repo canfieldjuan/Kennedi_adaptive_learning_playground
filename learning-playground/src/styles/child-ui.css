@@ -809,7 +809,9 @@
 
 /* The digit fills its card: smaller box, bigger numeral (owner direction).
    Two-class selectors so these win over the generic .activity-choice sizing
-   that appears later in the sheet. */
+   that appears later in the sheet. Desktop gets slim fixed tracks; compact
+   viewports keep the flexible one-row grid so choices never wrap below the
+   fold (three cards always fit). */
 .number-train__choices.activity-choice-grid {
   grid-template-columns: repeat(auto-fit, 200px);
   justify-content: center;
@@ -823,6 +825,50 @@
 .number-train__choices .number-train__numeral {
   font-size: 4.2rem;
   line-height: 1;
+}
+
+@media (max-width: 768px),
+  (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  .number-train__choices.activity-choice-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .number-train__choices .number-train__number-choice {
+    min-height: 96px;
+    padding: var(--space-sm);
+  }
+
+  .number-train__choices .number-train__numeral {
+    font-size: 2.6rem;
+  }
+}
+
+/* Short landscape has no vertical room for the grown train: keep the display
+   train at its original compact size there so everything stays above the
+   fold; portrait phones keep the larger, countable train. */
+@media (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  .number-train__engine {
+    width: 64px;
+    height: 64px;
+  }
+
+  .number-train__seat {
+    width: 28px;
+    height: 28px;
+  }
+
+  .number-train__passenger-svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .number-train__choices .number-train__number-choice {
+    min-height: 84px;
+  }
+
+  .number-train__choices .number-train__numeral {
+    font-size: 2.2rem;
+  }
 }
 
 /* Compact Number Train for phones (portrait and short landscape): the display
