@@ -34,6 +34,19 @@
 - Parent observation access must not add Video Vault to the four-choice child
   home, autoplay media, or navigate automatically to the response activity.
 
+## Narration Quality
+
+- `Bear Bakes Bread` uses a parent-recorded local voice track. Its three short
+  lines align with the mixing, baking, and finished-bread visual beats.
+- The final WebM must keep a 48 kHz mono audio stream, avoid clipped peaks, and
+  stay near -18 LUFS integrated loudness with true peak no higher than -2 dB.
+- Replacing narration must preserve the existing video stream, manual playback,
+  exposure-only evidence role, and separate response handoff.
+- A narration replacement increments the manifest version, and completion
+  metadata cites that numeric version so observations remain distinguishable.
+- Source recordings are build inputs only. The deployed app uses the bundled
+  WebM and makes no runtime network or microphone request.
+
 ## Future Content
 
 The first local clip is paired with a separate evidence-bearing response

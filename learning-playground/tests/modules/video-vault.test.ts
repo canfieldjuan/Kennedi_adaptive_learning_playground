@@ -11,6 +11,7 @@ describe('video vault manifest boundary', () => {
 
     expect(result.valid).toBe(true);
     expect(result.issues).toEqual([]);
+    expect(realManifest.version).toBe(2);
     expect(result.playable_videos).toHaveLength(1);
     expect(result.playable_videos[0]).toMatchObject({
       id: 'bear-bakes-bread',
@@ -127,6 +128,7 @@ describe('video vault manifest boundary', () => {
       childId: 'local-child',
       sessionId: 'session-1',
       manifestId: 'family-safe-videos-v1',
+      manifestVersion: 2,
       promptText: 'Pick a video.',
       video: video!,
       attemptNumber: 1,
@@ -142,6 +144,7 @@ describe('video vault manifest boundary', () => {
       }],
       metadata: {
         manifest_id: 'family-safe-videos-v1',
+        manifest_version: 2,
         media_source: 'local',
         media_type: 'video/mp4',
         evidence_role: 'exposure_only',
