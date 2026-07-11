@@ -3056,6 +3056,17 @@
   gap: var(--space-md);
 }
 
+/* While the production-art scene is on stage, the wall props step back and
+   the stage centers vertically: the proof frame owns the composition, and
+   the counter band reads as ground instead of dead space on mobile. */
+.bear-cafe-environment[data-stage='delivery'] .cafe-env__prop--minor {
+  opacity: 0.28;
+}
+
+.bear-cafe:has(.bear-cafe-delivery__scene--art-proof) .bear-cafe-delivery {
+  margin-block: auto;
+}
+
 /* Production-art proof: the static Inkscape scene frames the existing live
    order and customer. It is decoration only and never owns interaction state. */
 .bear-cafe-delivery__scene--art-proof {

@@ -97,7 +97,7 @@
        x="78"
        y="52"
        width="1044"
-       height="112"
+       height="100"
        rx="24"
        style="fill:#f8cbd5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:9"
        id="rect15" />
@@ -173,74 +173,48 @@
        rx="12"
        style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"
        id="rect24" />
-    <circle
+    <path
+       d="M 78 152 a 58,58 0 0 0 116,0 z"
        style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"
-       cx="144.0"
-       cy="153.0"
-       r="58.0"
-       id="circle24" />
-    <circle
+       id="scallop1" />
+    <path
+       d="M 194 152 a 58,58 0 0 0 116,0 z"
        style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"
-       cx="260.0"
-       cy="153.0"
-       r="58.0"
-       id="circle25" />
-    <circle
+       id="scallop2" />
+    <path
+       d="M 310 152 a 58,58 0 0 0 116,0 z"
        style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"
-       cx="376.0"
-       cy="153.0"
-       r="58.0"
-       id="circle26" />
-    <circle
+       id="scallop3" />
+    <path
+       d="M 426 152 a 58,58 0 0 0 116,0 z"
        style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"
-       cx="492.0"
-       cy="153.0"
-       r="58.0"
-       id="circle27" />
-    <circle
+       id="scallop4" />
+    <path
+       d="M 542 152 a 58,58 0 0 0 116,0 z"
        style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"
-       cx="608.0"
-       cy="153.0"
-       r="58.0"
-       id="circle28" />
-    <circle
+       id="scallop5" />
+    <path
+       d="M 658 152 a 58,58 0 0 0 116,0 z"
        style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"
-       cx="724.0"
-       cy="153.0"
-       r="58.0"
-       id="circle29" />
-    <circle
+       id="scallop6" />
+    <path
+       d="M 774 152 a 58,58 0 0 0 116,0 z"
        style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"
-       cx="840.0"
-       cy="153.0"
-       r="58.0"
-       id="circle30" />
-    <circle
+       id="scallop7" />
+    <path
+       d="M 890 152 a 58,58 0 0 0 116,0 z"
        style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"
-       cx="956.0"
-       cy="153.0"
-       r="58.0"
-       id="circle31" />
-    <circle
+       id="scallop8" />
+    <path
+       d="M 1006 152 a 58,58 0 0 0 116,0 z"
        style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"
-       cx="1072.0"
-       cy="153.0"
-       r="58.0"
-       id="circle32" />
-    <rect
-       x="78"
-       y="52"
-       width="1044"
-       height="100"
-       rx="24"
-       style="fill:none;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:9"
-       id="rect32" />
+       id="scallop9" />
   </g>
   <g
      id="g38">
     <rect
        x="128"
-       y="226"
+       y="270"
        width="410"
        height="24"
        rx="12"
@@ -248,19 +222,19 @@
        id="rect33" />
     <rect
        x="152"
-       y="176"
+       y="220"
        width="92"
        height="62"
        rx="16"
        style="fill:#d9f0e8;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"
        id="rect34" />
     <path
-       d="M 244 192 H 266 Q 288 192 288 210 Q 288 228 266 228 H 244"
+       d="M 244 236 H 266 Q 288 236 288 254 Q 288 272 266 272 H 244"
        style="fill:none;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"
        id="path34" />
     <rect
        x="302"
-       y="166"
+       y="210"
        width="82"
        height="72"
        rx="18"
@@ -269,19 +243,19 @@
     <circle
        style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:4"
        cx="343.0"
-       cy="180.0"
+       cy="224.0"
        r="8.0"
        id="circle35" />
     <rect
        x="424"
-       y="184"
+       y="228"
        width="72"
        height="54"
        rx="16"
        style="fill:#fffdf7;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"
        id="rect36" />
     <path
-       d="M 438 184 Q 458 154 480 184"
+       d="M 438 228 Q 458 198 480 228"
        style="fill:none;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"
        id="path36" />
     <rect
@@ -329,9 +303,9 @@
        id="rect41" />
     <circle
        style="fill:#ffe8a3;opacity:0.72;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"
-       cx="944.0"
-       cy="254.0"
-       r="23.0"
+       cx="972.0"
+       cy="236.0"
+       r="14.0"
        id="circle41" />
     <rect
        x="638"
@@ -376,20 +350,6 @@
        d="M 722 558 H 1066"
        style="fill:none;stroke:#eac39b;stroke-linecap:round;stroke-linejoin:round;stroke-width:5"
        id="path46" />
-    <ellipse
-       style="fill:#f4d4ad;stroke:#8e7aa3;stroke-linecap:round;stroke-linejoin:round;stroke-width:5"
-       cx="430.0"
-       cy="500.0"
-       rx="150.0"
-       ry="28.0"
-       id="ellipse46" />
-    <ellipse
-       style="fill:#fff8eb;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"
-       cx="430.0"
-       cy="497.0"
-       rx="112.0"
-       ry="16.0"
-       id="ellipse47" />
   </g>
   <g
      id="g50">

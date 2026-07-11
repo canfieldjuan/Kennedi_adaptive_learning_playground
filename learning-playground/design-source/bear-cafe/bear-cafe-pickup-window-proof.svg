@@ -21,7 +21,7 @@
     <ns0:path d="M 84 405 H 1116" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3"/>
   </ns0:g>
   <ns0:g xmlns:ns1="http://www.inkscape.org/namespaces/inkscape" ns1:label="Scalloped awning" ns1:groupmode="layer">
-    <ns0:rect x="78" y="52" width="1044" height="112" rx="24" style="fill:#f8cbd5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:9"/>
+    <ns0:rect x="78" y="52" width="1044" height="100" rx="24" style="fill:#f8cbd5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:9"/>
     <ns0:rect x="86" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"/>
     <ns0:rect x="202" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"/>
     <ns0:rect x="318" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"/>
@@ -31,25 +31,25 @@
     <ns0:rect x="782" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"/>
     <ns0:rect x="898" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"/>
     <ns0:rect x="1014" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"/>
-    <ns0:circle style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" cx="144.0" cy="153.0" r="58.0"/>
-    <ns0:circle style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" cx="260.0" cy="153.0" r="58.0"/>
-    <ns0:circle style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" cx="376.0" cy="153.0" r="58.0"/>
-    <ns0:circle style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" cx="492.0" cy="153.0" r="58.0"/>
-    <ns0:circle style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" cx="608.0" cy="153.0" r="58.0"/>
-    <ns0:circle style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" cx="724.0" cy="153.0" r="58.0"/>
-    <ns0:circle style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" cx="840.0" cy="153.0" r="58.0"/>
-    <ns0:circle style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" cx="956.0" cy="153.0" r="58.0"/>
-    <ns0:circle style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" cx="1072.0" cy="153.0" r="58.0"/>
-    <ns0:rect x="78" y="52" width="1044" height="100" rx="24" style="fill:none;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:9"/>
+    <ns0:path d="M 78 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
+    <ns0:path d="M 194 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
+    <ns0:path d="M 310 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
+    <ns0:path d="M 426 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
+    <ns0:path d="M 542 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
+    <ns0:path d="M 658 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
+    <ns0:path d="M 774 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
+    <ns0:path d="M 890 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
+    <ns0:path d="M 1006 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
   </ns0:g>
   <ns0:g xmlns:ns1="http://www.inkscape.org/namespaces/inkscape" ns1:label="Cafe shelf and props" ns1:groupmode="layer">
-    <ns0:rect x="128" y="226" width="410" height="24" rx="12" style="fill:#d9a06f;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
-    <ns0:rect x="152" y="176" width="92" height="62" rx="16" style="fill:#d9f0e8;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
-    <ns0:path d="M 244 192 H 266 Q 288 192 288 210 Q 288 228 266 228 H 244" style="fill:none;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
-    <ns0:rect x="302" y="166" width="82" height="72" rx="18" style="fill:#f8cbd5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
-    <ns0:circle style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:4" cx="343.0" cy="180.0" r="8.0"/>
-    <ns0:rect x="424" y="184" width="72" height="54" rx="16" style="fill:#fffdf7;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
-    <ns0:path d="M 438 184 Q 458 154 480 184" style="fill:none;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
+    <ns0:rect x="128" y="270" width="410" height="24" rx="12" style="fill:#d9a06f;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
+    <ns0:rect x="152" y="220" width="92" height="62" rx="16" style="fill:#d9f0e8;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
+    <ns0:path d="M 244 236 H 266 Q 288 236 288 254 Q 288 272 266 272 H 244" style="fill:none;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
+    <ns0:rect x="302" y="210" width="82" height="72" rx="18" style="fill:#f8cbd5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
+    <ns0:circle style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:4" cx="343.0"
+       cy="224.0" r="8.0"/>
+    <ns0:rect x="424" y="228" width="72" height="54" rx="16" style="fill:#fffdf7;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
+    <ns0:path d="M 438 228 Q 458 198 480 228" style="fill:none;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
     <ns0:rect x="142" y="376" width="104" height="90" rx="18" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
     <ns0:path d="M 192 376 C 146 350 148 298 194 280 C 206 324 202 350 192 376 Z" style="fill:#91bd72;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
     <ns0:path d="M 196 376 C 240 350 246 306 216 284 C 196 322 194 350 196 376 Z" style="fill:#b0d58e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:6"/>
@@ -59,7 +59,9 @@
     <ns0:path d="M 694 460 V 300 C 694 240 740 206 846 206 C 952 206 998 240 998 300 V 460 Z" style="fill:#d9f0e8;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
     <ns0:rect x="724" y="300" width="244" height="10" rx="5" style="fill:#76bcb0;opacity:0.34;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"/>
     <ns0:rect x="724" y="370" width="244" height="10" rx="5" style="fill:#76bcb0;opacity:0.24;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"/>
-    <ns0:circle style="fill:#ffe8a3;opacity:0.72;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" cx="944.0" cy="254.0" r="23.0"/>
+    <ns0:circle style="fill:#ffe8a3;opacity:0.72;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" cx="972.0"
+       cy="236.0"
+       r="14.0"/>
     <ns0:rect x="638" y="454" width="416" height="52" rx="18" style="fill:#d9a06f;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:8"/>
     <ns0:rect x="676" y="486" width="340" height="22" rx="10" style="fill:#b97850;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0"/>
   </ns0:g>
@@ -68,8 +70,6 @@
     <ns0:rect x="88" y="530" width="1024" height="58" rx="18" style="fill:#b97850;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7"/>
     <ns0:path d="M 136 558 H 512" style="fill:none;stroke:#eac39b;stroke-linecap:round;stroke-linejoin:round;stroke-width:5"/>
     <ns0:path d="M 722 558 H 1066" style="fill:none;stroke:#eac39b;stroke-linecap:round;stroke-linejoin:round;stroke-width:5"/>
-    <ns0:ellipse style="fill:#f4d4ad;stroke:#8e7aa3;stroke-linecap:round;stroke-linejoin:round;stroke-width:5" cx="430.0" cy="500.0" rx="150.0" ry="28.0"/>
-    <ns0:ellipse style="fill:#fff8eb;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" cx="430.0" cy="497.0" rx="112.0" ry="16.0"/>
   </ns0:g>
   <ns0:g xmlns:ns1="http://www.inkscape.org/namespaces/inkscape" ns1:label="Finishing details" ns1:groupmode="layer">
     <ns0:circle style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" cx="106.0" cy="82.0" r="7.0"/>
