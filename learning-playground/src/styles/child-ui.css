@@ -812,7 +812,7 @@
    that appears later in the sheet. Desktop gets slim fixed tracks; compact
    viewports keep the flexible one-row grid so choices never wrap below the
    fold (three cards always fit). */
-.number-train__choices.activity-choice-grid {
+.number-train__choices.activity-choice-grid:has(.number-train__number-choice) {
   grid-template-columns: repeat(auto-fit, 200px);
   justify-content: center;
 }
@@ -829,8 +829,16 @@
 
 @media (max-width: 768px),
   (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
-  .number-train__choices.activity-choice-grid {
+  .number-train__choices.activity-choice-grid:has(.number-train__number-choice) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Load-the-Train shares this grid but its child-buttons have a 120px
+     floor: give them wrap-capable tracks so the Check control never
+     clips off-screen on narrow phones (pre-existing on main; fixed here
+     while this grid is under the knife). */
+  .number-train__choices.activity-choice-grid:has(.number-train__load-control) {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
 
   .number-train__choices .number-train__number-choice {
