@@ -419,7 +419,10 @@ export class StorageService implements StorageServiceInterface {
       if (!raw) return [];
       const parsed: unknown = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
-      return parsed.filter(isStoryHistoryRecord);
+      // Rebuild from the allowlist, never return stored objects as-is:
+      // a tampered entry carrying extra keys (a score, narration text)
+      // must not leak into export or survive the next append.
+      return parsed.filter(isStoryHistoryRecord).map(toStoryHistoryRecord);
     } catch {
       return [];
     }
@@ -454,6 +457,23 @@ export class StorageService implements StorageServiceInterface {
       storyHistory: this.getStoryHistory(),
     });
   }
+}
+
+/** The §21 allowlist made literal: only these fields ever come back out. */
+function toStoryHistoryRecord(record: StoryHistoryRecord): StoryHistoryRecord {
+  return {
+    story_session_id: record.story_session_id,
+    mode: record.mode,
+    family_id: record.family_id,
+    character_id: record.character_id,
+    setting_id: record.setting_id,
+    problem_id: record.problem_id,
+    choice_path: [...record.choice_path],
+    ...(record.ending_id !== undefined ? { ending_id: record.ending_id } : {}),
+    started_at: record.started_at,
+    ...(record.completed_at !== undefined ? { completed_at: record.completed_at } : {}),
+    status: record.status,
+  };
 }
 
 function isStoryHistoryRecord(value: unknown): value is StoryHistoryRecord {

@@ -78,6 +78,44 @@ describe('story history persistence', () => {
     expect(records.map((entry) => entry.story_session_id)).toEqual(['story-1']);
   });
 
+  test('extra keys on stored records are stripped by the allowlist rebuild', () => {
+    const store = new MemoryKeyValueStorage();
+    store.setItem(
+      'lp_story_history',
+      JSON.stringify([
+        {
+          ...record(),
+          score: 5,
+          narration: 'improvised words that must never persist',
+          imagination_score: 9,
+        },
+      ])
+    );
+    const storage = new StorageService(store);
+    const records = storage.getStoryHistory();
+    expect(records).toHaveLength(1);
+    expect(Object.keys(records[0]).sort()).toEqual([
+      'character_id',
+      'choice_path',
+      'completed_at',
+      'ending_id',
+      'family_id',
+      'mode',
+      'problem_id',
+      'setting_id',
+      'started_at',
+      'status',
+      'story_session_id',
+    ]);
+    // Export never sees the forbidden keys either.
+    const exported = storage.exportProgressData([]);
+    expect(exported).not.toContain('imagination_score');
+    expect(exported).not.toContain('improvised words');
+    // And the next append persists the scrubbed form, not the original.
+    storage.appendStoryHistory(record({ story_session_id: 'story-2' }));
+    expect(store.getItem('lp_story_history')).not.toContain('imagination_score');
+  });
+
   test('clearStoryHistory empties the store', () => {
     const store = new MemoryKeyValueStorage();
     const storage = new StorageService(store);
