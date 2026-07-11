@@ -460,6 +460,21 @@
   height: 116px;
 }
 
+.phonics-character--letter .phonics-character__art {
+  width: 132px;
+  height: 132px;
+  border-radius: var(--radius-round);
+  background: #fffdf7;
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.16);
+}
+
+.phonics-letter {
+  color: #3a2461;
+  font-size: 4.4rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .phonics-character.is-speaking .phonics-character__svg {
   animation: pipSpeak 620ms ease-in-out;
 }
@@ -2973,16 +2988,18 @@
 }
 
 .bear-cafe-check,
+/* Deliver is THE advancing control on this stage — it wears the same
+   violet pill as every other "press me" button in the playground
+   instead of a dark unlabeled blob. */
 .bear-cafe-deliver-button {
-  min-width: 96px;
-  background: #3a2461;
-  color: #ffffff;
+  min-width: 240px;
+  min-height: 72px;
 }
 
 .bear-cafe-deliver-button .bear-cafe-tray-svg {
   display: block;
-  width: 68px;
-  height: 34px;
+  width: 92px;
+  height: 46px;
 }
 
 .bear-cafe-check:disabled {
@@ -3327,6 +3344,16 @@
   .story-stage__choice:hover,
   .story-stage__choice:focus-visible {
     transform: none;
+  }
+}
+
+/* The studio column (topbar, requester, board, tray, actions, feedback)
+   sums past short viewports at the default rhythm — tighten it so the
+   whole art table fits without scrolling. */
+@media (max-height: 950px) {
+  .bear-art-studio {
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
   }
 }
 
