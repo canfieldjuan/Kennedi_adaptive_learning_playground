@@ -1323,6 +1323,18 @@
   pointer-events: none;
 }
 
+.studio-environment img.studio-env__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
 .studio-environment .studio-env__svg {
   display: block;
   width: 100%;

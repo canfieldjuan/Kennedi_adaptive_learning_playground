@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+// @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
+import { readFileSync } from 'node:fs';
 import {
   destroyColoringActivity,
   renderColoringActivity,
@@ -40,8 +42,14 @@ describe('coloring runtime', () => {
     expect(layers[0].innerHTML).toContain('studio-env__svg');
     // Hard guardrails: nothing readable in the scene, and no saturated color —
     // color on this screen belongs only to the palette and the filled shape.
-    expect(layers[0].innerHTML).not.toContain('<text');
-    const paints = layers[0].innerHTML.match(/(?:fill|stroke)="([^"]+)"/g) ?? [];
+    // Since the scene ships as a local production asset, the sweep now runs
+    // against the exported file itself (stronger: it checks what ships).
+    const asset = readFileSync(
+      new URL('../../public/assets/images/studio-room-proof.svg', import.meta.url),
+      'utf8'
+    );
+    expect(asset).not.toContain('<text');
+    const paints = asset.match(/(?:fill|stroke)="([^"]+)"/g) ?? [];
     expect(paints.length).toBeGreaterThan(0);
     const neutralPalette = [
       'rgba(58, 36, 97, 0.45)',
@@ -53,6 +61,8 @@ describe('coloring runtime', () => {
       '#fbf8f1',
       '#f7f3e9',
       '#d8d0c2',
+      // fill="none" paints nothing — transparent is not a color.
+      'none',
     ];
     for (const paint of paints) {
       const value = paint.replace(/^(?:fill|stroke)="/, '').replace(/"$/, '');

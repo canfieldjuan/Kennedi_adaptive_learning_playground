@@ -143,3 +143,23 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Mobile screenshot path(s):** `docs/captures/train-station/train-station-proof-mobile.webp`
 - **Owner look approval:** Pending; do not extend the style until approved
 - **Restrictions and notes:** Reserved clear zones: title/progress strip, question line, the train band, the answer-card band. No digits or countable clusters in the backdrop (skyline blocks are abstract, low contrast) — the count evidence stays runtime-owned.
+
+## Art studio room scene (proof)
+
+- **Asset family:** Art studio backdrop scene (all-neutral)
+- **Game:** Art (Bear Art Studio + legacy coloring, shared studio environment)
+- **Status:** `rights_verified` (owner look approval pending)
+- **Production path(s):** `public/assets/images/studio-room-proof.svg`
+- **Editable source path(s):** `design-source/art-studio/studio-room-proof.svg` (instances of the shared component library; the library gained `wall-frame-dot`, `wall-frame-hill`, `art-shelf`)
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Composed from the component library with an authoring-time neutral-palette remap; editable in Inkscape 1.4.4; headless-render verified
+- **Origin:** Category A original composition, adapting Category B motifs from the prior in-code studio scene
+- **Third-party elements:** None
+- **AI assistance:** None
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Contact sheet path:** `docs/captures/art-studio/studio-room-proof-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/art-studio/studio-room-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/art-studio/studio-room-proof-mobile.webp`
+- **Owner look approval:** Pending; do not extend the style until approved
+- **Restrictions and notes:** HARD GUARDRAIL — the art screens teach color, so the backdrop is ALL-NEUTRAL (every paint from the contract's neutral set; enforced by tests/modules/coloring.test.ts sweeping this shipped file). Reserved clear zones: request/bear strip, canvas, tool row, palette row.
