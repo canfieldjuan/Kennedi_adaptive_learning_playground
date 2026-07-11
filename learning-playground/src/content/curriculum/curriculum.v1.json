@@ -630,7 +630,9 @@
         "art-studio-pink-request",
         "art-studio-pattern-scarf",
         "art-studio-fix-card",
-        "art-studio-dress-bear"
+        "art-studio-dress-bear",
+        "art-studio-stage-poster",
+        "art-studio-wall-picture"
       ],
       "planned_transfer_contexts": [
         "same_format_same_examples",

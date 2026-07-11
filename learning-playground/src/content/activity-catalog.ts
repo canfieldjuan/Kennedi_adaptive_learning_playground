@@ -7,9 +7,11 @@ import artStudioFixCard from './activities/art-studio-fix-card.json';
 import artStudioFreeDecorate from './activities/art-studio-free-decorate.json';
 import artStudioPatternScarf from './activities/art-studio-pattern-scarf.json';
 import artStudioPinkRequest from './activities/art-studio-pink-request.json';
+import artStudioStagePoster from './activities/art-studio-stage-poster.json';
 import artStudioFiveFlowers from './activities/art-studio-five-flowers.json';
 import artStudioStoryOutside from './activities/art-studio-story-outside.json';
 import artStudioThreeStars from './activities/art-studio-three-stars.json';
+import artStudioWallPicture from './activities/art-studio-wall-picture.json';
 import blendBat from './activities/blend-bat.json';
 import blendCat from './activities/blend-cat.json';
 import blendHat from './activities/blend-hat.json';
@@ -80,6 +82,8 @@ export const APPROVED_ACTIVITIES: LearningActivity[] = [
   artStudioPatternScarf,
   artStudioPinkRequest,
   artStudioStoryOutside,
+  artStudioStagePoster,
+  artStudioWallPicture,
   artStudioThreeStars,
   artStudioFiveFlowers,
   kennedisOrdersBanana,
