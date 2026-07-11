@@ -11,6 +11,7 @@ import type {
   StoryPack,
 } from './story-pack.types';
 import { STORY_TOKENS } from './story-pack.types';
+import { resolveStory } from './story-resolver';
 
 const KNOWN_TOKENS = new Set<string>(STORY_TOKENS);
 
@@ -34,6 +35,29 @@ export function validateStoryPack(pack: StoryPack): string[] {
 
   for (const family of pack.families) {
     validateFamily(errors, family, { characterIds, settingIds, problemIds });
+  }
+
+  // — Every supported combination must actually resolve —
+  // Structural §13: no branch may accidentally depend on an entity the
+  // selection cannot supply (e.g. a friend token with a friendless
+  // problem). Combination counts are authored-small, so resolve them all.
+  if (errors.length === 0) {
+    for (const family of pack.families) {
+      for (const characterId of family.characterIds) {
+        for (const settingId of family.settingIds) {
+          for (const problemId of family.problemIds) {
+            try {
+              resolveStory(pack, family.id, { characterId, settingId, problemId });
+            } catch (cause) {
+              const reason = cause instanceof Error ? cause.message : String(cause);
+              errors.push(
+                `family ${family.id}: combination ${characterId}/${settingId}/${problemId} does not resolve (${reason})`
+              );
+            }
+          }
+        }
+      }
+    }
   }
 
   return errors;

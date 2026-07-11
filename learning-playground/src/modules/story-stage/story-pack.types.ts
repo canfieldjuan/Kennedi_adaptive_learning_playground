@@ -31,6 +31,7 @@ export const STORY_TOKENS = [
   '{friendPhrase}',
   '{friendThem}',
   '{setting}',
+  '{settingDetail}',
 ] as const;
 
 export interface StoryCharacter {
@@ -55,6 +56,8 @@ export interface StorySetting {
   spokenIntro: string;
   /** The in-narration phrase for {setting}, e.g. "the enchanted forest". */
   phrase: string;
+  /** Authored flavor clause for {settingDetail}, e.g. "where the trees sparkle softly". */
+  detail: string;
   art: string;
 }
 
@@ -62,12 +65,17 @@ export interface StoryProblem {
   id: string;
   label: string;
   spokenIntro: string;
-  /** The friend/object at the heart of the problem, for {friend}. */
-  friendLabel: string;
+  /**
+   * Friend fields exist only for problems ABOUT a friend (Lost Friend).
+   * A family template may use the friend tokens only with problems that
+   * define them — the validator dry-resolves every supported
+   * combination, so a mismatch cannot ship.
+   */
+  friendLabel?: string;
   /** Fuller phrase for {friendPhrase}, e.g. "puppy friend Biscuit". */
-  friendPhrase: string;
+  friendPhrase?: string;
   /** Object pronoun for {friendThem}, e.g. "him". */
-  friendThem: string;
+  friendThem?: string;
   art: string;
 }
 

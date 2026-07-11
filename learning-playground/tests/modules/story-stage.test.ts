@@ -18,6 +18,7 @@ import {
   FIRST_STORY_PACK,
   resolveFirstTale,
 } from '../../src/modules/story-stage/first-tale';
+import { resolveStory } from '../../src/modules/story-stage/story-resolver';
 import {
   familiesSupporting,
   findFamilyFor,
@@ -96,6 +97,57 @@ describe('the first tale (resolved story graph)', () => {
       expect(scene.narration.trim().length).toBeGreaterThan(0);
     }
   });
+});
+
+describe('every family in the pack (resolved story graphs)', () => {
+  const representative: Record<string, { characterId: string; settingId: string; problemId: string }> = {
+    'lost-friend': FIRST_SELECTION,
+    'broken-thing': { characterId: 'finn', settingId: 'cozy-town', problemId: 'quiet-music-box' },
+    'special-delivery': { characterId: 'milo', settingId: 'cloud-village', problemId: 'special-delivery' },
+  };
+
+  for (const family of FIRST_STORY_PACK.families) {
+    test(`${family.id}: two real decisions, bounded paths, endings, no dead scenes`, () => {
+      const story = resolveStory(FIRST_STORY_PACK, family.id, representative[family.id]);
+      const byId = new Map(story.scenes.map((entry) => [entry.id, entry]));
+
+      const decisions = story.scenes.filter((entry) => entry.kind === 'decision');
+      expect(decisions.length).toBe(2);
+      for (const decision of decisions) {
+        expect(decision.choices).toHaveLength(2);
+        const [a, b] = decision.choices!;
+        expect(a.next).not.toBe(b.next);
+        // Real choices: the two consequences narrate differently.
+        expect(byId.get(a.next)!.narration).not.toBe(byId.get(b.next)!.narration);
+      }
+
+      const endings: string[] = [];
+      const reachable = new Set<string>();
+      const walk = (sceneId: string, depth: number, seen: Set<string>) => {
+        expect(depth).toBeLessThanOrEqual(story.pathLength);
+        expect(seen.has(sceneId)).toBe(false);
+        const scene = byId.get(sceneId);
+        expect(scene).toBeDefined();
+        reachable.add(sceneId);
+        const nextSeen = new Set(seen).add(sceneId);
+        if (scene!.kind === 'ending') {
+          endings.push(sceneId);
+          return;
+        }
+        if (scene!.kind === 'decision') {
+          for (const choice of scene!.choices!) walk(choice.next, depth + 1, nextSeen);
+          return;
+        }
+        walk(scene!.next!, depth + 1, nextSeen);
+      };
+      walk(story.entrySceneId, 1, new Set());
+
+      expect(endings).toHaveLength(4);
+      expect(new Set(endings).size).toBe(2);
+      expect(reachable.size).toBe(story.scenes.length);
+      expect(JSON.stringify(story)).not.toMatch(/https?:\/\//);
+    });
+  }
 });
 
 describe('pick three selection helpers', () => {
@@ -386,6 +438,40 @@ describe('story stage runtime', () => {
     expect(findByClass(root, 'story-stage__caption')).toBeUndefined();
     // A fresh selection is required: Next is gated again.
     expect(findByAria(root, 'Next step')?.disabled).toBe(true);
+  });
+
+  test('compatibility filtering: Milo never meets the Missing Friend', () => {
+    const root = setup();
+    findByAria(root, 'Milo the Puppy')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'The Cozy Town')?.click();
+    findByAria(root, 'Next step')?.click();
+    // Only families supporting Milo + cozy town may offer their problems.
+    expect(findByAria(root, 'A Missing Friend')).toBeUndefined();
+    expect(findByAria(root, 'A Quiet Music Box')).toBeDefined();
+  });
+
+  test('a new family plays end to end through the setup (Broken Thing)', () => {
+    const root = setup();
+    findByAria(root, 'Finn the Dragon')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'The Cozy Town')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'A Quiet Music Box')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'Start the story')?.click();
+
+    expect(currentCaption(root)).toContain(
+      'Finn the friendly dragon visits the cozy town'
+    );
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Wind it gently')?.click();
+    expect(currentCaption(root)).toContain('winds the little handle');
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Ask a friend to help')?.click();
+    expect(currentCaption(root)).toContain('The music box sings again');
+    expect(findByAria(root, 'New story')).toBeDefined();
   });
 
   test('the runtime has no event sink and decorative layers are hidden', () => {

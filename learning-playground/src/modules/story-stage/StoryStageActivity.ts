@@ -30,6 +30,7 @@ import type {
 } from './story-pack.types';
 import { resolveStory } from './story-resolver';
 import { findFamilyFor, selectableEntities } from './story-selection';
+import type { SceneArtContext } from './story-art';
 import { storyCardSvg, storyChoiceSvg, storySceneSvg } from './story-art';
 
 interface StoryStageOptions {
@@ -268,6 +269,16 @@ export function renderStoryStage(
 
   function beginStory(tale: ResolvedStory): void {
     const scenesById = new Map(tale.scenes.map((scene) => [scene.id, scene]));
+    // Scenes compose over the selection: the picked setting is the
+    // backdrop and the picked character is the hero in every beat.
+    const artCtx: SceneArtContext = {
+      characterArt:
+        pack.characters.find((entry) => entry.id === tale.selection.characterId)?.art ??
+        'poppy',
+      settingArt:
+        pack.settings.find((entry) => entry.id === tale.selection.settingId)?.art ??
+        'forest',
+    };
     title.textContent = tale.title;
     container?.classList.remove('story-stage--ended');
 
@@ -323,7 +334,7 @@ export function renderStoryStage(
         dot.classList.toggle('is-current', index === step);
       }
 
-      scenePicture.innerHTML = storySceneSvg(scene.art);
+      scenePicture.innerHTML = storySceneSvg(scene.art, artCtx);
       caption.textContent = scene.narration;
       controls.innerHTML = '';
 
