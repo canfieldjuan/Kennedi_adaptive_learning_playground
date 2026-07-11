@@ -17,7 +17,7 @@ import type {
 /** Hard ceiling of the Number Train data model (sessions author below this). */
 export const NUMBER_TRAIN_ABSOLUTE_MAX = 50;
 
-const COUNT_PROMPT = 'How many passengers are riding?';
+const COUNT_PROMPT = 'How many passengers are on board?';
 
 /**
  * Build one deterministic session: `round_count` Count-the-Train rounds whose
