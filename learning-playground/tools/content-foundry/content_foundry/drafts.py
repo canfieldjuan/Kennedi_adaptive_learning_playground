@@ -8,7 +8,7 @@ import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from .errors import ValidationError
 
@@ -60,23 +60,22 @@ class DraftStore:
         validate_manifest(manifest, draft_id)
         return draft_dir, manifest
 
-    def add_output(self, draft_dir: Path, manifest: dict[str, Any], path: Path, *, role: str) -> None:
+    def add_output(self, draft_dir: Path, manifest: dict[str, Any], path: Path, *, role: str) -> bool:
         resolved = path.resolve(strict=True)
         resolved_draft = draft_dir.resolve()
         if not resolved.is_relative_to(resolved_draft):
             raise ValidationError("draft output escaped its draft directory")
         relative_path = resolved.relative_to(resolved_draft).as_posix()
-        manifest["outputs"].append({
+        entry = {
             "role": role,
             "path": relative_path,
             "bytes": resolved.stat().st_size,
             "sha256": sha256_file(resolved),
-        })
-        self.write(draft_dir, manifest)
+        }
+        return self._update_draft(draft_dir, manifest, lambda current: current["outputs"].append(entry))
 
-    def add_qa(self, draft_dir: Path, manifest: dict[str, Any], check: dict[str, Any]) -> None:
-        manifest["qa"]["checks"].append(check)
-        self.write(draft_dir, manifest)
+    def add_qa(self, draft_dir: Path, manifest: dict[str, Any], check: dict[str, Any]) -> bool:
+        return self._update_draft(draft_dir, manifest, lambda current: current["qa"]["checks"].append(check))
 
     def record_parent_decision(
         self,
@@ -99,7 +98,7 @@ class DraftStore:
         draft_dir = self.root / draft_id
         if not draft_dir.is_dir():
             raise ValidationError(f"cannot read draft: {draft_id}")
-        lock_path = draft_dir / ".decision.lock"
+        lock_path = draft_dir / ".manifest.lock"
         with lock_path.open("a+", encoding="utf-8") as lock:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
             _, manifest = self.load(draft_id)
@@ -109,6 +108,7 @@ class DraftStore:
                 checks = manifest["qa"]["checks"]
                 if not manifest["outputs"] or not checks or any(check.get("status") != "pass" for check in checks):
                     raise ValidationError("only a draft with outputs and passing QA can be approved")
+                validate_output_files(draft_dir, manifest["outputs"])
             manifest["status"] = decision
             manifest["approval"] = {
                 "decision": decision,
@@ -119,6 +119,30 @@ class DraftStore:
             }
             self.write(draft_dir, manifest)
             return manifest
+
+    def _update_draft(
+        self,
+        draft_dir: Path,
+        manifest: dict[str, Any],
+        update: Callable[[dict[str, Any]], None],
+    ) -> bool:
+        draft_id = draft_dir.name
+        validate_draft_id(draft_id)
+        if draft_dir.resolve() != (self.root / draft_id).resolve():
+            raise ValidationError("draft directory is outside the draft store")
+        lock_path = draft_dir / ".manifest.lock"
+        with lock_path.open("a+", encoding="utf-8") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            _, current = self.load(draft_id)
+            manifest.clear()
+            manifest.update(current)
+            if current["status"] != "draft" or current["approval"] is not None:
+                return False
+            update(current)
+            self.write(draft_dir, current)
+            manifest.clear()
+            manifest.update(current)
+            return True
 
     def write(self, draft_dir: Path, manifest: dict[str, Any]) -> None:
         validate_manifest(manifest, manifest.get("draft_id"))
@@ -203,6 +227,19 @@ def validate_manifest(manifest: Any, expected_id: str | None) -> None:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def validate_output_files(draft_dir: Path, outputs: list[dict[str, Any]]) -> None:
+    resolved_draft = draft_dir.resolve()
+    for output in outputs:
+        try:
+            path = (draft_dir / output["path"]).resolve(strict=True)
+        except OSError as exc:
+            raise ValidationError("draft output is missing at approval time") from exc
+        if not path.is_relative_to(resolved_draft) or not path.is_file():
+            raise ValidationError("draft output escaped its draft directory")
+        if path.stat().st_size != output["bytes"] or sha256_file(path) != output["sha256"]:
+            raise ValidationError("draft output changed after QA")
 
 
 def sha256_file(path: Path) -> str:

@@ -44,6 +44,84 @@ instructional objects.
    bounded generation tools, draft boundary, narration assembly, and tests. One
    real three-scene content run and app integration remain later issue #79
    slices after this foundation is reviewed and merged.
+2. PR #81 review confirmed that manifest writers and parent decisions share a
+   file but not a lock/reload protocol, approval trusts stored hashes without
+   re-reading files, stereo `adelay` does not affect every channel, and the
+   fixed four-second contact-sheet interval cannot review a 3.375-second Wan
+   clip. The correct follow-up must change only `drafts.py`, `media.py`, their
+   tests, and this contract.
+3. The first `quality-gate` run confirmed the GitHub runner has no `ffmpeg`.
+   Because media QA is a required CI test rather than an optional local check,
+   `.github/workflows/learning-playground-quality.yml` is added to the allowed
+   surface solely to install the media binary before `npm test`.
+
+## Review Follow-Up Contract
+
+### Root Cause
+
+Draft mutation is currently atomic per file replacement but not serialized per
+manifest: in-flight code keeps and rewrites an old object after a parent
+decision. Approval validates metadata rather than current files. Separately,
+the narration filter treats a per-channel delay as a scalar, and contact-sheet
+sampling assumes clips exceed four seconds. CI also invokes the required media
+test without installing its runtime binary.
+
+### Correct Fix Must Touch
+
+- Serialize output, QA, and decision writes through one manifest lock; reload
+  current state under that lock and refuse post-decision generation writes.
+- Before approval, resolve every output inside the draft and recompute its size
+  and SHA-256 against the manifest.
+- Apply each storyboard delay to all input channels before the final mono mix.
+- Derive eight evenly spaced contact-sheet samples from the probed clip duration.
+- Add regression tests for rejection during an in-flight write, modified output
+  before approval, stereo cue timing, and short-clip contact-sheet sampling.
+- Install `ffmpeg` in the existing quality job before the enrolled media test.
+
+### Must Not Change
+
+All original protected child/app surfaces remain protected. Do not relax media
+QA, parent approval, loopback/path/resource guards, or the required ffmpeg test.
+Do not resolve review threads, merge, or touch another PR from this worker.
+
+### Review Follow-Up Cold Audit
+
+No gap remains in the follow-up diff.
+
+- `drafts.py:63`, `drafts.py:77`, and `drafts.py:80` now share one manifest
+  lock. `_update_draft` at line 123 reloads disk state before mutation, syncs the
+  caller's stale object, and refuses writes after a decision. This directly
+  prevents the reviewed rejection-erasure sequence.
+- `drafts.py:232` resolves, bounds, sizes, and re-hashes every output while the
+  manifest lock is held before approval. Modified or missing files leave the
+  draft undecided.
+- `media.py:217` applies each cue delay to all source channels. The mix resets
+  sample timestamps at line 222 before finite padding/trimming, avoiding the
+  short-cue latency discovered while testing. Final measured two-pass
+  normalization remains unchanged.
+- `media.py:82` probes source duration and requests eight evenly spaced frames,
+  so the 3.375-second Wan contract no longer yields one review frame.
+- `test_drafts_client.py:93`, `test_drafts_client.py:107`,
+  `test_media.py:43`, and `test_media.py:101` reproduce all four reviewed
+  failure paths. The stereo test decodes the final WebM and proves silence before
+  the cue and audible narration after it.
+- `.github/workflows/learning-playground-quality.yml:43` installs `ffmpeg`
+  before `npm test`, reaching the confirmed CI failure without skipping or
+  weakening media QA.
+
+Every change traces to amendments 2 or 3. No original protected child/app
+surface moved in the follow-up diff, and no review thread was resolved by this
+worker.
+
+Verification before rebase: `npm test` passed 33 Foundry tests with one
+intentional live-Comfy skip plus all 599 existing tests; `npm run typecheck`,
+`npm run build`, and `git diff --check` passed. The workflow provisioning change
+requires the next `quality-gate` run for hosted confirmation.
+
+Verification after rebasing onto current `origin/main`: 33 Foundry tests passed
+with the same intentional live-Comfy skip; 53 Vitest files and 669 app tests
+passed; typecheck, build, and diff checks passed. The PR head still requires a
+fresh hosted `quality-gate` observation after push.
 
 ## Cold Diff Audit
 

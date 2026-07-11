@@ -80,9 +80,13 @@ class MediaTools:
         return {"draft_id": draft_id, "draft_dir": str(draft_dir), "manifest": manifest}
 
     def create_contact_sheet(self, video: Path, destination: Path) -> None:
+        duration = float(self.probe(video).get("format", {}).get("duration", 0))
+        if duration <= 0:
+            raise ValidationError("contact sheet source requires a finite duration")
+        sample_rate = 8 / duration
         self._run([
             "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", str(video),
-            "-vf", "fps=1/4,scale=240:-1,tile=4x2:padding=8:margin=8:color=white",
+            "-vf", f"fps={sample_rate:.8f},scale=240:-1,tile=4x2:padding=8:margin=8:color=white",
             "-frames:v", "1", str(destination),
         ])
 
@@ -210,12 +214,13 @@ class MediaTools:
                 label = f"a{index}"
                 filters.append(
                     f"[{index}:a]silenceremove=start_periods=1:start_duration=0.05:start_threshold=-55dB,"
-                    f"highpass=f=70,loudnorm=I=-20:TP=-3:LRA=7,adelay={start_ms}[{label}]"
+                    f"highpass=f=70,adelay=delays={start_ms}:all=1[{label}]"
                 )
                 labels.append(f"[{label}]")
             filters.append(
                 f"{''.join(labels)}amix=inputs={len(labels)}:duration=longest:normalize=0,"
-                f"apad=whole_dur={total_seconds:.3f},atrim=duration={total_seconds:.3f}[mixed]"
+                f"asetpts=N/SR/TB,apad=whole_dur={total_seconds:.3f},"
+                f"atrim=duration={total_seconds:.3f}[mixed]"
             )
             command += [
                 "-filter_complex", ";".join(filters), "-map", "[mixed]",

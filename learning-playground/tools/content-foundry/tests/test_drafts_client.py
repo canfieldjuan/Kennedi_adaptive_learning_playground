@@ -90,6 +90,36 @@ class DraftStoreTests(unittest.TestCase):
             rejected = store.record_parent_decision(draft_id, decision="rejected", reviewer="Parent", notes="QA failed")
             self.assertEqual(rejected["status"], "rejected")
 
+    def test_in_flight_writers_cannot_erase_a_parent_rejection(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            store = DraftStore(Path(temp_name))
+            draft_id, draft_dir, stale_manifest = store.create(kind="image", workflow={}, inputs={})
+            rejected = store.record_parent_decision(draft_id, decision="rejected", reviewer="Parent", notes="Stop")
+            output = draft_dir / "scene.png"
+            output.write_bytes(b"late image")
+
+            self.assertFalse(store.add_output(draft_dir, stale_manifest, output, role="image"))
+            self.assertFalse(store.add_qa(draft_dir, stale_manifest, {"name": "late", "status": "pass"}))
+            _, persisted = store.load(draft_id)
+            self.assertEqual(persisted, rejected)
+            self.assertEqual(stale_manifest, rejected)
+
+    def test_approval_recomputes_output_hashes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            store = DraftStore(Path(temp_name))
+            draft_id, draft_dir, manifest = store.create(kind="image", workflow={}, inputs={})
+            output = draft_dir / "scene.png"
+            output.write_bytes(b"reviewed image")
+            store.add_output(draft_dir, manifest, output, role="image")
+            store.add_qa(draft_dir, manifest, {"name": "image_contract", "status": "pass"})
+            output.write_bytes(b"changed after review")
+
+            with self.assertRaisesRegex(ValidationError, "changed after QA"):
+                store.record_parent_decision(draft_id, decision="approved", reviewer="Parent", notes="")
+            _, persisted = store.load(draft_id)
+            self.assertEqual(persisted["status"], "draft")
+            self.assertIsNone(persisted["approval"])
+
     @unittest.skipUnless(sys.platform.startswith("linux"), "fcntl decision locking is Linux-specific")
     def test_concurrent_parent_decisions_allow_exactly_one_winner(self) -> None:
         with tempfile.TemporaryDirectory() as temp_name:
