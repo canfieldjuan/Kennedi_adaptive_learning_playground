@@ -123,3 +123,23 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Mobile screenshot path(s):** `docs/captures/word-workshop/words-workshop-proof-mobile.webp`
 - **Owner look approval:** Pending; do not extend the style until approved
 - **Restrictions and notes:** HARD GUARDRAIL preserved — nothing reads as a letter, word, tile, or choice (plain spines, abstract pin-board, no `<text>`). Reserved clear zones: title/prompt strip, Pip column, the card/tile band. Portrait crop intentionally exits both edge prop groups.
+
+## Number Train station scene (proof)
+
+- **Asset family:** Number Train station backdrop scene
+- **Game:** Math (Number Train, all bands)
+- **Status:** `rights_verified` (owner look approval pending)
+- **Production path(s):** `public/assets/images/train-station-proof.svg`
+- **Editable source path(s):** `design-source/number-train/train-station-proof.svg` (instances of the shared component library; the library gained `station-house`, `signal-post`, `skyline-blocks`, `sun-simple`, `cloud-puff`)
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Composed from the component library; editable in Inkscape 1.4.4; headless-render verified
+- **Origin:** Category A original composition, adapting Category B motifs from the prior in-code station scene
+- **Third-party elements:** None
+- **AI assistance:** None
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Contact sheet path:** `docs/captures/train-station/train-station-proof-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/train-station/train-station-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/train-station/train-station-proof-mobile.webp`
+- **Owner look approval:** Pending; do not extend the style until approved
+- **Restrictions and notes:** Reserved clear zones: title/progress strip, question line, the train band, the answer-card band. No digits or countable clusters in the backdrop (skyline blocks are abstract, low contrast) — the count evidence stays runtime-owned.
