@@ -30,8 +30,10 @@ import { galleryMiniSvg } from './gallery-art';
 import { createStudioEnvironment } from '../coloring-book/studio-environment';
 import {
   isStudioShapeId,
+  posterSurfaceSvg,
   shirtSurfaceSvg,
   studioShapeSvg,
+  wallFrameSurfaceSvg,
   type StudioShapeId,
 } from './studio-art';
 import type {
@@ -508,20 +510,38 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
   let done = false;
   const placements = new Map<number, StudioShapeId>();
 
-  const isShirt = content.surface === 'shirt';
-  const card = document.createElement('div');
-  card.className = isShirt
-    ? 'bear-art-studio__card bear-art-studio__card--shirt'
-    : 'bear-art-studio__card';
+  // Every non-card surface is a repaintable backdrop SVG; the plain card
+  // tints its own background instead.
+  const SURFACE_ART: Partial<Record<typeof content.surface, (fill: string) => string>> = {
+    shirt: shirtSurfaceSvg,
+    poster: posterSurfaceSvg,
+    wall_frame: wallFrameSurfaceSvg,
+  };
+  const SURFACE_CLASS: Record<typeof content.surface, string> = {
+    card: 'bear-art-studio__card',
+    shirt: 'bear-art-studio__card bear-art-studio__card--shirt',
+    poster: 'bear-art-studio__card bear-art-studio__card--poster',
+    wall_frame: 'bear-art-studio__card bear-art-studio__card--wall-frame',
+  };
+  const SURFACE_ID: Record<typeof content.surface, string> = {
+    card: 'decorate-card',
+    shirt: 'bear-shirt',
+    poster: 'stage-poster',
+    wall_frame: 'bear-house-wall',
+  };
+  const renderSurface = SURFACE_ART[content.surface];
+  const surfaceId = SURFACE_ID[content.surface];
 
-  // Dress-up: the shirt is the surface; swatch taps repaint its fill.
-  let shirtBackdrop: HTMLElement | null = null;
-  if (isShirt) {
-    shirtBackdrop = document.createElement('span');
-    shirtBackdrop.className = 'bear-art-studio__shirt';
-    shirtBackdrop.setAttribute('aria-hidden', 'true');
-    shirtBackdrop.innerHTML = shirtSurfaceSvg('#fbf8f1');
-    card.appendChild(shirtBackdrop);
+  const card = document.createElement('div');
+  card.className = SURFACE_CLASS[content.surface];
+
+  let surfaceBackdrop: HTMLElement | null = null;
+  if (renderSurface) {
+    surfaceBackdrop = document.createElement('span');
+    surfaceBackdrop.className = 'bear-art-studio__surface';
+    surfaceBackdrop.setAttribute('aria-hidden', 'true');
+    surfaceBackdrop.innerHTML = renderSurface('#fbf8f1');
+    card.appendChild(surfaceBackdrop);
   }
 
   const slots: HTMLButtonElement[] = [];
@@ -554,8 +574,8 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
   const swatches = buildSwatches(shared, content.colors, (color) => {
     if (done) return;
     cardColor = color;
-    if (shirtBackdrop) {
-      shirtBackdrop.innerHTML = shirtSurfaceSvg(color.value);
+    if (surfaceBackdrop && renderSurface) {
+      surfaceBackdrop.innerHTML = renderSurface(color.value);
     } else {
       card.style.setProperty('--art-card-color', color.value);
     }
@@ -613,7 +633,7 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
         stickers_placed: stickerList.length,
         sticker_ids: stickerList.join(','),
         card_color_id: cardColor?.id ?? 'none',
-        art_surface_id: isShirt ? 'bear-shirt' : 'decorate-card',
+        art_surface_id: surfaceId,
       },
     });
     emitStudioEvent(shared, {
@@ -627,7 +647,7 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
         stickers_placed: stickerList.length,
         sticker_ids: stickerList.join(','),
         card_color_id: cardColor?.id ?? 'none',
-        art_surface_id: isShirt ? 'bear-shirt' : 'decorate-card',
+        art_surface_id: surfaceId,
       },
     });
     finishPiece(shared, shared.correctFeedback.speech ?? 'Art finished.', card);
@@ -1356,8 +1376,9 @@ function parseStudioContent(activity: LearningActivity): StudioContent | null {
     case 'free_decorate': {
       const stickers = parseStickers(raw.stickers);
       const slotCount = boundedNumber(raw.slot_count, 1, 8);
-      const surface = raw.surface === 'shirt' ? 'shirt' : 'card';
-      if (raw.surface !== undefined && raw.surface !== 'card' && raw.surface !== 'shirt') {
+      const knownSurfaces = ['card', 'shirt', 'poster', 'wall_frame'] as const;
+      const surface = knownSurfaces.find((id) => id === raw.surface) ?? 'card';
+      if (raw.surface !== undefined && !knownSurfaces.some((id) => id === raw.surface)) {
         return null;
       }
       if (colors.length === 0 || stickers.length === 0 || slotCount === null) return null;

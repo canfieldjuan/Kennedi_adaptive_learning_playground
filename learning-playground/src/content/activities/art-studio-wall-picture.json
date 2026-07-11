@@ -1,0 +1,94 @@
+{
+  "id": "art-studio-wall-picture",
+  "version": 1,
+  "title": "Picture for the Bear House",
+  "domain": "art",
+  "skill_ids": [
+    "color_fill"
+  ],
+  "transfer": {
+    "skill_ids": [
+      "color_fill"
+    ],
+    "context_type": "same_format_new_examples",
+    "context_id": "bear-house-wall",
+    "example_set_id": "wall-picture-1",
+    "prompt_mode": "mixed"
+  },
+  "difficulty": {
+    "level": 0,
+    "choice_count": 4,
+    "distractor_strength": "none"
+  },
+  "interaction_model": "tap_then_place",
+  "estimated_duration_seconds": 90,
+  "content": {
+    "game": "bear-art-studio",
+    "art_mode": "free_decorate",
+    "surface": "wall_frame",
+    "character": {
+      "id": "daddy-bear",
+      "name": "Daddy Bear"
+    },
+    "prompt_audio": "Daddy Bear wants a new picture for the bear house wall. Make one!",
+    "slot_count": 6,
+    "stickers": [
+      "star",
+      "heart",
+      "flower",
+      "sun",
+      "bubble",
+      "moon"
+    ],
+    "colors": [
+      {
+        "id": "berry-pink",
+        "label": "Pink",
+        "value": "#fd79a8"
+      },
+      {
+        "id": "sunny-yellow",
+        "label": "Yellow",
+        "value": "#fdcb6e"
+      },
+      {
+        "id": "leaf-green",
+        "label": "Green",
+        "value": "#00b894"
+      },
+      {
+        "id": "sky-blue",
+        "label": "Blue",
+        "value": "#74b9ff"
+      }
+    ],
+    "next_activity_id": "art-studio-dress-bear",
+    "next_label": "Next art"
+  },
+  "success_rules": {
+    "completion_action": "finish_art",
+    "min_decorations": 1
+  },
+  "feedback_rules": {
+    "correct": {
+      "speech": "It goes right on the wall! Beautiful.",
+      "animation": "glow_pop",
+      "sound": "soft_chime"
+    },
+    "incorrect": {
+      "speech": "Try a sticker or a color.",
+      "animation": "gentle_bounce",
+      "sound": "soft_boing"
+    },
+    "hint": {
+      "speech": "Tap a color for the picture, or a sticker, then a spot.",
+      "highlight_target": true
+    }
+  },
+  "safety": {
+    "requires_parent_approval": true,
+    "external_links_allowed": false,
+    "contains_video": false,
+    "contains_audio": true
+  }
+}

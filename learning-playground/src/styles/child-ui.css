@@ -1716,19 +1716,21 @@
   box-shadow: none;
 }
 
-.bear-art-studio__shirt {
+.bear-art-studio__surface {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.bear-art-studio__shirt svg {
+.bear-art-studio__surface svg {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-.bear-art-studio__card--shirt .bear-art-studio__slot {
+.bear-art-studio__card--shirt .bear-art-studio__slot,
+.bear-art-studio__card--poster .bear-art-studio__slot,
+.bear-art-studio__card--wall-frame .bear-art-studio__slot {
   position: relative;
   background: rgba(255, 255, 255, 0.4);
 }
@@ -1749,6 +1751,30 @@
   0% { transform: translateY(0); }
   40% { transform: translateY(-10px); }
   100% { transform: translateY(0); }
+}
+
+/* The stage poster: portrait surface, slots under the curtain header. */
+.bear-art-studio__card--poster {
+  position: relative;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(64vw, 250px);
+  min-height: 300px;
+  padding: 52px 34px 68px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The bear-house wall picture: landscape canvas inside the wood frame. */
+.bear-art-studio__card--wall-frame {
+  position: relative;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(90vw, 430px);
+  min-height: 270px;
+  padding: 62px 52px 50px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* The gallery shelf: the just-made piece slides in ahead of up to three
@@ -3398,6 +3424,18 @@
     width: min(80vw, 300px);
     min-height: 200px;
     padding: 44px 62px var(--space-md);
+  }
+
+  .bear-art-studio__card--poster {
+    width: min(52vw, 200px);
+    min-height: 240px;
+    padding: 42px 26px 54px;
+  }
+
+  .bear-art-studio__card--wall-frame {
+    width: min(88vw, 330px);
+    min-height: 210px;
+    padding: 48px 40px 38px;
   }
 
   .bear-art-studio__mini {

@@ -1,6 +1,6 @@
 {
   "id": "art-studio-story-outside",
-  "version": 1,
+  "version": 2,
   "title": "Story Card: Going Outside",
   "domain": "language",
   "skill_ids": [
@@ -42,7 +42,7 @@
       "flower",
       "star"
     ],
-    "next_activity_id": "art-studio-dress-bear",
+    "next_activity_id": "art-studio-stage-poster",
     "next_label": "Next art"
   },
   "success_rules": {
