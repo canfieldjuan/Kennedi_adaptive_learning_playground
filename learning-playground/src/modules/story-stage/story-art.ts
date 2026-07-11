@@ -174,3 +174,33 @@ export function storyChoiceSvg(artKey: string): string {
   const body = CHOICE_ART[artKey] ?? CHOICE_ART.sparkle;
   return `<svg class="story-stage__choice-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">${body}</svg>`;
 }
+
+/**
+ * Pick Three setup cards (arc slice 3) — one image per selectable entity
+ * art key. Each card must communicate its idea visually: the child never
+ * needs to read the label.
+ */
+const CARD_ART: Record<string, string> = {
+  poppy: `<rect x="0" y="0" width="160" height="120" fill="${SKY}"/>
+    <path d="M0 92 q60 -18 160 -6 v34 h-160 Z" fill="${HILL}"/>
+    ${sparkleStar(34, 30, 6)}${sparkleStar(128, 22, 5)}
+    ${poppy('happy', 80, 108)}`,
+  forest: `<rect x="0" y="0" width="160" height="120" fill="${SKY}"/>
+    <path d="M0 78 q50 -18 100 -8 q40 8 60 -4 v54 h-160 Z" fill="${HILL}"/>
+    <path d="M0 98 q60 -14 160 -4 v26 h-160 Z" fill="${HILL_DEEP}"/>
+    ${tree(44, 88, 0.8)}
+    ${tree(120, 82, 0.95)}
+    ${sparkleStar(80, 26, 6)}${sparkleStar(28, 44, 4)}${sparkleStar(140, 38, 4)}`,
+  'paw-prints': `<rect x="0" y="0" width="160" height="120" fill="${SKY}"/>
+    <path d="M0 84 q70 -18 160 -6 v42 h-160 Z" fill="${HILL}"/>
+    <circle cx="122" cy="86" r="24" fill="${LEAF}" stroke="${INK}" stroke-width="2.8"/>
+    <circle cx="102" cy="94" r="15" fill="${LEAF_DEEP}" stroke="${INK}" stroke-width="2.4"/>
+    ${biscuit(122, 84, { peeking: true })}
+    <g transform="translate(-182 -104)">${pawPrints()}</g>`,
+};
+
+/** One illustrated setup card image (viewBox 160x120). */
+export function storyCardSvg(artKey: string): string {
+  const body = CARD_ART[artKey] ?? CARD_ART.poppy;
+  return `<svg class="story-stage__card-svg" viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">${body}</svg>`;
+}

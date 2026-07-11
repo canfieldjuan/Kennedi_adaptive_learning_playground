@@ -13,8 +13,17 @@ import {
   renderStoryStage,
   destroyStoryStage,
 } from '../../src/modules/story-stage/StoryStageActivity';
-import { resolveFirstTale } from '../../src/modules/story-stage/first-tale';
-import type { ResolvedScene } from '../../src/modules/story-stage/story-pack.types';
+import {
+  FIRST_SELECTION,
+  FIRST_STORY_PACK,
+  resolveFirstTale,
+} from '../../src/modules/story-stage/first-tale';
+import {
+  familiesSupporting,
+  findFamilyFor,
+  selectableEntities,
+} from '../../src/modules/story-stage/story-selection';
+import type { ResolvedScene, StoryPack } from '../../src/modules/story-stage/story-pack.types';
 import type { SpeechServiceInterface } from '../../src/types/runtime';
 import { parseRoute } from '../../src/app/router';
 
@@ -89,6 +98,66 @@ describe('the first tale (resolved story graph)', () => {
   });
 });
 
+describe('pick three selection helpers', () => {
+  // A synthetic two-family pack: c1 belongs to family A, c2 to family B,
+  // c3 is authored but unwired; the families share setting s1.
+  const stubScenes = { scenes: [], archetype: 'stub', title: 'T', opening: 'O', entrySceneId: 'intro', maxPathLength: 6 };
+  const entity = (id: string) => ({
+    id,
+    label: id,
+    spokenIntro: `${id} line`,
+    art: id,
+  });
+  const syntheticPack = {
+    id: 'synthetic',
+    version: 1,
+    characters: [
+      { ...entity('c1'), introName: 'c1', shortName: 'c1', possessive: 'her' },
+      { ...entity('c2'), introName: 'c2', shortName: 'c2', possessive: 'his' },
+      { ...entity('c3'), introName: 'c3', shortName: 'c3', possessive: 'their' },
+    ],
+    settings: [{ ...entity('s1'), phrase: 'the s1' }],
+    problems: [
+      { ...entity('p1'), friendLabel: 'F', friendPhrase: 'friend F', friendThem: 'him' },
+      { ...entity('p2'), friendLabel: 'G', friendPhrase: 'friend G', friendThem: 'her' },
+    ],
+    families: [
+      { ...stubScenes, id: 'family-a', characterIds: ['c1'], settingIds: ['s1'], problemIds: ['p1'] },
+      { ...stubScenes, id: 'family-b', characterIds: ['c2'], settingIds: ['s1'], problemIds: ['p2'] },
+    ],
+  } as unknown as StoryPack;
+
+  test('unwired entities are never offered as cards', () => {
+    const offered = selectableEntities(syntheticPack);
+    expect(offered.characters.map((entry) => entry.id)).toEqual(['c1', 'c2']);
+    expect(offered.settings.map((entry) => entry.id)).toEqual(['s1']);
+    expect(offered.problems.map((entry) => entry.id)).toEqual(['p1', 'p2']);
+  });
+
+  test('later steps only offer entities compatible with earlier picks', () => {
+    const afterCharacter = selectableEntities(syntheticPack, { characterId: 'c2' });
+    expect(afterCharacter.settings.map((entry) => entry.id)).toEqual(['s1']);
+    expect(afterCharacter.problems.map((entry) => entry.id)).toEqual(['p2']);
+  });
+
+  test('a completed selection maps to the family that supports it', () => {
+    expect(
+      findFamilyFor(syntheticPack, { characterId: 'c1', settingId: 's1', problemId: 'p1' })?.id
+    ).toBe('family-a');
+    expect(
+      findFamilyFor(syntheticPack, { characterId: 'c1', settingId: 's1', problemId: 'p2' })
+    ).toBeUndefined();
+    expect(familiesSupporting(syntheticPack, {}).map((entry) => entry.id)).toEqual([
+      'family-a',
+      'family-b',
+    ]);
+  });
+
+  test('the shipped pack resolves the fixed selection to the lost-friend family', () => {
+    expect(findFamilyFor(FIRST_STORY_PACK, FIRST_SELECTION)?.id).toBe('lost-friend');
+  });
+});
+
 describe('story stage routing', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -143,15 +212,89 @@ describe('story stage runtime', () => {
     return root;
   }
 
+  /** Walk the Pick Three flow with the single authored trio and Start. */
+  function startFirstStory(root: MockElement): void {
+    findByAria(root, 'Princess Poppy')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'The Enchanted Forest')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'A Missing Friend')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'Start the story')?.click();
+  }
+
   function currentCaption(root: MockElement): string {
     return findByClass(root, 'story-stage__caption')?.textContent ?? '';
   }
 
-  test('a full narrated play-through reaches an ending deterministically', () => {
+  function stepTitle(root: MockElement): string {
+    return findByClass(root, 'story-stage__step-title')?.textContent ?? '';
+  }
+
+  test('setup speaks the step ask, and picking a card responds without advancing', () => {
     const root = setup();
 
-    // Opening + entry scene narrated once each; no autoplay beyond that.
+    // The route lands on setup, not a story: step ask spoken, no caption.
+    expect(stepTitle(root)).toBe('Who is the story about?');
     expect(speech.speak.mock.calls.map((call) => call[0])).toEqual([
+      'Who is the story about?',
+    ]);
+    expect(findByClass(root, 'story-stage__caption')).toBeUndefined();
+
+    const card = findByAria(root, 'Princess Poppy')!;
+    expect(card.attributes['aria-pressed']).toBe('false');
+    card.click();
+
+    // Selection response is visible and audible, and the step does NOT advance.
+    expect(card.attributes['aria-pressed']).toBe('true');
+    expect(card.classList.contains('story-stage__card--selected')).toBe(true);
+    expect(speech.speak.mock.calls.at(-1)?.[0]).toBe('Princess Poppy loves to explore.');
+    expect(stepTitle(root)).toBe('Who is the story about?');
+  });
+
+  test('Next is gated on a pick at every step', () => {
+    const root = setup();
+
+    // No pick yet: Next is disabled and clicking it goes nowhere.
+    expect(findByAria(root, 'Next step')?.disabled).toBe(true);
+    findByAria(root, 'Next step')?.click();
+    expect(stepTitle(root)).toBe('Who is the story about?');
+
+    findByAria(root, 'Princess Poppy')?.click();
+    expect(findByAria(root, 'Next step')?.disabled).toBe(false);
+    findByAria(root, 'Next step')?.click();
+    expect(stepTitle(root)).toBe('Where does it happen?');
+    expect(speech.speak.mock.calls.at(-1)?.[0]).toBe('Where does it happen?');
+  });
+
+  test('the summary shows all three picks and one large Start control', () => {
+    const root = setup();
+    findByAria(root, 'Princess Poppy')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'The Enchanted Forest')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'A Missing Friend')?.click();
+    findByAria(root, 'Next step')?.click();
+
+    expect(stepTitle(root)).toBe('Your story is ready!');
+    expect(speech.speak.mock.calls.at(-1)?.[0]).toBe('Your story is ready!');
+    const items = findAllByClass(root, 'story-stage__summary-item');
+    expect(items).toHaveLength(3);
+    expect(
+      items.map((item) => findByClass(item, 'story-stage__card-label')?.textContent)
+    ).toEqual(['Princess Poppy', 'The Enchanted Forest', 'A Missing Friend']);
+    expect(findByAria(root, 'Start the story')).toBeDefined();
+    // Still no story surface until Start.
+    expect(findByClass(root, 'story-stage__caption')).toBeUndefined();
+  });
+
+  test('a full narrated play-through reaches an ending deterministically', () => {
+    const root = setup();
+    startFirstStory(root);
+
+    // Fully narrated launch: opening + entry scene narrated once each,
+    // in order, after the setup speech; no autoplay beyond that.
+    expect(speech.speak.mock.calls.slice(-2).map((call) => call[0])).toEqual([
       FIRST_TALE.opening,
       scene('intro').narration,
     ]);
@@ -180,6 +323,7 @@ describe('story stage runtime', () => {
 
   test('the other branch produces the other consequence (real choices)', () => {
     const root = setup();
+    startFirstStory(root);
     findByAria(root, 'What happens next?')?.click();
     findByAria(root, 'What happens next?')?.click();
     findByAria(root, 'Ask the friendly owl')?.click();
@@ -188,16 +332,20 @@ describe('story stage runtime', () => {
 
   test('scene changes stop speech before speaking (no overlap)', () => {
     const root = setup();
+    startFirstStory(root);
     const callsBefore = order(speech);
     findByAria(root, 'What happens next?')?.click();
     const calls = order(speech).slice(callsBefore.length);
     expect(calls).toEqual(['stop', 'speak']);
   });
 
-  test('Repeat replays the current scene narration', () => {
+  test('Repeat replays the current prompt in both phases', () => {
     const root = setup();
     findByAria(root, 'Repeat prompt')?.click();
     expect(speech.repeatLast).toHaveBeenCalledTimes(1);
+    startFirstStory(root);
+    findByAria(root, 'Repeat prompt')?.click();
+    expect(speech.repeatLast).toHaveBeenCalledTimes(2);
   });
 
   test('leaving the story stops narration', () => {
@@ -209,6 +357,7 @@ describe('story stage runtime', () => {
 
   test('Tell it again restarts the same story from the beginning', () => {
     const root = setup();
+    startFirstStory(root);
     findByAria(root, 'What happens next?')?.click();
     findByAria(root, 'What happens next?')?.click();
     findByAria(root, 'Follow the sparkly path')?.click();
@@ -221,8 +370,27 @@ describe('story stage runtime', () => {
     expect(findByAria(root, 'What happens next?')).toBeDefined();
   });
 
+  test('New story at an ending returns to the Pick Three setup', () => {
+    const root = setup();
+    startFirstStory(root);
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Follow the sparkly path')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Blow gentle bubbles')?.click();
+    expect(findByAria(root, 'New story')).toBeDefined();
+
+    findByAria(root, 'New story')?.click();
+    expect(stepTitle(root)).toBe('Who is the story about?');
+    expect(speech.speak.mock.calls.at(-1)?.[0]).toBe('Who is the story about?');
+    expect(findByClass(root, 'story-stage__caption')).toBeUndefined();
+    // A fresh selection is required: Next is gated again.
+    expect(findByAria(root, 'Next step')?.disabled).toBe(true);
+  });
+
   test('the runtime has no event sink and decorative layers are hidden', () => {
     const root = setup();
+    startFirstStory(root);
     // The options type takes speech only — assert the rendered tree carries
     // no evidence hooks and the scene layer is aria-hidden.
     expect(findByClass(root, 'story-stage__scene')?.attributes['aria-hidden']).toBe('true');
