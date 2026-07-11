@@ -2237,6 +2237,28 @@
   width: 100%;
 }
 
+/* The story-room valance: a short decorative curtain strip. */
+.story-stage__valance {
+  display: block;
+  width: min(94vw, 560px);
+  pointer-events: none;
+  line-height: 0;
+}
+
+.story-stage__valance svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Endings warm the stage — static glow, no animation. */
+.story-stage--ended .story-stage__scene {
+  border-color: rgba(230, 168, 60, 0.75);
+  box-shadow:
+    0 0 0 6px rgba(246, 195, 67, 0.25),
+    0 14px 40px rgba(58, 36, 97, 0.25);
+}
+
 /* Adult-facing mode line on the setup screen: informative, never a control. */
 .story-stage__mode-badge {
   padding: 2px 14px;
@@ -3282,6 +3304,18 @@
   .number-train__path.is-walking .number-train__path-stop,
   .number-train__stage--arrived .number-train {
     animation: none;
+  }
+
+  .story-stage__card,
+  .story-stage__choice {
+    transition: none;
+  }
+
+  .story-stage__card:hover,
+  .story-stage__card:focus-visible,
+  .story-stage__choice:hover,
+  .story-stage__choice:focus-visible {
+    transform: none;
   }
 }
 

@@ -43,7 +43,12 @@ import type {
 import { resolveStory } from './story-resolver';
 import { findFamilyFor, selectableEntities } from './story-selection';
 import type { SceneArtContext } from './story-art';
-import { storyCardSvg, storyChoiceSvg, storySceneSvg } from './story-art';
+import {
+  storyCardSvg,
+  storyChoiceSvg,
+  storyRoomValanceSvg,
+  storySceneSvg,
+} from './story-art';
 
 export type StoryMode = 'narrated' | 'together';
 
@@ -185,6 +190,13 @@ export function renderStoryStage(
     const setup = document.createElement('div');
     setup.className = 'story-stage__setup';
 
+    // The story-room valance: decorative framing, never a tap target.
+    const valance = document.createElement('span');
+    valance.className = 'story-stage__valance';
+    valance.setAttribute('aria-hidden', 'true');
+    valance.innerHTML = storyRoomValanceSvg();
+    setup.appendChild(valance);
+
     // Adult-facing: the active narration mode is visible before the
     // story starts. Informative only — the child never chooses modes.
     const modeBadge = document.createElement('p');
@@ -267,6 +279,12 @@ export function renderStoryStage(
 
     const setup = document.createElement('div');
     setup.className = 'story-stage__setup';
+
+    const valance = document.createElement('span');
+    valance.className = 'story-stage__valance';
+    valance.setAttribute('aria-hidden', 'true');
+    valance.innerHTML = storyRoomValanceSvg();
+    setup.appendChild(valance);
 
     const summaryTitle = document.createElement('h2');
     summaryTitle.className = 'story-stage__step-title';
