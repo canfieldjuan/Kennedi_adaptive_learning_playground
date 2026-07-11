@@ -986,3 +986,34 @@
   border-color: #6c5ce7;
   background: rgba(108, 92, 231, 0.14);
 }
+
+/* — Recent Stories (non-evaluative story history) — */
+.parent-recent-stories__empty {
+  color: var(--parent-text-soft, #5a5670);
+  font-size: 0.95rem;
+}
+
+.parent-recent-stories__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 10px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.parent-recent-stories__item {
+  padding: 10px 14px;
+  border: 1px solid rgba(90, 86, 112, 0.25);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.parent-recent-stories__title {
+  font-weight: 700;
+}
+
+.parent-recent-stories__meta {
+  color: var(--parent-text-soft, #5a5670);
+  font-size: 0.85rem;
+}

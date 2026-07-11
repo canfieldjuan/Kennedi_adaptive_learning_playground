@@ -10,6 +10,7 @@ import type {
   ParentMasterySnapshot,
   ParentReviewScheduleRecord,
 } from '../types/mastery-records';
+import type { StoryHistoryRecord } from '../types/story-history';
 import type { ChildProgressProfile } from '../types/progress';
 import type { ParentSettings } from '../types/storage';
 
@@ -49,6 +50,7 @@ export interface ProgressExportPayload {
   parent_activity_brief_decisions: ParentActivityBriefDecision[];
   parent_mastery_snapshots: ParentMasterySnapshot[];
   parent_review_schedule_records: ParentReviewScheduleRecord[];
+  story_history: StoryHistoryRecord[];
 }
 
 export function buildProgressExportPayload(params: {
@@ -62,6 +64,7 @@ export function buildProgressExportPayload(params: {
   activityBriefDecisions?: ParentActivityBriefDecision[];
   masterySnapshots?: ParentMasterySnapshot[];
   reviewScheduleRecords?: ParentReviewScheduleRecord[];
+  storyHistory?: StoryHistoryRecord[];
   exportedAt?: string;
 }): ProgressExportPayload {
   const exportedAt = params.exportedAt ?? new Date().toISOString();
@@ -71,6 +74,7 @@ export function buildProgressExportPayload(params: {
   const activityBriefDecisions = params.activityBriefDecisions ?? [];
   const masterySnapshots = params.masterySnapshots ?? [];
   const reviewScheduleRecords = params.reviewScheduleRecords ?? [];
+  const storyHistory = params.storyHistory ?? [];
 
   return {
     exported_at: exportedAt,
@@ -89,6 +93,7 @@ export function buildProgressExportPayload(params: {
         'parent_activity_brief_decisions',
         'parent_mastery_snapshots',
         'parent_review_schedule_records',
+        'story_history',
       ],
     },
     data_health: buildLocalDataHealth(
@@ -110,6 +115,7 @@ export function buildProgressExportPayload(params: {
     parent_activity_brief_decisions: activityBriefDecisions,
     parent_mastery_snapshots: masterySnapshots,
     parent_review_schedule_records: reviewScheduleRecords,
+    story_history: storyHistory,
   };
 }
 
@@ -154,6 +160,7 @@ export function buildProgressExportJson(params: {
   activityBriefDecisions?: ParentActivityBriefDecision[];
   masterySnapshots?: ParentMasterySnapshot[];
   reviewScheduleRecords?: ParentReviewScheduleRecord[];
+  storyHistory?: StoryHistoryRecord[];
   exportedAt?: string;
 }): string {
   return JSON.stringify(buildProgressExportPayload(params), null, 2);
