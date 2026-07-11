@@ -631,12 +631,12 @@
   justify-content: center;
   gap: var(--space-sm);
   width: 100%;
-  max-width: 760px;
+  max-width: 900px;
 }
 
 .number-train__engine {
-  width: 96px;
-  height: 96px;
+  width: 136px;
+  height: 136px;
   flex-shrink: 0;
 }
 
@@ -685,8 +685,8 @@
 .number-train__seat {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border: 2px dashed rgba(58, 36, 97, 0.35);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.55);
@@ -700,8 +700,8 @@
 
 .number-train__passenger-svg {
   display: block;
-  width: 26px;
-  height: 26px;
+  width: 36px;
+  height: 36px;
 }
 
 /* Structural counting hint: occupied seats pulse so the child can count along. */
@@ -792,8 +792,22 @@
   animation: trainCountPulse 700ms ease-in-out 2;
 }
 
-.number-train__numeral {
-  font-size: 2.4rem;
+/* The digit fills its card: smaller box, bigger numeral (owner direction).
+   Two-class selectors so these win over the generic .activity-choice sizing
+   that appears later in the sheet. */
+.number-train__choices.activity-choice-grid {
+  grid-template-columns: repeat(auto-fit, 200px);
+  justify-content: center;
+}
+
+.number-train__choices .number-train__number-choice {
+  min-height: 128px;
+  padding: var(--space-md);
+}
+
+.number-train__choices .number-train__numeral {
+  font-size: 4.2rem;
+  line-height: 1;
 }
 
 /* Compact Number Train for phones (portrait and short landscape): the display
@@ -806,8 +820,8 @@
   }
 
   .number-train__engine {
-    width: 64px;
-    height: 64px;
+    width: 84px;
+    height: 84px;
   }
 
   .number-train__car {
@@ -816,13 +830,13 @@
   }
 
   .number-train__seat {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
   }
 
   .number-train__passenger-svg {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
   }
 
   .number-train__journey {
@@ -847,7 +861,7 @@
   }
 
   .number-train__numeral {
-    font-size: 1.9rem;
+    font-size: 2.6rem;
   }
 
   .number-train__choices .number-train__load-control,
