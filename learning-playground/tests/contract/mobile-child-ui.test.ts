@@ -162,6 +162,12 @@ describe('mobile child UI contract', () => {
     );
   });
 
+  test('the sticker tray honors the hidden attribute', () => {
+    expect(childUiCss).toMatch(
+      /\.bear-art-studio__stickers\[hidden\] \{\s*display: none;/
+    );
+  });
+
   test('the art gallery shelf honors the hidden attribute', () => {
     // The shelf's flex display would otherwise override the UA's
     // [hidden] { display: none } and show an empty strip during play.

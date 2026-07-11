@@ -1,11 +1,15 @@
 {
   "id": "art-studio-five-flowers",
-  "version": 1,
+  "version": 2,
   "title": "Five Flowers for Daddy",
   "domain": "math",
-  "skill_ids": ["counting"],
+  "skill_ids": [
+    "counting"
+  ],
   "transfer": {
-    "skill_ids": ["counting"],
+    "skill_ids": [
+      "counting"
+    ],
     "context_type": "same_format_new_examples",
     "context_id": "sticker-count-decorate",
     "example_set_id": "five-flowers-card",
@@ -21,7 +25,10 @@
   "content": {
     "game": "bear-art-studio",
     "art_mode": "quantity_decorate",
-    "character": { "id": "daddy-bear", "name": "Daddy Bear" },
+    "character": {
+      "id": "daddy-bear",
+      "name": "Daddy Bear"
+    },
     "prompt_audio": "Daddy Bear wants five flowers on his card. Add five flowers, then press Check.",
     "target_sticker_id": "flower",
     "target_quantity": 5,

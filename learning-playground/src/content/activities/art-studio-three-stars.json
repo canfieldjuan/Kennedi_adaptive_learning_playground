@@ -1,12 +1,16 @@
 {
   "id": "art-studio-three-stars",
-  "version": 1,
+  "version": 2,
   "title": "Three Stars for Mama",
   "domain": "math",
-  "skill_ids": ["counting"],
+  "skill_ids": [
+    "counting"
+  ],
   "originating_brief_id": "brief-counting-different_interaction_model",
   "transfer": {
-    "skill_ids": ["counting"],
+    "skill_ids": [
+      "counting"
+    ],
     "context_type": "different_interaction_model",
     "context_id": "sticker-count-decorate",
     "example_set_id": "three-stars-card",
@@ -22,7 +26,10 @@
   "content": {
     "game": "bear-art-studio",
     "art_mode": "quantity_decorate",
-    "character": { "id": "mama-bear", "name": "Mama Bear" },
+    "character": {
+      "id": "mama-bear",
+      "name": "Mama Bear"
+    },
     "prompt_audio": "Mama Bear wants three stars on her card. Add three stars, then press Check.",
     "target_sticker_id": "star",
     "target_quantity": 3,

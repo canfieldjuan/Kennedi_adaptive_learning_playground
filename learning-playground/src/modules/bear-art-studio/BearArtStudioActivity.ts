@@ -27,6 +27,7 @@ import {
   type GalleryPiece,
 } from '../../core/art-gallery';
 import { galleryMiniSvg } from './gallery-art';
+import { createArtCanvas } from './art-canvas';
 import { createStudioEnvironment } from '../coloring-book/studio-environment';
 import {
   isStudioShapeId,
@@ -501,27 +502,130 @@ function buildRequestCard(content: StudioContent): HTMLElement {
   return card;
 }
 
-// — Mode: free decorate (no wrong answers) —
+// — Shared tool tray for the canvas modes —
+
+interface ToolTrayOptions {
+  tools: Array<'brush' | 'bucket' | 'sticker'>;
+  colors: StudioColor[];
+  stickers?: StudioShapeId[];
+  onTool: (tool: 'brush' | 'bucket' | 'sticker') => void;
+  onColor: (color: StudioColor) => void;
+  onSticker?: (shape: StudioShapeId) => void;
+}
+
+const TOOL_LABELS: Record<'brush' | 'bucket' | 'sticker', string> = {
+  brush: 'Brush',
+  bucket: 'Fill',
+  sticker: 'Stickers',
+};
+
+const TOOL_GLYPHS: Record<'brush' | 'bucket' | 'sticker', string> = {
+  brush: `<svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M26 4 l10 10 -14 14 a7 7 0 0 1 -10 -10 Z" fill="#e8b7c4" stroke="#3a2461" stroke-width="3" stroke-linejoin="round"/><circle cx="11" cy="29" r="4" fill="#3a2461"/></svg>`,
+  bucket: `<svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M8 18 L20 6 l12 12 -12 12 Z" fill="#a8d8f0" stroke="#3a2461" stroke-width="3" stroke-linejoin="round"/><path d="M32 24 q4 6 0 9 q-4 -3 0 -9 Z" fill="#74b9ff" stroke="#3a2461" stroke-width="2.4"/></svg>`,
+  sticker: `<svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><path d="M20 5 l4 9 10 1 -7 7 2 10 -9 -5 -9 5 2 -10 -7 -7 10 -1 Z" fill="#f6c343" stroke="#3a2461" stroke-width="3" stroke-linejoin="round"/></svg>`,
+};
+
+function buildToolTray(shared: SharedRefs, options: ToolTrayOptions): {
+  swatches: Map<string, HTMLButtonElement>;
+  toolButtons: Map<string, HTMLButtonElement>;
+  stickerButtons: Map<string, HTMLButtonElement>;
+  setActiveTool: (tool: 'brush' | 'bucket' | 'sticker') => void;
+  disable: () => void;
+} {
+  const toolButtons = new Map<string, HTMLButtonElement>();
+  const stickerButtons = new Map<string, HTMLButtonElement>();
+
+  const toolsRow = document.createElement('div');
+  toolsRow.className = 'bear-art-studio__tools';
+  toolsRow.setAttribute('aria-label', 'Art tools');
+
+  const stickerRow = document.createElement('div');
+  stickerRow.className = 'bear-art-studio__stickers';
+  stickerRow.setAttribute('aria-label', 'Sticker choices');
+  stickerRow.hidden = true;
+
+  const setActiveTool = (tool: 'brush' | 'bucket' | 'sticker') => {
+    for (const [id, button] of toolButtons) {
+      button.classList.toggle('is-selected', id === tool);
+    }
+    stickerRow.hidden = tool !== 'sticker' || stickerButtons.size === 0;
+    options.onTool(tool);
+  };
+
+  for (const tool of options.tools) {
+    const chip = document.createElement('button');
+    chip.className = 'bear-art-studio__tool';
+    chip.type = 'button';
+    chip.setAttribute('aria-label', TOOL_LABELS[tool]);
+    chip.innerHTML = TOOL_GLYPHS[tool];
+    const onClick = () => setActiveTool(tool);
+    chip.addEventListener('click', onClick);
+    cleanupHandlers.push(() => chip.removeEventListener('click', onClick));
+    toolButtons.set(tool, chip);
+    toolsRow.appendChild(chip);
+  }
+  if (options.tools.length > 1) {
+    shared.tray.appendChild(toolsRow);
+  }
+
+  const swatches = buildSwatches(shared, options.colors, (color) => {
+    options.onColor(color);
+    markSelected(swatches, color.id);
+  });
+
+  for (const shape of options.stickers ?? []) {
+    const chip = document.createElement('button');
+    chip.className = 'bear-art-studio__sticker';
+    chip.type = 'button';
+    chip.setAttribute('aria-label', `${shape} sticker`);
+    chip.innerHTML = studioShapeSvg(shape);
+    const onChip = () => {
+      options.onSticker?.(shape);
+      for (const [id, other] of stickerButtons) {
+        other.classList.toggle('is-selected', id === shape);
+      }
+    };
+    chip.addEventListener('click', onChip);
+    cleanupHandlers.push(() => chip.removeEventListener('click', onChip));
+    stickerButtons.set(shape, chip);
+    stickerRow.appendChild(chip);
+  }
+  if (stickerButtons.size > 0) {
+    shared.tray.appendChild(stickerRow);
+  }
+
+  return {
+    swatches,
+    toolButtons,
+    stickerButtons,
+    setActiveTool,
+    disable: () => disableAll([
+      ...toolButtons.values(),
+      ...swatches.values(),
+      ...stickerButtons.values(),
+    ]),
+  };
+}
+
+// — Mode: free decorate (the open art table — brush, fill, stickers) —
 
 function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): void {
   const startedAt = Date.now();
-  let selectedSticker: StudioShapeId | null = null;
-  let cardColor: StudioColor | null = null;
   let done = false;
-  const placements = new Map<number, StudioShapeId>();
+  let selectedColor: StudioColor | null = null;
+  let fillColor: StudioColor | null = null;
+  let activeTool: 'brush' | 'bucket' | 'sticker' = 'brush';
 
-  // Every non-card surface is a repaintable backdrop SVG; the plain card
-  // tints its own background instead.
   const SURFACE_ART: Partial<Record<typeof content.surface, (fill: string) => string>> = {
     shirt: shirtSurfaceSvg,
     poster: posterSurfaceSvg,
     wall_frame: wallFrameSurfaceSvg,
   };
   const SURFACE_CLASS: Record<typeof content.surface, string> = {
-    card: 'bear-art-studio__card',
-    shirt: 'bear-art-studio__card bear-art-studio__card--shirt',
-    poster: 'bear-art-studio__card bear-art-studio__card--poster',
-    wall_frame: 'bear-art-studio__card bear-art-studio__card--wall-frame',
+    card: 'bear-art-studio__easel',
+    shirt: 'bear-art-studio__easel bear-art-studio__easel--shirt',
+    poster: 'bear-art-studio__easel bear-art-studio__easel--poster',
+    wall_frame: 'bear-art-studio__easel bear-art-studio__easel--wall-frame',
   };
   const SURFACE_ID: Record<typeof content.surface, string> = {
     card: 'decorate-card',
@@ -532,8 +636,8 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
   const renderSurface = SURFACE_ART[content.surface];
   const surfaceId = SURFACE_ID[content.surface];
 
-  const card = document.createElement('div');
-  card.className = SURFACE_CLASS[content.surface];
+  const easel = document.createElement('div');
+  easel.className = SURFACE_CLASS[content.surface];
 
   let surfaceBackdrop: HTMLElement | null = null;
   if (renderSurface) {
@@ -541,101 +645,101 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
     surfaceBackdrop.className = 'bear-art-studio__surface';
     surfaceBackdrop.setAttribute('aria-hidden', 'true');
     surfaceBackdrop.innerHTML = renderSurface('#fbf8f1');
-    card.appendChild(surfaceBackdrop);
+    easel.appendChild(surfaceBackdrop);
   }
 
-  const slots: HTMLButtonElement[] = [];
-  for (let index = 0; index < content.slotCount; index += 1) {
-    const slot = document.createElement('button');
-    slot.className = 'bear-art-studio__slot';
-    slot.type = 'button';
-    slot.setAttribute('aria-label', `Art spot ${index + 1}`);
-
-    const onSlot = () => {
-      if (done) return;
-      if (!selectedSticker) {
-        showFeedback(shared.feedback, 'Pick a sticker first.', 'hint');
-        return;
-      }
-      slot.innerHTML = studioShapeSvg(selectedSticker);
-      slot.classList.add('is-filled');
-      if (placements.size === 0) bearReacts(shared, 'receiving');
-      placements.set(index, selectedSticker);
-      doneButton.disabled = false;
-      showFeedback(shared.feedback, 'You made it.', 'success');
-    };
-    slot.addEventListener('click', onSlot);
-    cleanupHandlers.push(() => slot.removeEventListener('click', onSlot));
-    slots.push(slot);
-    card.appendChild(slot);
-  }
-  shared.board.appendChild(card);
-
-  const swatches = buildSwatches(shared, content.colors, (color) => {
-    if (done) return;
-    cardColor = color;
-    if (surfaceBackdrop && renderSurface) {
-      surfaceBackdrop.innerHTML = renderSurface(color.value);
-    } else {
-      card.style.setProperty('--art-card-color', color.value);
-    }
-    markSelected(swatches, color.id);
-    doneButton.disabled = false;
-    showFeedback(shared.feedback, color.label, 'hint');
+  const artCanvas = createArtCanvas({
+    allowRemove: false,
+    callbacks: {
+      onFirstMark: (colorId) => {
+        bearReacts(shared, 'receiving');
+        doneButton.disabled = false;
+        emitStudioEvent(shared, {
+          outcome: 'correct',
+          attemptNumber: 1,
+          responseTimeMs: Date.now() - startedAt,
+          selectedAnswer: colorId || 'brush',
+          correctAnswer: colorId || 'brush',
+          hintShown: false,
+          metadata: {
+            canvas_event: 'first_brush_mark',
+            tool_mode: 'brush',
+            selected_color_id: colorId || 'none',
+            art_surface_id: surfaceId,
+          },
+        });
+      },
+      onStickerPlace: () => {
+        bearReacts(shared, 'receiving');
+        doneButton.disabled = false;
+        showFeedback(shared.feedback, 'You made it.', 'success');
+      },
+    },
   });
+  cleanupHandlers.push(() => artCanvas.destroy());
+  easel.appendChild(artCanvas.element);
+  shared.board.appendChild(easel);
 
-  const stickerTray = document.createElement('div');
-  stickerTray.className = 'bear-art-studio__stickers';
-  stickerTray.setAttribute('aria-label', 'Sticker choices');
-  const stickerButtons: HTMLButtonElement[] = [];
-  for (const shape of content.stickers) {
-    const chip = document.createElement('button');
-    chip.className = 'bear-art-studio__sticker';
-    chip.type = 'button';
-    chip.setAttribute('aria-label', `${shape} sticker`);
-    chip.innerHTML = studioShapeSvg(shape);
-    const onChip = () => {
+  const tools: Array<'brush' | 'bucket' | 'sticker'> = renderSurface
+    ? ['brush', 'bucket', 'sticker']
+    : ['brush', 'sticker'];
+
+  const tray = buildToolTray(shared, {
+    tools,
+    colors: content.colors,
+    stickers: content.stickers,
+    onTool: (tool) => {
       if (done) return;
-      selectedSticker = shape;
-      for (const other of stickerButtons) {
-        other.classList.toggle('is-selected', other === chip);
+      activeTool = tool;
+      artCanvas.setTool(tool === 'sticker' ? 'sticker' : 'brush');
+      if (tool === 'bucket') {
+        showFeedback(shared.feedback, 'Tap a color to fill.', 'hint');
       }
-    };
-    chip.addEventListener('click', onChip);
-    cleanupHandlers.push(() => chip.removeEventListener('click', onChip));
-    stickerButtons.push(chip);
-    stickerTray.appendChild(chip);
+    },
+    onColor: (color) => {
+      if (done) return;
+      selectedColor = color;
+      if (activeTool === 'bucket' && surfaceBackdrop && renderSurface) {
+        fillColor = color;
+        surfaceBackdrop.innerHTML = renderSurface(color.value);
+        doneButton.disabled = false;
+      } else {
+        artCanvas.setBrushColor(color.id, color.value);
+      }
+      showFeedback(shared.feedback, color.label, 'hint');
+    },
+    onSticker: (shape) => {
+      if (done) return;
+      artCanvas.setSticker(shape);
+    },
+  });
+  tray.setActiveTool('brush');
+  if (content.colors[0]) {
+    artCanvas.setBrushColor(content.colors[0].id, content.colors[0].value);
+    markSelected(tray.swatches, content.colors[0].id);
+    selectedColor = content.colors[0];
   }
-  shared.tray.appendChild(stickerTray);
 
+  // The Done check floats on the easel corner — always visible, never
+  // below the fold, and taps on it never reach the paint layer.
   const doneButton = document.createElement('button');
-  doneButton.className = 'child-button bear-art-studio__done';
+  doneButton.className = 'bear-art-studio__done-chip';
   doneButton.type = 'button';
-  doneButton.textContent = 'Finish art';
+  doneButton.textContent = '✓';
   doneButton.setAttribute('aria-label', 'Finish art');
   doneButton.disabled = true;
   const onDone = () => {
-    if (done) return;
+    if (done || artCanvas.actionCount() === 0 && !fillColor) return;
     done = true;
+    artCanvas.setLocked(true);
+    tray.disable();
+    doneButton.disabled = true;
     const responseTimeMs = Date.now() - startedAt;
-    const stickerList = [...placements.values()];
-    const summary = `${stickerList.length} stickers`;
-    disableAll([...slots, ...stickerButtons, ...swatches.values(), doneButton]);
+    const stickerList = artCanvas.placedStickers();
+    const colorList = artCanvas.colorsUsed();
+    if (fillColor && !colorList.includes(fillColor.id)) colorList.push(fillColor.id);
+    const summary = `${stickerList.length} stickers, ${colorList.length} colors`;
 
-    emitStudioEvent(shared, {
-      outcome: 'correct',
-      attemptNumber: 1,
-      responseTimeMs,
-      selectedAnswer: summary,
-      correctAnswer: summary,
-      hintShown: false,
-      metadata: {
-        stickers_placed: stickerList.length,
-        sticker_ids: stickerList.join(','),
-        card_color_id: cardColor?.id ?? 'none',
-        art_surface_id: surfaceId,
-      },
-    });
     emitStudioEvent(shared, {
       outcome: 'completed',
       attemptNumber: 1,
@@ -645,19 +749,22 @@ function renderFreeDecorate(shared: SharedRefs, content: FreeDecorateContent): v
       hintShown: false,
       metadata: {
         stickers_placed: stickerList.length,
+        placed_sticker_count: stickerList.length,
         sticker_ids: stickerList.join(','),
-        card_color_id: cardColor?.id ?? 'none',
+        colors_used: colorList.join(','),
+        card_color_id: fillColor?.id ?? selectedColor?.id ?? 'none',
+        canvas_action_count: artCanvas.actionCount(),
         art_surface_id: surfaceId,
       },
     });
-    finishPiece(shared, shared.correctFeedback.speech ?? 'Art finished.', card);
+    finishPiece(shared, shared.correctFeedback.speech ?? 'Art finished.', easel);
   };
   doneButton.addEventListener('click', onDone);
   cleanupHandlers.push(() => doneButton.removeEventListener('click', onDone));
-  shared.actions.appendChild(doneButton);
+  easel.appendChild(doneButton);
 }
 
-// — Mode: color request —
+// — Mode: color request (fill the subject or paint with the asked color) —
 
 function renderColorRequest(shared: SharedRefs, content: ColorRequestContent): void {
   let selectedColor: StudioColor | null = null;
@@ -666,49 +773,74 @@ function renderColorRequest(shared: SharedRefs, content: ColorRequestContent): v
   let hintShown = false;
   let attemptStartedAt = Date.now();
 
+  const easel = document.createElement('div');
+  easel.className = 'bear-art-studio__easel bear-art-studio__easel--request';
+
   const subject = document.createElement('button');
   subject.className = 'bear-art-studio__subject';
   subject.type = 'button';
-  subject.setAttribute('aria-label', `Color the ${content.subjectShape}`);
+  subject.setAttribute('aria-label', `Fill the ${content.subjectShape}`);
   subject.innerHTML = studioShapeSvg(content.subjectShape, '#fbf8f1');
-  shared.board.appendChild(subject);
+  easel.appendChild(subject);
 
-  const swatches = buildSwatches(shared, content.colors, (color) => {
-    if (done) return;
-    selectedColor = color;
-    markSelected(swatches, color.id);
-    showFeedback(shared.feedback, color.label, 'hint');
+  const artCanvas = createArtCanvas({
+    allowRemove: false,
+    callbacks: {
+      onStrokeEnd: (colorId) => {
+        if (done || !colorId) return;
+        judgeAttempt(colorId, 'brush');
+      },
+    },
   });
+  cleanupHandlers.push(() => artCanvas.destroy());
+  easel.appendChild(artCanvas.element);
+  artCanvas.element.dataset.mode = 'brush-optional';
+  shared.board.appendChild(easel);
 
-  const onSubject = () => {
-    if (done) return;
-    if (!selectedColor) {
-      showFeedback(shared.feedback, shared.hintFeedback.speech ?? 'Pick a color first.', 'support');
-      speakAndPlay(shared.options, shared.hintFeedback);
-      return;
-    }
+  const tray = buildToolTray(shared, {
+    tools: ['brush', 'bucket'],
+    colors: content.colors,
+    onTool: (tool) => {
+      if (done) return;
+      // Brush paints over the canvas layer; the bucket lets taps through to
+      // the subject region below it.
+      artCanvas.element.dataset.passthrough = tool === 'bucket' ? 'true' : 'false';
+      artCanvas.setTool('brush');
+    },
+    onColor: (color) => {
+      if (done) return;
+      selectedColor = color;
+      artCanvas.setBrushColor(color.id, color.value);
+      showFeedback(shared.feedback, color.label, 'hint');
+    },
+  });
+  tray.setActiveTool('bucket');
 
+  function judgeAttempt(colorId: string, toolMode: 'brush' | 'bucket'): void {
+    const color = content.colors.find((entry) => entry.id === colorId);
+    if (!color) return;
     attemptNumber += 1;
     const responseTimeMs = Date.now() - attemptStartedAt;
-    subject.innerHTML = studioShapeSvg(content.subjectShape, selectedColor.value);
-    const isCorrect = selectedColor.id === content.targetColor.id;
+    const isCorrect = colorId === content.targetColor.id;
+    const metadata = {
+      requested_color_id: content.targetColor.id,
+      selected_color_id: colorId,
+      tool_mode: toolMode,
+      art_surface_id: `${content.subjectShape}-card`,
+    };
 
     if (!isCorrect) {
-      wiggle(subject);
+      wiggle(toolMode === 'bucket' ? subject : easel);
       emitStudioEvent(shared, {
         outcome: 'incorrect',
         attemptNumber,
         responseTimeMs,
-        selectedChoiceId: selectedColor.id,
+        selectedChoiceId: colorId,
         correctChoiceId: content.targetColor.id,
-        selectedAnswer: selectedColor.label,
+        selectedAnswer: color.label,
         correctAnswer: content.targetColor.label,
         hintShown,
-        metadata: {
-          requested_color_id: content.targetColor.id,
-          selected_color_id: selectedColor.id,
-          art_surface_id: `${content.subjectShape}-card`,
-        },
+        metadata,
       });
       showFeedback(
         shared.feedback,
@@ -719,21 +851,19 @@ function renderColorRequest(shared: SharedRefs, content: ColorRequestContent): v
 
       if (!hintShown && attemptNumber >= shared.content.maxAttemptsBeforeHint) {
         hintShown = true;
-        swatches.get(content.targetColor.id)?.classList.add('is-hinted');
+        tray.swatches.get(content.targetColor.id)?.classList.add('is-hinted');
         showFeedback(shared.feedback, shared.hintFeedback.speech ?? 'Find the matching color.', 'hint');
         speakAndPlay(shared.options, shared.hintFeedback);
         emitStudioEvent(shared, {
           outcome: 'hint_used',
           attemptNumber,
           responseTimeMs,
-          selectedChoiceId: selectedColor.id,
+          selectedChoiceId: colorId,
           correctChoiceId: content.targetColor.id,
-          selectedAnswer: selectedColor.label,
+          selectedAnswer: color.label,
           correctAnswer: content.targetColor.label,
           hintShown: true,
-          metadata: {
-            requested_color_id: content.targetColor.id,
-          },
+          metadata: { requested_color_id: content.targetColor.id },
         });
       }
       attemptStartedAt = Date.now();
@@ -741,172 +871,140 @@ function renderColorRequest(shared: SharedRefs, content: ColorRequestContent): v
     }
 
     done = true;
+    subject.innerHTML = studioShapeSvg(content.subjectShape, color.value);
     subject.classList.add('is-complete');
-    disableAll([...swatches.values(), subject]);
+    artCanvas.setLocked(true);
+    tray.disable();
+    disableAll([subject]);
     emitStudioEvent(shared, {
       outcome: 'correct',
       attemptNumber,
       responseTimeMs,
-      selectedChoiceId: selectedColor.id,
+      selectedChoiceId: colorId,
       correctChoiceId: content.targetColor.id,
-      selectedAnswer: selectedColor.label,
+      selectedAnswer: color.label,
       correctAnswer: content.targetColor.label,
       hintShown,
-      metadata: {
-        requested_color_id: content.targetColor.id,
-        selected_color_id: selectedColor.id,
-        art_surface_id: `${content.subjectShape}-card`,
-      },
+      metadata,
     });
     emitStudioEvent(shared, {
       outcome: 'completed',
       attemptNumber,
       responseTimeMs,
-      selectedChoiceId: selectedColor.id,
+      selectedChoiceId: colorId,
       correctChoiceId: content.targetColor.id,
-      selectedAnswer: selectedColor.label,
+      selectedAnswer: color.label,
       correctAnswer: content.targetColor.label,
       hintShown,
-      metadata: {
-        requested_color_id: content.targetColor.id,
-        art_surface_id: `${content.subjectShape}-card`,
-      },
+      metadata,
     });
-    finishPiece(shared, shared.correctFeedback.speech ?? 'That matches.', subject);
+    finishPiece(shared, shared.correctFeedback.speech ?? 'That matches.', easel);
+  }
+
+  const onSubject = () => {
+    if (done) return;
+    if (!selectedColor) {
+      showFeedback(shared.feedback, shared.hintFeedback.speech ?? 'Pick a color first.', 'support');
+      speakAndPlay(shared.options, shared.hintFeedback);
+      return;
+    }
+    subject.innerHTML = studioShapeSvg(content.subjectShape, selectedColor.value);
+    judgeAttempt(selectedColor.id, 'bucket');
   };
   subject.addEventListener('click', onSubject);
   cleanupHandlers.push(() => subject.removeEventListener('click', onSubject));
 }
 
-// — Mode: quantity decorate (counting; evaluated only on Check) —
+// — Mode: quantity decorate (counting — place the asked number freely) —
 
 function renderQuantityDecorate(
   shared: SharedRefs,
   content: QuantityDecorateContent
 ): void {
   let done = false;
-  let attemptNumber = 0;
-  let hintShown = false;
-  let attemptStartedAt = Date.now();
-  const applied = new Set<number>();
+  let highWater = 0;
+  const startedAt = Date.now();
 
-  const card = document.createElement('div');
-  card.className = 'bear-art-studio__card bear-art-studio__card--count';
+  const easel = document.createElement('div');
+  easel.className = 'bear-art-studio__easel bear-art-studio__easel--count';
 
-  const slots: HTMLButtonElement[] = [];
-  for (let index = 0; index < content.slotCount; index += 1) {
-    const slot = document.createElement('button');
-    slot.className = 'bear-art-studio__slot';
-    slot.type = 'button';
-    slot.setAttribute('aria-label', `Sticker spot ${index + 1}`);
-
-    // Add/remove freely; nothing is judged until Check (counting honesty).
-    const onSlot = () => {
-      if (done) return;
-      if (applied.has(index)) {
-        applied.delete(index);
-        slot.innerHTML = '';
-        slot.classList.remove('is-filled');
-      } else {
-        applied.add(index);
-        slot.innerHTML = studioShapeSvg(content.targetSticker);
-        slot.classList.add('is-filled');
-      }
-    };
-    slot.addEventListener('click', onSlot);
-    cleanupHandlers.push(() => slot.removeEventListener('click', onSlot));
-    slots.push(slot);
-    card.appendChild(slot);
-  }
-  shared.board.appendChild(card);
-
-  const checkButton = document.createElement('button');
-  checkButton.className = 'child-button bear-art-studio__check';
-  checkButton.type = 'button';
-  checkButton.textContent = 'Check';
-  checkButton.setAttribute('aria-label', 'Check the stickers');
-  const onCheck = () => {
-    if (done) return;
-    attemptNumber += 1;
-    const responseTimeMs = Date.now() - attemptStartedAt;
-    const appliedQuantity = applied.size;
-    const isCorrect = appliedQuantity === content.targetQuantity;
-    const baseMetadata = {
-      requested_quantity: content.targetQuantity,
-      applied_quantity: appliedQuantity,
-      sticker_id: content.targetSticker,
-      art_surface_id: 'count-card',
-    };
-
-    if (!isCorrect) {
-      wiggle(card);
-      emitStudioEvent(shared, {
-        outcome: 'incorrect',
-        attemptNumber,
-        responseTimeMs,
-        selectedAnswer: String(appliedQuantity),
-        correctAnswer: String(content.targetQuantity),
-        hintShown,
-        metadata: {
-          ...baseMetadata,
-          count_difference: appliedQuantity - content.targetQuantity,
-        },
-      });
-      showFeedback(
-        shared.feedback,
-        shared.incorrectFeedback.speech ?? "Let's count the stickers.",
-        'support'
-      );
-      speakAndPlay(shared.options, shared.incorrectFeedback);
-
-      if (!hintShown && attemptNumber >= shared.content.maxAttemptsBeforeHint) {
-        // Count-along hint: pulse what is already placed; never auto-fill.
-        hintShown = true;
-        for (const index of applied) {
-          slots[index]?.classList.add('is-hinted');
+  const artCanvas = createArtCanvas({
+    allowRemove: true,
+    callbacks: {
+      onStickerPlace: (shape, placedCount) => {
+        if (done) return;
+        if (placedCount > highWater && placedCount <= content.targetQuantity) {
+          highWater = placedCount;
+          emitStudioEvent(shared, {
+            outcome: 'correct',
+            attemptNumber: placedCount,
+            responseTimeMs: Date.now() - startedAt,
+            selectedChoiceId: shape,
+            selectedAnswer: String(placedCount),
+            correctAnswer: String(content.targetQuantity),
+            hintShown: false,
+            metadata: {
+              sticker_id: shape,
+              placed_sticker_count: placedCount,
+              requested_sticker_count: content.targetQuantity,
+              requested_quantity: content.targetQuantity,
+              tool_mode: 'sticker',
+              art_surface_id: 'count-card',
+            },
+          });
         }
-        showFeedback(shared.feedback, shared.hintFeedback.speech ?? "Let's count together.", 'hint');
-        speakAndPlay(shared.options, shared.hintFeedback);
-        emitStudioEvent(shared, {
-          outcome: 'hint_used',
-          attemptNumber,
-          responseTimeMs,
-          selectedAnswer: String(appliedQuantity),
-          correctAnswer: String(content.targetQuantity),
-          hintShown: true,
-          metadata: baseMetadata,
-        });
-      }
-      attemptStartedAt = Date.now();
-      return;
-    }
+        if (placedCount === content.targetQuantity) {
+          completeCount(placedCount);
+        } else if (placedCount < content.targetQuantity) {
+          showFeedback(shared.feedback, 'You made it.', 'success');
+        }
+      },
+    },
+  });
+  cleanupHandlers.push(() => artCanvas.destroy());
+  easel.appendChild(artCanvas.element);
+  shared.board.appendChild(easel);
 
+  artCanvas.setTool('sticker');
+  artCanvas.setSticker(content.targetSticker);
+
+  // The tray shows the single sticker being counted — the whole tray IS the
+  // tool, so there is nothing to choose wrong.
+  const stickerRow = document.createElement('div');
+  stickerRow.className = 'bear-art-studio__stickers';
+  stickerRow.setAttribute('aria-label', 'Sticker choices');
+  const chip = document.createElement('button');
+  chip.className = 'bear-art-studio__sticker is-selected';
+  chip.type = 'button';
+  chip.setAttribute('aria-label', `${content.targetSticker} sticker`);
+  chip.innerHTML = studioShapeSvg(content.targetSticker);
+  stickerRow.appendChild(chip);
+  shared.tray.appendChild(stickerRow);
+
+  function completeCount(placedCount: number): void {
     done = true;
-    card.classList.add('is-complete');
-    disableAll([...slots, checkButton]);
-    emitStudioEvent(shared, {
-      outcome: 'correct',
-      attemptNumber,
-      responseTimeMs,
-      selectedAnswer: String(appliedQuantity),
-      correctAnswer: String(content.targetQuantity),
-      hintShown,
-      metadata: baseMetadata,
-    });
+    artCanvas.setLocked(true);
+    easel.classList.add('is-complete');
+    disableAll([chip]);
     emitStudioEvent(shared, {
       outcome: 'completed',
-      attemptNumber,
-      responseTimeMs,
-      selectedAnswer: String(appliedQuantity),
+      attemptNumber: placedCount,
+      responseTimeMs: Date.now() - startedAt,
+      selectedAnswer: String(placedCount),
       correctAnswer: String(content.targetQuantity),
-      hintShown,
-      metadata: baseMetadata,
+      hintShown: false,
+      metadata: {
+        sticker_id: content.targetSticker,
+        requested_quantity: content.targetQuantity,
+        applied_quantity: placedCount,
+        placed_sticker_count: placedCount,
+        requested_sticker_count: content.targetQuantity,
+        tool_mode: 'sticker',
+        art_surface_id: 'count-card',
+      },
     });
-    finishPiece(shared, shared.correctFeedback.speech ?? 'You made it.', card);
-  };
-  checkButton.addEventListener('click', onCheck);
-  cleanupHandlers.push(() => checkButton.removeEventListener('click', onCheck));
-  shared.actions.appendChild(checkButton);
+    finishPiece(shared, shared.correctFeedback.speech ?? 'You made it.', easel);
+  }
 }
 
 // — Mode: pattern (color sequencing on a scarf) —

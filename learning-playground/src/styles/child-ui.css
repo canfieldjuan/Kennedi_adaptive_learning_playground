@@ -1634,6 +1634,10 @@
   width: 100%;
 }
 
+.bear-art-studio__stickers[hidden] {
+  display: none;
+}
+
 .bear-art-studio__stickers {
   display: flex;
   flex-wrap: wrap;
@@ -1704,18 +1708,6 @@
   border-style: dashed;
 }
 
-/* Dress-up surface: the shirt IS the card; swatches repaint its fill. */
-.bear-art-studio__card--shirt {
-  position: relative;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: min(88vw, 360px);
-  min-height: 250px;
-  padding: 56px 78px var(--space-lg);
-  border: none;
-  background: transparent;
-  box-shadow: none;
-}
-
 .bear-art-studio__surface {
   position: absolute;
   inset: 0;
@@ -1726,13 +1718,6 @@
   display: block;
   width: 100%;
   height: 100%;
-}
-
-.bear-art-studio__card--shirt .bear-art-studio__slot,
-.bear-art-studio__card--poster .bear-art-studio__slot,
-.bear-art-studio__card--wall-frame .bear-art-studio__slot {
-  position: relative;
-  background: rgba(255, 255, 255, 0.4);
 }
 
 /* The gallery finish: the completed piece lifts once and keeps a warm
@@ -1753,28 +1738,179 @@
   100% { transform: translateY(0); }
 }
 
-/* The stage poster: portrait surface, slots under the curtain header. */
-.bear-art-studio__card--poster {
+/* The easel — the dominant canvas of the art-table modes: brush strokes,
+   free-placed stickers, and the paintable surface all live here. */
+.bear-art-studio__easel {
   position: relative;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: min(64vw, 250px);
-  min-height: 300px;
-  padding: 52px 34px 68px;
-  border: none;
-  background: transparent;
-  box-shadow: none;
+  width: min(94vw, 560px);
+  height: min(46dvh, 340px);
+  border: 5px solid rgba(58, 36, 97, 0.4);
+  border-radius: var(--radius-lg);
+  background: #fbf8f1;
+  box-shadow: 0 10px 30px rgba(58, 36, 97, 0.18);
+  overflow: hidden;
 }
 
-/* The bear-house wall picture: landscape canvas inside the wood frame. */
-.bear-art-studio__card--wall-frame {
-  position: relative;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(90vw, 430px);
-  min-height: 270px;
-  padding: 62px 52px 50px;
+.bear-art-studio__easel--shirt,
+.bear-art-studio__easel--poster,
+.bear-art-studio__easel--wall-frame {
   border: none;
   background: transparent;
   box-shadow: none;
+  overflow: visible;
+}
+
+.bear-art-studio__easel--poster {
+  width: min(60vw, 280px);
+  height: min(52dvh, 360px);
+}
+
+.bear-art-studio__easel--request {
+  display: grid;
+  place-items: center;
+}
+
+.bear-art-studio__easel.is-complete,
+.bear-art-studio__easel.is-gallery {
+  box-shadow:
+    0 0 0 8px rgba(246, 195, 67, 0.35),
+    0 0 0 14px rgba(58, 36, 97, 0.15),
+    0 16px 40px rgba(58, 36, 97, 0.2);
+}
+
+/* The paint layer: canvas + placed stickers; finger painting needs
+   touch-action none so strokes never scroll the page. */
+.bear-art-studio__paint-layer {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.bear-art-studio__paint-layer[data-passthrough="true"] {
+  pointer-events: none;
+}
+
+.bear-art-studio__paint {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bear-art-studio__placed {
+  position: absolute;
+  left: var(--placed-x, 50%);
+  top: var(--placed-y, 50%);
+  width: 64px;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 3px 8px rgba(58, 36, 97, 0.25));
+}
+
+.bear-art-studio__placed svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The floating Done check on the easel corner. */
+.bear-art-studio__done-chip {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  aspect-ratio: 1;
+  border: 4px solid #ffffff;
+  border-radius: var(--radius-round);
+  background: var(--child-accent-green);
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 900;
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.3);
+  transition: transform var(--transition-bounce), opacity var(--transition-normal);
+}
+
+.bear-art-studio__done-chip:hover,
+.bear-art-studio__done-chip:focus-visible {
+  transform: scale(1.08);
+  outline: none;
+}
+
+.bear-art-studio__done-chip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Tool chips: brush / fill / stickers — crayon-box, not form buttons. */
+.bear-art-studio__tools {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.bear-art-studio__tool {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  aspect-ratio: 1;
+  border: 3px solid rgba(58, 36, 97, 0.25);
+  border-radius: var(--radius-round);
+  background: #fffdf7;
+  box-shadow: 0 6px 18px rgba(58, 36, 97, 0.14);
+  transition: transform var(--transition-bounce);
+}
+
+.bear-art-studio__tool svg {
+  width: 38px;
+  height: 38px;
+}
+
+.bear-art-studio__tool:hover,
+.bear-art-studio__tool:focus-visible {
+  transform: scale(1.06);
+  outline: none;
+}
+
+.bear-art-studio__tool.is-selected {
+  border-color: rgba(58, 36, 97, 0.7);
+  box-shadow:
+    0 0 0 5px rgba(58, 36, 97, 0.14),
+    0 8px 22px rgba(58, 36, 97, 0.18);
+}
+
+/* Noise reduction: the studio speaks and shows — it does not make a
+   pre-reader read. Title/prompt stay for assistive tech only, and the
+   utility buttons are icon-only at every width. */
+.bear-art-studio .activity-title,
+.bear-art-studio .activity-prompt {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.bear-art-studio .activity-icon-button {
+  min-width: 56px;
+  font-size: 0;
+}
+
+.bear-art-studio .activity-icon-button[aria-label="Return home"]::before {
+  content: '⌂';
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.bear-art-studio .activity-icon-button[aria-label="Repeat prompt"]::before {
+  content: '↻';
+  font-size: 1.35rem;
+  line-height: 1;
 }
 
 /* The gallery shelf: the just-made piece slides in ahead of up to three
@@ -1864,6 +2000,162 @@
 
 .activity-screen--shape-garden .activity-choice__label {
   color: #3a2461;
+}
+
+/* Kennedi's Story Stage — a warm twilight story room: the scene is the
+   star, the caption is one readable line, and the choices are two big
+   illustrated cards. No scores, no timers, no pressure. */
+.story-stage {
+  background:
+    linear-gradient(180deg, rgba(236, 228, 246, 0.97), rgba(247, 240, 235, 0.95)),
+    var(--child-bg);
+}
+
+.story-stage .activity-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.story-stage .activity-icon-button {
+  min-width: 56px;
+  font-size: 0;
+  background: rgba(58, 36, 97, 0.12);
+  color: #3a2461;
+}
+
+.story-stage .activity-icon-button[aria-label="Return home"]::before {
+  content: '⌂';
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.story-stage .activity-icon-button[aria-label="Repeat prompt"]::before {
+  content: '↻';
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+/* Beginning → end, nothing more: neutral dots, no outcomes. */
+.story-stage__path {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.story-stage__path-dot {
+  display: block;
+  width: 14px;
+  aspect-ratio: 1;
+  border: 2.5px solid rgba(58, 36, 97, 0.4);
+  border-radius: var(--radius-round);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.story-stage__path-dot.is-done {
+  background: #b98ac9;
+}
+
+.story-stage__path-dot.is-current {
+  border-color: rgba(58, 36, 97, 0.9);
+  box-shadow: 0 0 0 4px rgba(185, 138, 201, 0.3);
+}
+
+.story-stage__stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+}
+
+.story-stage__scene {
+  width: min(94vw, 640px);
+  border: 6px solid rgba(58, 36, 97, 0.55);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: #dcecf8;
+  box-shadow: 0 14px 40px rgba(58, 36, 97, 0.25);
+}
+
+.story-stage__scene svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.story-stage__caption {
+  max-width: min(94vw, 620px);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 253, 247, 0.9);
+  color: #3a2461;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(58, 36, 97, 0.14);
+}
+
+.story-stage__controls {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 96px;
+}
+
+.story-stage__choices {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+}
+
+.story-stage__choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  width: min(42vw, 210px);
+  padding: var(--space-md);
+  border: 4px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-xl);
+  background: #fffdf7;
+  color: #3a2461;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.16);
+  transition: transform var(--transition-bounce), border-color var(--transition-normal);
+}
+
+.story-stage__choice:hover,
+.story-stage__choice:focus-visible {
+  transform: scale(1.04);
+  border-color: rgba(58, 36, 97, 0.7);
+  outline: none;
+}
+
+.story-stage__choice-art {
+  display: block;
+  width: 92px;
+}
+
+.story-stage__choice-art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.story-stage__choice-label {
+  font-size: 1rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.story-stage__continue {
+  min-width: 240px;
 }
 
 /* — Video Vault — */
@@ -3420,22 +3712,42 @@
     width: 64px;
   }
 
-  .bear-art-studio__card--shirt {
-    width: min(80vw, 300px);
-    min-height: 200px;
-    padding: 44px 62px var(--space-md);
+  .bear-art-studio__easel {
+    height: min(40dvh, 280px);
   }
 
-  .bear-art-studio__card--poster {
-    width: min(52vw, 200px);
-    min-height: 240px;
-    padding: 42px 26px 54px;
+  .bear-art-studio__easel--poster {
+    width: min(58vw, 230px);
+    height: min(46dvh, 300px);
   }
 
-  .bear-art-studio__card--wall-frame {
-    width: min(88vw, 330px);
-    min-height: 210px;
-    padding: 48px 40px 38px;
+  .bear-art-studio__placed {
+    width: 52px;
+  }
+
+  .bear-art-studio__tool {
+    width: 56px;
+  }
+
+  .story-stage__scene {
+    width: min(96vw, 560px);
+  }
+
+  .story-stage__caption {
+    font-size: 1rem;
+  }
+
+  .story-stage__choice {
+    width: min(44vw, 170px);
+    padding: var(--space-sm);
+  }
+
+  .story-stage__choice-art {
+    width: 68px;
+  }
+
+  .story-stage__path-dot {
+    width: 12px;
   }
 
   .bear-art-studio__mini {

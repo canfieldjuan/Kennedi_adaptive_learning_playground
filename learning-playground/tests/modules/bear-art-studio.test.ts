@@ -52,31 +52,45 @@ describe('bear art studio runtime', () => {
     expect(request?.attributes['aria-label']).toContain('Baby Polar Bear');
   });
 
-  test('free decorate completes only on Finish art, with creative evidence', () => {
+  test('free decorate is an art table: brush, stickers, then Finish art', () => {
     const { root, events } = setup('art-studio-free-decorate');
 
-    const doneButton = findByText(root, 'Finish art');
+    const doneButton = findByAria(root, 'Finish art');
     expect(doneButton?.disabled).toBe(true);
+    // No slot grid anywhere — the canvas is the surface.
+    expect(findAllByClass(root, 'bear-art-studio__slot')).toHaveLength(0);
 
-    // Sticker then slot: the placement is play, not a judged attempt.
-    findByAria(root, 'star sticker')?.click();
-    findByAria(root, 'Art spot 1')?.click();
-    expect(events).toHaveLength(0);
-    expect(findByAria(root, 'Art spot 1')?.classList.contains('is-filled')).toBe(true);
+    // A brush stroke: one summarized first-mark event, nothing per move.
+    brushStroke(root, 100, 80, 12);
+    expect(events.map((event) => event.outcome)).toEqual(['correct']);
+    expect(events[0]?.metadata).toMatchObject({
+      canvas_event: 'first_brush_mark',
+      tool_mode: 'brush',
+      selected_color_id: 'berry-pink',
+    });
     expect(doneButton?.disabled).toBe(false);
 
+    // More strokes add no more events (summarized evidence).
+    brushStroke(root, 200, 120, 20);
+    expect(events).toHaveLength(1);
+
+    // Stickers place freely on the canvas.
+    findByAria(root, 'Stickers')?.click();
+    findByAria(root, 'star sticker')?.click();
+    placeStickerAt(root, 300, 150);
     findByAria(root, 'heart sticker')?.click();
-    findByAria(root, 'Art spot 4')?.click();
+    placeStickerAt(root, 500, 300);
+    expect(findAllByClass(root, 'bear-art-studio__placed')).toHaveLength(2);
 
     doneButton?.click();
     expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
-    expect(events[0]?.metadata).toMatchObject({
-      game: 'bear-art-studio',
-      art_mode: 'free_decorate',
-      stickers_placed: 2,
+    expect(events[1]?.metadata).toMatchObject({
       sticker_ids: 'star,heart',
+      placed_sticker_count: 2,
+      colors_used: 'berry-pink',
+      canvas_action_count: 4,
+      art_surface_id: 'decorate-card',
     });
-    expect(events[0]?.skill_ids).toEqual(['color_fill']);
     expect(findByClass(root, 'activity-complete-actions')?.hidden).toBe(false);
 
     // Finishing twice does not double-log.
@@ -88,7 +102,7 @@ describe('bear art studio runtime', () => {
     const { root } = setup('art-studio-free-decorate');
     findByAria(root, 'star sticker')?.click();
     findByAria(root, 'Art spot 1')?.click();
-    findByText(root, 'Finish art')?.click();
+    findByAria(root, 'Finish art')?.click();
 
     findByText(root, 'Next art')?.click();
     expect(window.location.hash).toBe('#activity/art-studio-pink-request');
@@ -122,6 +136,37 @@ describe('bear art studio runtime', () => {
     expect(events[2]?.metadata).toMatchObject({ requested_color_id: 'berry-pink' });
   });
 
+  test('a brush stroke in the requested color completes the color request', () => {
+    const { root, events } = setup('art-studio-pink-request');
+
+    findByAria(root, 'Brush')?.click();
+    findByColorId(root, 'berry-pink')?.click();
+    brushStroke(root, 200, 150, 8);
+
+    expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
+    expect(events[0]?.metadata).toMatchObject({
+      requested_color_id: 'berry-pink',
+      selected_color_id: 'berry-pink',
+      tool_mode: 'brush',
+    });
+  });
+
+  test('a wrong-color brush stroke is one gentle attempt, not a stream', () => {
+    const { root, events } = setup('art-studio-pink-request');
+
+    findByAria(root, 'Brush')?.click();
+    findByColorId(root, 'sunny-yellow')?.click();
+    brushStroke(root, 200, 150, 15);
+
+    // One attempt per stroke end — never one per pointer move.
+    expect(events.map((event) => event.outcome)).toEqual(['incorrect']);
+    expect(events[0]?.metadata).toMatchObject({
+      requested_color_id: 'berry-pink',
+      selected_color_id: 'sunny-yellow',
+      tool_mode: 'brush',
+    });
+  });
+
   test('two color misses glow the requested swatch as a hint', () => {
     const { root, events } = setup('art-studio-pink-request');
 
@@ -140,56 +185,48 @@ describe('bear art studio runtime', () => {
     ).toBe(true);
   });
 
-  test('quantity is judged only on Check, with over/under evidence', () => {
+  test('quantity counts free placements and completes at the asked number', () => {
     const { root, events } = setup('art-studio-three-stars');
 
-    // Placing and removing stickers is silent play.
-    findByAria(root, 'Sticker spot 1')?.click();
-    findByAria(root, 'Sticker spot 2')?.click();
-    expect(events).toHaveLength(0);
+    // No grid, no Check button: the canvas is the card.
+    expect(findAllByClass(root, 'bear-art-studio__slot')).toHaveLength(0);
+    expect(findByText(root, 'Check')).toBeUndefined();
 
-    findByText(root, 'Check')?.click();
-    expect(events.map((event) => event.outcome)).toEqual(['incorrect']);
-    expect(events[0]?.metadata).toMatchObject({
-      requested_quantity: 3,
-      applied_quantity: 2,
-      count_difference: -1,
-    });
-    expect(events[0]?.skill_ids).toEqual(['counting']);
-
-    // Overshoot: add two more, Check → second miss also brings the hint,
-    // which pulses what is placed and never auto-fills.
-    findByAria(root, 'Sticker spot 3')?.click();
-    findByAria(root, 'Sticker spot 4')?.click();
-    findByText(root, 'Check')?.click();
-    expect(events.map((event) => event.outcome)).toEqual([
-      'incorrect',
-      'incorrect',
-      'hint_used',
-    ]);
+    placeStickerAt(root, 100, 100);
+    placeStickerAt(root, 300, 200);
+    expect(events.map((event) => event.outcome)).toEqual(['correct', 'correct']);
     expect(events[1]?.metadata).toMatchObject({
-      applied_quantity: 4,
-      count_difference: 1,
+      sticker_id: 'star',
+      placed_sticker_count: 2,
+      requested_quantity: 3,
     });
-    expect(findByAria(root, 'Sticker spot 1')?.classList.contains('is-hinted')).toBe(true);
 
-    // Remove one (tap a filled spot) and Check: exactly three completes.
-    findByAria(root, 'Sticker spot 4')?.click();
-    findByText(root, 'Check')?.click();
+    // Tapping a placed star removes it (self-correction below the goal);
+    // re-placing to the same count does not double-log.
+    findAllByClass(root, 'bear-art-studio__placed')[1]?.click();
+    expect(findAllByClass(root, 'bear-art-studio__placed')).toHaveLength(1);
+    placeStickerAt(root, 420, 260);
+    expect(events).toHaveLength(2);
+
+    // The third star completes the count.
+    placeStickerAt(root, 600, 320);
     expect(events.map((event) => event.outcome)).toEqual([
-      'incorrect',
-      'incorrect',
-      'hint_used',
+      'correct',
+      'correct',
       'correct',
       'completed',
     ]);
-    expect(events[4]?.metadata).toMatchObject({
+    expect(events[3]?.metadata).toMatchObject({
       requested_quantity: 3,
       applied_quantity: 3,
+      placed_sticker_count: 3,
     });
+    expect(events[3]?.skill_ids).toEqual(['counting']);
 
-    findByText(root, 'Next art')?.click();
-    expect(window.location.hash).toBe('#activity/art-studio-five-flowers');
+    // Locked after completion: further taps place nothing.
+    placeStickerAt(root, 650, 350);
+    expect(findAllByClass(root, 'bear-art-studio__placed')).toHaveLength(3);
+    expect(events).toHaveLength(4);
   });
 
   test('five-flower variant records difficulty-3 structured counting evidence', () => {
@@ -201,47 +238,28 @@ describe('bear art studio runtime', () => {
       external_links_allowed: false,
     });
     expect(activity.transfer.context_type).toBe('same_format_new_examples');
-    expect(findAllByClass(root, 'bear-art-studio__slot')).toHaveLength(6);
 
-    for (let spot = 1; spot <= 4; spot += 1) {
-      findByAria(root, `Sticker spot ${spot}`)?.click();
+    // Free placement on the canvas: five flowers complete the count.
+    for (let index = 0; index < 5; index += 1) {
+      placeStickerAt(root, 80 + index * 120, 120 + (index % 2) * 140);
     }
-    findByText(root, 'Check')?.click();
 
-    expect(events).toHaveLength(1);
-    expect(events[0]).toMatchObject({
-      outcome: 'incorrect',
+    expect(events.map((event) => event.outcome)).toEqual([
+      'correct', 'correct', 'correct', 'correct', 'correct', 'completed',
+    ]);
+    expect(events[5]).toMatchObject({
       skill_ids: ['counting'],
       difficulty_level: 3,
       choice_count: 6,
       distractor_strength: 'medium',
-      selected_answer: '4',
+      selected_answer: '5',
       correct_answer: '5',
       metadata: {
         requested_quantity: 5,
-        applied_quantity: 4,
-        count_difference: -1,
-      },
-    });
-
-    findByAria(root, 'Sticker spot 5')?.click();
-    findByText(root, 'Check')?.click();
-    expect(events.map((event) => event.outcome)).toEqual([
-      'incorrect',
-      'correct',
-      'completed',
-    ]);
-    expect(events[2]).toMatchObject({
-      skill_ids: ['counting'],
-      difficulty_level: 3,
-      metadata: {
-        requested_quantity: 5,
         applied_quantity: 5,
+        sticker_id: 'flower',
       },
     });
-
-    findByText(root, 'Next art')?.click();
-    expect(window.location.hash).toBe('#activity/art-studio-pattern-scarf');
   });
 
   test('the pattern fills position by position and records the sequence', () => {
@@ -380,25 +398,29 @@ describe('bear art studio runtime', () => {
     expect(events.map((event) => event.outcome)).toEqual(['correct']);
   });
 
-  test('dress-up renders the paintable shirt and finishes on it', () => {
+  test('dress-up paints the shirt with the fill tool and decorates freely', () => {
     const { root, events } = setup('art-studio-dress-bear');
 
     const shirt = findByClass(root, 'bear-art-studio__surface');
     expect(shirt?.innerHTML).toContain('studio-shirt-svg');
     expect(shirt?.attributes['aria-hidden']).toBe('true');
 
-    // A swatch tap repaints the shirt itself, not a card background.
+    // Fill tool + swatch repaints the shirt itself.
+    findByAria(root, 'Fill')?.click();
     findByColorId(root, 'berry-pink')?.click();
     expect(shirt?.innerHTML).toContain('#fd79a8');
 
+    // Stickers land anywhere on the shirt canvas.
+    findByAria(root, 'Stickers')?.click();
     findByAria(root, 'heart sticker')?.click();
-    findByAria(root, 'Art spot 2')?.click();
-    findByText(root, 'Finish art')?.click();
+    placeStickerAt(root, 350, 220);
+    findByAria(root, 'Finish art')?.click();
 
-    expect(events.map((event) => event.outcome)).toEqual(['correct', 'completed']);
-    expect(events[0]?.metadata).toMatchObject({
+    const completed = events.find((event) => event.outcome === 'completed');
+    expect(completed?.metadata).toMatchObject({
       art_surface_id: 'bear-shirt',
       card_color_id: 'berry-pink',
+      sticker_ids: 'heart',
     });
   });
 
@@ -406,10 +428,11 @@ describe('bear art studio runtime', () => {
     const { root } = setup('art-studio-pink-request');
 
     findByColorId(root, 'berry-pink')?.click();
-    const subject = findByClass(root, 'bear-art-studio__subject');
-    subject?.click();
+    findByClass(root, 'bear-art-studio__subject')?.click();
 
-    expect(subject?.classList.contains('is-gallery')).toBe(true);
+    expect(
+      findByClass(root, 'bear-art-studio__easel')?.classList.contains('is-gallery')
+    ).toBe(true);
   });
 
   test('the chain runs fix, story, poster, wall picture, then dress-up', () => {
@@ -425,15 +448,14 @@ describe('bear art studio runtime', () => {
     expect(dress.content.next_activity_id).toBeUndefined();
   });
 
-  test('the poster and wall-frame surfaces render and repaint', () => {
+  test('the poster and wall-frame surfaces render, fill, and finish', () => {
     const poster = setup('art-studio-stage-poster');
     const posterSurface = findByClass(poster.root, 'bear-art-studio__surface');
     expect(posterSurface?.innerHTML).toContain('studio-poster-svg');
+    findByAria(poster.root, 'Fill')?.click();
     findByColorId(poster.root, 'tomato-red')?.click();
     expect(posterSurface?.innerHTML).toContain('#e05d5d');
-    findByAria(poster.root, 'star sticker')?.click();
-    findByAria(poster.root, 'Art spot 1')?.click();
-    findByText(poster.root, 'Finish art')?.click();
+    findByAria(poster.root, 'Finish art')?.click();
     const posterDone = poster.events.find((e) => e.outcome === 'completed');
     expect(posterDone?.metadata).toMatchObject({ art_surface_id: 'stage-poster' });
     destroyBearArtStudioActivity();
@@ -441,13 +463,18 @@ describe('bear art studio runtime', () => {
     const wall = setup('art-studio-wall-picture');
     const wallSurface = findByClass(wall.root, 'bear-art-studio__surface');
     expect(wallSurface?.innerHTML).toContain('studio-wall-frame-svg');
+    findByAria(wall.root, 'Fill')?.click();
     findByColorId(wall.root, 'leaf-green')?.click();
     expect(wallSurface?.innerHTML).toContain('#00b894');
+    findByAria(wall.root, 'Stickers')?.click();
     findByAria(wall.root, 'moon sticker')?.click();
-    findByAria(wall.root, 'Art spot 6')?.click();
-    findByText(wall.root, 'Finish art')?.click();
+    placeStickerAt(wall.root, 300, 200);
+    findByAria(wall.root, 'Finish art')?.click();
     const wallDone = wall.events.find((e) => e.outcome === 'completed');
-    expect(wallDone?.metadata).toMatchObject({ art_surface_id: 'bear-house-wall' });
+    expect(wallDone?.metadata).toMatchObject({
+      art_surface_id: 'bear-house-wall',
+      sticker_ids: 'moon',
+    });
   });
 
   test('finishing shows the gallery shelf: live piece first, then history', () => {
@@ -474,9 +501,8 @@ describe('bear art studio runtime', () => {
     const shelf = findByClass(root, 'bear-art-studio__shelf');
     expect(shelf?.hidden).toBe(true);
 
-    findByAria(root, 'star sticker')?.click();
-    findByAria(root, 'Art spot 1')?.click();
-    findByText(root, 'Finish art')?.click();
+    brushStroke(root, 120, 90);
+    findByAria(root, 'Finish art')?.click();
 
     expect(shelf?.hidden).toBe(false);
     expect(shelf?.children).toHaveLength(2);
@@ -489,14 +515,17 @@ describe('bear art studio runtime', () => {
     const { root, events } = setup('art-studio-free-decorate');
 
     findByColorId(root, 'sunny-yellow')?.click();
+    brushStroke(root, 150, 120);
+    findByAria(root, 'Stickers')?.click();
     findByAria(root, 'heart sticker')?.click();
-    findByAria(root, 'Art spot 3')?.click();
-    findByText(root, 'Finish art')?.click();
+    placeStickerAt(root, 400, 240);
+    findByAria(root, 'Finish art')?.click();
 
     const completed = events.find((event) => event.outcome === 'completed');
     expect(completed?.metadata).toMatchObject({
       sticker_ids: 'heart',
       card_color_id: 'sunny-yellow',
+      colors_used: 'sunny-yellow',
       art_surface_id: 'decorate-card',
     });
   });
@@ -576,23 +605,40 @@ class MockElement {
   disabled = false;
   hidden = false;
   type = '';
-  private readonly listeners: Record<string, Array<() => void>> = {};
+  private readonly listeners: Record<string, Array<(event?: unknown) => void>> = {};
 
+  parentElement: MockElement | null = null;
   constructor(tagName: string) { this.tagName = tagName.toUpperCase(); }
-  appendChild(child: MockElement): MockElement { this.children.push(child); return child; }
+  appendChild(child: MockElement): MockElement {
+    child.parentElement = this;
+    this.children.push(child);
+    return child;
+  }
   setAttribute(name: string, value: string): void { this.attributes[name] = value; }
-  addEventListener(type: string, handler: () => void): void {
+  getBoundingClientRect(): { left: number; top: number; width: number; height: number } {
+    return { left: 0, top: 0, width: 800, height: 500 };
+  }
+  addEventListener(type: string, handler: (event?: unknown) => void): void {
     this.listeners[type] ??= [];
     this.listeners[type].push(handler);
   }
-  removeEventListener(type: string, handler: () => void): void {
+  removeEventListener(type: string, handler: (event?: unknown) => void): void {
     this.listeners[type] = (this.listeners[type] ?? []).filter((fn) => fn !== handler);
   }
-  click(): void {
+  fire(type: string, payload?: unknown): void {
     if (this.disabled) return;
-    for (const handler of this.listeners.click ?? []) handler();
+    for (const handler of this.listeners[type] ?? []) handler(payload);
   }
-  remove(): void {}
+  click(): void {
+    this.fire('click', { stopPropagation: () => {} });
+  }
+  remove(): void {
+    if (!this.parentElement) return;
+    const siblings = this.parentElement.children;
+    const index = siblings.indexOf(this);
+    if (index !== -1) siblings.splice(index, 1);
+    this.parentElement = null;
+  }
 }
 
 function createMockDocument(): Document {
@@ -652,6 +698,25 @@ function findByAria(element: MockElement, label: string): MockElement | undefine
     if (match) return match;
   }
   return undefined;
+}
+
+function paintLayer(root: MockElement): MockElement {
+  const layer = findByClass(root, 'bear-art-studio__paint-layer');
+  if (!layer) throw new Error('Missing paint layer');
+  return layer;
+}
+
+function brushStroke(root: MockElement, x = 120, y = 90, moves = 3): void {
+  const layer = paintLayer(root);
+  layer.fire('pointerdown', { clientX: x, clientY: y, stopPropagation: () => {} });
+  for (let index = 0; index < moves; index += 1) {
+    layer.fire('pointermove', { clientX: x + index * 8, clientY: y + index * 5 });
+  }
+  layer.fire('pointerup', {});
+}
+
+function placeStickerAt(root: MockElement, x: number, y: number): void {
+  paintLayer(root).fire('click', { clientX: x, clientY: y, stopPropagation: () => {} });
 }
 
 function findByColorId(element: MockElement, colorId: string): MockElement | undefined {

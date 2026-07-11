@@ -7,6 +7,7 @@
 export type Route =
   | { view: 'home' }
   | { view: 'parent' }
+  | { view: 'story-stage' }
   | { view: 'activity'; activityId: string };
 
 type RouteChangeHandler = (route: Route) => void;
@@ -21,6 +22,10 @@ export function parseRoute(): Route {
 
   if (hash === 'parent') {
     return { view: 'parent' };
+  }
+
+  if (hash === 'story-stage') {
+    return { view: 'story-stage' };
   }
 
   if (hash.startsWith('activity/')) {
@@ -41,6 +46,9 @@ export function navigate(route: Route): void {
       break;
     case 'parent':
       window.location.hash = '#parent';
+      break;
+    case 'story-stage':
+      window.location.hash = '#story-stage';
       break;
     case 'activity':
       window.location.hash = `#activity/${route.activityId}`;

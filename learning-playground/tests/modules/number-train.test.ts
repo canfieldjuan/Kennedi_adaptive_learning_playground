@@ -590,6 +590,49 @@ describe('number train protected surfaces', () => {
     expect(JSON.stringify(activity)).not.toMatch(/https?:\/\//);
   });
 
+  test('the Express and Summit trips build valid plans across seeds at their caps', () => {
+    for (const activityId of ['number-train-express', 'number-train-summit']) {
+      const activity = APPROVED_ACTIVITIES.find((entry) => entry.id === activityId);
+      expect(activity).toBeDefined();
+      const maxQuantity = (activity!.content as { max_quantity: number }).max_quantity;
+      const baseSeed = (activity!.content as { seed: number }).seed;
+      for (let offset = 0; offset < 12; offset += 1) {
+        const plan = buildSessionPlan({
+          seed: baseSeed + offset,
+          round_count: 6,
+          max_quantity: maxQuantity,
+        });
+        expect(validatePlan(plan)).toEqual([]);
+        expect(plan.max_quantity).toBe(maxQuantity);
+      }
+    }
+  });
+
+  test('the upper trips land on the exact rungs the coverage gaps named', () => {
+    // Express (d3) must feed level 1 and Summit (d5) level 2 for every train
+    // skill that had a "blocked by content gap" rung — the fill is only real
+    // if the difficulty sits inside each band.
+    const graph = loadCurriculumGraph();
+    const gapSkills = ['numeral_recognition', 'quantity_construction', 'number_sequence'];
+
+    const express = APPROVED_ACTIVITIES.find((entry) => entry.id === 'number-train-express');
+    for (const skillId of gapSkills) {
+      expect(
+        graph.getSkillLevelForDifficulty(skillId, express!.difficulty.level)?.level
+      ).toBe(1);
+    }
+
+    const summit = APPROVED_ACTIVITIES.find((entry) => entry.id === 'number-train-summit');
+    for (const skillId of gapSkills) {
+      expect(
+        graph.getSkillLevelForDifficulty(skillId, summit!.difficulty.level)?.level
+      ).toBe(2);
+    }
+    // Subitizing stays fenced off from the train: not claimed by either trip.
+    expect(express!.skill_ids).not.toContain('subitizing');
+    expect(summit!.skill_ids).not.toContain('subitizing');
+  });
+
   test('the default Math activity feeds the entry level of every skill it claims', () => {
     // Promotion is band-scoped (progress.ts): a fresh profile starts each
     // skill at level 0, so the activity behind the Math home tile must emit a
