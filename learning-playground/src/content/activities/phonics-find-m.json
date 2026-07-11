@@ -15,7 +15,7 @@
   "interaction_model": "tap_to_match",
   "estimated_duration_seconds": 60,
   "content": {
-    "prompt_audio": "Find the word that starts with m.",
+    "prompt_audio": "Find the word that starts with the letter M.",
     "target_sound": "m",
     "next_activity_id": "phonics-find-s",
     "next_label": "Next word",

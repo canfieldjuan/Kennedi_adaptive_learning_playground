@@ -15,7 +15,7 @@
   "interaction_model": "tap_to_match",
   "estimated_duration_seconds": 60,
   "content": {
-    "prompt_audio": "Find the word that starts with s.",
+    "prompt_audio": "Find the word that starts with the letter S.",
     "target_sound": "s",
     "next_activity_id": "phonics-find-c",
     "next_label": "Next word",
