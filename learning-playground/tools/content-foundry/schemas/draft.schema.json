@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.kennedi.invalid/content-foundry-draft.schema.json",
+  "title": "Content Foundry Draft",
+  "type": "object",
+  "required": ["schema_version", "draft_id", "status", "kind", "workflow", "inputs", "outputs", "qa", "approval"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "draft_id": {"type": "string", "pattern": "^draft-[0-9a-f-]{36}$"},
+    "status": {"enum": ["draft", "approved", "rejected"]},
+    "kind": {"type": "string", "minLength": 1},
+    "workflow": {"type": "object"},
+    "inputs": {"type": "object"},
+    "outputs": {"type": "array"},
+    "qa": {
+      "type": "object",
+      "required": ["checks", "requires_parent_visual_review"],
+      "properties": {
+        "checks": {"type": "array"},
+        "requires_parent_visual_review": {"const": true}
+      }
+    },
+    "approval": {"type": ["object", "null"]}
+  },
+  "additionalProperties": true
+}
