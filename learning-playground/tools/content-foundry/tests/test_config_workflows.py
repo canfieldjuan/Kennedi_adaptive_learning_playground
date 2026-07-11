@@ -120,6 +120,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual((graph["8"]["inputs"]["width"], graph["8"]["inputs"]["height"]), (480, 272))
         self.assertEqual(graph["8"]["inputs"]["length"], 81)
         self.assertEqual(graph["11"]["inputs"]["fps"], 24.0)
+        self.assertEqual(graph["11"]["inputs"]["images"], ["13", 0])
+        self.assertEqual((graph["13"]["inputs"]["width"], graph["13"]["inputs"]["height"]), (960, 544))
 
 
 if __name__ == "__main__":

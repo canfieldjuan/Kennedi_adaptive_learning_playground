@@ -52,6 +52,26 @@ class StoryboardValidationTests(unittest.TestCase):
             sample_rate = float(filter_value.split(",", 1)[0].removeprefix("fps="))
             self.assertAlmostEqual(sample_rate * 3.375, 8, places=6)
 
+    def test_overlapping_narration_uses_a_float_mix_before_normalization(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            root = Path(temp_name)
+            config = FoundryConfig(root, "http://127.0.0.1:8188", root / "drafts", root / "imports", root / "references", 60)
+            media = MediaTools(config, DraftStore(config.drafts_root))
+            measurement = {"input_i": -12.0, "input_tp": 3.0, "input_lra": 0.0, "input_thresh": -22.0, "target_offset": 0.0}
+            completed = subprocess.CompletedProcess([], 0, b"", b"")
+            with patch.object(media, "_run", return_value=completed) as run, patch.object(
+                media, "_loudnorm_measurement", return_value=measurement
+            ):
+                media._assemble_video(
+                    [(root / "scene.png", 1000)],
+                    [(root / "voice-a.wav", 0), (root / "voice-b.wav", 0)],
+                    root / "clip.webm",
+                    1.0,
+                )
+            commands = [call.args[0] for call in run.call_args_list]
+            mix_command = next(command for command in commands if "pcm_f32le" in command)
+            self.assertIn("amix=inputs=2:duration=longest:normalize=0", mix_command[mix_command.index("-filter_complex") + 1])
+
 
 class MediaIntegrationTests(unittest.TestCase):
     def run_command(self, args: list[str]) -> subprocess.CompletedProcess[bytes]:

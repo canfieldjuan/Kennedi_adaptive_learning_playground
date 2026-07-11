@@ -10,6 +10,7 @@ from .errors import ValidationError
 from .media import MediaTools, first_stream
 from .workflows import (
     SAFE_MOTION_NEGATIVE,
+    PRESETS,
     WorkflowRegistry,
     illustrated_prompt,
     resolve_preset,
@@ -84,8 +85,11 @@ class ContentFoundryService:
         if image_stream is None or mask_stream is None:
             raise ValidationError("image and mask must be decodable images")
         expected = (int(image_stream.get("width", 0)), int(image_stream.get("height", 0)))
-        if expected != (int(mask_stream.get("width", 0)), int(mask_stream.get("height", 0))):
+        mask_dimensions = (int(mask_stream.get("width", 0)), int(mask_stream.get("height", 0)))
+        if expected != mask_dimensions:
             raise ValidationError("mask dimensions must match the source image")
+        if expected not in PRESETS.values():
+            raise ValidationError("edit dimensions must match a supported Foundry image preset")
         actual_seed = resolve_seed(seed)
         steps = resolve_quality(quality)
         final_prompt = illustrated_prompt(prompt)
@@ -99,7 +103,15 @@ class ContentFoundryService:
         graph, workflow = self.registry.render(workflow_id, values)
         return self._run_image_draft(
             kind="illustrated_edit", graph=graph, workflow=workflow,
-            inputs={"prompt": final_prompt, "quality": quality, "seed": actual_seed, "image": source_record(image), "mask": source_record(mask), "preserve_structure": preserve_structure},
+            inputs={
+                "prompt": final_prompt,
+                "quality": quality,
+                "seed": actual_seed,
+                "image": source_record(image),
+                "mask": source_record(mask),
+                "preserve_structure": preserve_structure,
+                "control_strength": control_strength if preserve_structure else None,
+            },
             expected=expected, source_brief_id=source_brief_id,
         )
 

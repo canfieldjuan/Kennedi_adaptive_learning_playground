@@ -36,8 +36,12 @@ class FakeComfyClient:
 
 
 class FakeMedia:
+    def __init__(self, width: int = 960, height: int = 544):
+        self.width = width
+        self.height = height
+
     def probe(self, _path: Path) -> dict:
-        return {"streams": [{"codec_type": "video", "width": 960, "height": 544}]}
+        return {"streams": [{"codec_type": "video", "width": self.width, "height": self.height}]}
 
 
 class ServiceContractTests(unittest.TestCase):
@@ -82,6 +86,44 @@ class ServiceContractTests(unittest.TestCase):
             service = ContentFoundryService(config, client=FakeComfyClient())  # type: ignore[arg-type]
             with self.assertRaises(ValidationError):
                 service.generate_illustrated_scene(prompt="Bear waves", reference_path="scene.png", reference_strength=True)  # type: ignore[arg-type]
+
+    def test_edit_rejects_oversized_dimensions_before_upload(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            local = Path(temp_name)
+            imports = local / "imports"; imports.mkdir()
+            (imports / "source.png").write_bytes(b"source")
+            (imports / "mask.png").write_bytes(b"mask")
+            client = FakeComfyClient()
+            config = FoundryConfig(PROJECT_ROOT, "http://127.0.0.1:8188", local / "drafts", imports, TOOLS_ROOT / "references", 60)
+            service = ContentFoundryService(config, client=client)  # type: ignore[arg-type]
+            service.media = FakeMedia(12000, 12000)  # type: ignore[assignment]
+
+            with self.assertRaisesRegex(ValidationError, "supported Foundry image preset"):
+                service.edit_illustrated_scene(image_path="source.png", mask_path="mask.png", prompt="Repair")
+            self.assertEqual(client.uploads, [])
+
+    def test_structure_guidance_strength_is_recorded_in_the_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            local = Path(temp_name)
+            imports = local / "imports"; imports.mkdir()
+            (imports / "source.png").write_bytes(b"source")
+            (imports / "mask.png").write_bytes(b"mask")
+            client = FakeComfyClient()
+            config = FoundryConfig(PROJECT_ROOT, "http://127.0.0.1:8188", local / "drafts", imports, TOOLS_ROOT / "references", 60)
+            service = ContentFoundryService(config, client=client)  # type: ignore[arg-type]
+            service.media = FakeMedia()  # type: ignore[assignment]
+            result = service.edit_illustrated_scene(
+                image_path="source.png",
+                mask_path="mask.png",
+                prompt="Repair the basket",
+                preserve_structure=True,
+                control_strength=0.25,
+                quality="draft",
+                seed=0,
+            )
+
+            self.assertEqual(result["manifest"]["inputs"]["control_strength"], 0.25)
+            self.assertEqual(client.graphs[0]["15"]["inputs"]["strength"], 0.25)
 
     def test_mcp_surface_has_no_approval_or_publication_tool(self) -> None:
         source = (TOOLS_ROOT / "mcp_server.py").read_text(encoding="utf-8")

@@ -172,6 +172,26 @@ class ComfyClientTests(unittest.TestCase):
         with self.assertRaises(ComfyUIError):
             self.client._collect_outputs(too_many, Path("unused"))
 
+    def test_timeout_cancels_only_the_accepted_prompt(self) -> None:
+        calls = []
+
+        def request(method: str, path: str, **_kwargs: object) -> dict:
+            calls.append((method, path))
+            if path == "/prompt":
+                return {"prompt_id": "11111111-1111-4111-8111-111111111111"}
+            if path == "/api/jobs/11111111-1111-4111-8111-111111111111/cancel":
+                return {"cancelled": True}
+            self.fail(f"unexpected request: {method} {path}")
+
+        with patch.object(self.client, "_json_request", side_effect=request), patch(
+            "content_foundry.comfy_client.time.monotonic", side_effect=[0, 31]
+        ), self.assertRaisesRegex(ComfyUIError, "timed out.*was cancelled"):
+            self.client.run({"1": {"class_type": "Test", "inputs": {}}}, Path("unused"))
+        self.assertEqual(calls, [
+            ("POST", "/prompt"),
+            ("POST", "/api/jobs/11111111-1111-4111-8111-111111111111/cancel"),
+        ])
+
     def test_output_descriptor_rejects_unsafe_filename_subfolder_and_type(self) -> None:
         with tempfile.TemporaryDirectory() as temp_name:
             output = Path(temp_name)

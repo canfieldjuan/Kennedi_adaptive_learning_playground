@@ -224,7 +224,7 @@ class MediaTools:
             )
             command += [
                 "-filter_complex", ";".join(filters), "-map", "[mixed]",
-                "-c:a", "pcm_s24le", "-ar", "48000", "-ac", "1", str(mixed_audio),
+                "-c:a", "pcm_f32le", "-ar", "48000", "-ac", "1", str(mixed_audio),
             ]
             self._run(command)
             measured = self._loudnorm_measurement(mixed_audio, target_peak=-3)

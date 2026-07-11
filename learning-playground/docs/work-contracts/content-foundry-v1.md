@@ -123,6 +123,79 @@ with the same intentional live-Comfy skip; 53 Vitest files and 669 app tests
 passed; typecheck, build, and diff checks passed. The PR head still requires a
 fresh hosted `quality-gate` observation after push.
 
+## Second Review Follow-Up Contract
+
+### Root Cause
+
+The current edit path accepts arbitrary decoded pixel dimensions even though
+the Foundry contract exposes two fixed image budgets. Narration overlap is
+mixed into integer PCM before final normalization, so clipping can become
+permanent before QA. The Wan latent request is bounded but no graph node
+guarantees final saved dimensions. Canny guidance strength affects output but
+is omitted from draft provenance. Finally, client timeout stops polling without
+cancelling the accepted Comfy job.
+
+The second Wan review is confirmed about the missing output-size guarantee, but
+its proposed 960x544 latent request does not account for the prior local 2x
+decode observation and would double the bounded latent budget. The correct fix
+is an explicit exact-size `ImageScale` after decode.
+
+### Correct Fix Must Touch
+
+- Reject edit source/mask dimensions outside the existing 960x544 and 1024x1024
+  presets before either file is uploaded or a graph is queued.
+- Mix overlapping narration into floating-point PCM before measured two-pass
+  normalization, preserving headroom rather than clipping integer samples.
+- Add an explicit 960x544 image-scale node between Wan decode and video creation
+  while keeping the calibrated 480x272 latent budget.
+- Record `control_strength` in every edit manifest when structure guidance is
+  active.
+- On timeout, call the local Comfy server's targeted idempotent job-cancel API;
+  report cancellation failure rather than silently abandoning active GPU work.
+- Add direct regression tests for all five boundaries and update canonical graph
+  assertions.
+
+### Must Not Change
+
+Keep the original child/app protected surface, fixed presets, final media QA,
+ambient-motion policy, parent approval boundary, and all prior review fixes.
+Do not add a global interrupt, broaden dimensions, skip tests, resolve threads,
+or merge from this fix worker.
+
+### Second Review Follow-Up Cold Audit
+
+No contract gap remains in the second follow-up diff.
+
+- `comfy_client.py:66` targets only the accepted prompt through Comfy's local
+  idempotent cancel endpoint. A job that finishes during cancellation gets one
+  final history read; cancellation failures are explicit rather than silently
+  leaving GPU work active.
+- `media.py:227` writes the unnormalized overlap mix as floating-point PCM, so
+  summed samples retain headroom until the existing measured two-pass loudness
+  filter limits them.
+- `service.py:91` rejects decoded edit dimensions outside `PRESETS` before
+  upload. `service.py:113` records the effective Canny guidance strength (or
+  null when inactive) in draft provenance.
+- `wan-safe-motion.v1.json:14` explicitly scales decoded frames to 960x544
+  before `CreateVideo`; the 480x272 latent request remains bounded and the saved
+  output now has an explicit path to the QA dimensions.
+- `test_drafts_client.py:175`, `test_media.py:55`,
+  `test_service_contract.py:90`, `test_service_contract.py:105`, and
+  `test_config_workflows.py:124` directly cover targeted cancellation, float
+  overlap mixing, pre-upload dimension rejection, strength provenance, and the
+  Wan latent/output dimension split.
+
+Every change traces to the second review contract. No child runtime, public
+asset, activity, curriculum, parent UI, package, or dependency file changed.
+All earlier manifest, timing, contact-sheet, safety, and approval behavior is
+retained.
+
+Verification: `npm test` passed 37 Foundry tests with one intentional live-Comfy
+skip plus 53 Vitest files and 669 app tests. `npm run typecheck`,
+`npm run build`, and `git diff --check` passed. Live node/model compatibility
+still requires running local ComfyUI and remains the explicitly deferred next
+slice.
+
 ## Cold Diff Audit
 
 ### Gaps

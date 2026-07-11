@@ -63,7 +63,19 @@ class ComfyClient:
             if prompt_id in history:
                 return self._collect_outputs(history[prompt_id], output_dir)
             time.sleep(1)
-        raise ComfyUIError(f"ComfyUI job timed out after {self.timeout_seconds} seconds")
+        cancel_path = f"/api/jobs/{urllib.parse.quote(prompt_id, safe='')}/cancel"
+        try:
+            cancellation = self._json_request("POST", cancel_path)
+        except ComfyUIError as exc:
+            raise ComfyUIError(
+                f"ComfyUI job timed out after {self.timeout_seconds} seconds and cancellation failed: {exc}"
+            ) from exc
+        if cancellation.get("cancelled") is True:
+            raise ComfyUIError(f"ComfyUI job timed out after {self.timeout_seconds} seconds and was cancelled")
+        history = self._json_request("GET", f"/history/{urllib.parse.quote(prompt_id, safe='')}")
+        if prompt_id in history:
+            return self._collect_outputs(history[prompt_id], output_dir)
+        raise ComfyUIError(f"ComfyUI job timed out after {self.timeout_seconds} seconds and is no longer active")
 
     def _collect_outputs(self, entry: Any, output_dir: Path) -> list[Path]:
         if not isinstance(entry, dict):
