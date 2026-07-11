@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import hashlib
 import multiprocessing
 import threading
 import sys
@@ -183,22 +183,32 @@ class ComfyClientTests(unittest.TestCase):
                 self.client.upload_with_record(source)
             request.assert_not_called()
 
+    def test_identical_uploads_reuse_a_content_addressed_name(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            source = Path(temp_name) / "bear.png"
+            source.write_bytes(b"same reviewed bear")
+            expected_name = f"foundry-{hashlib.sha256(source.read_bytes()).hexdigest()}.png"
+
+            with patch.object(self.client, "_json_request", return_value={"name": expected_name}) as request:
+                first = self.client.upload_with_record(source)
+                second = self.client.upload_with_record(source)
+
+            self.assertEqual(first, second)
+            self.assertEqual(first[0], expected_name)
+            for call in request.call_args_list:
+                body = call.kwargs["body"]
+                self.assertIn(f'filename="{expected_name}"'.encode(), body)
+                self.assertIn(b'name="overwrite"\r\n\r\ntrue', body)
+
     def test_timeout_cancels_only_the_accepted_prompt(self) -> None:
         calls = []
-        queue_reads = 0
 
         def request(method: str, path: str, **kwargs: object) -> dict:
-            nonlocal queue_reads
             calls.append((method, path, kwargs.get("body")))
             if path == "/prompt":
                 return {"prompt_id": "11111111-1111-4111-8111-111111111111"}
-            if method == "GET" and path == "/queue":
-                queue_reads += 1
-                if queue_reads == 1:
-                    return {"queue_pending": [[0, "11111111-1111-4111-8111-111111111111", {}, {}, []]], "queue_running": []}
-                return {"queue_pending": [], "queue_running": [[0, "11111111-1111-4111-8111-111111111111", {}, {}, []]]}
-            if method == "POST" and path in {"/queue", "/interrupt"}:
-                return {}
+            if method == "POST" and path == "/api/jobs/11111111-1111-4111-8111-111111111111/cancel":
+                return {"cancelled": True}
             if path == "/history/11111111-1111-4111-8111-111111111111":
                 return {}
             self.fail(f"unexpected request: {method} {path}")
@@ -208,12 +218,32 @@ class ComfyClientTests(unittest.TestCase):
         ), self.assertRaisesRegex(ComfyUIError, "timed out.*was cancelled"):
             self.client.run({"1": {"class_type": "Test", "inputs": {}}}, Path("unused"))
         self.assertEqual([(method, path) for method, path, _body in calls], [
-            ("POST", "/prompt"), ("GET", "/queue"), ("POST", "/queue"),
-            ("GET", "/queue"), ("POST", "/interrupt"),
+            ("POST", "/prompt"),
+            ("POST", "/api/jobs/11111111-1111-4111-8111-111111111111/cancel"),
             ("GET", "/history/11111111-1111-4111-8111-111111111111"),
         ])
-        self.assertEqual(json.loads(calls[2][2]), {"delete": ["11111111-1111-4111-8111-111111111111"]})
-        self.assertEqual(json.loads(calls[4][2]), {"prompt_id": "11111111-1111-4111-8111-111111111111"})
+        self.assertNotIn("/interrupt", [path for _method, path, _body in calls])
+
+    def test_history_wins_when_a_timed_out_prompt_finishes_during_cancellation(self) -> None:
+        prompt_id = "11111111-1111-4111-8111-111111111111"
+
+        def request(method: str, path: str, **_kwargs: object) -> dict:
+            if path == "/prompt":
+                return {"prompt_id": prompt_id}
+            if method == "POST" and path == f"/api/jobs/{prompt_id}/cancel":
+                return {"cancelled": False}
+            if path == f"/history/{prompt_id}":
+                return {prompt_id: {"outputs": {}}}
+            self.fail(f"unexpected request: {method} {path}")
+
+        expected = [Path("completed.png")]
+        with patch.object(self.client, "_json_request", side_effect=request), patch.object(
+            self.client, "_collect_outputs", return_value=expected
+        ) as collect, patch(
+            "content_foundry.comfy_client.time.monotonic", side_effect=[0, 31]
+        ):
+            self.assertEqual(self.client.run({"1": {}}, Path("unused")), expected)
+        collect.assert_called_once()
 
     def test_output_descriptor_rejects_unsafe_filename_subfolder_and_type(self) -> None:
         with tempfile.TemporaryDirectory() as temp_name:

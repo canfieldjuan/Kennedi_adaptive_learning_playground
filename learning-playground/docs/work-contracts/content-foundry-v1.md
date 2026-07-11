@@ -278,6 +278,99 @@ and 719 app tests.
 
 Gap audit: DONE.
 
+## Fourth Review Follow-Up Contract
+
+### Root Cause
+
+The narrated storyboard path still hashes mutable import files and later gives
+their original paths to ffmpeg, so a concurrent replacement can make the
+manifest describe different bytes from the rendered clip. That same path
+byte-caps scenes but does not preflight decoded dimensions or video frame rate,
+leaving compressed oversized media able to exhaust local decode resources.
+Timeout cleanup now sends a prompt id to `/interrupt`, but the configured
+ComfyUI checks that id and raises a global interrupt in separate steps, so a
+finished prompt can race with the next running job. Finally, UUID upload names
+prevent repeated use of identical source bytes from reusing ComfyUI storage.
+
+### Correct Fix Must Touch
+
+- Snapshot every resolved scene and narration source from one bounded byte read
+  into a private temporary directory. Hash those exact bytes and pass only the
+  snapshots to probes, audio checks, and ffmpeg.
+- Preflight every scene snapshot before assembly. Require a decodable video
+  stream, positive dimensions no larger than 1920x1080 and 2,073,600 pixels,
+  and, for video sources, a finite frame rate no greater than 60 fps.
+- Record those storyboard snapshot and scene preflight limits in the durable
+  Content Foundry contract.
+- Use the configured ComfyUI's atomic, idempotent
+  `/api/jobs/{prompt_id}/cancel` endpoint. Never fall back to a global
+  interrupt; cancellation failure must remain explicit, and final history must
+  still win a completion race.
+- Replace random upload filenames with full content-hash filenames and send
+  `overwrite=true`, so identical retries target the same immutable name rather
+  than allocating another input file.
+- Add direct tests for mutable storyboard inputs, both sides of scene geometry
+  and frame-rate bounds, atomic cancellation, completion races, and upload
+  name reuse.
+
+### Must Not Change
+
+Do not change the child runtime, activities, curriculum, parent UI, mastery or
+transfer rules, public assets, output dimensions/codecs/loudness, storyboard
+duration/count limits, image presets, workflow graphs, approval boundary,
+package dependencies, or ComfyUI installation. Do not add a global interrupt,
+accept arbitrary external media, publish generated work, resolve review
+threads, or merge from this fix worker.
+
+### Fourth Review Follow-Up Cold Audit
+
+#### Gaps
+
+No untraced change, missing contract requirement, or protected-surface change
+was found. The earlier portability claim against the atomic job-id route is
+contradicted for the configured local ComfyUI by `server.py:910-953`; retaining
+the non-atomic standard interrupt would leave the newly confirmed cross-job
+race in place.
+
+#### Change-By-Change Reconstruction
+
+- `media.py:20-25` declares finite source-byte, geometry, pixel, frame-rate,
+  and still-image boundaries. `media.py:40-67` snapshots every scene and
+  narration input, probes and measures only those snapshots, and builds
+  manifest records from the snapshot pass. Lines 78-90 keep the snapshots alive
+  through ffmpeg and final QA.
+- `media.py:92-118` rejects missing streams, non-positive or over-limit
+  dimensions, and video over 60 fps. It accepts the inclusive limits and falls
+  back from an unavailable average rate to a valid real rate. The one-pass
+  bounded copier at lines 338-352 hashes exactly what it writes for later
+  consumption.
+- `comfy_client.py:37-66` derives the upload name and manifest record from one
+  bounded byte buffer. Lines 47 and 54-61 use a full content hash plus
+  `overwrite=true`, so identical retries reuse one Comfy input name. Lines
+  83-99 call only the configured atomic prompt-id cancellation route and still
+  perform a final history read before reporting cancellation.
+- `content-foundry.contract.md:29-33` makes snapshot provenance, decoded scene
+  limits, and content-addressed upload reuse durable product boundaries.
+- `test_media.py:76-126` mutates both original files after snapshots are made
+  and proves assembly plus manifest hashing still use the reviewed bytes. Lines
+  128-157 test oversized and over-rate rejection, inclusive 1920x1080/60 fps
+  acceptance, and the valid frame-rate fallback.
+- `test_drafts_client.py:186-201` proves stable content-addressed upload names.
+  Lines 203-246 prove timeout cleanup never calls `/interrupt`, targets only the
+  accepted prompt, and lets completed history win the cancellation race.
+
+Every implementation, durable-contract, and test change traces to Correct Fix
+Must Touch. The diff contains no child runtime, activity, curriculum, parent
+UI, mastery, transfer, public asset, workflow graph, image preset, dependency,
+approval, or ComfyUI installation change.
+
+Verification after a clean rebase onto `origin/main`: `npm test` passed 46
+Content Foundry tests with one intentional live-Comfy skip plus 56 Vitest files
+and 748 app tests.
+`npm run typecheck`, `npm run build`, and `git diff --check` passed.
+
+Gap audit: DONE.
+
 Verification: `npm test` passed 37 Foundry tests with one intentional live-Comfy
 skip plus 53 Vitest files and 669 app tests. `npm run typecheck`,
 `npm run build`, and `git diff --check` passed. Live node/model compatibility

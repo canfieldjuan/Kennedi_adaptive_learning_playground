@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -16,6 +17,12 @@ VIDEO_WIDTH = 960
 VIDEO_HEIGHT = 544
 VIDEO_FPS = 24
 MAX_CLIP_SECONDS = 30.0
+MAX_SCENE_INPUT_BYTES = 250 * 1024 * 1024
+MAX_SCENE_WIDTH = 1920
+MAX_SCENE_HEIGHT = 1080
+MAX_SCENE_PIXELS = MAX_SCENE_WIDTH * MAX_SCENE_HEIGHT
+MAX_SCENE_FPS = 60.0
+IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp"})
 
 
 class MediaTools:
@@ -30,54 +37,85 @@ class MediaTools:
         except json.JSONDecodeError as exc:
             raise ValidationError("storyboard must be valid JSON") from exc
         title, scenes, narration, source_brief_id = validate_storyboard(spec)
-        resolved_scenes = [
-            (self.config.resolve_input(item["path"], max_bytes=250 * 1024 * 1024), item["duration_ms"])
-            for item in scenes
-        ]
-        resolved_narration = [
-            (self.config.resolve_input(item["path"], max_bytes=MAX_AUDIO_INPUT_BYTES), item["start_ms"])
-            for item in narration
-        ]
-        source_inputs = [
-            {"name": source.name, "sha256": sha256_file(source), "duration_ms": duration}
-            for source, duration in resolved_scenes
-        ]
-        narration_inputs = []
-        for source, start_ms in resolved_narration:
-            stream = first_stream(self.probe(source), "audio")
-            if stream is None:
-                raise ValidationError(f"narration has no audio stream: {source.name}")
-            peak = self.audio_peak(source)
-            if peak >= -0.1:
-                raise ValidationError(f"narration is clipped or too close to 0 dBFS: {source.name}")
-            narration_inputs.append({
-                "name": source.name,
-                "sha256": sha256_file(source),
-                "start_ms": start_ms,
-                "source_peak_dbfs": peak,
-            })
-        draft_id, draft_dir, manifest = self.store.create(
-            kind="narrated_clip",
-            workflow={"id": "human_narration_assembly", "version": 1, "models": []},
-            inputs={"title": title, "scenes": source_inputs, "narration": narration_inputs},
-            source_brief_id=source_brief_id,
-        )
-        output = draft_dir / "learning-clip.webm"
-        poster = draft_dir / "poster.png"
-        contact_sheet = draft_dir / "contact-sheet.png"
-        total_seconds = sum(duration for _, duration in resolved_scenes) / 1000
+        with tempfile.TemporaryDirectory(prefix="foundry-storyboard-inputs-") as temp_name:
+            snapshots = Path(temp_name)
+            resolved_scenes = []
+            source_inputs = []
+            for index, item in enumerate(scenes):
+                source = self.config.resolve_input(item["path"], max_bytes=MAX_SCENE_INPUT_BYTES)
+                snapshot, record = snapshot_source(
+                    source, snapshots / f"scene-{index:02d}{source.suffix.lower()}", MAX_SCENE_INPUT_BYTES
+                )
+                scene_details = self._inspect_scene_input(snapshot)
+                resolved_scenes.append((snapshot, item["duration_ms"]))
+                source_inputs.append({**record, "duration_ms": item["duration_ms"], **scene_details})
+
+            resolved_narration = []
+            narration_inputs = []
+            for index, item in enumerate(narration):
+                source = self.config.resolve_input(item["path"], max_bytes=MAX_AUDIO_INPUT_BYTES)
+                snapshot, record = snapshot_source(
+                    source, snapshots / f"narration-{index:02d}{source.suffix.lower()}", MAX_AUDIO_INPUT_BYTES
+                )
+                stream = first_stream(self.probe(snapshot), "audio")
+                if stream is None:
+                    raise ValidationError(f"narration has no audio stream: {source.name}")
+                peak = self.audio_peak(snapshot)
+                if peak >= -0.1:
+                    raise ValidationError(f"narration is clipped or too close to 0 dBFS: {source.name}")
+                resolved_narration.append((snapshot, item["start_ms"]))
+                narration_inputs.append({**record, "start_ms": item["start_ms"], "source_peak_dbfs": peak})
+
+            draft_id, draft_dir, manifest = self.store.create(
+                kind="narrated_clip",
+                workflow={"id": "human_narration_assembly", "version": 1, "models": []},
+                inputs={"title": title, "scenes": source_inputs, "narration": narration_inputs},
+                source_brief_id=source_brief_id,
+            )
+            output = draft_dir / "learning-clip.webm"
+            poster = draft_dir / "poster.png"
+            contact_sheet = draft_dir / "contact-sheet.png"
+            total_seconds = sum(duration for _, duration in resolved_scenes) / 1000
+            try:
+                self._assemble_video(resolved_scenes, resolved_narration, output, total_seconds)
+                self._run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-sseof", "-0.1", "-i", str(output), "-frames:v", "1", str(poster)])
+                self.create_contact_sheet(output, contact_sheet)
+                qa = self.inspect_learning_clip(output)
+                for candidate, role in ((output, "learning_clip"), (poster, "poster"), (contact_sheet, "contact_sheet")):
+                    self.store.add_output(draft_dir, manifest, candidate, role=role)
+                self.store.add_qa(draft_dir, manifest, {"name": "media_contract", "status": "pass", "details": qa})
+            except Exception as exc:
+                self.store.add_qa(draft_dir, manifest, {"name": "media_contract", "status": "fail", "details": str(exc)})
+                raise
+            return {"draft_id": draft_id, "draft_dir": str(draft_dir), "manifest": manifest}
+
+    def _inspect_scene_input(self, path: Path) -> dict[str, int | float]:
+        stream = first_stream(self.probe(path), "video")
+        if stream is None:
+            raise ValidationError(f"scene is not decodable video or image: {path.name}")
         try:
-            self._assemble_video(resolved_scenes, resolved_narration, output, total_seconds)
-            self._run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-sseof", "-0.1", "-i", str(output), "-frames:v", "1", str(poster)])
-            self.create_contact_sheet(output, contact_sheet)
-            qa = self.inspect_learning_clip(output)
-            for candidate, role in ((output, "learning_clip"), (poster, "poster"), (contact_sheet, "contact_sheet")):
-                self.store.add_output(draft_dir, manifest, candidate, role=role)
-            self.store.add_qa(draft_dir, manifest, {"name": "media_contract", "status": "pass", "details": qa})
-        except Exception as exc:
-            self.store.add_qa(draft_dir, manifest, {"name": "media_contract", "status": "fail", "details": str(exc)})
-            raise
-        return {"draft_id": draft_id, "draft_dir": str(draft_dir), "manifest": manifest}
+            width = int(stream.get("width", 0))
+            height = int(stream.get("height", 0))
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(f"scene dimensions are invalid: {path.name}") from exc
+        if (
+            width <= 0 or height <= 0
+            or width > MAX_SCENE_WIDTH or height > MAX_SCENE_HEIGHT
+            or width * height > MAX_SCENE_PIXELS
+        ):
+            raise ValidationError(f"scene dimensions exceed the 1920x1080 decode limit: {path.name}")
+        details: dict[str, int | float] = {"width": width, "height": height}
+        if path.suffix.lower() not in IMAGE_SUFFIXES:
+            try:
+                fps = fraction_value(stream.get("avg_frame_rate"))
+                if fps <= 0:
+                    fps = fraction_value(stream.get("r_frame_rate"))
+            except (TypeError, ValueError, ZeroDivisionError) as exc:
+                raise ValidationError(f"scene frame rate is invalid: {path.name}") from exc
+            if not math.isfinite(fps) or not 0 < fps <= MAX_SCENE_FPS:
+                raise ValidationError(f"scene frame rate exceeds the 60 fps decode limit: {path.name}")
+            details["fps"] = fps
+        return details
 
     def create_contact_sheet(self, video: Path, destination: Path) -> None:
         duration = float(self.probe(video).get("format", {}).get("duration", 0))
@@ -194,7 +232,7 @@ class MediaTools:
             for index, (source, duration_ms) in enumerate(scenes):
                 segment = temp / f"scene-{index:02d}.mp4"
                 seconds = duration_ms / 1000
-                if source.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}:
+                if source.suffix.lower() in IMAGE_SUFFIXES:
                     args = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-loop", "1", "-i", str(source)]
                     segment_filter = video_filter
                 else:
@@ -295,6 +333,23 @@ def first_stream(probe: dict[str, Any], kind: str) -> dict[str, Any] | None:
     if not isinstance(streams, list):
         return None
     return next((item for item in streams if isinstance(item, dict) and item.get("codec_type") == kind), None)
+
+
+def snapshot_source(source: Path, destination: Path, max_bytes: int) -> tuple[Path, dict[str, Any]]:
+    digest = hashlib.sha256()
+    total = 0
+    try:
+        with source.open("rb") as input_file, destination.open("xb") as output_file:
+            while chunk := input_file.read(1024 * 1024):
+                total += len(chunk)
+                if total > max_bytes:
+                    raise ValidationError(f"source exceeds the size limit: {source.name}")
+                digest.update(chunk)
+                output_file.write(chunk)
+    except Exception:
+        destination.unlink(missing_ok=True)
+        raise
+    return destination, {"name": source.name, "bytes": total, "sha256": digest.hexdigest()}
 
 
 def fraction_value(value: Any) -> float:

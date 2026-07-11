@@ -44,14 +44,18 @@ class ComfyClient:
             "sha256": hashlib.sha256(data).hexdigest(),
         }
         boundary = uuid.uuid4().hex
-        stored_name = f"{uuid.uuid4().hex}{path.suffix.lower()}"
+        stored_name = f"foundry-{record['sha256']}{path.suffix.lower()}"
         content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         prefix = (
             f"--{boundary}\r\n"
             f'Content-Disposition: form-data; name="image"; filename="{stored_name}"\r\n'
             f"Content-Type: {content_type}\r\n\r\n"
         ).encode("utf-8")
-        suffix = f"\r\n--{boundary}--\r\n".encode("utf-8")
+        suffix = (
+            f"\r\n--{boundary}\r\n"
+            'Content-Disposition: form-data; name="overwrite"\r\n\r\n'
+            f"true\r\n--{boundary}--\r\n"
+        ).encode("utf-8")
         response = self._json_request(
             "POST", "/upload/image", body=prefix + data + suffix,
             content_type=f"multipart/form-data; boundary={boundary}",
@@ -90,26 +94,9 @@ class ComfyClient:
         raise ComfyUIError(f"ComfyUI job timed out after {self.timeout_seconds} seconds and is no longer active")
 
     def _cancel_prompt(self, prompt_id: str) -> bool:
-        queue = self._json_request("GET", "/queue")
-        cancelled = False
-        if queue_has_prompt(queue.get("queue_pending"), prompt_id):
-            self._json_request(
-                "POST",
-                "/queue",
-                body=json.dumps({"delete": [prompt_id]}).encode("utf-8"),
-                content_type="application/json",
-            )
-            cancelled = True
-            queue = self._json_request("GET", "/queue")
-        if queue_has_prompt(queue.get("queue_running"), prompt_id):
-            self._json_request(
-                "POST",
-                "/interrupt",
-                body=json.dumps({"prompt_id": prompt_id}).encode("utf-8"),
-                content_type="application/json",
-            )
-            cancelled = True
-        return cancelled
+        path = f"/api/jobs/{urllib.parse.quote(prompt_id, safe='')}/cancel"
+        response = self._json_request("POST", path)
+        return response.get("cancelled") is True
 
     def _collect_outputs(self, entry: Any, output_dir: Path) -> list[Path]:
         if not isinstance(entry, dict):
@@ -220,11 +207,4 @@ def safe_filename(value: Any) -> bool:
         and Path(value).name == value
         and "\\" not in value
         and not any(ord(char) < 32 or ord(char) == 127 for char in value)
-    )
-
-
-def queue_has_prompt(items: Any, prompt_id: str) -> bool:
-    return isinstance(items, list) and any(
-        isinstance(item, list) and len(item) > 1 and item[1] == prompt_id
-        for item in items
     )

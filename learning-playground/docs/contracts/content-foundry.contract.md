@@ -26,6 +26,11 @@ automatic content publisher.
 - Wan v1 emits one 81-frame, 24fps, 960x544 silent scene per job. It is limited
   to ambient or micro-motion, not evidence-bearing object manipulation.
 - Jobs have bounded file sizes, seeds, timeouts, and output counts.
+- Storyboard scenes are snapshotted before inspection and assembly. Decoded
+  sources are limited to 1920x1080, 2,073,600 pixels, and at most 60 fps for
+  video; narration and scene hashes describe the exact snapshots ffmpeg reads.
+- ComfyUI uploads use content-addressed names so identical source retries reuse
+  the same local input instead of allocating UUID-named copies.
 
 ## Draft and Approval Boundary
 
