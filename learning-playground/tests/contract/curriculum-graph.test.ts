@@ -108,13 +108,9 @@ describe('curriculum graph contract', () => {
       // vocabulary level 2 (band 4-5) is covered by the Bear Art Studio story
       // card (art-studio-story-outside); counting level 1 (band 2-3) by the
       // structured counting variant (art-studio-five-flowers).
+      // The train-skill level 1/2 bands are covered by the Number Train
+      // Express (d3) and Summit (d5) trips.
       'Skill subitizing level 2 has no approved activity in difficulty band 4-5',
-      'Skill numeral_recognition level 1 has no approved activity in difficulty band 2-3',
-      'Skill numeral_recognition level 2 has no approved activity in difficulty band 4-5',
-      'Skill quantity_construction level 1 has no approved activity in difficulty band 2-3',
-      'Skill quantity_construction level 2 has no approved activity in difficulty band 4-5',
-      'Skill number_sequence level 1 has no approved activity in difficulty band 2-3',
-      'Skill number_sequence level 2 has no approved activity in difficulty band 4-5',
     ]);
   });
 

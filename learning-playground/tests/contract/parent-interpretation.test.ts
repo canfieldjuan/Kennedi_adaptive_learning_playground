@@ -175,7 +175,7 @@ describe('parent interpretation contract', () => {
       current_min_difficulty_level: 2,
       current_max_difficulty_level: 3,
       status: 'covered',
-      approved_activity_ids: ['art-studio-five-flowers'],
+      approved_activity_ids: ['art-studio-five-flowers', 'number-train-express'],
       covered_level_count: 3,
       total_level_count: 3,
     });

@@ -1,12 +1,16 @@
 {
   "id": "art-studio-pink-request",
-  "version": 1,
+  "version": 2,
   "title": "Match the Bear's Card",
   "domain": "art",
-  "skill_ids": ["color_fill"],
+  "skill_ids": [
+    "color_fill"
+  ],
   "originating_brief_id": "brief-color_fill-different_prompt_mode",
   "transfer": {
-    "skill_ids": ["color_fill"],
+    "skill_ids": [
+      "color_fill"
+    ],
     "context_type": "different_prompt_mode",
     "context_id": "bear-color-request",
     "example_set_id": "pink-heart-1",
@@ -22,15 +26,34 @@
   "content": {
     "game": "bear-art-studio",
     "art_mode": "color_request",
-    "character": { "id": "baby-polar-bear", "name": "Baby Polar Bear" },
+    "character": {
+      "id": "baby-polar-bear",
+      "name": "Baby Polar Bear"
+    },
     "prompt_audio": "Baby Polar Bear shows you a card. Make the heart match it.",
     "subject_shape": "heart",
     "target_color_id": "berry-pink",
     "colors": [
-      { "id": "berry-pink", "label": "Pink", "value": "#fd79a8" },
-      { "id": "sunny-yellow", "label": "Yellow", "value": "#fdcb6e" },
-      { "id": "leaf-green", "label": "Green", "value": "#00b894" },
-      { "id": "sky-blue", "label": "Blue", "value": "#74b9ff" }
+      {
+        "id": "berry-pink",
+        "label": "Pink",
+        "value": "#fd79a8"
+      },
+      {
+        "id": "sunny-yellow",
+        "label": "Yellow",
+        "value": "#fdcb6e"
+      },
+      {
+        "id": "leaf-green",
+        "label": "Green",
+        "value": "#00b894"
+      },
+      {
+        "id": "sky-blue",
+        "label": "Blue",
+        "value": "#74b9ff"
+      }
     ],
     "next_activity_id": "art-studio-three-stars",
     "next_label": "Next art"

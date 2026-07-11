@@ -568,7 +568,6 @@ function hasBearArtStudioFixCard(activity: ActivityJson): boolean {
 // only on Check), versus the numeral-tap and train baselines.
 function hasDifferentInteractionModelContent(activity: ActivityJson): boolean {
   const targetQuantity = getNumber(activity.content.target_quantity);
-  const slotCount = getNumber(activity.content.slot_count);
 
   return (
     isBearArtStudioActivity(activity) &&
@@ -576,9 +575,7 @@ function hasDifferentInteractionModelContent(activity: ActivityJson): boolean {
     activity.interaction_model === 'tap_then_place' &&
     activity.skill_ids.includes('counting') &&
     Number.isInteger(targetQuantity) &&
-    targetQuantity > 0 &&
-    Number.isInteger(slotCount) &&
-    slotCount >= targetQuantity
+    targetQuantity > 0
   );
 }
 
