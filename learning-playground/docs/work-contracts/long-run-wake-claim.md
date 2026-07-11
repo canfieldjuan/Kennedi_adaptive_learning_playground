@@ -120,7 +120,7 @@ that boundary would violate issue #54's duplicate-wake invariant.
 ### Verification
 
 - `npx vitest run tests/scripts/pr-wake-claim.test.ts` — 41 passed.
-- `npm test` — 53 files / 636 tests passed.
+- `npm test` — 53 files / 637 tests passed after syncing current `main`.
 - `npm run typecheck` — passed.
 - `npm run build` — passed.
 - `npm run test:viewport` — 6 browser scenarios passed.
