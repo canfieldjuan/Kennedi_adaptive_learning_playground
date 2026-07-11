@@ -2649,6 +2649,7 @@
   width: 100%;
   max-width: 680px;
   min-height: 420px;
+  margin-block: auto;
 }
 
 .bear-cafe-phone__button {
@@ -3142,11 +3143,17 @@
   gap: var(--space-md);
 }
 
-/* While the production-art scene is on stage, the wall props step back and
-   the stage centers vertically: the proof frame owns the composition, and
-   the counter band reads as ground instead of dead space on mobile. */
-.bear-cafe-environment[data-stage='delivery'] .cafe-env__prop--minor {
+/* Wall props step back behind live stage content in EVERY stage (the stage
+   attribute set is phone|make|fix|plating|delivery|handoff|complete — a
+   per-stage list here already missed 'make' once). The stage clusters center
+   vertically so the counter band reads as ground instead of dead space. */
+.bear-cafe-environment .cafe-env__prop--minor {
   opacity: 0.28;
+}
+
+.bear-cafe-workbench,
+.bear-cafe-complete {
+  margin-block: auto;
 }
 
 .bear-cafe:has(.bear-cafe-delivery__scene--art-proof) .bear-cafe-delivery {
