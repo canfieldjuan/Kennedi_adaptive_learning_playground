@@ -16,8 +16,11 @@ the unguessable token returned by `acquire`.
 
 The claim root is dedicated operator-created local state. It must already exist
 as a private, current-user-owned real directory and may not be reached through
-a symbolic-link path. New acquisitions stop at 4,096 directory records so
-completed receipts cannot grow local state without a hard bound.
+a symbolic-link path. Every acquisition must first reserve one of 4,096 atomic
+capacity slots. Slots survive completion and are released on abandonment, so
+parallel different-head acquires cannot exceed the wake-record bound. Atomic
+publication uses one deterministic temporary path per bounded target so crash
+residue cannot create an unbounded side channel around the slot cap.
 
 ## Claim Identity
 
@@ -32,9 +35,9 @@ the same delivery cannot start another worker.
 ## Acquire Contract
 
 `acquire` first checks for an exact completed receipt and otherwise publishes a
-fully written active record with an exclusive atomic link. Exactly one contender
-returns
-`acquired`; the same active or completed wake returns `duplicate`; a different
+fully written active record with an exclusive atomic link. Exactly one
+contender returns `acquired`; the same active or completed wake returns
+`duplicate`; a different
 wake for that head returns `busy`.
 
 Empty, oversized, symbolic-link, non-regular, malformed, contradictory, or
@@ -47,8 +50,10 @@ a later slice.
 `complete` requires the exact active claim token, durably creates the completed
 receipt, and only then removes the active file. If completion was interrupted
 after the receipt write, retrying with the same token finishes removal
-idempotently. An exclusive transition marker serializes competing complete or
-abandon calls and blocks a new acquire until the transition finishes.
+idempotently. An exclusive transition marker serializes conflicting complete
+or abandon calls and blocks a new acquire until the transition finishes. A
+retry with the same action and token validates and resumes an existing marker;
+same-action finalization is idempotent under overlapping retries.
 
 `abandon` requires the exact active claim token and removes only the active
 record. It writes no completed receipt, so the wake may be retried. The same

@@ -2,8 +2,8 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  closeSync, constants, existsSync, fstatSync, fsyncSync, linkSync, lstatSync,
-  openSync, opendirSync, readSync, realpathSync, unlinkSync, writeSync,
+  closeSync, constants, fstatSync, fsyncSync, linkSync, lstatSync, openSync,
+  readSync, realpathSync, unlinkSync, writeSync,
 } from 'node:fs';
 import { basename, isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -11,7 +11,7 @@ import { pathToFileURL } from 'node:url';
 export const CLAIM_SCHEMA_VERSION = 1;
 export const CLAIM_DECISION_TYPE = 'kennedi.pr-wake-claim';
 export const MAX_RECORD_BYTES = 16 * 1024;
-export const MAX_ROOT_RECORDS = 4096;
+export const MAX_WAKE_RECORDS = 4096;
 
 const SHA = /^[0-9a-f]{40}$/i;
 const REPO = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
@@ -99,29 +99,45 @@ export function runCli({ argv = process.argv.slice(2), stdout = process.stdout }
 
 function acquire(input, paths, { createToken, now }) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    if (existsSync(paths.completed)) {
-      validateCompleted(readRecord(paths.completed), input);
+    if (pathPresent(paths.transition)) {
+      const marker = readRecordIfPresent(paths.transition);
+      if (marker === null) continue;
+      validateBlockingTransition(marker, input, paths);
+      return baseResult(input, 'busy');
+    }
+    if (pathPresent(paths.completed)) {
+      const completed = readRecordIfPresent(paths.completed);
+      if (completed === null) continue;
+      validateCompleted(completed, input);
+      validateCapacitySlot(readRecord(paths.capacitySlot(completed.capacity_slot)), input, completed);
       return baseResult(input, 'duplicate');
     }
-    if (existsSync(paths.transition)) return baseResult(input, 'busy');
-    if (existsSync(paths.active)) {
-      const active = readRecord(paths.active);
+    if (pathPresent(paths.active)) {
+      const active = readRecordIfPresent(paths.active);
+      if (active === null) continue;
       validateActive(active, input);
+      validateCapacitySlot(readRecord(paths.capacitySlot(active.capacity_slot)), {
+        ...input, wakeSource: active.wake_source, wakeId: active.wake_id,
+      }, active);
       return baseResult(input, active.wake_id === input.wakeId
         && active.wake_source === input.wakeSource ? 'duplicate' : 'busy');
     }
-    assertRootCapacity(paths.root);
     const token = createToken().toLowerCase();
     if (!TOKEN.test(token)) fail('token_generation', 'Generated claim token is invalid');
-    const record = activeRecord(input, token, now());
+    const capacitySlot = reserveCapacitySlot(paths, input, token, now());
+    const record = activeRecord(input, token, capacitySlot, now());
     try {
       createRecord(paths.active, record, paths.root);
       return { ...baseResult(input, 'acquired'), claim_token: token };
     } catch (error) {
       if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
+      releaseCapacitySlot(paths, input, capacitySlot, token);
       try {
         const active = readRecord(paths.active);
         validateActive(active, input);
+        validateCapacitySlot(readRecord(paths.capacitySlot(active.capacity_slot)), {
+          ...input, wakeSource: active.wake_source, wakeId: active.wake_id,
+        }, active);
         return baseResult(input, active.wake_id === input.wakeId
           && active.wake_source === input.wakeSource ? 'duplicate' : 'busy');
       } catch (readError) {
@@ -134,16 +150,19 @@ function acquire(input, paths, { createToken, now }) {
 }
 
 function complete(input, paths, { now }) {
-  if (existsSync(paths.completed) && !existsSync(paths.active)) {
-    validateCompleted(readRecord(paths.completed), input, input.claimToken);
-    finishInterruptedTransition(input, paths, 'complete');
+  if (pathPresent(paths.completed) && !pathPresent(paths.active)) {
+    const completed = readRecord(paths.completed);
+    validateCompleted(completed, input, input.claimToken);
+    validateCapacitySlot(readRecord(paths.capacitySlot(completed.capacity_slot)), input, completed);
+    finishInterruptedTransition(input, paths, 'complete', completed.capacity_slot);
     return baseResult(input, 'completed');
   }
   const active = readRecord(paths.active);
   validateOwnedActive(active, input);
-  return withTransition(input, paths, 'complete', () => {
-    const completed = completedRecord(input, active.claim_token, now());
-    if (existsSync(paths.completed)) {
+  validateCapacitySlot(readRecord(paths.capacitySlot(active.capacity_slot)), input, active);
+  return withTransition(input, paths, 'complete', active, () => {
+    const completed = completedRecord(input, active.claim_token, active.capacity_slot, now());
+    if (pathPresent(paths.completed)) {
       validateCompleted(readRecord(paths.completed), input, active.claim_token);
     } else {
       try {
@@ -153,21 +172,26 @@ function complete(input, paths, { now }) {
         validateCompleted(readRecord(paths.completed), input, active.claim_token);
       }
     }
-    unlinkSync(paths.active);
+    unlinkIfPresent(paths.active);
     syncDirectory(paths.root);
     return baseResult(input, 'completed');
   });
 }
 
 function abandon(input, paths, { now }) {
-  if (!existsSync(paths.active) && existsSync(paths.transition)) {
-    finishInterruptedTransition(input, paths, 'abandon');
+  if (!pathPresent(paths.active) && pathPresent(paths.transition)) {
+    const marker = finishInterruptedTransition(input, paths, 'abandon');
+    if (marker !== null) {
+      releaseCapacitySlot(paths, input, marker.capacity_slot, input.claimToken);
+    }
     return abandonedResult(input, now());
   }
   const active = readRecord(paths.active);
   validateOwnedActive(active, input);
-  return withTransition(input, paths, 'abandon', () => {
-    unlinkSync(paths.active);
+  validateCapacitySlot(readRecord(paths.capacitySlot(active.capacity_slot)), input, active);
+  return withTransition(input, paths, 'abandon', active, () => {
+    unlinkIfPresent(paths.active);
+    releaseCapacitySlot(paths, input, active.capacity_slot, active.claim_token);
     syncDirectory(paths.root);
     return abandonedResult(input, now());
   });
@@ -195,21 +219,6 @@ function validateRoot(path) {
   return canonical;
 }
 
-function assertRootCapacity(root) {
-  const directory = opendirSync(root);
-  try {
-    let count = 0;
-    while (directory.readSync() !== null) {
-      count += 1;
-      if (count >= MAX_ROOT_RECORDS) {
-        fail('claim_root_capacity', 'Claim root reached its bounded record capacity');
-      }
-    }
-  } finally {
-    directory.closeSync();
-  }
-}
-
 function claimPaths(root, input) {
   const activeKey = digest([input.repository, input.prNumber, input.expectedHead]);
   const completedKey = digest([
@@ -220,10 +229,11 @@ function claimPaths(root, input) {
     active: resolve(root, `${activeKey}.active.json`),
     transition: resolve(root, `${activeKey}.transition.json`),
     completed: resolve(root, `${completedKey}.completed.json`),
+    capacitySlot: (index) => resolve(root, `.capacity-slot-${index}.json`),
   };
 }
 
-function withTransition(input, paths, action, operation) {
+function withTransition(input, paths, action, active, operation) {
   const marker = {
     schema_version: CLAIM_SCHEMA_VERSION,
     record_type: 'transition',
@@ -231,22 +241,35 @@ function withTransition(input, paths, action, operation) {
     repository: input.repository,
     pull_request: input.prNumber,
     expected_head_sha: input.expectedHead,
+    wake_source: input.wakeSource,
+    wake_id: input.wakeId,
+    capacity_slot: active.capacity_slot,
     claim_token_sha256: digest([input.claimToken]),
   };
   try {
     createRecord(paths.transition, marker, paths.root);
   } catch (error) {
     if (error && typeof error === 'object' && error.code === 'EEXIST') {
-      fail('transition_busy', 'Another claim transition is already active');
+      const existing = readRecordIfPresent(paths.transition);
+      if (existing === null) {
+        fail('transition_race', 'Claim transition changed during recovery');
+      }
+      validateTransition(existing, input, action, active.capacity_slot);
+    } else {
+      throw error;
     }
-    throw error;
   }
   let result;
   let failure;
   try { result = operation(); } catch (error) { failure = error; }
   try {
-    validateTransition(readRecord(paths.transition), input, action);
-    unlinkSync(paths.transition);
+    if (pathPresent(paths.transition)) {
+      const current = readRecordIfPresent(paths.transition);
+      if (current !== null) {
+        validateTransition(current, input, action, active.capacity_slot);
+        unlinkIfPresent(paths.transition);
+      }
+    }
     syncDirectory(paths.root);
   } catch (error) {
     if (failure === undefined) failure = error;
@@ -255,14 +278,75 @@ function withTransition(input, paths, action, operation) {
   return result;
 }
 
-function finishInterruptedTransition(input, paths, action) {
-  if (!existsSync(paths.transition)) return;
-  validateTransition(readRecord(paths.transition), input, action);
-  unlinkSync(paths.transition);
+function finishInterruptedTransition(input, paths, action, expectedSlot) {
+  if (!pathPresent(paths.transition)) return null;
+  const marker = readRecordIfPresent(paths.transition);
+  if (marker === null) return null;
+  validateTransition(marker, input, action, expectedSlot);
+  unlinkIfPresent(paths.transition);
+  syncDirectory(paths.root);
+  return marker;
+}
+
+function reserveCapacitySlot(paths, input, token, reservedAt) {
+  if (!validTimestamp(reservedAt)) fail('clock', 'Capacity timestamp is invalid');
+  const start = Number.parseInt(digest([
+    input.repository, input.prNumber, input.expectedHead, input.wakeSource, input.wakeId,
+  ]).slice(0, 8), 16) % MAX_WAKE_RECORDS;
+  for (let offset = 0; offset < MAX_WAKE_RECORDS; offset += 1) {
+    const slot = (start + offset) % MAX_WAKE_RECORDS;
+    const path = paths.capacitySlot(slot);
+    if (pathPresent(path)) continue;
+    const record = {
+      schema_version: CLAIM_SCHEMA_VERSION,
+      record_type: 'capacity_slot',
+      capacity_slot: slot,
+      repository: input.repository,
+      pull_request: input.prNumber,
+      expected_head_sha: input.expectedHead,
+      wake_source: input.wakeSource,
+      wake_id: input.wakeId,
+      claim_token_sha256: digest([token]),
+      reserved_at: reservedAt,
+    };
+    try {
+      createRecord(path, record, paths.root);
+      return slot;
+    } catch (error) {
+      if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
+    }
+  }
+  fail('claim_root_capacity', 'Claim root reached its bounded wake-record capacity');
+}
+
+function releaseCapacitySlot(paths, input, slot, token) {
+  const path = paths.capacitySlot(slot);
+  if (!pathPresent(path)) return;
+  const record = readRecordIfPresent(path);
+  if (record === null) return;
+  validateCapacitySlot(record, input, {
+    capacity_slot: slot,
+    claim_token_sha256: digest([token]),
+  });
+  unlinkIfPresent(path);
   syncDirectory(paths.root);
 }
 
-function activeRecord(input, token, acquiredAt) {
+function validateCapacitySlot(record, input, owner) {
+  const expectedHash = typeof owner.claim_token === 'string'
+    ? digest([owner.claim_token])
+    : owner.claim_token_sha256;
+  if (!isRecord(record) || record.schema_version !== CLAIM_SCHEMA_VERSION
+    || record.record_type !== 'capacity_slot' || record.capacity_slot !== owner.capacity_slot
+    || !validSlot(record.capacity_slot) || record.repository !== input.repository
+    || record.pull_request !== input.prNumber || record.expected_head_sha !== input.expectedHead
+    || record.wake_source !== input.wakeSource || record.wake_id !== input.wakeId
+    || record.claim_token_sha256 !== expectedHash || !validTimestamp(record.reserved_at)) {
+    fail('capacity_slot', 'Capacity slot is malformed or contradictory');
+  }
+}
+
+function activeRecord(input, token, capacitySlot, acquiredAt) {
   if (!validTimestamp(acquiredAt)) fail('clock', 'Claim timestamp is invalid');
   return {
     schema_version: CLAIM_SCHEMA_VERSION,
@@ -272,12 +356,13 @@ function activeRecord(input, token, acquiredAt) {
     expected_head_sha: input.expectedHead,
     wake_source: input.wakeSource,
     wake_id: input.wakeId,
+    capacity_slot: capacitySlot,
     claim_token: token,
     acquired_at: acquiredAt,
   };
 }
 
-function completedRecord(input, token, completedAt) {
+function completedRecord(input, token, capacitySlot, completedAt) {
   if (!validTimestamp(completedAt)) fail('clock', 'Completion timestamp is invalid');
   return {
     schema_version: CLAIM_SCHEMA_VERSION,
@@ -287,6 +372,7 @@ function completedRecord(input, token, completedAt) {
     expected_head_sha: input.expectedHead,
     wake_source: input.wakeSource,
     wake_id: input.wakeId,
+    capacity_slot: capacitySlot,
     claim_token_sha256: digest([token]),
     completed_at: completedAt,
   };
@@ -305,7 +391,8 @@ function validateActive(record, input) {
     || record.record_type !== 'active' || record.repository !== input.repository
     || record.pull_request !== input.prNumber || record.expected_head_sha !== input.expectedHead
     || !WAKE_SOURCES.has(record.wake_source) || !WAKE_ID.test(record.wake_id ?? '')
-    || !TOKEN.test(record.claim_token ?? '') || !validTimestamp(record.acquired_at)) {
+    || !validSlot(record.capacity_slot) || !TOKEN.test(record.claim_token ?? '')
+    || !validTimestamp(record.acquired_at)) {
     fail('active_record', 'Active claim record is malformed or contradictory');
   }
 }
@@ -315,21 +402,38 @@ function validateCompleted(record, input, token) {
     || record.record_type !== 'completed' || record.repository !== input.repository
     || record.pull_request !== input.prNumber || record.expected_head_sha !== input.expectedHead
     || record.wake_source !== input.wakeSource || record.wake_id !== input.wakeId
-    || !/^[0-9a-f]{64}$/.test(record.claim_token_sha256 ?? '')
+    || !validSlot(record.capacity_slot) || !/^[0-9a-f]{64}$/.test(record.claim_token_sha256 ?? '')
     || !validTimestamp(record.completed_at)
     || (token && record.claim_token_sha256 !== digest([token]))) {
     fail('completed_record', 'Completed wake receipt is malformed or contradictory');
   }
 }
 
-function validateTransition(record, input, action) {
+function validateTransition(record, input, action, expectedSlot) {
   if (!isRecord(record) || record.schema_version !== CLAIM_SCHEMA_VERSION
     || record.record_type !== 'transition' || record.action !== action
     || record.repository !== input.repository || record.pull_request !== input.prNumber
     || record.expected_head_sha !== input.expectedHead
+    || record.wake_source !== input.wakeSource || record.wake_id !== input.wakeId
+    || !validSlot(record.capacity_slot)
+    || (expectedSlot !== undefined && record.capacity_slot !== expectedSlot)
     || record.claim_token_sha256 !== digest([input.claimToken])) {
     fail('transition_record', 'Claim transition record is malformed or contradictory');
   }
+}
+
+function validateBlockingTransition(record, input, paths) {
+  if (!isRecord(record) || record.schema_version !== CLAIM_SCHEMA_VERSION
+    || record.record_type !== 'transition' || !['complete', 'abandon'].includes(record.action)
+    || record.repository !== input.repository || record.pull_request !== input.prNumber
+    || record.expected_head_sha !== input.expectedHead
+    || !WAKE_SOURCES.has(record.wake_source) || !WAKE_ID.test(record.wake_id ?? '')
+    || !validSlot(record.capacity_slot)
+    || !/^[0-9a-f]{64}$/.test(record.claim_token_sha256 ?? '')) {
+    fail('transition_record', 'Claim transition record is malformed or contradictory');
+  }
+  const markerInput = { ...input, wakeSource: record.wake_source, wakeId: record.wake_id };
+  validateCapacitySlot(readRecord(paths.capacitySlot(record.capacity_slot)), markerInput, record);
 }
 
 function readRecord(path) {
@@ -358,13 +462,24 @@ function readRecord(path) {
   }
 }
 
+function readRecordIfPresent(path) {
+  try {
+    return readRecord(path);
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
 function createRecord(path, record, root) {
   const bytes = Buffer.from(`${JSON.stringify(record)}\n`, 'utf8');
   if (bytes.length > MAX_RECORD_BYTES) fail('record_size', 'Claim record is oversized');
-  const temporary = resolve(root, `.${basename(path)}.${randomUUID()}.tmp`);
+  const temporary = resolve(root, `.${basename(path)}.tmp`);
   let descriptor;
+  let ownsTemporary = false;
   try {
     descriptor = openSync(temporary, WRITE_FLAGS, 0o600);
+    ownsTemporary = true;
     let offset = 0;
     while (offset < bytes.length) {
       offset += writeSync(descriptor, bytes, offset, bytes.length - offset);
@@ -378,7 +493,9 @@ function createRecord(path, record, root) {
     if (descriptor !== undefined) {
       try { closeSync(descriptor); } catch { /* best effort after failed write */ }
     }
-    try { unlinkSync(temporary); } catch { /* bounded root capacity contains residue */ }
+    if (ownsTemporary) {
+      try { unlinkSync(temporary); } catch { /* bounded target contains residue */ }
+    }
     throw error;
   }
   try { unlinkSync(temporary); } catch { /* target is already durably published */ }
@@ -388,6 +505,24 @@ function createRecord(path, record, root) {
 function syncDirectory(root) {
   const descriptor = openSync(root, constants.O_RDONLY);
   try { fsyncSync(descriptor); } finally { closeSync(descriptor); }
+}
+
+function pathPresent(path) {
+  try {
+    lstatSync(path);
+    return true;
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ENOENT') return false;
+    throw error;
+  }
+}
+
+function unlinkIfPresent(path) {
+  try {
+    unlinkSync(path);
+  } catch (error) {
+    if (!(error && typeof error === 'object' && error.code === 'ENOENT')) throw error;
+  }
 }
 
 function baseResult(input, decision) {
@@ -411,6 +546,9 @@ function abandonedResult(input, abandonedAt) {
 
 function digest(parts) {
   return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
+}
+function validSlot(value) {
+  return Number.isInteger(value) && value >= 0 && value < MAX_WAKE_RECORDS;
 }
 function validTimestamp(value) { return typeof value === 'string' && !Number.isNaN(Date.parse(value)); }
 function isRecord(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }

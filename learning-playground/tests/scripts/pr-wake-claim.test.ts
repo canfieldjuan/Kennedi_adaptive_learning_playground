@@ -12,7 +12,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 // @ts-expect-error The repository-owned Node CLI is intentionally plain JavaScript.
 import * as claims from '../../scripts/pr-wake-claim.mjs';
 
-const { executeClaimAction, MAX_ROOT_RECORDS, parseCliArgs, runCli } = claims;
+const { executeClaimAction, MAX_WAKE_RECORDS, parseCliArgs, runCli } = claims;
 const execFileAsync = promisify(execFile);
 const SCRIPT = new URL('../../scripts/pr-wake-claim.mjs', import.meta.url).pathname;
 const HEAD = '1'.repeat(40);
@@ -86,13 +86,27 @@ describe('wake claim ownership', () => {
     const input = parsed();
     executeClaimAction(input, fixed());
     const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
     const completion = { ...input, action: 'complete', claimToken: TOKEN };
     executeClaimAction(completion, fixed());
     writeFileSync(join(input.claimRoot, active.replace('.active.json', '.transition.json')),
-      JSON.stringify(transition(input, 'complete')));
+      JSON.stringify(transition(input, 'complete', capacitySlot)));
 
     expect(executeClaimAction(completion, fixed()).decision).toBe('completed');
     expect(readdirSync(input.claimRoot).some((name: string) => name.endsWith('.transition.json'))).toBe(false);
+  });
+
+  test('completion recovers a matching transition while the active claim remains', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
+    writeFileSync(join(input.claimRoot, active.replace('.active.json', '.transition.json')),
+      JSON.stringify(transition(input, 'complete', capacitySlot)));
+
+    expect(executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed()).decision)
+      .toBe('completed');
+    expect(readdirSync(input.claimRoot).some((name: string) => name.endsWith('.active.json'))).toBe(false);
   });
 
   test('abandon releases the head without marking the wake complete', () => {
@@ -107,12 +121,27 @@ describe('wake claim ownership', () => {
     const input = parsed();
     executeClaimAction(input, fixed());
     const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
     unlinkSync(join(input.claimRoot, active));
     writeFileSync(join(input.claimRoot, active.replace('.active.json', '.transition.json')),
-      JSON.stringify(transition(input, 'abandon')));
+      JSON.stringify(transition(input, 'abandon', capacitySlot)));
 
     expect(executeClaimAction({ ...input, action: 'abandon', claimToken: TOKEN }, fixed()).decision)
       .toBe('abandoned');
+  });
+
+  test('abandon recovers a matching transition while the active claim remains', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
+    writeFileSync(join(input.claimRoot, active.replace('.active.json', '.transition.json')),
+      JSON.stringify(transition(input, 'abandon', capacitySlot)));
+
+    expect(executeClaimAction({ ...input, action: 'abandon', claimToken: TOKEN }, fixed()).decision)
+      .toBe('abandoned');
+    expect(readdirSync(input.claimRoot).some((name: string) => name.startsWith('.capacity-slot-')))
+      .toBe(false);
   });
 
   test.each(['complete', 'abandon'] as const)('rejects the wrong token for %s', (action) => {
@@ -165,15 +194,51 @@ describe('wake claim state validation', () => {
     );
   });
 
+  test('fails closed when the reserved capacity slot contradicts its active claim', () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const slotPath = join(input.claimRoot, readdirSync(input.claimRoot)
+      .find((name: string) => name.startsWith('.capacity-slot-'))!);
+    const slot = JSON.parse(readFileSync(slotPath, 'utf8'));
+    slot.wake_id = 'other-delivery';
+    writeFileSync(slotPath, JSON.stringify(slot));
+
+    expect(() => executeClaimAction(input, fixed())).toThrowError(
+      expect.objectContaining({ code: 'capacity_slot' })
+    );
+  });
+
   test('a transition marker blocks new work on the same head', () => {
     const input = parsed();
     executeClaimAction(input, fixed());
     const active = activeName(input.claimRoot);
+    const capacitySlot = activeState(input.claimRoot).capacity_slot;
     writeFileSync(join(input.claimRoot, active.replace('.active.json', '.transition.json')),
-      JSON.stringify(transition(input, 'complete')));
+      JSON.stringify(transition(input, 'complete', capacitySlot)));
 
     expect(executeClaimAction({ ...input, wakeId: 'delivery-2' }, fixed()).decision).toBe('busy');
   });
+
+  test.each(['completed', 'transition'] as const)(
+    'fails closed on a dangling %s path',
+    (boundary) => {
+      const input = parsed();
+      executeClaimAction(input, fixed());
+      let path;
+      if (boundary === 'completed') {
+        executeClaimAction({ ...input, action: 'complete', claimToken: TOKEN }, fixed());
+        path = join(input.claimRoot, readdirSync(input.claimRoot)
+          .find((name: string) => name.endsWith('.completed.json'))!);
+        unlinkSync(path);
+      } else {
+        const active = activeName(input.claimRoot);
+        path = join(input.claimRoot, active.replace('.active.json', '.transition.json'));
+      }
+      symlinkSync(join(input.claimRoot, 'missing-target'), path);
+
+      expect(() => executeClaimAction(input, fixed())).toThrow();
+    }
+  );
 
   test('rejects a symbolic-link active record without following it', () => {
     const input = parsed();
@@ -217,8 +282,8 @@ describe('wake claim state validation', () => {
 
   test('fails closed at the completed-record capacity', () => {
     const input = parsed();
-    for (let index = 0; index < MAX_ROOT_RECORDS; index += 1) {
-      writeFileSync(join(input.claimRoot, `${index}.completed.json`), '{}');
+    for (let index = 0; index < MAX_WAKE_RECORDS; index += 1) {
+      writeFileSync(join(input.claimRoot, `.capacity-slot-${index}.json`), '{}');
     }
     expect(() => executeClaimAction(input, fixed())).toThrowError(
       expect.objectContaining({ code: 'claim_root_capacity' })
@@ -263,6 +328,22 @@ describe('wake claim CLI', () => {
     expect(results.filter(({ exitCode }) => exitCode === 1)).toHaveLength(1);
   });
 
+  test('parallel different-head acquires cannot exceed the final capacity slot', async () => {
+    const claimRoot = root();
+    for (let index = 0; index < MAX_WAKE_RECORDS - 1; index += 1) {
+      writeFileSync(join(claimRoot, `.capacity-slot-${index}.json`), '{}');
+    }
+    const results = await Promise.all([
+      runProcess(cli({ claimRoot, expectedHead: '2'.repeat(40), wakeId: 'delivery-2' })),
+      runProcess(cli({ claimRoot, expectedHead: '3'.repeat(40), wakeId: 'delivery-3' })),
+    ]);
+
+    expect(results.filter(({ output }) => output.decision === 'acquired')).toHaveLength(1);
+    expect(results.filter(({ output }) => output.error?.code === 'claim_root_capacity')).toHaveLength(1);
+    expect(readdirSync(claimRoot).filter((name: string) => name.startsWith('.capacity-slot-')))
+      .toHaveLength(MAX_WAKE_RECORDS);
+  });
+
   test('two real completion processes leave one receipt and no active claim', async () => {
     const input = parsed();
     executeClaimAction(input, fixed());
@@ -272,6 +353,17 @@ describe('wake claim CLI', () => {
     expect(results.some(({ output }) => output.decision === 'completed')).toBe(true);
     expect(readdirSync(input.claimRoot).filter((name: string) => name.endsWith('.completed.json'))).toHaveLength(1);
     expect(readdirSync(input.claimRoot).filter((name: string) => name.endsWith('.active.json'))).toHaveLength(0);
+  });
+
+  test('two real abandon processes leave no active claim or capacity slot', async () => {
+    const input = parsed();
+    executeClaimAction(input, fixed());
+    const args = cli({ action: 'abandon', claimRoot: input.claimRoot, claimToken: TOKEN });
+    const results = await Promise.all([runProcess(args), runProcess(args)]);
+
+    expect(results.some(({ output }) => output.decision === 'abandoned')).toBe(true);
+    expect(readdirSync(input.claimRoot).filter((name: string) => name.endsWith('.active.json'))).toHaveLength(0);
+    expect(readdirSync(input.claimRoot).filter((name: string) => name.startsWith('.capacity-slot-'))).toHaveLength(0);
   });
 });
 
@@ -312,7 +404,11 @@ function activeName(claimRoot: string) {
   return readdirSync(claimRoot).find((name: string) => name.endsWith('.active.json'))!;
 }
 
-function transition(input: ReturnType<typeof parsed>, action: string) {
+function activeState(claimRoot: string) {
+  return JSON.parse(readFileSync(join(claimRoot, activeName(claimRoot)), 'utf8'));
+}
+
+function transition(input: ReturnType<typeof parsed>, action: string, capacitySlot: number) {
   return {
     schema_version: 1,
     record_type: 'transition',
@@ -320,6 +416,9 @@ function transition(input: ReturnType<typeof parsed>, action: string) {
     repository: input.repository,
     pull_request: input.prNumber,
     expected_head_sha: input.expectedHead,
+    wake_source: input.wakeSource,
+    wake_id: input.wakeId,
+    capacity_slot: capacitySlot,
     claim_token_sha256: TOKEN_HASH,
   };
 }
