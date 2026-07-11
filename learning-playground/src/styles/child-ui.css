@@ -37,6 +37,17 @@
   pointer-events: none;
 }
 
+.cafe-backdrop__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  pointer-events: none;
+  user-select: none;
+}
+
 .cafe-backdrop svg {
   position: absolute;
   left: 0;
