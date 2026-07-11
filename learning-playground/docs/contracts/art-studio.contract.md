@@ -19,13 +19,19 @@ stay preschool-safe.
 
 ## Modes (one goal per screen)
 
-| Mode | Ask | Skill evidence |
-|---|---|---|
-| `free_decorate` | "Make Baby Polar Bear a picture." | creative choice — no wrong answers; selections logged, completion on Done |
-| `color_request` | "Baby Polar Bear wants pink." | color recognition: requested vs selected, hints, response time |
-| `quantity_decorate` | "Add 3 stars." | counting: evaluated only on Check, over/under recorded, hint never auto-fills |
-| `pattern` | "Make pink, yellow, pink, yellow." | color sequencing (color_fill level 2 "combined orders"): per-position correctness, self-correction |
-| `fix_art` | "Oops — that star should be yellow." | error detection + correction: mismatch found and repainted |
+| Mode | Ask | Interaction | Skill evidence |
+|---|---|---|---|
+| `free_decorate` | "Make Baby Polar Bear a picture." | brush + fill + free stickers on the canvas | creative choice — no wrong answers; summarized brush/color/sticker evidence, completion on Done |
+| `color_request` | "Baby Polar Bear wants pink." | brush a stroke or fill the subject in the asked color | color recognition: requested vs used color, one attempt per stroke/fill, hints |
+| `quantity_decorate` | "Add 3 stars." | place stickers freely; tap one to remove; completes at the asked count | counting: 1:1 placement, requested/placed recorded, per-placement events bounded by the target |
+| `story_card` | "What belongs in the story?" | pick the fitting stickers from a pool | vocabulary/category inference |
+| `pattern` | "Make pink, yellow, pink, yellow." | guided segments (guided slots stay outside free mode) | color sequencing: per-position correctness, self-correction |
+| `fix_art` | "Oops — that star should be yellow." | fill-bucket repaint of the one wrong region | error detection + correction |
+
+**Brush evidence is summarized, never streamed**: one first-mark event, one
+event per distinct color used (bounded by the palette), one attempt per
+stroke end in judged modes, one completion summary. Never an event per
+pointer move.
 
 ## Hard rules
 

@@ -1,11 +1,15 @@
 {
   "id": "art-studio-free-decorate",
-  "version": 1,
+  "version": 2,
   "title": "Make Bear a Picture",
   "domain": "art",
-  "skill_ids": ["color_fill"],
+  "skill_ids": [
+    "color_fill"
+  ],
   "transfer": {
-    "skill_ids": ["color_fill"],
+    "skill_ids": [
+      "color_fill"
+    ],
     "context_type": "same_format_new_examples",
     "context_id": "studio-free-decorate",
     "example_set_id": "decorate-card-1",
@@ -21,15 +25,40 @@
   "content": {
     "game": "bear-art-studio",
     "art_mode": "free_decorate",
-    "character": { "id": "baby-polar-bear", "name": "Baby Polar Bear" },
+    "character": {
+      "id": "baby-polar-bear",
+      "name": "Baby Polar Bear"
+    },
     "prompt_audio": "Make Baby Polar Bear a picture. Pick colors and stickers.",
     "slot_count": 6,
-    "stickers": ["star", "heart", "flower", "sun", "bubble"],
+    "stickers": [
+      "star",
+      "heart",
+      "flower",
+      "sun",
+      "bubble"
+    ],
     "colors": [
-      { "id": "berry-pink", "label": "Pink", "value": "#fd79a8" },
-      { "id": "sunny-yellow", "label": "Yellow", "value": "#fdcb6e" },
-      { "id": "tangerine-orange", "label": "Orange", "value": "#f0932b" },
-      { "id": "sky-blue", "label": "Blue", "value": "#74b9ff" }
+      {
+        "id": "berry-pink",
+        "label": "Pink",
+        "value": "#fd79a8"
+      },
+      {
+        "id": "sunny-yellow",
+        "label": "Yellow",
+        "value": "#fdcb6e"
+      },
+      {
+        "id": "tangerine-orange",
+        "label": "Orange",
+        "value": "#f0932b"
+      },
+      {
+        "id": "sky-blue",
+        "label": "Blue",
+        "value": "#74b9ff"
+      }
     ],
     "next_activity_id": "art-studio-pink-request",
     "next_label": "Next art"
