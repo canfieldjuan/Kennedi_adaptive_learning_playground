@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 // @ts-expect-error repository-owned plain JavaScript CLI.
 import * as executor from '../../scripts/pr-merge-executor.mjs';
 
-const { executeGuardedMerge, parseAuthorizationRecord, parseCliArgs } = executor;
+const { executeGuardedMerge, parseAuthorizationRecord, parseCliArgs, readAuthorizationFile } = executor;
 const HEAD = '1'.repeat(40);
 const MERGE = '2'.repeat(40);
 const INPUT = {
@@ -21,11 +21,14 @@ describe('active-builder guarded merge executor', () => {
     expect(receipt).toMatchObject({ merge_performed: true, merge_commit_sha: MERGE });
     const merge = harness.calls.find(({ file, args }) => file === 'gh' && args[1] === 'merge');
     expect(merge?.args).toEqual([
-      'pr', 'merge', '75', '--repo', INPUT.repository,
+      'pr', 'merge', '75', '--repo', `github.com/${INPUT.repository}`,
       '--merge', '--match-head-commit', HEAD,
     ]);
     expect(merge?.args).not.toContain('--admin');
     expect(merge?.options).not.toHaveProperty('shell', true);
+    expect(harness.calls).toContainEqual(expect.objectContaining({
+      file: 'gh', args: expect.arrayContaining(['api', '--hostname', 'github.com']),
+    }));
   });
 
   test.each([
@@ -49,6 +52,22 @@ describe('active-builder guarded merge executor', () => {
     expect(() => parseAuthorizationRecord('x'.repeat(64 * 1024 + 1), INPUT)).toThrowError(
       expect.objectContaining({ code: 'authority_size' })
     );
+  });
+
+  test.each(['   ', 'NONE'])('rejects blank or none authorization source %j', (source) => {
+    expect(() => parseAuthorizationRecord(authority({ 'Authorization source': source }), INPUT)).toThrowError();
+  });
+
+  test('requires a regular authorization file', () => {
+    expect(() => readAuthorizationFile('/dev/zero', {
+      stat: () => ({ isFile: () => false, size: 0 }), read: () => '',
+    })).toThrowError(expect.objectContaining({ code: 'authority_file' }));
+  });
+
+  test('rechecks authorization bytes after the file read', () => {
+    expect(() => readAuthorizationFile('/state/session.md', {
+      stat: () => ({ isFile: () => true, size: 1 }), read: () => 'x'.repeat(64 * 1024 + 1),
+    })).toThrowError(expect.objectContaining({ code: 'authority_size' }));
   });
 
   test.each(['push', 'review', 'comment', 'check'])('rejects %s wake authority', (source) => {
@@ -76,6 +95,22 @@ describe('active-builder guarded merge executor', () => {
     expect(harness.calls.some(({ file, args }) => file === 'gh' && args[1] === 'merge')).toBe(false);
   });
 
+  test('authorizes invocation from a worktree subdirectory by Git root', async () => {
+    const harness = runner();
+    await expect(execute(harness, '/work/learning-playground')).resolves.toMatchObject({
+      merge_performed: true,
+    });
+  });
+
+  test.each([
+    [[{ type: 'merge_queue' }], 'merge_queue_required'],
+    [{ malformed: true }, 'merge_queue_unknown'],
+  ])('rejects unsupported branch rules %j', async (rules, code) => {
+    const harness = runner({ rules });
+    await expect(execute(harness)).rejects.toMatchObject({ code });
+    expect(harness.calls.some(({ file, args }) => file === 'gh' && args[1] === 'merge')).toBe(false);
+  });
+
   test.each([
     ['producer failure', { producerFails: true }, 'readiness_failed'],
     ['non-ready proof', { proof: pendingProof() }, 'readiness_failed'],
@@ -93,17 +128,19 @@ describe('active-builder guarded merge executor', () => {
     });
   });
 
-  test('rejects an invalid post-merge receipt', async () => {
-    const harness = runner({ receipt: { state: 'OPEN' } });
+  test.each([null, { state: 'OPEN' }, { state: 'MERGED', headRefOid: 123 }])(
+    'rejects malformed post-merge receipt %j as unknown',
+    async (receipt) => {
+    const harness = runner({ receipt });
     await expect(execute(harness)).rejects.toMatchObject({
       code: 'merge_outcome_unknown', mergeOutcome: 'unknown',
     });
   });
 });
 
-function execute(harness: ReturnType<typeof runner>) {
+function execute(harness: ReturnType<typeof runner>, cwd = '/work') {
   return executeGuardedMerge(INPUT, authority(), {
-    run: harness.run, cwd: '/work', canonicalize: (value: string) => value, scriptDir: '/scripts',
+    run: harness.run, cwd, canonicalize: (value: string) => value, scriptDir: '/scripts',
   });
 }
 
@@ -131,7 +168,10 @@ function runner(overrides: Record<string, unknown> = {}) {
       if (overrides.mergeFails) throw new Error('merge failed');
       return result('');
     }
-    return result(JSON.stringify(overrides.receipt ?? {
+    if (file === 'gh' && args[0] === 'api') {
+      return result(JSON.stringify(overrides.rules ?? []));
+    }
+    return result(JSON.stringify('receipt' in overrides ? overrides.receipt : {
       state: 'MERGED', headRefOid: HEAD, mergeCommit: { oid: MERGE },
       mergedAt: '2026-07-11T00:00:00Z', url: 'https://github.com/example/pr/75',
     }));

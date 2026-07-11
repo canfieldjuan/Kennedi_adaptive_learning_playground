@@ -76,6 +76,7 @@ export function parseAuthorizationRecord(raw, input) {
   };
   const expectedAction = `merge-pr-${input.prNumber}-after-fresh-gate`;
   const allowed = field('Allowed actions').split(' | ');
+  const authorizationSource = field('Authorization source');
   if (
     field('Repository') !== input.repository
     || field('Status') !== 'scheduled_confirmation'
@@ -85,11 +86,27 @@ export function parseAuthorizationRecord(raw, input) {
     || field('Expected head SHA').toLowerCase() !== input.expectedHead
     || !allowed.includes(expectedAction)
     || field('Merge authorization') !== `one-shot for PR #${input.prNumber} at ${input.expectedHead}`
-    || field('Authorization source') === 'none'
+    || authorizationSource.length === 0
+    || authorizationSource.toLowerCase() === 'none'
   ) {
     throw new MergeExecutionError('authority_mismatch', 'Authorization record does not grant this exact merge');
   }
-  return { source: field('Authorization source') };
+  return { source: authorizationSource };
+}
+
+export function readAuthorizationFile(path, {
+  stat = statSync,
+  read = readFileSync,
+} = {}) {
+  const metadata = stat(path);
+  if (!metadata.isFile() || metadata.size > MAX_AUTHORITY_BYTES) {
+    fail('authority_file', 'Authorization record must be a bounded regular file');
+  }
+  const raw = read(path, 'utf8');
+  if (Buffer.byteLength(raw, 'utf8') > MAX_AUTHORITY_BYTES) {
+    fail('authority_size', 'Authorization record is oversized');
+  }
+  return raw;
 }
 
 export async function executeGuardedMerge(input, authorityRaw, {
@@ -99,9 +116,7 @@ export async function executeGuardedMerge(input, authorityRaw, {
   scriptDir = SCRIPT_DIR,
 } = {}) {
   parseAuthorizationRecord(authorityRaw, input);
-  const canonicalCwd = canonicalize(cwd);
   const canonicalAuthorized = canonicalize(input.worktree);
-  if (canonicalCwd !== canonicalAuthorized) fail('worktree_mismatch', 'Current worktree is not authorized');
 
   await assertLocalState(input, { run, cwd, canonicalAuthorized });
 
@@ -126,10 +141,28 @@ export async function executeGuardedMerge(input, authorityRaw, {
     || confirmation.merge_authorized !== false
   ) fail('confirmation_not_ready', 'Scheduled confirmation did not prove readiness');
 
+  const hostRepository = `github.com/${input.repository}`;
+  let branchRules;
+  try {
+    const rulesResult = await run('gh', [
+      'api', '--hostname', 'github.com',
+      `repos/${input.repository}/rules/branches/${encodeURIComponent(proof.pr.final.baseRefName)}`,
+    ], { cwd, timeout: 30_000 });
+    branchRules = parseJson(rulesResult.stdout, 'branch_rules_json');
+  } catch {
+    fail('merge_queue_unknown', 'Applicable merge-queue policy could not be proven absent');
+  }
+  if (!Array.isArray(branchRules) || branchRules.some((rule) => !isRecord(rule))) {
+    fail('merge_queue_unknown', 'Applicable branch rules are malformed');
+  }
+  if (branchRules.some(({ type }) => type === 'merge_queue')) {
+    fail('merge_queue_required', 'Merge-queue branches are not supported by this executor');
+  }
+
   await assertLocalState(input, { run, cwd, canonicalAuthorized });
   try {
     await run('gh', [
-      'pr', 'merge', String(input.prNumber), '--repo', input.repository,
+      'pr', 'merge', String(input.prNumber), '--repo', hostRepository,
       '--merge', '--match-head-commit', input.expectedHead,
     ], { cwd, timeout: 30_000 });
   } catch {
@@ -138,7 +171,7 @@ export async function executeGuardedMerge(input, authorityRaw, {
   let receipt;
   try {
     const receiptResult = await run('gh', [
-      'pr', 'view', String(input.prNumber), '--repo', input.repository,
+      'pr', 'view', String(input.prNumber), '--repo', hostRepository,
       '--json', 'state,mergedAt,mergeCommit,headRefOid,url',
     ], { cwd, timeout: 30_000 });
     receipt = parseJson(receiptResult.stdout, 'receipt_json');
@@ -146,9 +179,12 @@ export async function executeGuardedMerge(input, authorityRaw, {
     throw new MergeExecutionError('merge_outcome_unknown', 'Merge receipt outcome is unknown', 'unknown');
   }
   if (
-    receipt.state !== 'MERGED'
-    || receipt.headRefOid?.toLowerCase() !== input.expectedHead
-    || !SHA.test(receipt.mergeCommit?.oid ?? '')
+    !isRecord(receipt)
+    || receipt.state !== 'MERGED'
+    || typeof receipt.headRefOid !== 'string'
+    || receipt.headRefOid.toLowerCase() !== input.expectedHead
+    || !isRecord(receipt.mergeCommit)
+    || !SHA.test(receipt.mergeCommit.oid ?? '')
     || typeof receipt.mergedAt !== 'string'
   ) throw new MergeExecutionError('merge_outcome_unknown', 'GitHub did not return a valid merge receipt', 'unknown');
   return {
@@ -168,9 +204,7 @@ export async function runCli({ argv = process.argv.slice(2), stdout = process.st
   let input;
   try {
     input = parseCliArgs(argv);
-    const size = statSync(input.authorizationFile).size;
-    if (size > MAX_AUTHORITY_BYTES) fail('authority_size', 'Authorization record is oversized');
-    const raw = readFileSync(input.authorizationFile, 'utf8');
+    const raw = readAuthorizationFile(input.authorizationFile);
     const receipt = await executeGuardedMerge(input, raw, { run });
     stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
     return 0;
@@ -203,6 +237,7 @@ async function assertLocalState(input, { run, cwd, canonicalAuthorized }) {
 function parseJson(raw, code) {
   try { return JSON.parse(raw); } catch { fail(code, 'Command returned malformed JSON'); }
 }
+function isRecord(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
 function fail(code, message) { throw new MergeExecutionError(code, message); }
 function invalidArguments() { return new MergeExecutionError('invalid_arguments', 'Invalid guarded merge arguments'); }
 function escapeRegex(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }

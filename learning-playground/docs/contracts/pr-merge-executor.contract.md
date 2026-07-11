@@ -12,16 +12,17 @@ The CLI accepts exactly a scheduled wake source, repository, positive PR,
 expected head SHA, branch, absolute worktree path, and absolute persisted
 session-record path. Tokens remain environment connectivity, never authority.
 
-The session record is capped at 64 KiB and must contain exactly one matching
+The session record must be a regular file capped at 64 KiB and contain exactly one matching
 repository, PR, branch, worktree, expected head, `scheduled_confirmation`
 status, merge action, one-shot merge authorization, and non-`none` operator
-authorization source. Missing, duplicated, malformed, or contradictory fields
+nonblank authorization source. Missing, duplicated, malformed, or contradictory fields
 fail closed.
 
 ## Local Guard
 
 Before the live proof and again immediately before merge, the executor requires a clean worktree whose
-canonical root, current branch, and HEAD exactly match the authorized record.
+canonical Git root, current branch, and HEAD exactly match the authorized record.
+Invocation from a subdirectory is valid when its Git root matches.
 It invokes commands with argument arrays and never through a shell.
 
 ## Live Guard
@@ -33,12 +34,14 @@ confirmation consumer. Only `decision=ready`,
 
 ## Merge Guard
 
-The sole mutation is `gh pr merge` with `--repo`, `--merge`, and
+Before mutation, the executor queries applicable branch rules on `github.com`
+and rejects merge-queue policy or uncertain rule evidence. The sole mutation is
+`gh pr merge` with a host-qualified `--repo`, `--merge`, and
 `--match-head-commit` for the exact authorized head. The executor never uses
 admin bypass, force, auto-merge, shell execution, or branch deletion.
 
 After the mutation, it reads the PR again and reports success only when GitHub
-returns `MERGED` with a valid merge commit. Command or receipt uncertainty
+returns a typed `MERGED` object with the authorized head and valid merge commit. Command or receipt uncertainty
 reports an unknown outcome, never `merge_performed=false`. It does not persist the receipt or
 clean branches/worktrees.
 

@@ -56,6 +56,19 @@ proof, expected-head merge, and verified receipt.
 - Once the merge command is invoked, command or receipt uncertainty reports
   `merge_performed:null` so callers cannot assume that no merge occurred.
 
+### 2026-07-10 live review hardening
+
+- Threads `PRRT_kwDOTPmar86QDN3I`, `PRRT_kwDOTPmar86QDN3L`,
+  `PRRT_kwDOTPmar86QDN3N`, `PRRT_kwDOTPmar86QDN3O`,
+  `PRRT_kwDOTPmar86QDN3P`, and `PRRT_kwDOTPmar86QDN3R` found six P2
+  boundaries: blank authority, special-file reads, subdirectory invocation,
+  malformed receipt types, unpinned GitHub host, and merge-queue enqueueing.
+- The correction requires a nonblank/case-insensitive non-`none` operator
+  source, bounded regular authority files, Git-root ownership, typed receipts,
+  `github.com`-pinned reads/mutations, and fail-closed merge-queue detection.
+- All original no-event-authority, exact-head, no-admin, and non-scope
+  boundaries remain unchanged.
+
 ## Cold Diff Audit
 
 ### Gaps
@@ -75,6 +88,10 @@ proof, expected-head merge, and verified receipt.
   an unverified command or receipt reports unknown
   (`learning-playground/scripts/pr-merge-executor.mjs:130`,
   `learning-playground/scripts/pr-merge-executor.mjs:177`).
+- CONFIRMED — the six live-review boundaries are addressed before publication:
+  authority source and file type are strict, Git-root invocation supports
+  subdirectories, GitHub commands are host pinned, merge queues fail closed,
+  and malformed receipt types remain unknown.
 - COULD NOT DETERMINE — no workflow invokes this executor, and duplicate-wake
   serialization is not implemented. Both remain explicit non-scope.
 - COULD NOT DETERMINE — receipt persistence and owned-lane cleanup remain active
@@ -111,8 +128,8 @@ proof, expected-head merge, and verified receipt.
 
 ### Verification
 
-- `npx vitest run tests/scripts/pr-merge-executor.test.ts` — 27 passed.
-- `npm test` — 52 files / 586 tests passed.
+- `npx vitest run tests/scripts/pr-merge-executor.test.ts` — 36 passed.
+- `npm test` — 52 files / 595 tests passed.
 - `npm run typecheck` — passed.
 - `npm run build` — passed.
 - `npm run test:viewport` — 6 browser scenarios passed.
