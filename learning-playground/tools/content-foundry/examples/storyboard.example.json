@@ -1,0 +1,13 @@
+{
+  "title": "Bear makes warm bread",
+  "source_brief_id": "brief-example",
+  "scenes": [
+    {"path": "scene-1.png", "duration_ms": 2500},
+    {"path": "scene-2.png", "duration_ms": 2500},
+    {"path": "scene-3.png", "duration_ms": 2500}
+  ],
+  "narration": [
+    {"path": "bear-bakes-bread.wav", "start_ms": 250},
+    {"path": "bear-made-warm-bread.wav", "start_ms": 4000}
+  ]
+}

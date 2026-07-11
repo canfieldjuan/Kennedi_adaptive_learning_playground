@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "check:work-contract": "node scripts/check-work-contract.mjs",
-    "test": "npm run check:work-contract && vitest run",
+    "test:content-foundry": "python3 -m unittest discover -s tools/content-foundry/tests -p 'test_*.py'",
+    "test": "npm run check:work-contract && npm run test:content-foundry && vitest run",
     "test:viewport": "playwright test",
     "test:watch": "vitest"
   },
