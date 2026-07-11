@@ -2973,16 +2973,18 @@
 }
 
 .bear-cafe-check,
+/* Deliver is THE advancing control on this stage — it wears the same
+   violet pill as every other "press me" button in the playground
+   instead of a dark unlabeled blob. */
 .bear-cafe-deliver-button {
-  min-width: 96px;
-  background: #3a2461;
-  color: #ffffff;
+  min-width: 240px;
+  min-height: 72px;
 }
 
 .bear-cafe-deliver-button .bear-cafe-tray-svg {
   display: block;
-  width: 68px;
-  height: 34px;
+  width: 92px;
+  height: 46px;
 }
 
 .bear-cafe-check:disabled {
