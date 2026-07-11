@@ -460,6 +460,21 @@
   height: 116px;
 }
 
+.phonics-character--letter .phonics-character__art {
+  width: 132px;
+  height: 132px;
+  border-radius: var(--radius-round);
+  background: #fffdf7;
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.16);
+}
+
+.phonics-letter {
+  color: #3a2461;
+  font-size: 4.4rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .phonics-character.is-speaking .phonics-character__svg {
   animation: pipSpeak 620ms ease-in-out;
 }
