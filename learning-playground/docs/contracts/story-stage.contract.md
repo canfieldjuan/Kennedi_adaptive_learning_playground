@@ -52,10 +52,11 @@ setup + same choices ⇒ same story.
 - **Copyright**: original characters and broad archetypes only. No branded
   names, designs, or fan art. (Future seam: private parent-supplied
   character packs — documented, never bundled.)
-- **Visual standard**: local inline SVG in the playground's illustrated
-  style (ink outlines, warm flat fills); decorative layers `aria-hidden`
-  and `pointer-events: none`; reduced-motion guarded; the picture must
-  communicate the scene before the narration does.
+- **Visual standard**: local project-owned art governed by
+  `art-production-assets.contract.md`, in the playground's illustrated style
+  (ink outlines, warm flat fills); decorative layers `aria-hidden` and
+  `pointer-events: none`; reduced-motion guarded; the picture must communicate
+  the scene before the narration does.
 
 ## Future seams (documented, not built)
 

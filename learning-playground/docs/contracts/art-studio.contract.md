@@ -43,9 +43,10 @@ pointer move.
 - Curriculum discipline: studio activities map to existing graph skills
   (`color_fill`, `counting`). New skills enter the graph only through an
   explicit, tested graph change — never casually from content.
-- Safety: local inline SVG art only; no external links, open web, ads,
-  sharing, generated images, camera, or microphone. Parent approval
-  required on every activity. Adaptation stays parent-approved only.
+- Safety: local project-owned art governed by
+  `art-production-assets.contract.md`; no external links, open web, ads,
+  sharing, unapproved generated images, camera, or microphone. Parent approval
+  is required on every activity. Adaptation stays parent-approved only.
 - Feedback: no harsh failure, no shame language, no red-X centering, no
   streaks, no reward economy. Incorrect = gentle wiggle + supportive line;
   repeated misses = glow hint. Completion is the only ending.
