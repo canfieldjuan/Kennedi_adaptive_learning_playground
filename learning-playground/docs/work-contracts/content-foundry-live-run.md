@@ -1,6 +1,8 @@
 # Content Foundry Live Run Work Contract
 
-## Root Cause
+## Before Code
+
+### Root Cause
 
 The merged Content Foundry core is verified against fixtures and synthetic media,
 but not against the actual local ComfyUI node registry, installed model names,
@@ -10,7 +12,7 @@ three-scene draft proving that local generated scenes, parent-supplied narration
 storyboard assembly, manifest provenance, media QA, and the manual review gate
 work together without publishing content.
 
-## Correct Fix Must Touch
+### Correct Fix Must Touch
 
 - Inspect the configured loopback ComfyUI and run the existing opt-in live node
   and model compatibility test.
@@ -26,7 +28,7 @@ work together without publishing content.
 - Record reproducible commands, model/node observations, draft id, output QA,
   and the human-review disposition without committing generated binary media.
 
-## Must Not Change
+### Must Not Change
 
 Do not change child runtime code, activities, catalogs, public assets, video
 manifests, curriculum, evidence/mastery/transfer/progress logic, parent UI,
@@ -77,9 +79,9 @@ integration remain intentionally pending and outside this slice.
 
 ### Change-By-Change Reconstruction
 
-This work contract is the only tracked change. Lines 3-37 define the live-only
+This work contract is the only tracked change. Lines 3-39 define the live-only
 root cause, allowed execution surface, and protected app/approval boundaries.
-Lines 41-76 record the exact node/model and real-draft proof, name the locally
+Lines 43-78 record the exact node/model and real-draft proof, name the locally
 rejected attempts honestly, and preserve parent approval as the remaining gate.
 All generated images, narration copies, storyboard input, draft manifests, and
 final media remain under ignored `.content-foundry/`.
@@ -141,3 +143,34 @@ full ffmpeg decode command are now each complete within one inline code span;
 the decode command names the exact ignored draft-relative file used in the run.
 No execution claim, QA value, draft id, disposition, generated artifact, code,
 workflow, test, dependency, or protected app surface changed.
+
+### Review Follow-Up Amendment 1
+
+#### Root Cause
+
+The original before-code content is complete but its heading hierarchy does not
+match `docs/templates/change-contract.md`: it omits the `## Before Code` wrapper
+and promotes the three required contract sections to level two. That inconsistency
+can defeat future structure-based tooling even though today's prose is correct.
+
+#### Correct Fix Must Touch
+
+- Add `## Before Code` before the original contract clauses.
+- Change only `Root Cause`, `Correct Fix Must Touch`, and `Must Not Change` to
+  level-three headings under that wrapper.
+- Update the cold-audit line citations displaced by the new wrapper and verify
+  the canonical structure directly.
+
+#### Must Not Change
+
+Do not change any contract prose, execution evidence, command, QA value, draft
+id, disposition, generated artifact, code, workflow, test, dependency, or app
+surface.
+
+#### Cold Audit
+
+No gap remains. Lines 3-39 now match the canonical `## Before Code` wrapper and
+level-three clause hierarchy. Only those three headings and the two displaced
+line citations changed; all contract prose, execution evidence, commands, QA
+values, draft ids, dispositions, generated artifacts, code, workflows, tests,
+dependencies, and protected app surfaces remain unchanged.
