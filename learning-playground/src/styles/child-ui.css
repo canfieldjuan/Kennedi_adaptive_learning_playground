@@ -2158,6 +2158,123 @@
   min-width: 240px;
 }
 
+/* The phase region (setup ↔ story) keeps the screen's column rhythm. */
+.story-stage__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  width: 100%;
+}
+
+/* — Pick Three setup: one focused step, big cards, one forward control — */
+.story-stage__setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  width: 100%;
+}
+
+.story-stage__step-title {
+  color: #3a2461;
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.story-stage__cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-lg);
+}
+
+.story-stage__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  width: min(64vw, 250px);
+  padding: var(--space-md);
+  border: 4px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-xl);
+  background: #fffdf7;
+  color: #3a2461;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.16);
+  transition: transform var(--transition-bounce), border-color var(--transition-normal);
+}
+
+.story-stage__card:hover,
+.story-stage__card:focus-visible {
+  transform: scale(1.04);
+  border-color: rgba(58, 36, 97, 0.7);
+  outline: none;
+}
+
+.story-stage__card--selected {
+  border-color: rgba(58, 36, 97, 0.9);
+  box-shadow:
+    0 0 0 5px rgba(185, 138, 201, 0.4),
+    0 8px 24px rgba(58, 36, 97, 0.2);
+}
+
+.story-stage__card-art {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.story-stage__card-art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.story-stage__card-label {
+  font-size: 1.1rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.story-stage__next,
+.story-stage__start {
+  min-width: 240px;
+}
+
+.story-stage__next:disabled {
+  opacity: 0.4;
+}
+
+.story-stage__summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.story-stage__summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  width: min(28vw, 150px);
+  padding: var(--space-sm);
+  border: 3px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-lg);
+  background: #fffdf7;
+  color: #3a2461;
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgba(58, 36, 97, 0.14);
+}
+
+.story-stage__summary-item .story-stage__card-label {
+  font-size: 0.95rem;
+}
+
 /* — Video Vault — */
 .video-vault-screen {
   justify-content: flex-start;
@@ -3748,6 +3865,19 @@
 
   .story-stage__path-dot {
     width: 12px;
+  }
+
+  .story-stage__step-title {
+    font-size: 1.25rem;
+  }
+
+  .story-stage__card {
+    width: min(74vw, 230px);
+    padding: var(--space-sm);
+  }
+
+  .story-stage__summary-item {
+    width: min(27vw, 110px);
   }
 
   .bear-art-studio__mini {
