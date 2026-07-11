@@ -118,15 +118,18 @@ function luna(mood: StoryMood, x: number, y: number): string {
     ? `<path d="M-12 -30 q-8 -10 -8 -18 M12 -30 q8 -10 8 -18" fill="none" stroke="${UNICORN}" stroke-width="7" stroke-linecap="round"/>`
     : `<path d="M-12 -26 q-6 10 -6 22 M12 -26 q6 10 6 22" fill="none" stroke="${UNICORN}" stroke-width="7" stroke-linecap="round"/>`;
   return `<g transform="translate(${x} ${y})">
-    <path d="M-24 -30 q-10 6 -8 16 q8 2 14 -6" fill="${UNICORN_MANE}" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M-22 -38 q-12 4 -12 18 q0 12 10 16 q4 -8 0 -14 q8 -2 8 -12 Z" fill="${UNICORN_MANE}" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>
     ${forelegs}
     <ellipse cx="0" cy="-26" rx="22" ry="20" fill="${UNICORN}" stroke="${INK}" stroke-width="3"/>
     <rect x="-16" y="-8" width="9" height="12" rx="4" fill="${UNICORN}" stroke="${INK}" stroke-width="2.4"/>
     <rect x="8" y="-8" width="9" height="12" rx="4" fill="${UNICORN}" stroke="${INK}" stroke-width="2.4"/>
+    <path d="M12 -66 l7 -9 3 10 Z" fill="${UNICORN}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
     <circle cx="2" cy="-56" r="15" fill="${UNICORN}" stroke="${INK}" stroke-width="3"/>
-    <path d="M-10 -66 q-8 2 -12 8 q6 4 12 1 M-6 -70 q-6 -2 -12 0 q3 6 9 6" fill="${UNICORN_MANE}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
-    <path d="M4 -69 l4 -14 5 13 Z" fill="${SPARKLE}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
-    <path d="M-8 -68 q3 -4 7 -4 M9 -68 q3 -2 5 0" fill="none" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M-14 -62 q-9 0 -13 7 q5 6 13 4 q-3 8 3 12 q6 -3 6 -10 Z" fill="${UNICORN_MANE}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M-4 -70 q-8 -3 -14 1 q4 7 12 5 Z" fill="${UNICORN_MANE}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M2 -70 l5 -16 6 15 Z" fill="${SPARKLE}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M4.5 -75 l6 -3 M5.5 -80 l4 -2" stroke="${INK}" stroke-width="1.2" opacity="0.6"/>
+    <ellipse cx="9" cy="-49" rx="4.4" ry="3.4" fill="#fbe9f1" stroke="${INK}" stroke-width="1.6"/>
     <g transform="translate(2 -58)">${faceMarks(mood, -2, 5.5)}</g>
   </g>`;
 }
@@ -158,6 +161,10 @@ function biscuit(x: number, y: number, options: { peeking?: boolean; happy?: boo
       <circle cx="-3.5" cy="-1" r="1.8" fill="${INK}"/>
       <circle cx="3.5" cy="-1" r="1.8" fill="${INK}"/>
       <ellipse cx="0" cy="4" rx="2.4" ry="1.8" fill="${INK}"/>
+      <path d="M0 5.4 q0 2.6 2.6 2.6" fill="none" stroke="${INK}" stroke-width="1.4"/>
+      <ellipse cx="-6.5" cy="10.5" rx="3.4" ry="2.6" fill="${BISCUIT_FUR}" stroke="${INK}" stroke-width="1.8"/>
+      <ellipse cx="6.5" cy="10.5" rx="3.4" ry="2.6" fill="${BISCUIT_FUR}" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M-7.5 10 v2 M-5.5 10 v2 M5.5 10 v2 M7.5 10 v2" stroke="${INK}" stroke-width="1"/>
     </g>`;
   }
   const tail = options.happy
@@ -206,12 +213,16 @@ function owl(x: number, y: number): string {
   return `<g transform="translate(${x} ${y})">
     <ellipse cx="0" cy="0" rx="13" ry="16" fill="#b98ac9" stroke="${INK}" stroke-width="2.6"/>
     <path d="M-11 -13 l5 -7 4 5 4 -5 5 7" fill="#b98ac9" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>
-    <circle cx="-5" cy="-4" r="4.4" fill="#ffffff" stroke="${INK}" stroke-width="2"/>
-    <circle cx="5" cy="-4" r="4.4" fill="#ffffff" stroke="${INK}" stroke-width="2"/>
-    <circle cx="-5" cy="-4" r="1.8" fill="${INK}"/>
-    <circle cx="5" cy="-4" r="1.8" fill="${INK}"/>
-    <path d="M-2 2 l2 3 2 -3 Z" fill="${SPARKLE}" stroke="${INK}" stroke-width="1.6"/>
-    <path d="M-13 4 q6 6 13 6 q7 0 13 -6" fill="none" stroke="${INK}" stroke-width="2"/>
+    <path d="M-10 -8 q5 -4 10 -1 M0 -9 q5 -3 10 1" fill="#d3b3de" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>
+    <circle cx="-5" cy="-4" r="4.6" fill="#ffffff" stroke="${INK}" stroke-width="2"/>
+    <circle cx="5" cy="-4" r="4.6" fill="#ffffff" stroke="${INK}" stroke-width="2"/>
+    <circle cx="-4.4" cy="-3.6" r="2" fill="${INK}"/>
+    <circle cx="5.6" cy="-3.6" r="2" fill="${INK}"/>
+    <circle cx="-3.6" cy="-4.4" r="0.7" fill="#ffffff"/>
+    <circle cx="6.4" cy="-4.4" r="0.7" fill="#ffffff"/>
+    <path d="M-2 2 l2 3.4 2 -3.4 Z" fill="${SPARKLE}" stroke="${INK}" stroke-width="1.6"/>
+    <path d="M-12 2 q-3 6 1 10 M12 2 q3 6 -1 10" fill="none" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M-8 8 q8 5 16 0" fill="none" stroke="${INK}" stroke-width="1.8" opacity="0.55"/>
   </g>`;
 }
 
@@ -591,6 +602,22 @@ const CARD_ART: Record<string, string> = {
     ${berryBasket(80, 100)}
     ${sparkleStar(34, 60, 5)}${sparkleStar(126, 54, 5)}`,
 };
+
+/**
+ * The story-room valance (arc slice 7): a short curtain strip that gives
+ * the setup screen its §16 story-room feel without becoming a massive
+ * theater header (§23). Purely decorative — always aria-hidden and never
+ * an interaction target.
+ */
+export function storyRoomValanceSvg(): string {
+  const swag = (x: number) => `
+    <path d="M${x} 6 q30 26 60 0 l0 -6 l-60 0 Z" fill="#b98ac9" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>
+    <circle cx="${x + 30}" cy="20" r="3.4" fill="${SPARKLE}" stroke="${INK}" stroke-width="1.6"/>`;
+  return `<svg class="story-stage__valance-svg" viewBox="0 0 360 34" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMin meet" aria-hidden="true" focusable="false">
+    <rect x="0" y="0" width="360" height="7" rx="3" fill="#8a5fae" stroke="${INK}" stroke-width="2"/>
+    ${swag(0)}${swag(60)}${swag(120)}${swag(180)}${swag(240)}${swag(300)}
+  </svg>`;
+}
 
 /** One illustrated setup card image (viewBox 160x120). */
 export function storyCardSvg(artKey: string): string {
