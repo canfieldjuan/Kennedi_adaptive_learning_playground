@@ -51,6 +51,7 @@ describe('video vault response handoff', () => {
       outcome: 'completed',
       metadata: {
         evidence_role: 'exposure_only',
+        manifest_version: 2,
         response_activity_id: 'video-bear-bakes-bread-response',
       },
     });

@@ -2101,6 +2101,10 @@
   box-shadow: 0 2px 10px rgba(58, 36, 97, 0.14);
 }
 
+.story-stage__caption:empty {
+  display: none;
+}
+
 .story-stage__controls {
   display: grid;
   place-items: center;

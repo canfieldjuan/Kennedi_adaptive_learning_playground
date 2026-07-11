@@ -1,6 +1,6 @@
 {
   "id": "family-safe-videos-v1",
-  "version": 1,
+  "version": 2,
   "title": "Family Safe Videos",
   "description": "Parent-approved repo-bundled videos with separate response activities.",
   "intake_mode": "repo_bundled",
