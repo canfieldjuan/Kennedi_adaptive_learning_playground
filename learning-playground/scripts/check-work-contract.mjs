@@ -208,6 +208,8 @@ const checks = [
       '## Mutation Boundary',
       '`--wake-source scheduled`',
       '`owner/name` form',
+      'A producer error proof may omit',
+      'against every non-error proof',
       '`ready_for_guarded_merge=true`',
       '`merge_authorized: false`',
     ],

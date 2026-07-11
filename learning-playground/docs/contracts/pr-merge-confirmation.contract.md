@@ -11,9 +11,11 @@ merge. It never grants authority and never performs the merge.
 The CLI requires exactly `--wake-source scheduled`, one repository in
 `owner/name` form, one positive PR number, and one 40-character expected head
 SHA. It reads one JSON document from stdin. The document must satisfy the
-complete schema-version `1` `kennedi.pr-readiness` proof contract and its
-repository, PR number, and expected head must exactly match those command
-inputs. Its observation timestamp must be present and valid.
+complete schema-version `1` `kennedi.pr-readiness` proof contract. For every
+non-error proof, its repository, PR number, and expected head must exactly match
+those command inputs, and its observation timestamp must be present and valid.
+A producer error proof may omit that unavailable evidence; it remains an error
+decision bound to the command-input identifiers.
 
 Input is capped at 2 MiB. Empty, oversized, malformed, unsupported-version,
 incomplete, identity-mismatched, or contradictory proof input is an error decision.
@@ -52,10 +54,11 @@ Every output is one JSON object with:
 
 - `schema_version: 1` and `decision_type: "kennedi.pr-merge-confirmation"`;
 - `wake_source: "scheduled"` when the source was accepted;
-- the accepted repository, PR number, and expected head SHA;
+- the accepted repository, PR number, and expected head SHA, which is verified
+  against every non-error proof;
 - `decision` (`ready`, `not_ready`, `terminal`, or `error`);
 - `next_state`, `action`, and stable `reason_codes`;
-- the proof's expected head SHA when available;
+- the proof observation timestamp when available;
 - boolean `ready_for_guarded_merge`; and
 - `merge_authorized: false`.
 

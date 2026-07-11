@@ -80,6 +80,21 @@ or reuse the event classifier, leaving the scheduled boundary implicit.
 - These identifiers bind the report but cannot carry merge authority. All
   original no-network/no-subprocess/no-mutation boundaries remain unchanged.
 
+### 2026-07-10 contract-schema review correction
+
+- Live review threads `PRRT_kwDOTPmar86QC0-i` and
+  `PRRT_kwDOTPmar86QC0-n` found two documentation claims that exceeded the
+  runtime schema: a second proof-head output field and unconditional identity/
+  timestamp evidence on producer error proofs.
+- The output contract must describe the single accepted expected-head field,
+  which is verified against every non-error proof, plus the proof observation
+  timestamp when available.
+- The trusted-input contract must preserve the readiness-proof producer's
+  explicit error boundary: unavailable identity/timestamp evidence may be
+  omitted from an error proof, which remains blocked and bound to command-input
+  identifiers in the confirmation output.
+- Runtime behavior and all no-authority/no-mutation boundaries remain unchanged.
+
 ## Cold Diff Audit
 
 ### Gaps
@@ -91,6 +106,12 @@ or reuse the event classifier, leaving the scheduled boundary implicit.
   `learning-playground/scripts/pr-merge-confirmation.mjs:53`,
   `learning-playground/scripts/pr-merge-confirmation.mjs:114`,
   `learning-playground/scripts/pr-merge-confirmation.mjs:157`).
+- CONFIRMED — the review contract/schema mismatches are corrected: non-error
+  ownership evidence is mandatory and verified, producer error proofs may omit
+  unavailable evidence while remaining blocked, and the output schema claims
+  only fields the runtime emits
+  (`learning-playground/docs/contracts/pr-merge-confirmation.contract.md:11`,
+  `learning-playground/docs/contracts/pr-merge-confirmation.contract.md:53`).
 - CONFIRMED — effect-controlling boundary reaches the result: only
   `proof.ready` after `parseReadinessProof` and exact ownership validation can
   set `ready_for_guarded_merge=true`; every base and error output hard-codes
