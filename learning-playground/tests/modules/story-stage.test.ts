@@ -1,6 +1,8 @@
 /**
- * Story Stage slice-1 tests — the fixed tale's structure and the runtime's
- * behavior. The load-bearing claims: decisions branch deterministically to
+ * Story Stage tests — the fixed tale's structure and the runtime's
+ * behavior. Since slice 2 the tale is RESOLVED from the authored story
+ * pack, so these graph proofs run against exactly what the runtime plays.
+ * The load-bearing claims: decisions branch deterministically to
  * distinct consequences, every path ends, the runtime emits NO events of
  * any kind, narration never overlaps (stop before speak), Repeat replays,
  * and leaving the story stops speech.
@@ -11,12 +13,14 @@ import {
   renderStoryStage,
   destroyStoryStage,
 } from '../../src/modules/story-stage/StoryStageActivity';
-import { FIRST_TALE } from '../../src/modules/story-stage/first-tale';
-import type { StoryScene } from '../../src/modules/story-stage/story-stage.types';
+import { resolveFirstTale } from '../../src/modules/story-stage/first-tale';
+import type { ResolvedScene } from '../../src/modules/story-stage/story-pack.types';
 import type { SpeechServiceInterface } from '../../src/types/runtime';
 import { parseRoute } from '../../src/app/router';
 
-describe('the first tale (fixed story graph)', () => {
+const FIRST_TALE = resolveFirstTale();
+
+describe('the first tale (resolved story graph)', () => {
   const scenesById = new Map(FIRST_TALE.scenes.map((scene) => [scene.id, scene]));
 
   test('every decision has exactly two choices leading to distinct scenes', () => {
@@ -229,7 +233,7 @@ describe('story stage runtime', () => {
   });
 });
 
-function scene(id: string): StoryScene {
+function scene(id: string): ResolvedScene {
   const found = FIRST_TALE.scenes.find((entry) => entry.id === id);
   if (!found) throw new Error(`Missing scene ${id}`);
   return found;

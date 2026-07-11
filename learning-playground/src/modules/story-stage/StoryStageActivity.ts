@@ -14,8 +14,8 @@
  */
 
 import type { SpeechServiceInterface } from '../../types/runtime';
-import { FIRST_TALE } from './first-tale';
-import type { StoryScene } from './story-stage.types';
+import { resolveFirstTale } from './first-tale';
+import type { ResolvedScene } from './story-pack.types';
 import { storyChoiceSvg, storySceneSvg } from './story-art';
 
 interface StoryStageOptions {
@@ -33,7 +33,8 @@ export function renderStoryStage(
   destroyStoryStage();
   activeSpeech = options.speech;
 
-  const tale = FIRST_TALE;
+  // Slice 2: the same fixed tale, now resolved from the authored pack.
+  const tale = resolveFirstTale();
   const scenesById = new Map(tale.scenes.map((scene) => [scene.id, scene]));
 
   container = document.createElement('div');
@@ -108,7 +109,7 @@ export function renderStoryStage(
 
   let endingReached = false;
 
-  function speakScene(scene: StoryScene): void {
+  function speakScene(scene: ResolvedScene): void {
     options.speech.stop();
     options.speech.speak(scene.narration);
   }
