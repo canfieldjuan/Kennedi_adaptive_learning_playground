@@ -44,10 +44,19 @@ describe('coloring runtime', () => {
     // color on this screen belongs only to the palette and the filled shape.
     // Since the scene ships as a local production asset, the sweep now runs
     // against the exported file itself (stronger: it checks what ships).
-    const asset = readFileSync(
-      new URL('../../public/assets/images/studio-room-proof.svg', import.meta.url),
-      'utf8'
-    );
+    // Both shipped exports: the desktop scene and the bands-only phone crop.
+    const asset =
+      readFileSync(
+        new URL('../../public/assets/images/studio-room-proof.svg', import.meta.url),
+        'utf8'
+      ) +
+      readFileSync(
+        new URL(
+          '../../public/assets/images/studio-room-proof-mobile.svg',
+          import.meta.url
+        ),
+        'utf8'
+      );
     expect(asset).not.toContain('<text');
     const paints = asset.match(/(?:fill|stroke)="([^"]+)"/g) ?? [];
     expect(paints.length).toBeGreaterThan(0);

@@ -3887,10 +3887,6 @@
     padding: var(--space-sm);
   }
 
-  .studio-environment .studio-env__prop--minor {
-    display: none;
-  }
-
   .train-station .number-train__stage {
     padding: var(--space-xs) var(--space-xs) 14px;
     background-image: linear-gradient(
