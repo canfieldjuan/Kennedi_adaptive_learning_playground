@@ -111,6 +111,9 @@ export function validateSourceText(source, manifest) {
   if (!/^<\?xml[\s\S]*?<svg\b/.test(source)) throw new Error('source must be an SVG document');
   const prohibited = /<(?:text|image|script|style|foreignObject|audio|video)\b/i;
   if (prohibited.test(source)) throw new Error('source contains a prohibited embedded-content element');
+  if (/\son[a-z][a-z0-9:.-]*\s*=/i.test(source)) {
+    throw new Error('source contains a prohibited event-handler attribute');
+  }
   const externalUrl = /https?:\/\/(?!www\.w3\.org\/2000\/svg|www\.inkscape\.org\/namespaces\/inkscape)/i;
   if (externalUrl.test(source) || /\b(?:href|src)\s*=|url\s*\(/i.test(source)) {
     throw new Error('source contains an external or embedded resource reference');
@@ -172,6 +175,7 @@ export function buildFfmpegArgs(manifest, frameRoot, outputPath) {
 
 export async function loadVectorContext(manifestArgument, environment = process.env) {
   const manifestPath = path.resolve(manifestArgument);
+  await assertNoSymlinkSegments(manifestPath, 'manifest');
   const manifest = validateManifest(JSON.parse(await readFile(manifestPath, 'utf8')));
   const sourceRoot = path.dirname(manifestPath);
   const projectRoot = await findProjectRoot(sourceRoot);
@@ -268,12 +272,17 @@ export async function renderVectorCommand(context, options, dependencies = {}) {
   }
 
   const frameSetSha256 = await sha256FrameSet(context.frameRoot, framePlan);
-  await runProcess(
-    dependencies.ffmpegExecutable ?? 'ffmpeg',
-    ffmpegArgs,
-    dependencies.spawnImpl ?? spawn,
-    dependencies.processTimeoutMs ?? VECTOR_PROOF.timeoutMs
-  );
+  try {
+    await runProcess(
+      dependencies.ffmpegExecutable ?? 'ffmpeg',
+      ffmpegArgs,
+      dependencies.spawnImpl ?? spawn,
+      dependencies.processTimeoutMs ?? VECTOR_PROOF.timeoutMs
+    );
+  } catch (error) {
+    await rm(context.outputPath, { force: true });
+    throw error;
+  }
   const outputSha256 = await sha256File(context.outputPath);
   await writeFile(recordPath, `${JSON.stringify({
     manifest_id: context.manifest.id,
@@ -408,24 +417,29 @@ function runProcess(executable, args, spawnImpl, timeoutMs) {
   return new Promise((resolve, reject) => {
     const child = spawnImpl(executable, args, { stdio: 'inherit' });
     let settled = false;
+    let timeoutError;
+    let killGrace;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      clearTimeout(killGrace);
+      if (error) reject(error);
+      else resolve();
+    };
     const timeout = setTimeout(() => {
       if (settled) return;
-      settled = true;
+      timeoutError = new Error(`${executable} timed out after ${timeoutMs}ms`);
       child.kill('SIGKILL');
-      reject(new Error(`${executable} timed out after ${timeoutMs}ms`));
+      killGrace = setTimeout(() => finish(timeoutError), 5_000);
     }, timeoutMs);
     child.on('error', (error) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      reject(error);
+      finish(timeoutError ?? error);
     });
     child.on('exit', (code) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      if (code === 0) resolve();
-      else reject(new Error(`${executable} exited with code ${code}`));
+      if (timeoutError) finish(timeoutError);
+      else if (code === 0) finish();
+      else finish(new Error(`${executable} exited with code ${code}`));
     });
   });
 }

@@ -71,6 +71,8 @@ describe('deterministic vector video proof boundary', () => {
       .toThrow(/embedded-content/);
     expect(() => validateSourceText(source.replace('</svg>', '<path href="https://example.com/a"/></svg>'), manifest))
       .toThrow(/external/);
+    expect(() => validateSourceText(source.replace('<svg ', '<svg onload="fetch(\'https://example.com\')" '), manifest))
+      .toThrow(/event-handler/);
     expect(() => validateSourceText(source.replace('id="spoon-grip"', 'id="removed"'), manifest))
       .toThrow(/spoon-grip/);
   });
@@ -111,6 +113,12 @@ describe('deterministic vector video proof boundary', () => {
     await expect(loadVectorContext(MANIFEST_PATH, {
       KENNEDI_VECTOR_VIDEO_LAB: process.cwd(),
     })).rejects.toThrow(/inside the repository/);
+
+    const manifestTarget = path.join(root, 'manifest.json');
+    const manifestLink = path.join(root, 'manifest-link.json');
+    await writeFile(manifestTarget, JSON.stringify(makeManifest()));
+    await symlink(manifestTarget, manifestLink);
+    await expect(loadVectorContext(manifestLink)).rejects.toThrow(/symbolic/);
   });
 
   test('verifies the committed source hash before planning a dry run', async () => {
@@ -177,7 +185,10 @@ describe('deterministic vector video proof boundary', () => {
     const spawnImpl = () => {
       const child = new EventEmitter() as EventEmitter & { kill: () => void };
       child.kill = () => {};
-      queueMicrotask(() => child.emit('exit', 1));
+      queueMicrotask(async () => {
+        await writeFile(context.outputPath, 'partial failed video');
+        child.emit('exit', 1);
+      });
       return child;
     };
 

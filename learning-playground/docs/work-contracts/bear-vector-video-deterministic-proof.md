@@ -37,7 +37,7 @@ failed the owner look gate, so it would not reach the root cause.
 - Add a small local vector-render manifest that pins source path/hash, 1280x704,
   77 frames, 24 FPS, timeline duration, external review output, no audio, and
   `production_writes_allowed: false`.
-- Replace the Comfy runner with a dependency-free repository CLI that uses the
+- Replace the Comfy runner with a no-new-dependency repository CLI that uses the
   already-installed Playwright/Chromium stack to pause the SVG timeline at each
   exact frame, writes PNG frames only to an external isolated lab, and invokes
   installed FFmpeg with bounded single-threaded VP9 settings. It must support
@@ -117,7 +117,8 @@ properties. Owner approval, not CI, determines whether the motion feels good.
 
 - Validate this contract before deletion or implementation.
 - Remove all rejected Comfy files and confirm the final diff contains no
-  `ComfyUI`, `Wan2.2`, model hash, prompt, or AI-generated review artifact.
+  ComfyUI/Wan implementation, model hash, prompt workflow, or AI-generated
+  review artifact outside this historical rejection record.
 - Validate the animation SVG through `xmllint`, Inkscape 1.4.4 export, browser
   import, layer/animation checks, and no text/image/external-reference scan.
 - Run focused tests and CLI dry-run before rendering.
@@ -133,10 +134,129 @@ properties. Owner approval, not CI, determines whether the motion feels good.
 
 ## Cold Diff Audit
 
-Pending implementation, repeated deterministic rendering, verification, and
-line-cited reconstruction.
+### Gaps First
+
+No gap remains in the final diff.
+
+The cold read did find three runner gaps before completion. A symlinked manifest
+could reach parsing before the symlink boundary, an inline SVG event attribute
+could execute despite element filtering, and an encoder failure could leave a
+partial WebM at the expected output path. The final runner now rejects the
+manifest symlink before reading it, rejects event-handler attributes, and
+removes failed encoder output while waiting for timeout termination with a
+bounded grace period
+(`scripts/video-production/vector-video.mjs:110`,
+`scripts/video-production/vector-video.mjs:176`,
+`scripts/video-production/vector-video.mjs:274`,
+`scripts/video-production/vector-video.mjs:416`). Focused regressions cover the
+new input and failure paths (`tests/scripts/vector-video.test.ts:64`,
+`tests/scripts/vector-video.test.ts:105`,
+`tests/scripts/vector-video.test.ts:152`).
+
+`origin/main` advanced during the audit. After integrating that head, the final
+`git diff --name-status origin/main...HEAD` contains only the ten files
+reconstructed below. The protected-path scan returns no `public/`, `src/`,
+package, Content Foundry, runtime, activity, curriculum, evidence, or approval
+file.
+
+### Change-by-Change Reconstruction
+
+- `design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg` is one
+  1280x704, 77-frame editable Inkscape source with fourteen named vector layers
+  and no linked media (`mix-dough-vector-animation.svg:2`,
+  `mix-dough-vector-animation.svg:5`). It draws the stable Bear Cafe scene and
+  Bear identity (`mix-dough-vector-animation.svg:53`), adds one bounded blink
+  (`mix-dough-vector-animation.svg:76`), and synchronizes the arm, spoon, dough,
+  and visible grip through authored SVG transforms
+  (`mix-dough-vector-animation.svg:89`,
+  `mix-dough-vector-animation.svg:99`,
+  `mix-dough-vector-animation.svg:109`,
+  `mix-dough-vector-animation.svg:122`). This directly replaces model-redrawn
+  motion with exact project-owned geometry.
+- `design-source/video/bear-bakes-bread/vector-render-manifest.json` marks the
+  job proof-only and forbids production writes while pinning the source hash,
+  canvas, frame count, FPS, and external paths (`vector-render-manifest.json:2`,
+  `vector-render-manifest.json:7`, `vector-render-manifest.json:8`,
+  `vector-render-manifest.json:13`). It also pins local no-network Chromium and
+  deterministic audio-free VP9 settings (`vector-render-manifest.json:15`,
+  `vector-render-manifest.json:20`).
+- `scripts/video-production/vector-video.mjs` adds only the bounded `render`
+  and `--dry-run` CLI (`vector-video.mjs:29`). It validates the manifest and SVG
+  execution/content boundary (`vector-video.mjs:54`, `vector-video.mjs:110`),
+  verifies paths, symlinks, and the source hash before rendering
+  (`vector-video.mjs:176`), seeks exactly `n / 24` in local Chromium with network
+  requests blocked (`vector-video.mjs:217`, `vector-video.mjs:248`), hashes the
+  clean frame set, encodes fixed VP9, and writes a run record only after success
+  (`vector-video.mjs:274`, `vector-video.mjs:286`). Output cleanup, external-lab
+  containment, and bounded child-process handling are enforced at
+  `vector-video.mjs:327`, `vector-video.mjs:390`,
+  `vector-video.mjs:401`, and `vector-video.mjs:416`.
+- `tests/scripts/vector-video.test.ts` adds nine focused tests. They cover the
+  CLI and proof-only manifest (`vector-video.test.ts:29`), committed editable
+  source and external-content rejection (`vector-video.test.ts:53`,
+  `vector-video.test.ts:64`), exact frame planning and FFmpeg construction
+  (`vector-video.test.ts:80`, `vector-video.test.ts:91`), path/symlink and source
+  hash boundaries (`vector-video.test.ts:105`, `vector-video.test.ts:124`), and
+  removal of stale or partial success evidence after a failed rerender
+  (`vector-video.test.ts:152`).
+- `docs/art/asset-provenance.md` records the proof as draft and review-only,
+  identifies editable sources and exact tools, and declares no third-party or
+  AI asset content (`docs/art/asset-provenance.md:101`,
+  `docs/art/asset-provenance.md:106`, `docs/art/asset-provenance.md:110`,
+  `docs/art/asset-provenance.md:114`, `docs/art/asset-provenance.md:124`). It
+  links the review deliverables, preserves owner approval as pending, and
+  records all three repeated-render hashes
+  (`docs/art/asset-provenance.md:126`, `docs/art/asset-provenance.md:129`,
+  `docs/art/asset-provenance.md:130`).
+- The four binary review files under `docs/captures/video/` are the selected
+  WebM, contact sheet, and desktop/mobile source previews named by the ledger at
+  `docs/art/asset-provenance.md:106` and
+  `docs/art/asset-provenance.md:126`. They have no line-addressable content and
+  are review artifacts only; none is under `public`.
+- This contract records the root cause, allowed and protected surfaces,
+  deterministic proof standard, verification, and the present cold audit
+  (`docs/work-contracts/bear-vector-video-deterministic-proof.md:11`,
+  `docs/work-contracts/bear-vector-video-deterministic-proof.md:26`,
+  `docs/work-contracts/bear-vector-video-deterministic-proof.md:59`,
+  `docs/work-contracts/bear-vector-video-deterministic-proof.md:94`).
+
+Every changed file traces to the Correct Fix Must Touch list. No changed file
+traces only to convenience, and no Explicit Non-Scope path or behavior moved.
+The rejected ComfyUI runner, workflows, prompts, model records, generated
+candidates, focused tests, and superseded contracts are absent from the final
+diff rather than retained as dead tooling.
+
+### Verification
+
+- `npx vitest run tests/scripts/vector-video.test.ts`: 9/9 passed.
+- `npm test`: work-contract check passed; Content Foundry 46 passed with one
+  expected skip; Vitest 58 files and 773 tests passed.
+- `npm run typecheck`: passed.
+- `npm run build`: passed; Vite transformed 125 modules.
+- `npm run test:viewport`: 6/6 Playwright checks passed.
+- `npm run lint --if-present`: exited 0; the repository has no lint script.
+- `node scripts/check-work-contract.mjs` and `git diff --check`: passed.
+- `xmllint --noout` and JSON parsing passed. Inkscape 1.4.4 exported the
+  1280x704 initial frame; it warned that it does not preview SMIL elements, so
+  Chromium remains the contractually pinned timeline renderer.
+- Two clean final renders matched: source SHA-256
+  `3fdf8aac7903e0c25478eb6c91eec6e53b618b791133fda20dc5c1a511f12984`,
+  combined frame-set SHA-256
+  `fa802b6e28d788aa2e708d87b5ea85ae6424c16de88d6b8466cad7eebaeec115`,
+  and WebM SHA-256
+  `ddfb83043806636d0cf16a775c90d8e21de11e6d96a2715c7a6f963741d9bdf1`.
+- The committed WebM is byte-identical to the final external render. FFprobe
+  reports VP9, 1280x704, `yuv420p`, 24 FPS, 3.209 seconds, 99,605 bytes, and no
+  audio; a full FFmpeg decode passed. Black-frame and scene-cut checks emitted
+  no detections. A strict 0.5-second freeze check identifies the deliberately
+  quiet pre/post-stir holds; a 1.0-second threshold emits no freeze detection.
+  The contact sheet was visually inspected for stable Bear identity, spoon
+  contact, nonblank frames, and calm bounded movement. Owner look approval is
+  still pending and is not implied by these technical checks.
 
 ## Gap Audit
 
-NOT DONE until the rejected workflow is absent, the vector proof hashes match
-across two clean renders, verification passes, and the cold audit is complete.
+DONE for this review-only deterministic proof. The rejected workflow is absent,
+the repeated hashes match, all declared verification passed, and no protected
+surface changed. Owner visual approval remains the next gate before any runtime
+integration or additional Bear Bakes Bread beat.
