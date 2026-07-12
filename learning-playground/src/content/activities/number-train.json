@@ -30,7 +30,7 @@
   "estimated_duration_seconds": 120,
   "content": {
     "game": "number-train",
-    "prompt_audio": "All aboard the Number Train! How many passengers are riding?",
+    "prompt_audio": "All aboard the Number Train! How many passengers are on board?",
     "max_quantity": 20,
     "round_count": 6,
     "seed": 20260710,

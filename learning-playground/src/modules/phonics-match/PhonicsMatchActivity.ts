@@ -66,7 +66,19 @@ export function renderPhonicsMatchActivity(
   const correctFeedback = getFeedbackRule(options.activity.feedback_rules.correct);
   const incorrectFeedback = getFeedbackRule(options.activity.feedback_rules.incorrect);
   const hintFeedback = getFeedbackRule(options.activity.feedback_rules.hint);
-  const promptText = getPrompt(options.activity);
+  // Letter-first (owner direction 2026-07-11): on initial-sound screens the
+  // child reads ONE line naming the capital letter and sees that letter where
+  // Pip normally sits; Pip pops back in as the reward on the correct answer.
+  const rawTargetSound = getTargetSound(options.activity) ?? '';
+  const letterFirstTarget =
+    options.activity.skill_ids.includes('initial_sound') &&
+    getSegments(options.activity).length === 0 &&
+    /^[a-z]$/i.test(rawTargetSound)
+      ? rawTargetSound.toUpperCase()
+      : null;
+  const promptText = letterFirstTarget
+    ? `Find the word that starts with the letter ${letterFirstTarget}.`
+    : getPrompt(options.activity);
 
   container = document.createElement('div');
   container.className = 'child-container activity-screen phonics-workshop';
@@ -104,13 +116,15 @@ export function renderPhonicsMatchActivity(
 
   const title = document.createElement('h1');
   title.className = 'activity-title';
-  title.textContent = options.activity.title;
+  title.textContent = letterFirstTarget ? promptText : options.activity.title;
   container.appendChild(title);
 
-  const prompt = document.createElement('p');
-  prompt.className = 'activity-prompt';
-  prompt.textContent = promptText;
-  container.appendChild(prompt);
+  if (!letterFirstTarget) {
+    const prompt = document.createElement('p');
+    prompt.className = 'activity-prompt';
+    prompt.textContent = promptText;
+    container.appendChild(prompt);
+  }
 
   const promptImages = getPromptImages(options.activity);
   if (promptImages.length > 0) {
@@ -144,7 +158,12 @@ export function renderPhonicsMatchActivity(
 
   const characterArt = document.createElement('div');
   characterArt.className = 'phonics-character__art';
-  characterArt.innerHTML = renderPhonicsCharacterArt(targetMouth);
+  if (letterFirstTarget) {
+    character.classList.add('phonics-character--letter');
+    characterArt.innerHTML = `<span class="phonics-letter">${letterFirstTarget}</span>`;
+  } else {
+    characterArt.innerHTML = renderPhonicsCharacterArt(targetMouth);
+  }
   character.appendChild(characterArt);
   container.appendChild(character);
 
@@ -236,6 +255,8 @@ export function renderPhonicsMatchActivity(
         // deterministic — not a reward loop.
         button.classList.add('is-alive');
         character.classList.remove('is-speaking');
+        // Pip pops back in where the letter was — the reveal is the reward.
+        character.classList.remove('phonics-character--letter');
         setCharacterMouth('cheer');
         character.classList.add('is-cheering');
         disableChoices(choiceButtons);
