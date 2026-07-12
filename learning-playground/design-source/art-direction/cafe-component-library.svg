@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="1240" height="1120" viewBox="0 0 1240 1120" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
-  <rect x="0" y="0" width="1240" height="1120" fill="#f9e8d0"/>
+<svg width="1240" height="2485" viewBox="0 0 1240 2485" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+  <rect x="0" y="0" width="1240" height="2485" fill="#f9e8d0"/>
   <g id="window-four-pane" inkscape:label="Window, four panes with sunny hills" inkscape:groupmode="layer">
   <g transform="translate(40 40)">
     <rect x="0" y="0" width="264" height="300" rx="20" fill="#b3743e"/>
@@ -202,6 +202,66 @@
       <line x1="208" y1="58" x2="200" y2="26" stroke="#f0c65f" stroke-width="7" stroke-linecap="round"/>
       <line x1="222" y1="58" x2="226" y2="22" stroke="#e28f8f" stroke-width="7" stroke-linecap="round"/>
     </g>
+  </g>
+  </g>
+  <g id="awning-scalloped" inkscape:label="awning-scalloped (approved pickup #92)" inkscape:groupmode="layer">
+  <g transform="translate(40 1180) translate(-78 -52)">
+    <rect xmlns="http://www.w3.org/2000/svg" x="78" y="52" width="1044" height="100" rx="24" style="fill:#f8cbd5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:9" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="86" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="202" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="318" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="434" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="550" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="666" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="782" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="898" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="1014" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 78 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 194 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 310 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 426 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 542 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 658 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 774 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 890 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 1006 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+  </g>
+  </g>
+  <g id="tile-wall" inkscape:label="tile-wall (approved pickup #92)" inkscape:groupmode="layer">
+  <g transform="translate(40 1470) translate(-80 -150)">
+    <rect xmlns="http://www.w3.org/2000/svg" x="80" y="150" width="1040" height="338" rx="22" style="fill:#fcefdc;stroke:#8e7aa3;stroke-linecap:round;stroke-linejoin:round;stroke-width:4" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 180 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 280 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 380 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 480 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 580 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 680 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 780 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 880 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 980 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 1080 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 84 235 H 1116" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 84 320 H 1116" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 84 405 H 1116" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+  </g>
+  </g>
+  <g id="service-window-arch" inkscape:label="service-window-arch (approved pickup #92)" inkscape:groupmode="layer">
+  <g transform="translate(40 1888) translate(-638 -172)">
+    <path xmlns="http://www.w3.org/2000/svg" d="M 664 480 V 292 C 664 214 724 172 846 172 C 968 172 1028 214 1028 292 V 480 Z" style="fill:#b97850;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:10" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 694 460 V 300 C 694 240 740 206 846 206 C 952 206 998 240 998 300 V 460 Z" style="fill:#d9f0e8;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="724" y="300" width="244" height="10" rx="5" style="fill:#76bcb0;opacity:0.34;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="724" y="370" width="244" height="10" rx="5" style="fill:#76bcb0;opacity:0.24;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <circle xmlns="http://www.w3.org/2000/svg" style="fill:#ffe8a3;opacity:0.72;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" cx="972.0" cy="236.0" r="14.0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="638" y="454" width="416" height="52" rx="18" style="fill:#d9a06f;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:8" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="676" y="486" width="340" height="22" rx="10" style="fill:#b97850;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+  </g>
+  </g>
+  <g id="counter-sill" inkscape:label="counter-sill (approved pickup #92)" inkscape:groupmode="layer">
+  <g transform="translate(40 2303) translate(-72 -486)">
+    <rect xmlns="http://www.w3.org/2000/svg" x="72" y="486" width="1056" height="58" rx="24" style="fill:#d9a06f;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:9" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="88" y="530" width="1024" height="58" rx="18" style="fill:#b97850;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 136 558 H 512" style="fill:none;stroke:#eac39b;stroke-linecap:round;stroke-linejoin:round;stroke-width:5" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 722 558 H 1066" style="fill:none;stroke:#eac39b;stroke-linecap:round;stroke-linejoin:round;stroke-width:5" />
   </g>
   </g>
 </svg>
