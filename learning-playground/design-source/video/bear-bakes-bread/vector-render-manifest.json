@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "bear-mixes-dough-vector-proof",
+  "proof_only": true,
+  "production_writes_allowed": false,
+  "source_svg": "mix-dough-vector-animation.svg",
+  "source_sha256": "af4947db573ba04e7f6a32dfa370d8068751e04675930ee3dc3fc5efaea390df",
+  "width": 1280,
+  "height": 704,
+  "frames": 77,
+  "fps": 24,
+  "timeline_duration_seconds": 3.208333,
+  "frame_directory": "vector-renders/bear-mixes-dough-vector-proof/frames",
+  "review_output": "review/bear-mixes-dough-vector-proof.webm",
+  "browser": {
+    "engine": "chromium",
+    "device_scale_factor": 1,
+    "network_allowed": false
+  },
+  "encoding": {
+    "codec": "libvpx-vp9",
+    "pixel_format": "yuv420p",
+    "crf": 30,
+    "bitrate": "0",
+    "threads": 1,
+    "row_multithreading": false,
+    "bitexact": true,
+    "audio": "none",
+    "metadata": "strip_source"
+  }
+}

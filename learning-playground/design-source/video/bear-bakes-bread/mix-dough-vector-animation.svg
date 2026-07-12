@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     width="1280" height="704" viewBox="0 0 1280 704" version="1.1"
+     data-duration-seconds="3.208333" data-fps="24" data-frame-count="77">
+  <g inkscape:groupmode="layer" inkscape:label="01 Background shell" id="background-shell">
+    <rect x="10" y="10" width="1260" height="684" rx="42" fill="#fff8eb" stroke="#3a2461" stroke-width="12"/>
+    <rect x="34" y="34" width="1212" height="636" rx="28" fill="#f9e8d0"/>
+    <rect x="54" y="140" width="1172" height="430" rx="22" fill="#fcefdc" stroke="#8e7aa3" stroke-width="4"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="02 Quiet tile wall" id="quiet-tile-wall"
+     fill="none" stroke="#d9c7b7" stroke-width="3" stroke-linecap="round">
+    <path d="M58 278H1222M58 414H1222"/>
+    <path d="M390 144V508M862 144V508M1086 144V508"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="03 Cafe awning" id="cafe-awning">
+    <rect x="54" y="34" width="1172" height="112" rx="24" fill="#f8cbd5" stroke="#3a2461" stroke-width="9"/>
+    <path d="M66 44h138v98H66zM342 44h138v98H342zM618 44h138v98H618zM894 44h138v98H894zM1170 44h44v98h-44z" fill="#ffe8a3"/>
+    <path d="M204 44h138v98H204zM480 44h138v98H480zM756 44h138v98H756zM1032 44h138v98h-138z" fill="#ef8fa5"/>
+    <g stroke="#3a2461" stroke-width="7" stroke-linejoin="round">
+      <path d="M54 142a69 55 0 0 0 138 0z" fill="#f6c64e"/>
+      <path d="M192 142a69 55 0 0 0 138 0z" fill="#ef8fa5"/>
+      <path d="M330 142a69 55 0 0 0 138 0z" fill="#f6c64e"/>
+      <path d="M468 142a69 55 0 0 0 138 0z" fill="#ef8fa5"/>
+      <path d="M606 142a69 55 0 0 0 138 0z" fill="#f6c64e"/>
+      <path d="M744 142a69 55 0 0 0 138 0z" fill="#ef8fa5"/>
+      <path d="M882 142a69 55 0 0 0 138 0z" fill="#f6c64e"/>
+      <path d="M1020 142a69 55 0 0 0 138 0z" fill="#ef8fa5"/>
+      <path d="M1158 142a34 55 0 0 0 68 0z" fill="#f6c64e"/>
+    </g>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="04 Window and shelf" id="window-and-shelf">
+    <rect x="88" y="214" width="270" height="194" rx="24" fill="#d9f0e8" stroke="#3a2461" stroke-width="9"/>
+    <path d="M223 218v186M92 311h262" fill="none" stroke="#76bcb0" stroke-width="8"/>
+    <circle cx="146" cy="260" r="31" fill="#f6c64e"/>
+    <path d="M934 264h212" fill="none" stroke="#3a2461" stroke-width="22" stroke-linecap="round"/>
+    <path d="M934 258h212" fill="none" stroke="#d9a06f" stroke-width="14" stroke-linecap="round"/>
+    <rect x="956" y="198" width="76" height="64" rx="16" fill="#d9f0e8" stroke="#3a2461" stroke-width="6"/>
+    <path d="M1032 214h22q22 0 22 17t-22 17h-22" fill="none" stroke="#3a2461" stroke-width="6" stroke-linecap="round"/>
+    <rect x="1090" y="208" width="62" height="54" rx="15" fill="#f8cbd5" stroke="#3a2461" stroke-width="6"/>
+    <circle cx="1121" cy="218" r="7" fill="#f6c64e" stroke="#3a2461" stroke-width="3"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="05 Back counter" id="back-counter">
+    <rect x="44" y="520" width="1192" height="74" rx="24" fill="#d9a06f" stroke="#3a2461" stroke-width="10"/>
+    <rect x="58" y="576" width="1164" height="102" rx="22" fill="#b97850" stroke="#3a2461" stroke-width="8"/>
+    <path d="M102 624h260M936 624h230" fill="none" stroke="#eac39b" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="06 Bear body" id="bear-body" stroke="#3a2461" stroke-linejoin="round">
+    <path d="M420 416Q510 370 600 416L632 602H388Z" fill="#76bcb0" stroke-width="11"/>
+    <path d="M424 430l86 92 86-92" fill="#fff8eb" stroke-width="8"/>
+    <path d="M454 462h112v138H454z" fill="#ef8fa5" stroke-width="8"/>
+    <path d="M478 462v-28h64v28" fill="none" stroke-width="8" stroke-linecap="round"/>
+    <ellipse cx="510" cy="317" rx="101" ry="105" fill="#b97850" stroke-width="11"/>
+    <circle cx="430" cy="238" r="47" fill="#b97850" stroke-width="11"/>
+    <circle cx="590" cy="238" r="47" fill="#b97850" stroke-width="11"/>
+    <circle cx="430" cy="238" r="23" fill="#efb28d" stroke-width="5"/>
+    <circle cx="590" cy="238" r="23" fill="#efb28d" stroke-width="5"/>
+    <ellipse cx="510" cy="345" rx="57" ry="43" fill="#f4cfaa" stroke="none"/>
+    <circle cx="477" cy="307" r="8" fill="#3a2461" stroke="none"/>
+    <circle cx="543" cy="307" r="8" fill="#3a2461" stroke="none"/>
+    <ellipse cx="510" cy="331" rx="14" ry="11" fill="#3a2461" stroke="none"/>
+    <path d="M482 360q28 24 56 0" fill="none" stroke-width="7" stroke-linecap="round"/>
+    <path d="M448 218q62-34 124 0" fill="none" stroke="#8f593b" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="07 Chef hat" id="chef-hat" stroke="#3a2461" stroke-linejoin="round">
+    <path d="M438 220v-45c-28-12-28-54 5-63 5-36 55-43 72-14 23-29 72-13 70 25 33 6 39 51 9 66v31z" fill="#fffdf7" stroke-width="9"/>
+    <path d="M442 188h148" fill="none" stroke="#f8cbd5" stroke-width="13" stroke-linecap="round"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="07b Blink" id="blink" opacity="0"
+     fill="none" stroke="#3a2461" stroke-width="8" stroke-linecap="round">
+    <path d="M466 307h22"/>
+    <path d="M532 307h22"/>
+    <animate attributeName="opacity" begin="0s" dur="3.208333s" repeatCount="1" fill="freeze"
+             values="0;0;1;1;0;0" keyTimes="0;0.42;0.44;0.47;0.49;1"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="08 Stable left arm" id="stable-left-arm">
+    <path d="M418 442C370 449 342 480 320 515" fill="none" stroke="#3a2461" stroke-width="50" stroke-linecap="round"/>
+    <path d="M418 442C370 449 342 480 320 515" fill="none" stroke="#b97850" stroke-width="34" stroke-linecap="round"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="09 Mixing arm" id="mixing-arm">
+    <path d="M596 443C662 431 704 449 752 480" fill="none" stroke="#3a2461" stroke-width="52" stroke-linecap="round"/>
+    <path d="M596 443C662 431 704 449 752 480" fill="none" stroke="#b97850" stroke-width="36" stroke-linecap="round"/>
+    <circle id="mixing-hand" cx="754" cy="480" r="24" fill="#b97850" stroke="#3a2461" stroke-width="8"/>
+    <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"
+                      repeatCount="1" fill="freeze"
+                      values="0 0;14 2;-14 -1;12 1;-12 -1;0 0"
+                      keyTimes="0;0.18;0.38;0.58;0.78;1"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="10 Bowl and dough back" id="bowl-and-dough">
+    <ellipse id="bowl-back" cx="824" cy="532" rx="190" ry="83" fill="#fffdf7" stroke="#3a2461" stroke-width="11"/>
+    <ellipse id="dough-surface" cx="824" cy="516" rx="154" ry="52" fill="#e7b969" stroke="#3a2461" stroke-width="6"/>
+    <path id="dough-swirl" d="M728 514q48-39 96 0t96 0" fill="none" stroke="#ffe8a3" stroke-width="17" stroke-linecap="round">
+      <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"
+                        repeatCount="1" fill="freeze"
+                        values="0 0;-10 0;10 0;-8 0;8 0;0 0"
+                        keyTimes="0;0.18;0.38;0.58;0.78;1"/>
+    </path>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="11 Spoon" id="spoon">
+    <path d="M770 420L822 538" fill="none" stroke="#3a2461" stroke-width="27" stroke-linecap="round"/>
+    <path id="spoon-shaft" d="M770 420L822 538" fill="none" stroke="#b97850" stroke-width="17" stroke-linecap="round"/>
+    <ellipse id="spoon-working-end" cx="829" cy="550" rx="20" ry="31" transform="rotate(-22 829 550)" fill="#d9a06f" stroke="#3a2461" stroke-width="8"/>
+    <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"
+                      repeatCount="1" fill="freeze"
+                      values="0 0;14 2;-14 -1;12 1;-12 -1;0 0"
+                      keyTimes="0;0.18;0.38;0.58;0.78;1"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="12 Spoon grip" id="spoon-grip">
+    <circle cx="788" cy="464" r="27" fill="#b97850" stroke="#3a2461" stroke-width="8"/>
+    <path d="M776 462q12 11 24 0" fill="none" stroke="#efb28d" stroke-width="5" stroke-linecap="round"/>
+    <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"
+                      repeatCount="1" fill="freeze"
+                      values="0 0;14 2;-14 -1;12 1;-12 -1;0 0"
+                      keyTimes="0;0.18;0.38;0.58;0.78;1"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="13 Bowl front and props" id="foreground-details">
+    <path d="M653 539q24 88 171 91 147-3 171-91" fill="#f8cbd5" stroke="#3a2461" stroke-width="11" stroke-linejoin="round"/>
+    <path d="M699 572q125 40 250 0" fill="none" stroke="#fff8eb" stroke-width="7" stroke-linecap="round"/>
+    <rect x="1062" y="454" width="108" height="76" rx="18" fill="#d9f0e8" stroke="#3a2461" stroke-width="8"/>
+    <path d="M1080 454q36-44 72 0" fill="#91bd72" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="1100" cy="486" r="8" fill="#f6c64e"/>
+    <circle cx="1132" cy="486" r="8" fill="#ef8fa5"/>
+  </g>
+</svg>

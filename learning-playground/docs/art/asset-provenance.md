@@ -98,6 +98,37 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Owner look approval:** APPROVED — the owner merged PR #92 on 2026-07-11; status `look_approved`, stage rollout authorized
 - **Restrictions and notes:** Static decorative environment only. Dynamic bear, order, tray, and Deliver control remain runtime-owned. No Canva/Figma library content, stock media, font, icon pack, texture, Content Foundry output, or generative image tool was used. Decrowd revision (2026-07-11, owner feedback "crowded, elements overlap"): awning rebuilt as true half-disc scallops, painted counter plate removed (live order owns the zone), glass shine moved off the customer, wall shelf lowered out of the awning band, base environment props quieted during delivery, mobile delivery centered; editable source and export updated together.
 
+## Bear Bakes Bread Deterministic Mixing Video Proof
+
+- **Asset family:** Bear Bakes Bread deterministic mixing vector proof
+- **Game:** Video Vault / Bear Bakes Bread
+- **Status:** `draft`
+- **Production path(s):** None; review-only WebM at `docs/captures/video/bear-mixes-dough-vector-proof.webm`
+- **Editable source path(s):** `design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg`, `design-source/video/bear-bakes-bread/vector-render-manifest.json`
+- **Creator:** Project developer, Codex deterministic-vector animation session
+- **Creation date:** 2026-07-12
+- **Creation tool and version:** Inkscape 1.4.4 Flatpak; Playwright Chromium 149.0.7827.55; FFmpeg 6.1.1
+- **Origin category:** A original animation-ready vector artwork informed by B project-owned Bear Cafe visual direction
+- **Original or third-party status:** Original project artwork and deterministic project-authored motion
+- **Project-owned source material used:** Bear Cafe pickup-window palette, line language, awning, tile, shelf, and counter direction; the character, cooking pose, bowl, spoon, grip, dough, and motion timeline were drawn specifically for this proof
+- **Third-party elements:** None; Chromium and FFmpeg are local authoring/rendering tools, not embedded assets or runtime dependencies
+- **Source URL(s):** Not applicable
+- **License name and version/date:** Not applicable; original project artwork
+- **License file path:** Not applicable
+- **Commercial use permitted:** yes
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None
+- **AI assistance:** none
+- **AI approval/terms record:** Not applicable; rejected Wan-generated concepts and their tooling were removed from the final PR diff
+- **Contact sheet path:** `docs/captures/video/bear-mixes-dough-vector-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/video/bear-mixes-dough-vector-source-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/video/bear-mixes-dough-vector-source-mobile.webp`; 390x214 source-scale review, not a runtime screenshot
+- **Owner look approval:** Pending; deterministic proof replaces the owner-rejected generated-video direction
+- **Restrictions and notes:** Review artifact only. Fourteen named Inkscape layers preserve exact Bear, hat, face, cafe, bowl, arm, grip, spoon, dough, and blink geometry. After owner feedback that the first deterministic spoon moved vertically outside the bowl, the spoon was redrawn handle-up and working-end-down between the dough and front rim; arm, grip, and spoon now share a bounded 14-pixel horizontal stir with at most two pixels of vertical travel. Chromium pauses and resets the SVG immediately after load, then seeks each of 77 frame times and rejects a frame if the spoon center leaves the dough, the full working end leaves the bowl, or the hand, grip, and shaft separate. Source validation, hashing, and the browser data URL use one exact byte buffer; every proof target ID must appear exactly once in source and browser DOM. The lab, frames, review output, and per-proof atomic lock must remain outside the full Git checkout. A lock owner holds shared paths from cleanup through frame/output hashing and run-record publication, and a concurrent contender is rejected without touching them. FFmpeg encodes single-threaded bit-exact VP9 with no audio and no inherited source metadata. Three consecutive clean corrected renders matched exactly: source SHA-256 `af4947db573ba04e7f6a32dfa370d8068751e04675930ee3dc3fc5efaea390df`, combined frame-set SHA-256 `5635b8874f137c35eae7ea3edcd0c986a5ff0e2f609c39cf4144300eaaf1a7d6`, and WebM SHA-256 `67e0e28b72cfbe6fd0922b6330724d44191b3a501d507ac05eebcd5c330b904b`. Generic deterministic FFmpeg encoder/duration fields remain; no prompt, authoring, source, or user metadata is present. No shipped video, narration, runtime, manifest, evidence, or approval behavior changed, and the game has no Inkscape, Chromium, FFmpeg, or renderer dependency at runtime.
+
 ## Cafe component library (shared)
 
 - **Asset family:** Playground cafe component library (window, sill cat, plants, hanging Bear Cafe sign with lettering-free bear emblem, hanging lamp, counter block, cookie jar, cake stand, cocoa cup)
