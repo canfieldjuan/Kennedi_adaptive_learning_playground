@@ -194,6 +194,51 @@ dependencies, curriculum, evidence, parent boundaries, or another game/beat.
 - Repeat all owner-look correction rendering, hash, media, test, build, viewport,
   protected-path, and audit checks.
 
+## Merge-Readiness Correction: Checkout, IDs, and Render Lock
+
+### Root Cause
+
+The review of head `d6204cbea36050ec01c73306f00d5640e0405d0e`
+identified three remaining P2 boundaries. The protected root is the
+`learning-playground` package, so a lab at its parent Git checkout incorrectly
+passes as external. Required geometry IDs are checked for presence but not
+uniqueness, allowing browser geometry to measure a hidden duplicate instead of
+the visible proof element. Concurrent render commands share and clean the same
+frame/output paths without serialization, so one run can hash frames that a
+second run replaces before the first encode completes.
+
+### Correct Fix Must Touch
+
+- Derive both package and parent Git-checkout roots from the checked-in runner;
+  require manifests/sources inside the package and every lab/frame/output/lock
+  path outside the entire checkout.
+- Require every declared proof target ID exactly once in source text and again
+  in the parsed browser document before geometry measurement.
+- Acquire an atomic per-proof external-lab lock before cleaning frames and hold
+  it through frame hashing, FFmpeg encoding, output hashing, and run-record
+  writing. Reject a second concurrent render without touching shared output and
+  release only the acquired lock in `finally`.
+- Add focused tests for a lab at the checkout root, duplicate target IDs, and
+  two lock acquisitions for the same proof; rerun rendering and all gates.
+- Reconstruct and line-cite the final diff before push.
+
+### Must Not Change
+
+All prior non-scope remains protected. Do not change art, stir motion, proof
+geometry, review media, runtime assets, child behavior, dependencies, curriculum,
+evidence, parent boundaries, or another game/beat. Do not resolve or merge review
+threads as part of the code correction.
+
+### Verification Plan
+
+- Probe a lab at the package root, Git checkout root, and an external directory;
+  only the external path may pass.
+- Probe exactly-one and duplicate required IDs in source validation.
+- Acquire one proof lock, prove a second acquisition fails, release it, and
+  prove a later acquisition succeeds.
+- Repeat focused/full tests, three deterministic renders, media checks,
+  protected-path checks, and the cold diff audit.
+
 ## Deterministic Proof Standard
 
 - Source: one editable Inkscape SVG composed only of local vector shapes.
@@ -619,10 +664,100 @@ evidence, approval, or unrelated game file moved.
   audio. The explicit bowl target changes source/provenance bytes but no rendered
   pixels, so the already-corrected review WebM/contact sheet remain current.
 
+## Superseded Final Gap Audit
+
+NOT DONE. Exact source bytes, actual root viewport, full spoon bounds, and
+cold-start rendering remain corrected, but checkout-root isolation, proof-target
+ID uniqueness, and concurrent render serialization must be implemented, tested,
+rerendered, and cold-audited before another push. Owner visual approval and
+review-thread resolution remain separate gates before merge or runtime
+integration.
+
+## Merge-Readiness Cold Audit
+
+### Gaps First
+
+No implementation gap remains in the three assigned P2 corrections. Owner look
+approval and GitHub thread resolution remain separate merge gates.
+
+- **Confirmed and corrected:** the prior protected root ended at the package
+  directory. The runner now derives both package and parent checkout roots from
+  its checked-in location, requires `.git` at the checkout root, confines
+  manifest/source reads to the package, and rejects lab/frame/output paths in
+  the entire checkout (`scripts/video-production/vector-video.mjs:20`,
+  `scripts/video-production/vector-video.mjs:193`,
+  `scripts/video-production/vector-video.mjs:206`,
+  `scripts/video-production/vector-video.mjs:218`).
+- **Confirmed and corrected:** proof IDs were presence-only. The source now
+  requires each declared target exactly once and the parsed browser DOM repeats
+  the exact-count check before geometry is read
+  (`scripts/video-production/vector-video.mjs:23`,
+  `scripts/video-production/vector-video.mjs:141`,
+  `scripts/video-production/vector-video.mjs:449`,
+  `scripts/video-production/vector-video.mjs:473`).
+- **Confirmed and corrected:** concurrent renders shared frame and output paths.
+  An atomic per-proof lock is acquired before shared cleanup and held through
+  frame hashing, encoding, output hashing, and run-record publication; `finally`
+  releases only the acquired lock (`scripts/video-production/vector-video.mjs:257`,
+  `scripts/video-production/vector-video.mjs:307`,
+  `scripts/video-production/vector-video.mjs:319`,
+  `scripts/video-production/vector-video.mjs:339`,
+  `scripts/video-production/vector-video.mjs:344`). A real simultaneous CLI
+  contender was rejected while the owner completed with the expected hashes.
+
+### Change-by-Change Reconstruction
+
+- `scripts/video-production/vector-video.mjs` changes only proof isolation and
+  concurrency boundaries: full-checkout protection, exact-once target IDs, and
+  the atomic external lock. Existing SVG bytes, art geometry, timeline, frame
+  planning, encoding settings, and review output contract remain unchanged
+  (`vector-video.mjs:20`, `vector-video.mjs:23`, `vector-video.mjs:193`,
+  `vector-video.mjs:241`, `vector-video.mjs:344`, `vector-video.mjs:426`).
+- `tests/scripts/vector-video.test.ts` expands the focused suite from ten to
+  eleven tests. It adds a duplicate target rejection, rejects both package and
+  parent-checkout lab roots, and proves first-lock pass, concurrent-lock fail,
+  release, and later-lock pass (`tests/scripts/vector-video.test.ts:90`,
+  `tests/scripts/vector-video.test.ts:125`,
+  `tests/scripts/vector-video.test.ts:165`). The browser mock now supplies exact
+  target counts (`tests/scripts/vector-video.test.ts:194`).
+- `docs/art/asset-provenance.md` records exact-once IDs, full-checkout isolation,
+  lock ownership, and concurrent-contender rejection without changing draft or
+  owner-approval status (`docs/art/asset-provenance.md:129`,
+  `docs/art/asset-provenance.md:130`).
+- This contract records the root cause and allowed/protected surface before code
+  and adds this line-cited audit (`docs/work-contracts/bear-vector-video-deterministic-proof.md:197`).
+
+The correction modifies only those four declared files. The total PR still
+contains the same ten proof files against current `origin/main`. No art source,
+manifest, review media, `public/`, `src/`, package, Content Foundry, runtime,
+activity, curriculum, evidence, approval, or unrelated game file changed in
+this correction.
+
+### Verification
+
+- `npx vitest run tests/scripts/vector-video.test.ts`: 11/11 passed.
+- `npm test`: work-contract check passed; Content Foundry 46 passed with one
+  expected skip; Vitest 58 files and 775 tests passed.
+- `npm run typecheck`: passed.
+- `npm run build`: passed; Vite transformed 125 modules.
+- `npm run test:viewport`: 6/6 Playwright checks passed.
+- `npm run lint --if-present`: exited 0; no lint script exists.
+- `node scripts/check-work-contract.mjs`, `git diff --check`, protected-path,
+  temporary-output/lock, exact media-copy, and full media-decode checks passed.
+- Three clean lock-enabled renders matched: source SHA-256
+  `af4947db573ba04e7f6a32dfa370d8068751e04675930ee3dc3fc5efaea390df`,
+  frame-set SHA-256
+  `5635b8874f137c35eae7ea3edcd0c986a5ff0e2f609c39cf4144300eaaf1a7d6`,
+  and WebM SHA-256
+  `67e0e28b72cfbe6fd0922b6330724d44191b3a501d507ac05eebcd5c330b904b`.
+- A real concurrent-process probe acquired the first CLI lock, rejected the
+  second CLI without touching shared output, completed the owner render at the
+  expected hashes, and left no lock behind.
+
 ## Final Gap Audit
 
-DONE for the three current-head review findings. Exact source bytes, actual root
-viewport, and full spoon bounds are enforced and covered; cold-start rendering
-is stabilized; repeated hashes and all repository/media gates pass; and no
-protected surface changed. Owner visual approval and review-thread resolution
-remain separate gates before merge or runtime integration.
+DONE for checkout-root isolation, proof-target ID uniqueness, and concurrent
+render serialization. Every correction traces to the contract, all required
+tests and real render probes pass, and nothing in Must Not Change moved. Owner
+visual approval and zero unresolved GitHub threads are still required before
+merge; this code completion does not authorize either action.

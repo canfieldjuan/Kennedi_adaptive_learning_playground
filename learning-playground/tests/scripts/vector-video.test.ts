@@ -13,6 +13,7 @@ import { describe, expect, test } from 'vitest';
 import * as vectorVideo from '../../scripts/video-production/vector-video.mjs';
 
 const {
+  acquireRenderLock,
   assertMixingGeometry,
   assertNoSymlinkSegments,
   assertSourceSha256,
@@ -86,6 +87,10 @@ describe('deterministic vector video proof boundary', () => {
       .toThrow(/only four/);
     expect(() => validateSourceText(source.replace('id="spoon-grip"', 'id="removed"'), manifest))
       .toThrow(/spoon-grip/);
+    expect(() => validateSourceText(
+      source.replace('</svg>', '<circle id="spoon-working-end"/></svg>'),
+      manifest
+    )).toThrow(/exactly once/);
     const misplacedWidth = source
       .replace('width="1280"', 'width="640"')
       .replace('</svg>', '<!-- width="1280" --></svg>');
@@ -128,6 +133,9 @@ describe('deterministic vector video proof boundary', () => {
     await expect(loadVectorContext(MANIFEST_PATH, {
       KENNEDI_VECTOR_VIDEO_LAB: process.cwd(),
     })).rejects.toThrow(/inside the repository/);
+    await expect(loadVectorContext(MANIFEST_PATH, {
+      KENNEDI_VECTOR_VIDEO_LAB: path.dirname(process.cwd()),
+    })).rejects.toThrow(/inside the repository/);
 
     const manifestTarget = path.join(root, 'manifest.json');
     const manifestLink = path.join(root, 'manifest-link.json');
@@ -154,6 +162,18 @@ describe('deterministic vector video proof boundary', () => {
     expect(() => assertSourceSha256('a'.repeat(64), '0'.repeat(64))).toThrow(/SHA-256/);
   });
 
+  test('serializes renders with one atomic per-proof lock', async () => {
+    const labRoot = await mkdtemp(path.join(tmpdir(), 'kennedi-vector-lock-test-'));
+    const context = await loadVectorContext(MANIFEST_PATH, {
+      KENNEDI_VECTOR_VIDEO_LAB: labRoot,
+    });
+    const releaseFirst = await acquireRenderLock(context);
+    await expect(acquireRenderLock(context)).rejects.toThrow(/already in progress/);
+    await releaseFirst();
+    const releaseSecond = await acquireRenderLock(context);
+    await releaseSecond();
+  });
+
   test('removes stale output evidence before a failed rerender', async () => {
     const labRoot = await mkdtemp(path.join(tmpdir(), 'kennedi-vector-stale-test-'));
     const context = await loadVectorContext(MANIFEST_PATH, {
@@ -171,12 +191,13 @@ describe('deterministic vector video proof boundary', () => {
       async route() {},
       async goto(url: string) { navigatedSourceUrl = url; },
       async evaluate(callback: Function) {
-        if (callback.toString().includes('missingTargets')) {
+        if (callback.toString().includes('targetCounts')) {
           return {
             localName: 'svg', width: 1280, height: 704, prohibited: null,
             intrinsicWidth: 1280, intrinsicHeight: 704,
             renderedWidth: 1280, renderedHeight: 704,
-            missingTargets: [], frameCount: 77, fps: 24, canPause: true, canSeek: true,
+            targetCounts: proofTargetIds().map((id) => ({ id, count: 1 })),
+            frameCount: 77, fps: 24, canPause: true, canSeek: true,
             animations: [
               'blink:animate:opacity',
               'dough-swirl:animatetransform:transform',
@@ -270,6 +291,13 @@ function validGeometry() {
     shaft: { left: 761, right: 831, top: 411, bottom: 547, x: 796, y: 479 },
     workingEnd: { left: 800, right: 858, top: 520, bottom: 580, x: 829, y: 550 },
   };
+}
+
+function proofTargetIds() {
+  return [
+    'mixing-arm', 'mixing-hand', 'spoon', 'spoon-shaft', 'spoon-working-end',
+    'spoon-grip', 'bowl-back', 'dough-surface', 'dough-swirl', 'blink',
+  ];
 }
 
 function flagValue(args: string[], flag: string) {

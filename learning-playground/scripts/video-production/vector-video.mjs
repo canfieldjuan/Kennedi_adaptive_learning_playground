@@ -17,7 +17,13 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 
-const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const CHECKOUT_ROOT = path.resolve(PACKAGE_ROOT, '..');
+
+const PROOF_TARGET_IDS = Object.freeze([
+  'mixing-arm', 'mixing-hand', 'spoon', 'spoon-shaft', 'spoon-working-end',
+  'spoon-grip', 'bowl-back', 'dough-surface', 'dough-swirl', 'blink',
+]);
 
 export const VECTOR_PROOF = Object.freeze({
   width: 1280,
@@ -132,11 +138,11 @@ export function validateSourceText(source, manifest) {
   for (const value of expectedRootValues) {
     if (!rootTag.includes(value)) throw new Error(`source is missing pinned root value ${value}`);
   }
-  for (const id of [
-    'mixing-arm', 'mixing-hand', 'spoon', 'spoon-shaft', 'spoon-working-end',
-    'spoon-grip', 'bowl-back', 'dough-surface', 'dough-swirl', 'blink',
-  ]) {
-    if (!source.includes(`id="${id}"`)) throw new Error(`source is missing animation target ${id}`);
+  for (const id of PROOF_TARGET_IDS) {
+    const occurrences = source.match(new RegExp(`\\bid\\s*=\\s*["']${id}["']`, 'g')) ?? [];
+    if (occurrences.length !== 1) {
+      throw new Error(`source animation target ${id} must appear exactly once`);
+    }
   }
   const animationTags = [...source.matchAll(/<(animate[a-z]*|set|mpath|discard)\b/gi)]
     .map((match) => match[1].toLowerCase());
@@ -186,8 +192,10 @@ export function buildFfmpegArgs(manifest, frameRoot, outputPath) {
 
 export async function loadVectorContext(manifestArgument, environment = process.env) {
   const manifestPath = path.resolve(manifestArgument);
-  const projectRoot = PROJECT_ROOT;
-  assertWithin(manifestPath, projectRoot, 'manifest');
+  const packageRoot = PACKAGE_ROOT;
+  const projectRoot = CHECKOUT_ROOT;
+  await access(path.join(projectRoot, '.git'));
+  assertWithin(manifestPath, packageRoot, 'manifest');
   await assertNoSymlinkSegments(manifestPath, 'manifest');
   const manifest = validateManifest(JSON.parse(await readFile(manifestPath, 'utf8')));
   const sourceRoot = path.dirname(manifestPath);
@@ -199,7 +207,7 @@ export async function loadVectorContext(manifestArgument, environment = process.
   await assertNoSymlinkSegments(labRoot, 'vector lab root');
 
   const sourcePath = resolveSourcePath(sourceRoot, manifest.source_svg, 'source SVG');
-  assertWithin(sourcePath, projectRoot, 'source SVG');
+  assertWithin(sourcePath, packageRoot, 'source SVG');
   await assertNoSymlinkSegments(sourcePath, 'source SVG');
   await access(sourcePath);
   const sourceBytes = await readFile(sourcePath);
@@ -222,6 +230,7 @@ export async function loadVectorContext(manifestArgument, environment = process.
     sourcePath,
     sourceSha256,
     sourceRoot,
+    packageRoot,
     projectRoot,
     labRoot,
     frameRoot,
@@ -246,6 +255,8 @@ export async function renderVectorCommand(context, options, dependencies = {}) {
   }
 
   await prepareCleanDirectory(context.labRoot, context.projectRoot, 'vector lab root');
+  const releaseLock = await acquireRenderLock(context);
+  try {
   await prepareCleanFrameDirectory(context.frameRoot, context.labRoot, context.projectRoot);
   await prepareOutputPath(context.outputPath, context.labRoot, context.projectRoot);
   const recordPath = path.join(path.dirname(context.frameRoot), 'render-run.json');
@@ -325,6 +336,47 @@ export async function renderVectorCommand(context, options, dependencies = {}) {
     output: context.outputPath,
     record: recordPath,
   };
+  } finally {
+    await releaseLock();
+  }
+}
+
+export async function acquireRenderLock(context) {
+  const lockRoot = path.join(context.labRoot, '.locks');
+  const lockPath = path.join(lockRoot, `${context.manifest.id}.lock`);
+  assertWithin(lockPath, context.labRoot, 'render lock');
+  assertOutside(lockPath, context.projectRoot, 'render lock');
+  await assertNoSymlinkSegments(lockRoot, 'render lock root');
+  await mkdir(lockRoot, { recursive: true });
+  await assertNoSymlinkSegments(lockRoot, 'render lock root');
+
+  try {
+    await mkdir(lockPath);
+  } catch (error) {
+    if (error?.code === 'EEXIST') {
+      throw new Error(`render already in progress for ${context.manifest.id}`);
+    }
+    throw error;
+  }
+
+  try {
+    await assertNoSymlinkSegments(lockPath, 'render lock');
+    await writeFile(path.join(lockPath, 'owner.json'), `${JSON.stringify({
+      manifest_id: context.manifest.id,
+      pid: process.pid,
+      acquired_at: new Date().toISOString(),
+    }, null, 2)}\n`, 'utf8');
+  } catch (error) {
+    await rm(lockPath, { recursive: true, force: true });
+    throw error;
+  }
+
+  let released = false;
+  return async () => {
+    if (released) return;
+    released = true;
+    await rm(lockPath, { recursive: true, force: true });
+  };
 }
 
 export async function sha256File(filePath) {
@@ -372,14 +424,10 @@ export async function assertNoSymlinkSegments(candidate, label) {
 }
 
 async function validateBrowserDocument(page, manifest) {
-  const result = await page.evaluate(({ width, height, frames, fps }) => {
+  const result = await page.evaluate(({ width, height, frames, fps, targets }) => {
     const svg = document.documentElement;
     const viewBox = svg.viewBox.baseVal;
     const prohibited = svg.querySelector('text,image,script,style,foreignObject,audio,video');
-    const targets = [
-      'mixing-arm', 'mixing-hand', 'spoon', 'spoon-shaft', 'spoon-working-end',
-      'spoon-grip', 'bowl-back', 'dough-surface', 'dough-swirl', 'blink',
-    ];
     const animations = [...svg.querySelectorAll(
       'animate,animateTransform,animateMotion,animateColor,set,mpath,discard'
     )]
@@ -398,7 +446,10 @@ async function validateBrowserDocument(page, manifest) {
       renderedWidth: svg.getBoundingClientRect().width,
       renderedHeight: svg.getBoundingClientRect().height,
       prohibited: prohibited?.localName ?? null,
-      missingTargets: targets.filter((id) => !document.getElementById(id)),
+      targetCounts: targets.map((id) => ({
+        id,
+        count: document.querySelectorAll(`[id="${id}"]`).length,
+      })),
       animations,
       frameCount: Number(svg.dataset.frameCount),
       fps: Number(svg.dataset.fps),
@@ -409,7 +460,7 @@ async function validateBrowserDocument(page, manifest) {
       expectedWidth: width,
       expectedHeight: height,
     };
-  }, manifest);
+  }, { ...manifest, targets: PROOF_TARGET_IDS });
   if (
     result.localName !== 'svg'
     || result.width !== result.expectedWidth
@@ -419,7 +470,7 @@ async function validateBrowserDocument(page, manifest) {
     || result.renderedWidth !== result.expectedWidth
     || result.renderedHeight !== result.expectedHeight
     || result.prohibited !== null
-    || result.missingTargets.length > 0
+    || result.targetCounts.some(({ count }) => count !== 1)
     || result.animations.join('|') !== [
       'blink:animate:opacity',
       'dough-swirl:animatetransform:transform',
