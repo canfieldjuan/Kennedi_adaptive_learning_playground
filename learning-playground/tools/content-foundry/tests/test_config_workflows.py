@@ -73,7 +73,7 @@ class WorkflowTests(unittest.TestCase):
                 graph, metadata = self.registry.render(workflow_id, {})
                 self.assertTrue(graph)
                 self.assertEqual(metadata["id"], workflow_id)
-                self.assertEqual(metadata["version"], 1)
+                self.assertEqual(metadata["version"], DEFINITIONS[workflow_id].version)
                 self.assertEqual(len(metadata["template_sha256"]), 64)
                 self.assertTrue(metadata["models"])
 
@@ -116,12 +116,17 @@ class WorkflowTests(unittest.TestCase):
             resolve_quality("unbounded")
 
     def test_wan_template_encodes_calibrated_fixed_motion_budget(self) -> None:
-        graph, _ = self.registry.render("wan_safe_motion", {})
-        self.assertEqual((graph["8"]["inputs"]["width"], graph["8"]["inputs"]["height"]), (480, 272))
+        graph, metadata = self.registry.render("wan_safe_motion", {})
+        self.assertEqual(metadata["version"], 2)
+        self.assertEqual(graph["8"]["class_type"], "Wan22ImageToVideoLatent")
+        self.assertNotIn("WanImageToVideo", {node["class_type"] for node in graph.values()})
+        self.assertEqual((graph["8"]["inputs"]["width"], graph["8"]["inputs"]["height"]), (960, 544))
         self.assertEqual(graph["8"]["inputs"]["length"], 81)
+        self.assertEqual(graph["9"]["inputs"]["positive"], ["6", 0])
+        self.assertEqual(graph["9"]["inputs"]["negative"], ["7", 0])
+        self.assertEqual(graph["9"]["inputs"]["latent_image"], ["8", 0])
         self.assertEqual(graph["11"]["inputs"]["fps"], 24.0)
-        self.assertEqual(graph["11"]["inputs"]["images"], ["13", 0])
-        self.assertEqual((graph["13"]["inputs"]["width"], graph["13"]["inputs"]["height"]), (960, 544))
+        self.assertEqual(graph["11"]["inputs"]["images"], ["10", 0])
 
 
 if __name__ == "__main__":
