@@ -1036,6 +1036,18 @@
   pointer-events: none;
 }
 
+.station-environment img.station-env__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  opacity: 0.65;
+  pointer-events: none;
+  user-select: none;
+}
+
 .station-environment .station-env__svg {
   display: block;
   width: 100%;
@@ -4025,10 +4037,6 @@
   }
 
   .studio-environment .studio-env__prop--minor {
-    display: none;
-  }
-
-  .station-environment .station-env__prop--minor {
     display: none;
   }
 

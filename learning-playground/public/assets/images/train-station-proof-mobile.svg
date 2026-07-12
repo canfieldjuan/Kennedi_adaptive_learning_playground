@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1370" height="900" viewBox="0 0 1370 900" version="1.1" preserveAspectRatio="xMidYMax slice">
+  <g>
+    <rect x="0" y="0" width="1370" height="900" fill="#dcecf8" />
+    <path d="M 0 470 q 260 -56 560 -22 q 420 44 810 -8 v 460 h -1370 Z" fill="#cfe0b8" opacity="0.8" />
+    <rect x="0" y="560" width="1370" height="24" rx="10" fill="#d9c49a" />
+    <rect x="0" y="584" width="1370" height="196" fill="#e8d3ae" />
+    <rect x="0" y="780" width="1370" height="120" fill="#c9b490" />
+    <line x1="0" y1="812" x2="1370" y2="812" stroke="#8e7aa3" stroke-width="8" />
+    <line x1="0" y1="866" x2="1370" y2="866" stroke="#8e7aa3" stroke-width="8" />
+  </g>
+  </svg>
