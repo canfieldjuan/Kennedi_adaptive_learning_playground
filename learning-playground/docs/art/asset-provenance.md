@@ -97,3 +97,44 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Mobile screenshot path(s):** `docs/captures/bear-cafe/pickup-window-proof-mobile.webp`
 - **Owner look approval:** APPROVED — the owner merged PR #92 on 2026-07-11; status `look_approved`, stage rollout authorized
 - **Restrictions and notes:** Static decorative environment only. Dynamic bear, order, tray, and Deliver control remain runtime-owned. No Canva/Figma library content, stock media, font, icon pack, texture, Content Foundry output, or generative image tool was used. Decrowd revision (2026-07-11, owner feedback "crowded, elements overlap"): awning rebuilt as true half-disc scallops, painted counter plate removed (live order owns the zone), glass shine moved off the customer, wall shelf lowered out of the awning band, base environment props quieted during delivery, mobile delivery centered; editable source and export updated together.
+
+## Cafe component library (shared)
+
+- **Asset family:** Playground cafe component library (window, sill cat, plants, hanging Bear Cafe sign with lettering-free bear emblem, hanging lamp, counter block, cookie jar, cake stand, cocoa cup)
+- **Game:** Shared across games (canonical component source for scene composition)
+- **Status:** `rights_verified`
+- **Production path(s):** components ship only inside composed scene exports (no standalone runtime asset)
+- **Editable source path(s):** `design-source/art-direction/cafe-component-library.svg`
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Generated as standards-based SVG, editable in Inkscape 1.4.4 (layer-labeled groups); headless-render verified
+- **Origin:** Category A original artwork, adapting Category B project-owned motifs from the prior in-code home backdrop (`cafe-scene.ts`)
+- **Third-party elements:** None
+- **AI assistance:** None (rule-based vector generation, no generative image tools)
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Attribution requirement:** None
+- **Restrictions and notes:** Canonical shared components — scenes must instance these rather than redraw one-off props; new props are added here first. No fonts anywhere (the old sign's system-font `<text>` is replaced by the bear emblem).
+
+## Home room scene (proof)
+
+- **Asset family:** Child home backdrop scene
+- **Game:** Home screen
+- **Status:** `rights_verified` (owner look approval pending)
+- **Production path(s):** `public/assets/images/home-room-proof.svg`
+- **Editable source path(s):** `design-source/home/home-room-proof.svg` (instances of the cafe component library)
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Composed from the component library; editable in Inkscape 1.4.4; headless-render verified
+- **Origin:** Category A original composition of Category A/B components
+- **Third-party elements:** None
+- **AI assistance:** None
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Contact sheet path:** `docs/captures/cohesion/home-room-proof-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/cohesion/home-room-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/cohesion/home-room-proof-mobile.webp`
+- **Owner look approval:** Pending — recorded by the owner's merge of this
+  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
+  the post-merge rollout PR flips this line to `look_approved`. Only the
+  owner merges proof PRs, so this asset cannot reach child mode without the
+  approval having happened. Do not extend the style until then.
+- **Restrictions and notes:** Reserved clear zones (card grid center, greeting strip, Parent button corner) are load-bearing: props live in the margins only. Mobile cover-crop lands on the reserved center by design — a props-free wall; whether mobile should peek a prop is an owner look call.
