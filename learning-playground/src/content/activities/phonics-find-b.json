@@ -19,7 +19,7 @@
   "interaction_model": "tap_to_match",
   "estimated_duration_seconds": 60,
   "content": {
-    "prompt_audio": "Find the word that starts with b.",
+    "prompt_audio": "Find the word that starts with the letter B.",
     "target_sound": "b",
     "next_activity_id": "phonics-find-m",
     "next_label": "Next word",

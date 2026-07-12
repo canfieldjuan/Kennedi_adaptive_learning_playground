@@ -67,6 +67,37 @@ and must also document every legacy asset family it modifies or re-exports.
 
 <!-- Add approved asset-family entries below this line. -->
 
+## Bear Cafe Pickup-Window Proof
+
+- **Asset family:** Bear Cafe delivery and pickup-window environment proof
+- **Game:** Kennedi's Orders / Bear Cafe
+- **Status:** `rights_verified`
+- **Production path(s):** `public/assets/images/bear-cafe-pickup-window-proof.svg`
+- **Editable source path(s):** `design-source/bear-cafe/bear-cafe-pickup-window-proof.svg`
+- **Creator:** Project developer, Codex production-art session
+- **Creation date:** 2026-07-11
+- **Creation tool and version:** Inkscape 1.4.4 Flatpak (`org.inkscape.Inkscape`)
+- **Origin category:** A original
+- **Original or third-party status:** Original project artwork
+- **Project-owned source material used:** Established Bear Cafe palette and visual direction only; no legacy art embedded
+- **Third-party elements:** None
+- **Source URL(s):** Not applicable
+- **License name and version/date:** Not applicable; original project artwork
+- **License file path:** Not applicable
+- **Commercial use permitted:** yes
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None
+- **AI assistance:** none
+- **AI approval/terms record:** Not applicable
+- **Contact sheet path:** `docs/captures/bear-cafe/pickup-window-proof-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/bear-cafe/pickup-window-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/bear-cafe/pickup-window-proof-mobile.webp`
+- **Owner look approval:** APPROVED — the owner merged PR #92 on 2026-07-11; status `look_approved`, stage rollout authorized
+- **Restrictions and notes:** Static decorative environment only. Dynamic bear, order, tray, and Deliver control remain runtime-owned. No Canva/Figma library content, stock media, font, icon pack, texture, Content Foundry output, or generative image tool was used. Decrowd revision (2026-07-11, owner feedback "crowded, elements overlap"): awning rebuilt as true half-disc scallops, painted counter plate removed (live order owns the zone), glass shine moved off the customer, wall shelf lowered out of the awning band, base environment props quieted during delivery, mobile delivery centered; editable source and export updated together.
+
 ## Cafe component library (shared)
 
 - **Asset family:** Playground cafe component library (window, sill cat, plants, hanging Bear Cafe sign with lettering-free bear emblem, hanging lamp, counter block, cookie jar, cake stand, cocoa cup)

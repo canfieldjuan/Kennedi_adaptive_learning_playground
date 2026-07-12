@@ -483,6 +483,21 @@
   height: 116px;
 }
 
+.phonics-character--letter .phonics-character__art {
+  width: 132px;
+  height: 132px;
+  border-radius: var(--radius-round);
+  background: #fffdf7;
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.16);
+}
+
+.phonics-letter {
+  color: #3a2461;
+  font-size: 4.4rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .phonics-character.is-speaking .phonics-character__svg {
   animation: pipSpeak 620ms ease-in-out;
 }
@@ -654,12 +669,12 @@
   justify-content: center;
   gap: var(--space-sm);
   width: 100%;
-  max-width: 760px;
+  max-width: 900px;
 }
 
 .number-train__engine {
-  width: 96px;
-  height: 96px;
+  width: 136px;
+  height: 136px;
   flex-shrink: 0;
 }
 
@@ -708,8 +723,8 @@
 .number-train__seat {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border: 2px dashed rgba(58, 36, 97, 0.35);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.55);
@@ -723,8 +738,8 @@
 
 .number-train__passenger-svg {
   display: block;
-  width: 26px;
-  height: 26px;
+  width: 36px;
+  height: 36px;
 }
 
 /* Structural counting hint: occupied seats pulse so the child can count along. */
@@ -815,9 +830,50 @@
   animation: trainCountPulse 700ms ease-in-out 2;
 }
 
-.number-train__numeral {
-  font-size: 2.4rem;
+/* The digit fills its card: smaller box, bigger numeral (owner direction).
+   Two-class selectors so these win over the generic .activity-choice sizing
+   that appears later in the sheet. Desktop gets slim fixed tracks; compact
+   viewports keep the flexible one-row grid so choices never wrap below the
+   fold (three cards always fit). */
+.number-train__choices.activity-choice-grid:has(.number-train__number-choice) {
+  grid-template-columns: repeat(auto-fit, 200px);
+  justify-content: center;
 }
+
+.number-train__choices .number-train__number-choice {
+  min-height: 128px;
+  padding: var(--space-md);
+}
+
+.number-train__choices .number-train__numeral {
+  font-size: 4.2rem;
+  line-height: 1;
+}
+
+@media (max-width: 768px),
+  (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  .number-train__choices.activity-choice-grid:has(.number-train__number-choice) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* Load-the-Train shares this grid but its child-buttons have a 120px
+     floor: give them wrap-capable tracks so the Check control never
+     clips off-screen on narrow phones (pre-existing on main; fixed here
+     while this grid is under the knife). */
+  .number-train__choices.activity-choice-grid:has(.number-train__load-control) {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .number-train__choices .number-train__number-choice {
+    min-height: 96px;
+    padding: var(--space-sm);
+  }
+
+  .number-train__choices .number-train__numeral {
+    font-size: 2.6rem;
+  }
+}
+
 
 /* Compact Number Train for phones (portrait and short landscape): the display
    train, journey, and number path shrink; the tappable numeral choices and
@@ -829,8 +885,8 @@
   }
 
   .number-train__engine {
-    width: 64px;
-    height: 64px;
+    width: 84px;
+    height: 84px;
   }
 
   .number-train__car {
@@ -839,13 +895,13 @@
   }
 
   .number-train__seat {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
   }
 
   .number-train__passenger-svg {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
   }
 
   .number-train__journey {
@@ -870,13 +926,41 @@
   }
 
   .number-train__numeral {
-    font-size: 1.9rem;
+    font-size: 2.6rem;
   }
 
   .number-train__choices .number-train__load-control,
   .number-train__choices .number-train__check {
     min-height: 72px;
     font-size: 1.1rem;
+  }
+}
+
+/* Short landscape has no vertical room for the grown train: keep the display
+   train at its original compact size there so everything stays above the
+   fold; portrait phones keep the larger, countable train. */
+@media (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  .number-train__engine {
+    width: 64px;
+    height: 64px;
+  }
+
+  .number-train__seat {
+    width: 28px;
+    height: 28px;
+  }
+
+  .number-train__passenger-svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .number-train__choices .number-train__number-choice {
+    min-height: 84px;
+  }
+
+  .number-train__choices .number-train__numeral {
+    font-size: 2.2rem;
   }
 }
 
@@ -2600,6 +2684,7 @@
   width: 100%;
   max-width: 680px;
   min-height: 420px;
+  margin-block: auto;
 }
 
 .bear-cafe-phone__button {
@@ -3008,16 +3093,18 @@
 }
 
 .bear-cafe-check,
+/* Deliver is THE advancing control on this stage — it wears the same
+   violet pill as every other "press me" button in the playground
+   instead of a dark unlabeled blob. */
 .bear-cafe-deliver-button {
-  min-width: 96px;
-  background: #3a2461;
-  color: #ffffff;
+  min-width: 240px;
+  min-height: 72px;
 }
 
 .bear-cafe-deliver-button .bear-cafe-tray-svg {
   display: block;
-  width: 68px;
-  height: 34px;
+  width: 92px;
+  height: 46px;
 }
 
 .bear-cafe-check:disabled {
@@ -3089,6 +3176,70 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-md);
+}
+
+/* Wall props step back behind live stage content in EVERY stage (the stage
+   attribute set is phone|make|fix|plating|delivery|handoff|complete — a
+   per-stage list here already missed 'make' once). The stage clusters center
+   vertically so the counter band reads as ground instead of dead space. */
+.bear-cafe-environment .cafe-env__prop--minor {
+  opacity: 0.28;
+}
+
+.bear-cafe-workbench,
+.bear-cafe-complete {
+  margin-block: auto;
+}
+
+.bear-cafe:has(.bear-cafe-delivery__scene--art-proof) .bear-cafe-delivery {
+  margin-block: auto;
+}
+
+/* Production-art proof: the static Inkscape scene frames the existing live
+   order and customer. It is decoration only and never owns interaction state. */
+.bear-cafe-delivery__scene--art-proof {
+  position: relative;
+  display: block;
+  width: min(92vw, 760px);
+  aspect-ratio: 15 / 8;
+  isolation: isolate;
+}
+
+.bear-cafe-delivery__scene-art {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__order {
+  position: absolute;
+  z-index: 2;
+  left: 36%;
+  bottom: 12%;
+  transform: translateX(-50%);
+}
+
+.bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__window {
+  position: absolute;
+  z-index: 2;
+  top: 31%;
+  left: 58%;
+  width: 25%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__window .bear-art {
+  width: 86%;
+  height: 86%;
 }
 
 /* The customer waits at the cafe's service window: sky through the opening,
@@ -3304,6 +3455,16 @@
   .story-stage__choice:hover,
   .story-stage__choice:focus-visible {
     transform: none;
+  }
+}
+
+/* The studio column (topbar, requester, board, tray, actions, feedback)
+   sums past short viewports at the default rhythm — tighten it so the
+   whole art table fits without scrolling. */
+@media (max-height: 950px) {
+  .bear-art-studio {
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
   }
 }
 
@@ -4041,6 +4202,24 @@
     width: min(36vw, 126px);
   }
 
+  .bear-cafe-delivery__scene--art-proof {
+    width: min(96vw, 520px);
+  }
+
+  .bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__window {
+    width: 25%;
+  }
+
+  .bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__order .bear-cafe-tray-svg {
+    width: 82px;
+    height: 44px;
+    margin-top: -24px;
+  }
+
+  .bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__order-food {
+    font-size: 1.55rem;
+  }
+
   .bear-cafe-complete__text {
     font-size: 1.15rem;
   }
@@ -4437,6 +4616,12 @@
     gap: var(--space-sm);
   }
 
+  .bear-cafe-delivery > .bear-cafe-delivery__scene--art-proof {
+    display: block;
+    width: 100%;
+    max-height: 220px;
+  }
+
   .bear-cafe-delivery > .bear-cafe-deliver-button {
     grid-area: action;
     min-width: 96px;
@@ -4446,6 +4631,10 @@
 
   .bear-cafe-delivery__window {
     width: min(28dvh, 108px);
+  }
+
+  .bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__window {
+    width: 25%;
   }
 
   .bear-cafe-workbench__order {
