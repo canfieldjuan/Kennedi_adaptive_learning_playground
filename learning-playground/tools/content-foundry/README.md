@@ -14,8 +14,29 @@ cd learning-playground/tools/content-foundry
 /home/juan-canfield/Desktop/ComfyUI-master/venv/bin/python mcp_server.py
 ```
 
-LM Studio or FTL should point to that exact interpreter and script. Home-level
-client configuration is intentionally not written by this repository.
+LM Studio can add the server as a stdio MCP entry using that exact interpreter
+and script. FTL's trusted host-stdio path uses the `MCP_STDIO_SERVERS`
+environment variable; its user-managed MCP settings accept HTTP endpoints, not
+host commands. Configure and restart each host separately, then verify tool
+discovery and `content_foundry_status` from inside that host. Home-level client
+configuration is intentionally not written by this repository.
+
+Example LM Studio server entry:
+
+```json
+{
+  "command": "/home/juan-canfield/Desktop/ComfyUI-master/venv/bin/python",
+  "args": [
+    "/home/juan-canfield/Desktop/Kennedi_adaptive_learning_playground/learning-playground/tools/content-foundry/mcp_server.py"
+  ]
+}
+```
+
+Example FTL trusted-host value:
+
+```bash
+MCP_STDIO_SERVERS='[{"name":"kennedi-content-foundry","command":"/home/juan-canfield/Desktop/ComfyUI-master/venv/bin/python","args":["/home/juan-canfield/Desktop/Kennedi_adaptive_learning_playground/learning-playground/tools/content-foundry/mcp_server.py"]}]'
+```
 
 ## Local roots
 
