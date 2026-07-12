@@ -65,7 +65,8 @@ that commit both hashed to
   entry and gained `kennedi-content-foundry`, using the ComfyUI virtualenv
   interpreter and the immutable runtime snapshot entrypoint.
 - LM Studio hot-synchronized that exact entry into
-  `.lmstudio/.internal/last-synced-mcp-state.json` at the same update second.
+  `/home/juan-canfield/.lmstudio/.internal/last-synced-mcp-state.json` at the
+  same update second.
 - LM Studio 0.4.16+2 was restarted with a temporary loopback-only Chromium
   debugging port so the proof could inspect and drive the host deterministically.
   Its Integrations picker discovered `mcp/kennedi-content-foundry`.
@@ -74,9 +75,9 @@ that commit both hashed to
   `mcp/kennedi-content-foundry`. LM Studio displayed its per-call tool approval
   boundary before execution.
 - LM Studio's persisted conversation receipt
-  `.lmstudio/conversations/1783890978006.conversation.json` contains exactly the
-  six expected Content Foundry descriptors and no tool name containing
-  `approve` or `publish`: `animate_scene_safe`, `assemble_narrated_clip`,
+  `/home/juan-canfield/.lmstudio/conversations/1783890978006.conversation.json`
+  contains exactly the six expected Content Foundry descriptors and no tool name
+  containing `approve` or `publish`: `animate_scene_safe`, `assemble_narrated_clip`,
   `content_foundry_status`, `edit_illustrated_scene`,
   `generate_illustrated_scene`, and `validate_draft`.
 - The named-host result reported `content_foundry: ready`, all four canonical
@@ -214,6 +215,15 @@ to no service start; the proof uses the load-and-call path at
 `lib/tools/mcp/host-config.ts:10-73` and
 `lib/tools/mcp/client.ts:82-271` directly.
 
+### 2026-07-12 Review Follow-up
+
+Two current-head review claims were checked against the receipt and confirmed:
+the synchronized-state and conversation paths used ambiguous `.lmstudio/...`
+forms even though both are absolute home-directory artifacts. Replacing only
+those two references with `/home/juan-canfield/.lmstudio/...` keeps the original
+proof reproducible. No host configuration, runtime snapshot, process, issue, or
+application behavior enters scope.
+
 ## Cold Diff Audit
 
 ### Gaps
@@ -230,7 +240,7 @@ were removed.
 
 - `docs/work-contracts/content-foundry-host-invocation-proof.md:5-49` defines the
   source-derived root cause, required named-host proof, and protected surfaces;
-  lines 53-189 record source identity, both host results, decisive commands,
+  lines 53-190 record source identity, both host results, decisive commands,
   issue mutation, and process cleanup.
 - `/home/juan-canfield/.local/share/kennedi-content-foundry/b5af98d/SOURCE_COMMIT:1`
   pins the immutable runtime snapshot to the merged source SHA. The snapshot's
@@ -239,14 +249,14 @@ were removed.
 - `/home/juan-canfield/.lmstudio/mcp.json:3-14` preserves the original legacy
   `comfyui` entry byte-for-byte and adds only the distinct versioned Content
   Foundry command; LM Studio's synchronized state and conversation receipt prove
-  that the host consumed it at this contract's lines 62-85.
+  that the host consumed it at this contract's lines 62-86.
 - `/home/juan-canfield/Desktop/finetunelab.ai/.env.local:2` adds the single
   trusted stdio binding. Removing that one line produces a byte-identical copy
   of the pre-change backup; FTL's loader/client result is recorded at lines
-  87-105.
+  88-106.
 - GitHub issue #79 checks only the now-proven host-invocation item, records both
   host receipts, remains open, and retains the two real completion blockers at
-  this contract's lines 177-182.
+  this contract's lines 178-183.
 
 ### Contract Traceability
 
@@ -254,7 +264,7 @@ were removed.
   replace stale host claims with named-host evidence.
 - The LM Studio and FTL bindings trace to `Correct Fix Must Touch` lines 20-31.
 - The immutable runtime snapshot traces only to the stable-runtime amendment at
-  lines 193-204; it prevents either binding from depending on an unowned or
+  lines 194-205; it prevents either binding from depending on an unowned or
   short-lived worktree.
 - The FTL core-stack probe traces to the clarified host path immediately above;
   no authenticated web/database behavior was required or changed.
