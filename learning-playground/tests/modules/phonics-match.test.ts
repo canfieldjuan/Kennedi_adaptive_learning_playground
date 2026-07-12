@@ -108,6 +108,38 @@ describe('phonics-match (Word game) runtime — parity behavior', () => {
     expect(findByChoiceId(root, 'bear')?.classList.contains('is-alive')).toBe(true);
   });
 
+  test('letter-first: the capital letter leads and Pip pops in as the reward', () => {
+    const { root } = setup('phonics-find-b');
+
+    // One line from the top, naming the capital letter.
+    expect(findByClass(root, 'activity-title')?.textContent).toBe(
+      'Find the word that starts with the letter B.'
+    );
+    expect(findByClass(root, 'activity-prompt')).toBeUndefined();
+
+    // The chip holds the letter — Pip is not on stage yet.
+    const art = findByClass(root, 'phonics-character__art');
+    expect(art?.innerHTML).toContain('phonics-letter');
+    expect(art?.innerHTML).toContain('>B<');
+    expect(
+      findByClass(root, 'phonics-character')?.classList.contains('phonics-character--letter')
+    ).toBe(true);
+
+    // The correct answer swaps the letter for cheering Pip.
+    findByChoiceId(root, 'bear')?.click();
+    expect(art?.innerHTML).not.toContain('phonics-letter');
+    expect(
+      findByClass(root, 'phonics-character')?.classList.contains('phonics-character--letter')
+    ).toBe(false);
+    expect(findByClass(root, 'phonics-character')?.dataset.mouth).toBe('cheer');
+  });
+
+  test('letter-first stays out of blending: Pip leads a blend from the start', () => {
+    const { root } = setup('blend-cat');
+    expect(findByClass(root, 'phonics-character__art')?.innerHTML).not.toContain('phonics-letter');
+    expect(findByClass(root, 'activity-prompt')).toBeDefined();
+  });
+
   test('a blend renders a sound-out strip and Pip rests on the first sound', () => {
     const { root } = setup('blend-cat');
 
