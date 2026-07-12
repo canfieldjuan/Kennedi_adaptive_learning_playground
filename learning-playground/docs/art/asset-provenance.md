@@ -102,7 +102,7 @@ and must also document every legacy asset family it modifies or re-exports.
 
 - **Asset family:** Playground cafe component library (window, sill cat, plants, hanging Bear Cafe sign with lettering-free bear emblem, hanging lamp, counter block, cookie jar, cake stand, cocoa cup)
 - **Game:** Shared across games (canonical component source for scene composition)
-- **Status:** `rights_verified`
+- **Status:** `look_approved` (the library has no standalone runtime asset; its look is approved through the owner-approved scenes that instance it — #92/#93/#94/#95/#96)
 - **Production path(s):** components ship only inside composed scene exports (no standalone runtime asset)
 - **Editable source path(s):** `design-source/art-direction/cafe-component-library.svg`
 - **Creator:** Project developer (session-authored)
@@ -113,13 +113,13 @@ and must also document every legacy asset family it modifies or re-exports.
 - **AI assistance:** None (rule-based vector generation, no generative image tools)
 - **Commercial use / modification / distribution / public repository:** Project-owned, permitted
 - **Attribution requirement:** None
-- **Restrictions and notes:** Canonical shared components — scenes must instance these rather than redraw one-off props; new props are added here first. No fonts anywhere (the old sign's system-font `<text>` is replaced by the bear emblem).
+- **Restrictions and notes:** Pickup reconciliation (2026-07-12): the four owner-approved Bear Cafe pickup-window elements (awning-scalloped, tile-wall, service-window-arch, counter-sill) are now library components, geometry lifted verbatim from the approved `design-source/bear-cafe/bear-cafe-pickup-window-proof.svg` (#92) inside translate wrappers, so future scenes instance exactly the style the owner signed. Canonical shared components — scenes must instance these rather than redraw one-off props; new props are added here first. No fonts anywhere (the old sign's system-font `<text>` is replaced by the bear emblem).
 
 ## Home room scene (proof)
 
 - **Asset family:** Child home backdrop scene
 - **Game:** Home screen
-- **Status:** `rights_verified` (owner look approval pending)
+- **Status:** `look_approved`
 - **Production path(s):** `public/assets/images/home-room-proof.svg`
 - **Editable source path(s):** `design-source/home/home-room-proof.svg` (instances of the cafe component library)
 - **Creator:** Project developer (session-authored)
@@ -132,18 +132,15 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Contact sheet path:** `docs/captures/cohesion/home-room-proof-contact-sheet.webp`
 - **Desktop screenshot path(s):** `docs/captures/cohesion/home-room-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/cohesion/home-room-proof-mobile.webp`
-- **Owner look approval:** Pending — recorded by the owner's merge of this
-  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
-  the post-merge rollout PR flips this line to `look_approved`. Only the
-  owner merges proof PRs, so this asset cannot reach child mode without the
-  approval having happened. Do not extend the style until then.
+- **Owner look approval:** APPROVED — the owner authorized the merge of
+  #93 on 2026-07-12 ("Lets merge them if possible"); status `look_approved`
 - **Restrictions and notes:** Reserved clear zones (card grid center, greeting strip, Parent button corner) are load-bearing: props live in the margins only. Mobile cover-crop lands on the reserved center by design — a props-free wall; whether mobile should peek a prop is an owner look call.
 
 ## Words workshop scene (proof)
 
 - **Asset family:** Pip's Word Workshop backdrop scene
 - **Game:** Words (all three modes: find, blending, builder)
-- **Status:** `rights_verified` (owner look approval pending)
+- **Status:** `look_approved`
 - **Production path(s):** `public/assets/images/words-workshop-proof.svg`;
   `public/assets/images/words-workshop-proof-mobile.svg` (bands-only phone
   crop of the same editable source — delete the six `words-*` prop layers
@@ -159,18 +156,15 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Contact sheet path:** `docs/captures/word-workshop/words-workshop-proof-contact-sheet.webp`
 - **Desktop screenshot path(s):** `docs/captures/word-workshop/words-workshop-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/word-workshop/words-workshop-proof-mobile.webp`
-- **Owner look approval:** Pending — recorded by the owner's merge of this
-  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
-  the post-merge rollout PR flips this line to `look_approved`. Only the
-  owner merges proof PRs, so this asset cannot reach child mode without the
-  approval having happened. Do not extend the style until then.
+- **Owner look approval:** APPROVED — the owner authorized the merge of
+  #94 on 2026-07-12 ("Lets merge them if possible"); status `look_approved`
 - **Restrictions and notes:** HARD GUARDRAIL preserved — nothing reads as a letter, word, tile, or choice (plain spines, abstract pin-board, no `<text>`). Reserved clear zones: title/prompt strip, Pip column, the card/tile band. Portrait crop intentionally exits both edge prop groups.
 
 ## Number Train station scene (proof)
 
 - **Asset family:** Number Train station backdrop scene
 - **Game:** Math (Number Train, all bands)
-- **Status:** `rights_verified` (owner look approval pending)
+- **Status:** `look_approved`
 - **Production path(s):** `public/assets/images/train-station-proof.svg`;
   `public/assets/images/train-station-proof-mobile.svg` (bands-only phone
   crop of the same editable source — delete the five `train-*` prop layers
@@ -186,18 +180,15 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Contact sheet path:** `docs/captures/train-station/train-station-proof-contact-sheet.webp`
 - **Desktop screenshot path(s):** `docs/captures/train-station/train-station-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/train-station/train-station-proof-mobile.webp`
-- **Owner look approval:** Pending — recorded by the owner's merge of this
-  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
-  the post-merge rollout PR flips this line to `look_approved`. Only the
-  owner merges proof PRs, so this asset cannot reach child mode without the
-  approval having happened. Do not extend the style until then.
+- **Owner look approval:** APPROVED — the owner authorized the merge of
+  #95 on 2026-07-12 ("Lets merge them if possible"); status `look_approved`
 - **Restrictions and notes:** Counting-guardrail revision (2026-07-11, review): the cloud, signal lights, and town blocks are redrawn as single continuous silhouettes so the backdrop holds zero countable clusters; the library components were updated first and the scene + export re-derived from them. Reserved clear zones: title/progress strip, question line, the train band, the answer-card band. No digits or countable clusters in the backdrop (skyline blocks are abstract, low contrast) — the count evidence stays runtime-owned.
 
 ## Art studio room scene (proof)
 
 - **Asset family:** Art studio backdrop scene (all-neutral)
 - **Game:** Art (Bear Art Studio + legacy coloring, shared studio environment)
-- **Status:** `rights_verified` (owner look approval pending)
+- **Status:** `look_approved`
 - **Production path(s):** `public/assets/images/studio-room-proof.svg`;
   `public/assets/images/studio-room-proof-mobile.svg` (bands-only phone
   crop of the same editable source — delete the `studio-*` prop layers
@@ -213,9 +204,6 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Contact sheet path:** `docs/captures/art-studio/studio-room-proof-contact-sheet.webp`
 - **Desktop screenshot path(s):** `docs/captures/art-studio/studio-room-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/art-studio/studio-room-proof-mobile.webp`
-- **Owner look approval:** Pending — recorded by the owner's merge of this
-  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
-  the post-merge rollout PR flips this line to `look_approved`. Only the
-  owner merges proof PRs, so this asset cannot reach child mode without the
-  approval having happened. Do not extend the style until then.
+- **Owner look approval:** APPROVED — the owner authorized the merge of
+  #96 on 2026-07-12 ("Lets merge them if possible"); status `look_approved`
 - **Restrictions and notes:** HARD GUARDRAIL — the art screens teach color, so the backdrop is ALL-NEUTRAL (every paint from the contract's neutral set; enforced by tests/modules/coloring.test.ts sweeping this shipped file). Reserved clear zones: request/bear strip, canvas, tool row, palette row.
