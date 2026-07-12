@@ -354,6 +354,18 @@
   pointer-events: none;
 }
 
+.workshop-environment img.workshop-env__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
 .workshop-environment .workshop-env__svg {
   display: block;
   width: 100%;
@@ -4004,10 +4016,6 @@
   }
 
   .bear-cafe-environment .cafe-env__prop--minor {
-    display: none;
-  }
-
-  .workshop-environment .workshop-env__prop--minor {
     display: none;
   }
 
