@@ -101,7 +101,11 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Contact sheet path:** `docs/captures/cohesion/home-room-proof-contact-sheet.webp`
 - **Desktop screenshot path(s):** `docs/captures/cohesion/home-room-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/cohesion/home-room-proof-mobile.webp`
-- **Owner look approval:** Pending; do not extend the style until approved
+- **Owner look approval:** Pending — recorded by the owner's merge of this
+  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
+  the post-merge rollout PR flips this line to `look_approved`. Only the
+  owner merges proof PRs, so this asset cannot reach child mode without the
+  approval having happened. Do not extend the style until then.
 - **Restrictions and notes:** Reserved clear zones (card grid center, greeting strip, Parent button corner) are load-bearing: props live in the margins only. Mobile cover-crop lands on the reserved center by design — a props-free wall; whether mobile should peek a prop is an owner look call.
 
 ## Words workshop scene (proof)
