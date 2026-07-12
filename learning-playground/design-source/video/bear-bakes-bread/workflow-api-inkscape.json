@@ -1,0 +1,112 @@
+{
+  "37": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "wan2.2_ti2v_5B_fp16.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": { "title": "Load Wan2.2 TI2V 5B" }
+  },
+  "38": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": { "title": "Load Wan Text Encoder" }
+  },
+  "39": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan2.2_vae.safetensors"
+    },
+    "_meta": { "title": "Load Wan2.2 VAE" }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "Original flat vector children's story illustration. Same bear character, face, clothing, palette, shapes, and environment as the input frame. Warm flat colors, dark purple ink outlines, modest paper texture, calm deliberate movement, locked camera, no scene change. Bear slowly stirs the dough in the bowl.",
+      "clip": ["38", 0]
+    },
+    "_meta": { "title": "Approved Positive Prompt" }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "photorealistic, 3d render, cinematic realism, different character, changed face, changed clothing, extra limbs, extra fingers, malformed paws, duplicate bear, duplicate bowl, new objects, text, letters, logo, watermark, camera movement, pan, zoom, cut, scene change, flashing, flicker, fast motion, clutter, dark scene, frightening expression",
+      "clip": ["38", 0]
+    },
+    "_meta": { "title": "Approved Negative Prompt" }
+  },
+  "56": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "bear-bakes-bread-mix-inkscape-proof-mix-dough-inkscape-1280x704.png"
+    },
+    "_meta": { "title": "Inkscape Bear Cafe Mixing Frame" }
+  },
+  "55": {
+    "class_type": "Wan22ImageToVideoLatent",
+    "inputs": {
+      "vae": ["39", 0],
+      "width": 1280,
+      "height": 704,
+      "length": 77,
+      "batch_size": 1,
+      "start_image": ["56", 0]
+    },
+    "_meta": { "title": "77-Frame Wan Image-to-Video Latent" }
+  },
+  "48": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": ["37", 0],
+      "shift": 8
+    },
+    "_meta": { "title": "Wan Sampling Shift" }
+  },
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["48", 0],
+      "seed": 11235813,
+      "steps": 20,
+      "cfg": 5,
+      "sampler_name": "uni_pc",
+      "scheduler": "simple",
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["55", 0],
+      "denoise": 1
+    },
+    "_meta": { "title": "Bounded Proof Sampler" }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["39", 0]
+    },
+    "_meta": { "title": "Decode Proof Frames" }
+  },
+  "57": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": ["8", 0],
+      "fps": 24,
+      "bit_depth": 8
+    },
+    "_meta": { "title": "Create 24 FPS Candidate" }
+  },
+  "58": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": ["57", 0],
+      "filename_prefix": "bear-bakes-bread-mix-inkscape-proof/mix-dough-seed-11235813",
+      "format": "mp4",
+      "codec": "h264"
+    },
+    "_meta": { "title": "Save External MP4 Candidate" }
+  }
+}

@@ -92,6 +92,51 @@ describe('ComfyUI video-production proof boundary', () => {
     });
   });
 
+  test('keeps the Inkscape A/B proof identical except for its source plate and output namespace', async () => {
+    const sourceRoot = path.join(process.cwd(), 'design-source/video/bear-bakes-bread');
+    const legacy = validateManifest(JSON.parse(
+      await readFile(path.join(sourceRoot, 'render-manifest.json'), 'utf8')
+    ));
+    const inkscape = validateManifest(JSON.parse(
+      await readFile(path.join(sourceRoot, 'render-manifest-inkscape.json'), 'utf8')
+    ));
+    const workflow = JSON.parse(await readFile(path.join(sourceRoot, inkscape.workflow_api), 'utf8'));
+    const uiWorkflow = JSON.parse(await readFile(path.join(sourceRoot, inkscape.workflow_ui), 'utf8'));
+    const environment = JSON.parse(await readFile(path.join(sourceRoot, 'environment-inkscape.json'), 'utf8'));
+    const svg = await readFile(path.join(sourceRoot, 'mix-dough-inkscape-source.svg'), 'utf8');
+
+    expect(validateWorkflow(workflow, inkscape.bindings, inkscape.models)).toBe(workflow);
+    expect(inkscape).toMatchObject({
+      proof_only: true,
+      production_writes_allowed: false,
+      output_subdirectory: 'candidates/bear-bakes-bread-mix-inkscape-proof',
+      assembly: {
+        enabled: true,
+        selected_seed: 16180339,
+        output: 'review/bear-mixes-dough-inkscape-proof.webm',
+        audio: 'none',
+      },
+    });
+    expect(inkscape.models).toEqual(legacy.models);
+    expect(inkscape.shots[0]).toEqual({
+      ...legacy.shots[0],
+      input_image: 'inputs/mix-dough-inkscape-1280x704.png',
+    });
+    expect(uiWorkflow.nodes).toHaveLength(12);
+    expect(environment).toMatchObject({
+      comfyui_version: '0.25.0',
+      custom_nodes_loaded: false,
+      runtime_network: false,
+      models_committed: false,
+    });
+    expect(environment.launch_flags).toContain('8190');
+    expect(environment.launch_flags).toContain('--database-url');
+    expect(environment.runner_environment.COMFYUI_URL).toBe('http://127.0.0.1:8190');
+    expect(svg).toContain('inkscape:label="09 Mixing arm"');
+    expect(svg).toContain('inkscape:label="11 Bowl and dough"');
+    expect(svg).not.toMatch(/<(?:text|image)\b/i);
+  });
+
   test('requires ComfyUI 0.25.0 on the RTX 3090 with custom nodes disabled', () => {
     expect(validateSystemStats(makeStats())).toBeDefined();
     expect(() => validateSystemStats(makeStats({ comfyui_version: '0.24.0' }))).toThrow(/0.25.0/);
