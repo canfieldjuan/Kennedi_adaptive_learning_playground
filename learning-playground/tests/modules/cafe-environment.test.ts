@@ -89,6 +89,11 @@ describe('bear cafe environment', () => {
     expect(deliveryMarkup).toContain('bear-cafe-delivery__window');
     expect(deliveryMarkup).toContain('bear-cafe-delivery__order');
 
+    expect(deliveryMarkup).toContain('bear-cafe-delivery__scene-art');
+    expect(deliveryMarkup).toContain('/assets/images/bear-cafe-pickup-window-proof.svg');
+    expect(deliveryMarkup).toContain('aria-hidden="true"');
+    expect(deliveryMarkup).toContain('draggable="false"');
+
     // The Deliver control keeps its accessible name and its single
     // synchronous completion emission.
     const deliver = findByAria(root, 'Deliver order');

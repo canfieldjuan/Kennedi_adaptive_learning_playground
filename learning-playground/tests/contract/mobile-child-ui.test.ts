@@ -112,7 +112,7 @@ describe('mobile child UI contract', () => {
       /Compact Number Train for phones[\s\S]*?\(max-width: 940px\) and \(max-height: 480px\) and \(orientation: landscape\)/
     );
     expect(childUiCss).toMatch(
-      /Compact Number Train for phones[\s\S]*?\.number-train__seat \{\s*width: 28px/
+      /Compact Number Train for phones[\s\S]*?\.number-train__seat \{\s*width: 36px/
     );
     expect(childUiCss).toMatch(
       /\.number-train__choices \.number-train__check \{\s*min-height: 72px/

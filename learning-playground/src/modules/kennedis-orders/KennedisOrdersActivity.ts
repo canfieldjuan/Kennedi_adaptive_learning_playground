@@ -759,8 +759,15 @@ function renderDeliveryStage(
   // The pickup scene: the finished order sits on an illustrated serving tray
   // at the counter while the customer waits at the service window across it.
   const deliveryScene = document.createElement('div');
-  deliveryScene.className = 'bear-cafe-delivery__scene';
+  deliveryScene.className = 'bear-cafe-delivery__scene bear-cafe-delivery__scene--art-proof';
   deliveryScene.innerHTML = `
+    <img
+      class="bear-cafe-delivery__scene-art"
+      src="/assets/images/bear-cafe-pickup-window-proof.svg"
+      alt=""
+      aria-hidden="true"
+      draggable="false"
+    >
     <div class="bear-cafe-delivery__order" aria-hidden="true">
       <span class="bear-cafe-delivery__order-food">${getPlatedFoodIcons(content, tray) || renderFoodArt('plate')}</span>
       ${deliveryTraySvg()}
