@@ -3858,10 +3858,6 @@
     display: none;
   }
 
-  .workshop-environment .workshop-env__prop--minor {
-    display: none;
-  }
-
   .phonics-workshop .activity-choice-grid,
   .phonics-workshop .word-builder__slots {
     padding: var(--space-sm);
