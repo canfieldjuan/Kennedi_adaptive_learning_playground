@@ -10,12 +10,37 @@ Start ComfyUI separately, then run the MCP server with an environment that has
 `mcp==1.27.2` installed:
 
 ```bash
-cd learning-playground/tools/content-foundry
-/home/juan-canfield/Desktop/ComfyUI-master/venv/bin/python mcp_server.py
+export COMFYUI_VENV_PYTHON="<COMFYUI_ROOT>/venv/bin/python"
+export REPO_ROOT="<REPO_ROOT>"
+cd "$REPO_ROOT/learning-playground/tools/content-foundry"
+"$COMFYUI_VENV_PYTHON" mcp_server.py
 ```
 
-LM Studio or FTL should point to that exact interpreter and script. Home-level
-client configuration is intentionally not written by this repository.
+Replace `<COMFYUI_ROOT>` and `<REPO_ROOT>` with absolute paths on the host.
+
+LM Studio can add the server as a stdio MCP entry using that exact interpreter
+and script. FTL's trusted host-stdio path uses the `MCP_STDIO_SERVERS`
+environment variable; its user-managed MCP settings accept HTTP endpoints, not
+host commands. Configure and restart each host separately, then verify tool
+discovery and `content_foundry_status` from inside that host. Home-level client
+configuration is intentionally not written by this repository.
+
+Example LM Studio server entry:
+
+```json
+{
+  "command": "<COMFYUI_ROOT>/venv/bin/python",
+  "args": [
+    "<REPO_ROOT>/learning-playground/tools/content-foundry/mcp_server.py"
+  ]
+}
+```
+
+Example FTL trusted-host value:
+
+```bash
+export MCP_STDIO_SERVERS='[{"name":"kennedi-content-foundry","command":"<COMFYUI_ROOT>/venv/bin/python","args":["<REPO_ROOT>/learning-playground/tools/content-foundry/mcp_server.py"]}]'
+```
 
 ## Local roots
 
