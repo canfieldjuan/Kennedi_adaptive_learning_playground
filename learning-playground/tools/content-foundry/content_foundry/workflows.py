@@ -65,7 +65,7 @@ DEFINITIONS = {
         "seed": ("10", "seed"), "steps": ("10", "steps"),
         "control_strength": ("15", "strength"), "filename_prefix": ("12", "filename_prefix"),
     }),
-    "wan_safe_motion": WorkflowDefinition("wan_safe_motion", "wan-safe-motion.v1.json", 1, {
+    "wan_safe_motion": WorkflowDefinition("wan_safe_motion", "wan-safe-motion.v2.json", 2, {
         "image": ("5", "image"), "prompt": ("6", "text"),
         "negative_prompt": ("7", "text"), "seed": ("9", "seed"),
         "filename_prefix": ("12", "filename_prefix"),
