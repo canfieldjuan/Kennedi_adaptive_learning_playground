@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1370" height="900" viewBox="0 0 1370 900" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+  <!-- Composed from design-source/art-direction/cafe-component-library.svg; edit components there, re-instance here. -->
+  <g inkscape:label="Station shell" inkscape:groupmode="layer">
+    <rect x="0" y="0" width="1370" height="900" fill="#dcecf8"/>
+    <path d="M 0 470 q 260 -56 560 -22 q 420 44 810 -8 v 460 h -1370 Z" fill="#cfe0b8" opacity="0.8"/>
+    <rect x="0" y="560" width="1370" height="24" rx="10" fill="#d9c49a"/>
+    <rect x="0" y="584" width="1370" height="196" fill="#e8d3ae"/>
+    <rect x="0" y="780" width="1370" height="120" fill="#c9b490"/>
+    <line x1="0" y1="812" x2="1370" y2="812" stroke="#8e7aa3" stroke-width="8"/>
+    <line x1="0" y1="866" x2="1370" y2="866" stroke="#8e7aa3" stroke-width="8"/>
+  </g>
+  <g id="train-sun-simple" inkscape:label="sun-simple" inkscape:groupmode="layer">
+  <g transform="translate(120 110)">
+    <circle cx="0" cy="0" r="58" fill="#fff8eb" opacity="0.6"/>
+    <circle cx="0" cy="0" r="38" fill="#ffe8a3" stroke="#e8c07a" stroke-width="5"/>
+  </g>
+  </g>
+  <g id="train-cloud-puff" inkscape:label="cloud-puff" inkscape:groupmode="layer">
+  <g transform="translate(1200 90)">
+    <path d="M -50 26 Q -62 26 -60 12 Q -58 -2 -42 -6 Q -36 -24 -12 -26 Q 10 -27 20 -12 Q 40 -14 48 0 Q 56 12 48 26 Z" fill="#fff8eb" stroke="#3a2461" stroke-width="4" opacity="0.85"/>
+  </g>
+  </g>
+  <g id="train-station-house" inkscape:label="station-house" inkscape:groupmode="layer">
+  <g transform="translate(8 260)">
+    <rect x="18" y="96" width="224" height="204" rx="10" fill="#f6e7c9" stroke="#3a2461" stroke-width="5"/>
+    <path d="M -8 100 h 276 l -34 -64 h -208 Z" fill="#e29b8a" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="-16" y="94" width="292" height="16" rx="8" fill="#c88a52" stroke="#3a2461" stroke-width="4"/>
+    <circle cx="130" cy="66" r="34" fill="#fff8eb" stroke="#3a2461" stroke-width="5"/>
+    <line x1="130" y1="66" x2="130" y2="46" stroke="#3a2461" stroke-width="5" stroke-linecap="round"/>
+    <line x1="130" y1="66" x2="146" y2="66" stroke="#3a2461" stroke-width="5" stroke-linecap="round"/>
+    <rect x="96" y="180" width="68" height="120" rx="8" fill="#cbb391" stroke="#3a2461" stroke-width="5"/>
+    <circle cx="150" cy="242" r="5" fill="#3a2461"/>
+  </g>
+  </g>
+  <g id="train-skyline-blocks" inkscape:label="skyline-blocks" inkscape:groupmode="layer">
+  <g transform="translate(1092 300)">
+    <path d="M 0 160 V 40 H 88 V 0 H 168 V 64 H 272 V 160 Z" fill="#b3c0d4" opacity="0.55"/>
+  </g>
+  </g>
+  <g id="train-signal-post" inkscape:label="signal-post" inkscape:groupmode="layer">
+  <g transform="translate(1290 430)">
+    <line x1="16" y1="0" x2="16" y2="150" stroke="#3a2461" stroke-width="7" stroke-linecap="round"/>
+    <rect x="0" y="0" width="60" height="22" rx="8" fill="#e05d5d" stroke="#3a2461" stroke-width="4"/>
+    <circle cx="16" cy="52" r="12" fill="#9fd0a8" stroke="#3a2461" stroke-width="4"/>
+  </g>
+  </g>
+</svg>

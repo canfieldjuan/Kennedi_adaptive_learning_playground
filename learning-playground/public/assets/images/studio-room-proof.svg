@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1370" height="900" viewBox="0 0 1370 900" version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+  <g>
+    <rect x="0" y="0" width="1370" height="900" fill="#f4efe6"/>
+    <rect x="0" y="96" width="1370" height="10" rx="5" fill="#e9e1d2"/>
+    <rect x="0" y="640" width="1370" height="14" fill="#e9e1d2"/>
+    <rect x="0" y="654" width="1370" height="246" fill="#d9c4a3"/>
+    <ellipse cx="685" cy="880" rx="520" ry="86" fill="#e9e1d2" opacity="0.55"/>
+  </g>
+  <g id="studio-wall-frame-dot">
+  <g transform="translate(70 110)">
+    <rect x="0" y="0" width="200" height="150" rx="14" fill="#fbf8f1" stroke="rgba(58, 36, 97, 0.45)" stroke-width="6"/>
+    <circle cx="100" cy="75" r="38" fill="#e9e1d2" stroke="none"/>
+    <circle cx="100" cy="30" r="7" fill="#c9b28d" stroke="rgba(58, 36, 97, 0.45)" stroke-width="3"/>
+  </g>
+  </g>
+  <g id="studio-wall-frame-hill">
+  <g transform="translate(120 310)">
+    <rect x="0" y="0" width="170" height="130" rx="12" fill="#fbf8f1" stroke="rgba(58, 36, 97, 0.45)" stroke-width="6"/>
+    <path d="M 30 100 l 45 -55 l 40 55 z" fill="#d8d0c2" stroke="none"/>
+    <circle cx="85" cy="18" r="6" fill="#c9b28d" stroke="rgba(58, 36, 97, 0.45)" stroke-width="3"/>
+  </g>
+  </g>
+  <g id="studio-art-shelf">
+  <g transform="translate(58 470)">
+    <rect x="0" y="96" width="300" height="18" rx="8" fill="#c9b28d" stroke="rgba(58, 36, 97, 0.45)" stroke-width="4"/>
+    <g stroke="rgba(58, 36, 97, 0.45)" stroke-width="4">
+      <rect x="22" y="46" width="52" height="50" rx="10" fill="#d8d0c2"/>
+      <rect x="16" y="38" width="64" height="14" rx="7" fill="#c9b28d"/>
+      <rect x="106" y="52" width="46" height="44" rx="10" fill="#e9e1d2"/>
+      <path d="M 196 96 h 44 l -6 -38 h -32 Z" fill="#f7f3e9"/>
+      <line x1="208" y1="58" x2="200" y2="26" stroke="#c9b28d" stroke-width="7" stroke-linecap="round"/>
+      <line x1="222" y1="58" x2="226" y2="22" stroke="#d8d0c2" stroke-width="7" stroke-linecap="round"/>
+    </g>
+  </g>
+  </g>
+  <g id="studio-window-four-pane">
+  <g transform="translate(1060 110)">
+    <rect x="0" y="0" width="264" height="300" rx="20" fill="#c9b28d"/>
+    <rect x="16" y="16" width="232" height="268" rx="12" fill="#f7f3e9"/>
+    <rect x="16" y="16" width="232" height="106" rx="12" fill="#fbf8f1"/>
+    <circle cx="186" cy="76" r="30" fill="#fbf8f1" opacity="0.9"/>
+    <path d="M 16 200 q 60 -36 120 -12 q 68 26 112 -2 v 98 h -232 Z" fill="#d9c4a3" opacity="0.85"/>
+    <rect x="124" y="16" width="12" height="268" fill="#c9b28d"/>
+    <rect x="16" y="142" width="232" height="12" fill="#c9b28d"/>
+    <rect x="-18" y="294" width="300" height="22" rx="8" fill="#c9b28d" stroke="rgba(58, 36, 97, 0.45)" stroke-width="4"/>
+  </g>
+  </g>
+  <g id="studio-plant-floor">
+  <g transform="translate(90 828)">
+    <g stroke="rgba(58, 36, 97, 0.45)" stroke-width="4" stroke-linejoin="round">
+      <path d="M 12 0 q -22 -50 -6 -74 q 20 18 14 74 z" fill="#d9c4a3"/>
+      <path d="M 28 0 q 26 -40 54 -40 q -8 30 -48 40 z" fill="#c9b28d"/>
+      <path d="M 0 0 h 68 l -9 -30 h -50 z" fill="#d8d0c2"/>
+    </g>
+  </g>
+  </g>
+  <g id="studio-pencil-pot">
+  <g transform="translate(1252 800)">
+    <g stroke="rgba(58, 36, 97, 0.45)" stroke-width="5">
+      <line x1="16" y1="-2" x2="6" y2="-34" stroke="#c9b28d" stroke-width="8" stroke-linecap="round"/>
+      <line x1="28" y1="-2" x2="30" y2="-40" stroke="#d8d0c2" stroke-width="8" stroke-linecap="round"/>
+      <line x1="40" y1="-2" x2="48" y2="-30" stroke="#d9c4a3" stroke-width="8" stroke-linecap="round"/>
+      <path d="M 0 0 h 56 l -8 46 h -40 Z" fill="#f7f3e9" stroke-linejoin="round"/>
+    </g>
+  </g>
+  </g>
+</svg>

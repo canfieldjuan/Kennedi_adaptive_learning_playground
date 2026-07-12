@@ -37,6 +37,17 @@
   pointer-events: none;
 }
 
+.cafe-backdrop__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  pointer-events: none;
+  user-select: none;
+}
+
 .cafe-backdrop svg {
   position: absolute;
   left: 0;
@@ -341,6 +352,18 @@
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+.workshop-environment img.workshop-env__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
 }
 
 .workshop-environment .workshop-env__svg {
@@ -1013,6 +1036,18 @@
   pointer-events: none;
 }
 
+.station-environment img.station-env__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  opacity: 0.65;
+  pointer-events: none;
+  user-select: none;
+}
+
 .station-environment .station-env__svg {
   display: block;
   width: 100%;
@@ -1370,6 +1405,18 @@
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+.studio-environment img.studio-env__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
 }
 
 .studio-environment .studio-env__svg {
@@ -3996,21 +4043,9 @@
     display: none;
   }
 
-  .workshop-environment .workshop-env__prop--minor {
-    display: none;
-  }
-
   .phonics-workshop .activity-choice-grid,
   .phonics-workshop .word-builder__slots {
     padding: var(--space-sm);
-  }
-
-  .studio-environment .studio-env__prop--minor {
-    display: none;
-  }
-
-  .station-environment .station-env__prop--minor {
-    display: none;
   }
 
   .train-station .number-train__stage {

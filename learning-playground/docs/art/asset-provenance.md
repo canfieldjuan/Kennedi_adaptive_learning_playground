@@ -128,3 +128,113 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Mobile screenshot path(s):** `docs/captures/video/bear-mixes-dough-vector-source-mobile.webp`; 390x215 source-scale review, not a runtime screenshot
 - **Owner look approval:** Pending; deterministic proof replaces the owner-rejected generated-video direction
 - **Restrictions and notes:** Review artifact only. Fourteen named Inkscape layers preserve exact Bear, hat, face, cafe, bowl, arm, grip, spoon, dough, and blink geometry. Chromium pauses and seeks the SVG timeline at each of 77 frame times; FFmpeg encodes single-threaded bit-exact VP9 with no audio and no inherited source metadata. Two independently cleaned full renders matched exactly: source SHA-256 `3fdf8aac7903e0c25478eb6c91eec6e53b618b791133fda20dc5c1a511f12984`, combined frame-set SHA-256 `fa802b6e28d788aa2e708d87b5ea85ae6424c16de88d6b8466cad7eebaeec115`, and WebM SHA-256 `ddfb83043806636d0cf16a775c90d8e21de11e6d96a2715c7a6f963741d9bdf1`. Generic deterministic FFmpeg encoder/duration fields remain; no prompt, authoring, source, or user metadata is present. No shipped video, narration, runtime, manifest, evidence, or approval behavior changed, and the game has no Inkscape, Chromium, FFmpeg, or renderer dependency at runtime.
+
+## Cafe component library (shared)
+
+- **Asset family:** Playground cafe component library (window, sill cat, plants, hanging Bear Cafe sign with lettering-free bear emblem, hanging lamp, counter block, cookie jar, cake stand, cocoa cup)
+- **Game:** Shared across games (canonical component source for scene composition)
+- **Status:** `look_approved` (the library has no standalone runtime asset; its look is approved through the owner-approved scenes that instance it — #92/#93/#94/#95/#96)
+- **Production path(s):** components ship only inside composed scene exports (no standalone runtime asset)
+- **Editable source path(s):** `design-source/art-direction/cafe-component-library.svg`
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Generated as standards-based SVG, editable in Inkscape 1.4.4 (layer-labeled groups); headless-render verified
+- **Origin:** Category A original artwork, adapting Category B project-owned motifs from the prior in-code home backdrop (`cafe-scene.ts`)
+- **Third-party elements:** None
+- **AI assistance:** None (rule-based vector generation, no generative image tools)
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Attribution requirement:** None
+- **Restrictions and notes:** Pickup reconciliation (2026-07-12): the four owner-approved Bear Cafe pickup-window elements (awning-scalloped, tile-wall, service-window-arch, counter-sill) are now library components, geometry lifted verbatim from the approved `design-source/bear-cafe/bear-cafe-pickup-window-proof.svg` (#92) inside translate wrappers, so future scenes instance exactly the style the owner signed. Canonical shared components — scenes must instance these rather than redraw one-off props; new props are added here first. No fonts anywhere (the old sign's system-font `<text>` is replaced by the bear emblem).
+
+## Home room scene (proof)
+
+- **Asset family:** Child home backdrop scene
+- **Game:** Home screen
+- **Status:** `look_approved`
+- **Production path(s):** `public/assets/images/home-room-proof.svg`
+- **Editable source path(s):** `design-source/home/home-room-proof.svg` (instances of the cafe component library)
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Composed from the component library; editable in Inkscape 1.4.4; headless-render verified
+- **Origin:** Category A original composition of Category A/B components
+- **Third-party elements:** None
+- **AI assistance:** None
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Contact sheet path:** `docs/captures/cohesion/home-room-proof-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/cohesion/home-room-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/cohesion/home-room-proof-mobile.webp`
+- **Owner look approval:** APPROVED — the owner authorized the merge of
+  #93 on 2026-07-12 ("Lets merge them if possible"); status `look_approved`
+- **Restrictions and notes:** Reserved clear zones (card grid center, greeting strip, Parent button corner) are load-bearing: props live in the margins only. Mobile cover-crop lands on the reserved center by design — a props-free wall; whether mobile should peek a prop is an owner look call.
+
+## Words workshop scene (proof)
+
+- **Asset family:** Pip's Word Workshop backdrop scene
+- **Game:** Words (all three modes: find, blending, builder)
+- **Status:** `look_approved`
+- **Production path(s):** `public/assets/images/words-workshop-proof.svg`;
+  `public/assets/images/words-workshop-proof-mobile.svg` (bands-only phone
+  crop of the same editable source — delete the six `words-*` prop layers
+  and re-export)
+- **Editable source path(s):** `design-source/words/words-workshop-proof.svg` (instances of the shared component library; the library gained `bookshelf-low`, `pin-board`, `pencil-pot`)
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Composed from the component library; editable in Inkscape 1.4.4; headless-render verified
+- **Origin:** Category A original composition, adapting Category B motifs from the prior in-code workshop scene
+- **Third-party elements:** None
+- **AI assistance:** None
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Contact sheet path:** `docs/captures/word-workshop/words-workshop-proof-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/word-workshop/words-workshop-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/word-workshop/words-workshop-proof-mobile.webp`
+- **Owner look approval:** APPROVED — the owner authorized the merge of
+  #94 on 2026-07-12 ("Lets merge them if possible"); status `look_approved`
+- **Restrictions and notes:** HARD GUARDRAIL preserved — nothing reads as a letter, word, tile, or choice (plain spines, abstract pin-board, no `<text>`). Reserved clear zones: title/prompt strip, Pip column, the card/tile band. Portrait crop intentionally exits both edge prop groups.
+
+## Number Train station scene (proof)
+
+- **Asset family:** Number Train station backdrop scene
+- **Game:** Math (Number Train, all bands)
+- **Status:** `look_approved`
+- **Production path(s):** `public/assets/images/train-station-proof.svg`;
+  `public/assets/images/train-station-proof-mobile.svg` (bands-only phone
+  crop of the same editable source — delete the five `train-*` prop layers
+  and re-export)
+- **Editable source path(s):** `design-source/number-train/train-station-proof.svg` (instances of the shared component library; the library gained `station-house`, `signal-post`, `skyline-blocks`, `sun-simple`, `cloud-puff`)
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Composed from the component library; editable in Inkscape 1.4.4; headless-render verified
+- **Origin:** Category A original composition, adapting Category B motifs from the prior in-code station scene
+- **Third-party elements:** None
+- **AI assistance:** None
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Contact sheet path:** `docs/captures/train-station/train-station-proof-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/train-station/train-station-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/train-station/train-station-proof-mobile.webp`
+- **Owner look approval:** APPROVED — the owner authorized the merge of
+  #95 on 2026-07-12 ("Lets merge them if possible"); status `look_approved`
+- **Restrictions and notes:** Counting-guardrail revision (2026-07-11, review): the cloud, signal lights, and town blocks are redrawn as single continuous silhouettes so the backdrop holds zero countable clusters; the library components were updated first and the scene + export re-derived from them. Reserved clear zones: title/progress strip, question line, the train band, the answer-card band. No digits or countable clusters in the backdrop (skyline blocks are abstract, low contrast) — the count evidence stays runtime-owned.
+
+## Art studio room scene (proof)
+
+- **Asset family:** Art studio backdrop scene (all-neutral)
+- **Game:** Art (Bear Art Studio + legacy coloring, shared studio environment)
+- **Status:** `look_approved`
+- **Production path(s):** `public/assets/images/studio-room-proof.svg`;
+  `public/assets/images/studio-room-proof-mobile.svg` (bands-only phone
+  crop of the same editable source — delete the `studio-*` prop layers
+  and re-export)
+- **Editable source path(s):** `design-source/art-studio/studio-room-proof.svg` (instances of the shared component library; the library gained `wall-frame-dot`, `wall-frame-hill`, `art-shelf`)
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Composed from the component library with an authoring-time neutral-palette remap; editable in Inkscape 1.4.4; headless-render verified
+- **Origin:** Category A original composition, adapting Category B motifs from the prior in-code studio scene
+- **Third-party elements:** None
+- **AI assistance:** None
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Contact sheet path:** `docs/captures/art-studio/studio-room-proof-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/art-studio/studio-room-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/art-studio/studio-room-proof-mobile.webp`
+- **Owner look approval:** APPROVED — the owner authorized the merge of
+  #96 on 2026-07-12 ("Lets merge them if possible"); status `look_approved`
+- **Restrictions and notes:** HARD GUARDRAIL — the art screens teach color, so the backdrop is ALL-NEUTRAL (every paint from the contract's neutral set; enforced by tests/modules/coloring.test.ts sweeping this shipped file). Reserved clear zones: request/bear strip, canvas, tool row, palette row.

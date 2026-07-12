@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="1240" height="2485" viewBox="0 0 1240 2485" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape">
+  <rect x="0" y="0" width="1240" height="2485" fill="#f9e8d0"/>
+  <g id="window-four-pane" inkscape:label="Window, four panes with sunny hills" inkscape:groupmode="layer">
+  <g transform="translate(40 40)">
+    <rect x="0" y="0" width="264" height="300" rx="20" fill="#b3743e"/>
+    <rect x="16" y="16" width="232" height="268" rx="12" fill="#ffe8a3"/>
+    <rect x="16" y="16" width="232" height="106" rx="12" fill="#fff3c4"/>
+    <circle cx="186" cy="76" r="30" fill="#fff8eb" opacity="0.9"/>
+    <path d="M 16 200 q 60 -36 120 -12 q 68 26 112 -2 v 98 h -232 Z" fill="#cfe3b4" opacity="0.85"/>
+    <rect x="124" y="16" width="12" height="268" fill="#b3743e"/>
+    <rect x="16" y="142" width="232" height="12" fill="#b3743e"/>
+    <rect x="-18" y="294" width="300" height="22" rx="8" fill="#c88a52" stroke="#3a2461" stroke-width="4"/>
+  </g>
+  </g>
+  <g id="sign-bear-cafe" inkscape:label="Hanging Bear Cafe sign (lettering-free bear emblem)" inkscape:groupmode="layer">
+  <g transform="translate(380 80)">
+    <line x1="36" y1="-62" x2="48" y2="0" stroke="#b3743e" stroke-width="6"/>
+    <line x1="256" y1="-62" x2="244" y2="0" stroke="#b3743e" stroke-width="6"/>
+    <rect x="0" y="0" width="292" height="118" rx="18" fill="#c88a52" stroke="#b3743e" stroke-width="6"/>
+    <rect x="14" y="14" width="264" height="90" rx="12" fill="#fbe4c8"/>
+    <g stroke="#3a2461" stroke-width="5">
+      <circle cx="146" cy="58" r="30" fill="#fff8eb"/>
+      <circle cx="122" cy="36" r="10" fill="#fff8eb"/>
+      <circle cx="170" cy="36" r="10" fill="#fff8eb"/>
+      <circle cx="139" cy="54" r="3" fill="#3a2461" stroke="none"/>
+      <circle cx="153" cy="54" r="3" fill="#3a2461" stroke="none"/>
+      <ellipse cx="146" cy="65" rx="6" ry="4.6" fill="#3a2461" stroke="none"/>
+      <path d="M 68 58 h 34 M 190 58 h 34" stroke-width="6" stroke-linecap="round" stroke="#ef8fa5"/>
+    </g>
+  </g>
+  </g>
+  <g id="lamp-hanging" inkscape:label="Hanging cone lamp" inkscape:groupmode="layer">
+  <g transform="translate(760 260)">
+    <line x1="28" y1="-216" x2="28" y2="0" stroke="#b3743e" stroke-width="5"/>
+    <path d="M 0 0 h 56 l -10 30 h -36 z" fill="#3a2461"/>
+    <circle cx="28" cy="42" r="13" fill="#ffe27a" stroke="#3a2461" stroke-width="4"/>
+    <circle cx="28" cy="42" r="27" fill="#ffe27a" opacity="0.22"/>
+  </g>
+  </g>
+  <g id="counter-corner" inkscape:label="Counter block with top rail" inkscape:groupmode="layer">
+  <g transform="translate(860 60)">
+    <rect x="0" y="0" width="318" height="26" rx="9" fill="#c88a52" stroke="#3a2461" stroke-width="5"/>
+    <rect x="20" y="26" width="286" height="180" rx="14" fill="#b3743e"/>
+    <rect x="20" y="52" width="286" height="10" fill="#c88a52" opacity="0.6"/>
+  </g>
+  </g>
+  <g id="plant-small" inkscape:label="Potted plant, small (sill size)" inkscape:groupmode="layer">
+  <g transform="translate(60 460)">
+    <g stroke="#3a2461" stroke-width="4" stroke-linejoin="round">
+      <path d="M 10 0 q -16 -34 -4 -52 q 14 12 10 52 z" fill="#7cb342"/>
+      <path d="M 22 0 q 18 -28 38 -28 q -6 22 -34 28 z" fill="#8bc34a"/>
+      <path d="M 0 0 h 48 l -6 -20 h -36 z" fill="#e07a5f"/>
+    </g>
+  </g>
+  </g>
+  <g id="plant-floor" inkscape:label="Potted plant, floor size" inkscape:groupmode="layer">
+  <g transform="translate(180 480)">
+    <g stroke="#3a2461" stroke-width="4" stroke-linejoin="round">
+      <path d="M 12 0 q -22 -50 -6 -74 q 20 18 14 74 z" fill="#7cb342"/>
+      <path d="M 28 0 q 26 -40 54 -40 q -8 30 -48 40 z" fill="#8bc34a"/>
+      <path d="M 0 0 h 68 l -9 -30 h -50 z" fill="#e07a5f"/>
+    </g>
+  </g>
+  </g>
+  <g id="cat-sitting" inkscape:label="Ginger cat, sitting" inkscape:groupmode="layer">
+  <g transform="translate(320 470)">
+    <g stroke="#3a2461" stroke-width="4" stroke-linejoin="round">
+      <path d="M 0 0 v -34 q 0 -26 26 -26 q 26 0 26 26 v 34 z" fill="#f0a848"/>
+      <path d="M 8 -58 l -8 -16 l 14 6 z" fill="#f0a848"/>
+      <path d="M 44 -58 l 8 -16 l -14 6 z" fill="#f0a848"/>
+      <circle cx="18" cy="-42" r="2.6" fill="#3a2461" stroke="none"/>
+      <circle cx="34" cy="-42" r="2.6" fill="#3a2461" stroke="none"/>
+      <path d="M 22 -34 q 4 4 8 0" fill="none" stroke-width="3"/>
+      <path d="M 52 -12 q 16 -8 12 -24" fill="none" stroke-width="5" stroke-linecap="round"/>
+    </g>
+  </g>
+  </g>
+  <g id="jar-cookies" inkscape:label="Cookie jar" inkscape:groupmode="layer">
+  <g transform="translate(440 400)">
+    <g stroke="#3a2461" stroke-width="4">
+      <rect x="8" y="8" width="70" height="60" rx="14" fill="#cfe9f8" opacity="0.92"/>
+      <rect x="0" y="0" width="86" height="16" rx="8" fill="#b3743e"/>
+      <circle cx="30" cy="38" r="9" fill="#d8a45e"/>
+      <circle cx="56" cy="48" r="9" fill="#d8a45e"/>
+      <circle cx="52" cy="26" r="8" fill="#d8a45e"/>
+    </g>
+  </g>
+  </g>
+  <g id="cake-stand" inkscape:label="Cake on a stand" inkscape:groupmode="layer">
+  <g transform="translate(580 400)">
+    <g stroke="#3a2461" stroke-width="4" stroke-linejoin="round">
+      <ellipse cx="52" cy="66" rx="52" ry="11" fill="#e9c48f"/>
+      <rect x="48" y="42" width="9" height="24" fill="#c88a52" stroke="none"/>
+      <ellipse cx="52" cy="42" rx="46" ry="9" fill="#f6e3b8"/>
+      <path d="M 28 42 q 24 -44 48 0 z" fill="#f6d06a"/>
+      <path d="M 32 30 q 20 -30 40 0 q 3 8 -5 10 q -16 -10 -30 0 q -8 -2 -5 -10 z" fill="#f6a5c0"/>
+      <circle cx="52" cy="0" r="6" fill="#e0495c"/>
+    </g>
+  </g>
+  </g>
+  <g id="cup-cocoa" inkscape:label="Cocoa cup with steam" inkscape:groupmode="layer">
+  <g transform="translate(720 410)">
+    <g stroke="#3a2461" stroke-width="4">
+      <path d="M 42 8 q 14 -4 12 6 q -2 8 -12 6" fill="none"/>
+      <path d="M 0 0 h 42 l -4 36 q -1 8 -10 8 h -14 q -9 0 -10 -8 z" fill="#ffffff" stroke-linejoin="round"/>
+      <path d="M 3 9 h 36" stroke="#f2c6d6" stroke-width="6" stroke-linecap="round"/>
+    </g>
+  </g>
+  </g>
+  <g id="bookshelf-low" inkscape:label="Low bookshelf, plain color spines (no letters)" inkscape:groupmode="layer">
+  <g transform="translate(40 620)">
+    <rect x="0" y="0" width="300" height="170" rx="16" fill="#c88a52" stroke="#3a2461" stroke-width="5"/>
+    <rect x="14" y="14" width="272" height="118" rx="10" fill="#f4e6cf"/>
+    <rect x="0" y="132" width="300" height="18" rx="8" fill="#b3743e"/>
+    <g stroke="#3a2461" stroke-width="3">
+      <rect x="28" y="30" width="30" height="100" rx="7" fill="#e28f8f"/>
+      <rect x="66" y="42" width="28" height="88" rx="7" fill="#8fb7e2"/>
+      <rect x="102" y="24" width="32" height="106" rx="7" fill="#9fd0a8"/>
+      <rect x="142" y="40" width="28" height="90" rx="7" fill="#f0c65f"/>
+      <rect x="178" y="30" width="30" height="100" rx="7" fill="#c3a3e0"/>
+      <rect x="216" y="48" width="26" height="82" rx="7" fill="#f2b09b"/>
+    </g>
+  </g>
+  </g>
+  <g id="pin-board" inkscape:label="Pin board with abstract shapes (never letters)" inkscape:groupmode="layer">
+  <g transform="translate(400 620)">
+    <rect x="0" y="0" width="150" height="120" rx="14" fill="#c88a52" stroke="#3a2461" stroke-width="5"/>
+    <rect x="10" y="10" width="130" height="100" rx="9" fill="#f9e2c6"/>
+    <circle cx="42" cy="44" r="14" fill="#f5a86b" stroke="#3a2461" stroke-width="3"/>
+    <rect x="70" y="32" width="54" height="22" rx="8" fill="#cfe3f4" stroke="#3a2461" stroke-width="3"/>
+    <path d="M 30 82 q 18 -14 36 0 q 18 14 36 0" fill="none" stroke="#c3a3e0" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  </g>
+  <g id="pencil-pot" inkscape:label="Pot of pencils" inkscape:groupmode="layer">
+  <g transform="translate(620 640)">
+    <g stroke="#3a2461" stroke-width="5">
+      <line x1="16" y1="-2" x2="6" y2="-34" stroke="#f0c65f" stroke-width="8" stroke-linecap="round"/>
+      <line x1="28" y1="-2" x2="30" y2="-40" stroke="#e28f8f" stroke-width="8" stroke-linecap="round"/>
+      <line x1="40" y1="-2" x2="48" y2="-30" stroke="#8fb7e2" stroke-width="8" stroke-linecap="round"/>
+      <path d="M 0 0 h 56 l -8 46 h -40 Z" fill="#cfe3f4" stroke-linejoin="round"/>
+    </g>
+  </g>
+  </g>
+  <g id="station-house" inkscape:label="Station house with clock" inkscape:groupmode="layer">
+  <g transform="translate(760 620)">
+    <rect x="18" y="96" width="224" height="204" rx="10" fill="#f6e7c9" stroke="#3a2461" stroke-width="5"/>
+    <path d="M -8 100 h 276 l -34 -64 h -208 Z" fill="#e29b8a" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="-16" y="94" width="292" height="16" rx="8" fill="#c88a52" stroke="#3a2461" stroke-width="4"/>
+    <circle cx="130" cy="66" r="34" fill="#fff8eb" stroke="#3a2461" stroke-width="5"/>
+    <line x1="130" y1="66" x2="130" y2="46" stroke="#3a2461" stroke-width="5" stroke-linecap="round"/>
+    <line x1="130" y1="66" x2="146" y2="66" stroke="#3a2461" stroke-width="5" stroke-linecap="round"/>
+    <rect x="96" y="180" width="68" height="120" rx="8" fill="#cbb391" stroke="#3a2461" stroke-width="5"/>
+    <circle cx="150" cy="242" r="5" fill="#3a2461"/>
+  </g>
+  </g>
+  <g id="signal-post" inkscape:label="Railway signal post" inkscape:groupmode="layer">
+  <g transform="translate(1090 620)">
+    <line x1="16" y1="0" x2="16" y2="150" stroke="#3a2461" stroke-width="7" stroke-linecap="round"/>
+    <rect x="0" y="0" width="60" height="22" rx="8" fill="#e05d5d" stroke="#3a2461" stroke-width="4"/>
+    <circle cx="16" cy="52" r="12" fill="#9fd0a8" stroke="#3a2461" stroke-width="4"/>
+  </g>
+  </g>
+  <g id="skyline-blocks" inkscape:label="Distant town blocks (low contrast)" inkscape:groupmode="layer">
+  <g transform="translate(220 780)">
+    <path d="M 0 160 V 40 H 88 V 0 H 168 V 64 H 272 V 160 Z" fill="#b3c0d4" opacity="0.55"/>
+  </g>
+  </g>
+  <g id="sun-simple" inkscape:label="Sun with halo" inkscape:groupmode="layer">
+  <g transform="translate(1180 680)">
+    <circle cx="0" cy="0" r="58" fill="#fff8eb" opacity="0.6"/>
+    <circle cx="0" cy="0" r="38" fill="#ffe8a3" stroke="#e8c07a" stroke-width="5"/>
+  </g>
+  </g>
+  <g id="cloud-puff" inkscape:label="Cloud puff" inkscape:groupmode="layer">
+  <g transform="translate(60 790)">
+    <path d="M -50 26 Q -62 26 -60 12 Q -58 -2 -42 -6 Q -36 -24 -12 -26 Q 10 -27 20 -12 Q 40 -14 48 0 Q 56 12 48 26 Z" fill="#fff8eb" stroke="#3a2461" stroke-width="4" opacity="0.85"/>
+  </g>
+  </g>
+  <g id="wall-frame-dot" inkscape:label="Wall frame, abstract dot art" inkscape:groupmode="layer">
+  <g transform="translate(760 840)">
+    <rect x="0" y="0" width="200" height="150" rx="14" fill="#fff8eb" stroke="#8e7aa3" stroke-width="6"/>
+    <circle cx="100" cy="75" r="38" fill="#e8d6c4" stroke="none"/>
+    <circle cx="100" cy="30" r="7" fill="#c9a227" stroke="#3a2461" stroke-width="3"/>
+  </g>
+  </g>
+  <g id="wall-frame-hill" inkscape:label="Wall frame, abstract hill art" inkscape:groupmode="layer">
+  <g transform="translate(1000 850)">
+    <rect x="0" y="0" width="170" height="130" rx="12" fill="#fff8eb" stroke="#8e7aa3" stroke-width="6"/>
+    <path d="M 30 100 l 45 -55 l 40 55 z" fill="#d9c7b7" stroke="none"/>
+    <circle cx="85" cy="18" r="6" fill="#c9a227" stroke="#3a2461" stroke-width="3"/>
+  </g>
+  </g>
+  <g id="art-shelf" inkscape:label="Art supply shelf (paint pots + brush cup)" inkscape:groupmode="layer">
+  <g transform="translate(420 860)">
+    <rect x="0" y="96" width="300" height="18" rx="8" fill="#c88a52" stroke="#3a2461" stroke-width="4"/>
+    <g stroke="#3a2461" stroke-width="4">
+      <rect x="22" y="46" width="52" height="50" rx="10" fill="#e8a1a1"/>
+      <rect x="16" y="38" width="64" height="14" rx="7" fill="#c88a52"/>
+      <rect x="106" y="52" width="46" height="44" rx="10" fill="#9fc7e8"/>
+      <path d="M 196 96 h 44 l -6 -38 h -32 Z" fill="#cfe9f8"/>
+      <line x1="208" y1="58" x2="200" y2="26" stroke="#f0c65f" stroke-width="7" stroke-linecap="round"/>
+      <line x1="222" y1="58" x2="226" y2="22" stroke="#e28f8f" stroke-width="7" stroke-linecap="round"/>
+    </g>
+  </g>
+  </g>
+  <g id="awning-scalloped" inkscape:label="awning-scalloped (approved pickup #92)" inkscape:groupmode="layer">
+  <g transform="translate(40 1180) translate(-78 -52)">
+    <rect xmlns="http://www.w3.org/2000/svg" x="78" y="52" width="1044" height="100" rx="24" style="fill:#f8cbd5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:9" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="86" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="202" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="318" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="434" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="550" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="666" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="782" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="898" y="60" width="116" height="92" rx="12" style="fill:#ef8fa5;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="1014" y="60" width="116" height="92" rx="12" style="fill:#ffe8a3;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 78 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 194 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 310 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 426 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 542 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 658 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 774 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 890 152 a 58,58 0 0 0 116,0 z" style="fill:#ef8fa5;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 1006 152 a 58,58 0 0 0 116,0 z" style="fill:#f6c64e;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+  </g>
+  </g>
+  <g id="tile-wall" inkscape:label="tile-wall (approved pickup #92)" inkscape:groupmode="layer">
+  <g transform="translate(40 1470) translate(-80 -150)">
+    <rect xmlns="http://www.w3.org/2000/svg" x="80" y="150" width="1040" height="338" rx="22" style="fill:#fcefdc;stroke:#8e7aa3;stroke-linecap:round;stroke-linejoin:round;stroke-width:4" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 180 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 280 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 380 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 480 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 580 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 680 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 780 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 880 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 980 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 1080 156 V 486" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 84 235 H 1116" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 84 320 H 1116" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 84 405 H 1116" style="fill:none;stroke:#d9c7b7;stroke-linecap:round;stroke-linejoin:round;stroke-width:3" />
+  </g>
+  </g>
+  <g id="service-window-arch" inkscape:label="service-window-arch (approved pickup #92)" inkscape:groupmode="layer">
+  <g transform="translate(40 1888) translate(-638 -172)">
+    <path xmlns="http://www.w3.org/2000/svg" d="M 664 480 V 292 C 664 214 724 172 846 172 C 968 172 1028 214 1028 292 V 480 Z" style="fill:#b97850;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:10" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 694 460 V 300 C 694 240 740 206 846 206 C 952 206 998 240 998 300 V 460 Z" style="fill:#d9f0e8;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="724" y="300" width="244" height="10" rx="5" style="fill:#76bcb0;opacity:0.34;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="724" y="370" width="244" height="10" rx="5" style="fill:#76bcb0;opacity:0.24;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+    <circle xmlns="http://www.w3.org/2000/svg" style="fill:#ffe8a3;opacity:0.72;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" cx="972.0" cy="236.0" r="14.0" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="638" y="454" width="416" height="52" rx="18" style="fill:#d9a06f;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:8" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="676" y="486" width="340" height="22" rx="10" style="fill:#b97850;stroke:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:0" />
+  </g>
+  </g>
+  <g id="counter-sill" inkscape:label="counter-sill (approved pickup #92)" inkscape:groupmode="layer">
+  <g transform="translate(40 2303) translate(-72 -486)">
+    <rect xmlns="http://www.w3.org/2000/svg" x="72" y="486" width="1056" height="58" rx="24" style="fill:#d9a06f;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:9" />
+    <rect xmlns="http://www.w3.org/2000/svg" x="88" y="530" width="1024" height="58" rx="18" style="fill:#b97850;stroke:#3a2461;stroke-linecap:round;stroke-linejoin:round;stroke-width:7" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 136 558 H 512" style="fill:none;stroke:#eac39b;stroke-linecap:round;stroke-linejoin:round;stroke-width:5" />
+    <path xmlns="http://www.w3.org/2000/svg" d="M 722 558 H 1066" style="fill:none;stroke:#eac39b;stroke-linecap:round;stroke-linejoin:round;stroke-width:5" />
+  </g>
+  </g>
+</svg>
