@@ -1,5 +1,7 @@
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
-import { mkdtemp, mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, mkdir, readFile, symlink, writeFile } from 'node:fs/promises';
+// @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
+import { EventEmitter } from 'node:events';
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
 import { tmpdir } from 'node:os';
 // @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
@@ -137,6 +139,55 @@ describe('deterministic vector video proof boundary', () => {
     await expect(loadVectorContext(path.join(sourceRoot, 'manifest.json'), {
       KENNEDI_VECTOR_VIDEO_LAB: path.join(project, '..', 'external-lab'),
     })).rejects.toThrow(/SHA-256/);
+  });
+
+  test('removes stale output evidence before a failed rerender', async () => {
+    const labRoot = await mkdtemp(path.join(tmpdir(), 'kennedi-vector-stale-test-'));
+    const context = await loadVectorContext(MANIFEST_PATH, {
+      KENNEDI_VECTOR_VIDEO_LAB: labRoot,
+    });
+    const recordPath = path.join(path.dirname(context.frameRoot), 'render-run.json');
+    await mkdir(path.dirname(context.outputPath), { recursive: true });
+    await mkdir(path.dirname(recordPath), { recursive: true });
+    await writeFile(context.outputPath, 'stale video');
+    await writeFile(recordPath, '{"stale":true}\n');
+
+    const page = {
+      setDefaultTimeout() {},
+      async route() {},
+      async goto() {},
+      async evaluate(callback: Function) {
+        if (callback.toString().includes('missingTargets')) {
+          return {
+            localName: 'svg', width: 1280, height: 704, prohibited: null,
+            missingTargets: [], frameCount: 77, fps: 24, canPause: true, canSeek: true,
+            expectedFrames: 77, expectedFps: 24, expectedWidth: 1280, expectedHeight: 704,
+          };
+        }
+      },
+      async screenshot({ path: framePath }: { path: string }) {
+        await writeFile(framePath, 'frame');
+      },
+    };
+    const browserType = {
+      async launch() {
+        return { async newPage() { return page; }, async close() {} };
+      },
+    };
+    const spawnImpl = () => {
+      const child = new EventEmitter() as EventEmitter & { kill: () => void };
+      child.kill = () => {};
+      queueMicrotask(() => child.emit('exit', 1));
+      return child;
+    };
+
+    await expect(renderVectorCommand(context, { dryRun: false }, {
+      browserType,
+      spawnImpl,
+      processTimeoutMs: 1_000,
+    })).rejects.toThrow(/exited with code 1/);
+    await expect(access(context.outputPath)).rejects.toThrow();
+    await expect(access(recordPath)).rejects.toThrow();
   });
 });
 

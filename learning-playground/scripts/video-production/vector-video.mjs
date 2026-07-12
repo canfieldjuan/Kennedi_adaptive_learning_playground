@@ -229,6 +229,9 @@ export async function renderVectorCommand(context, options, dependencies = {}) {
   await prepareCleanDirectory(context.labRoot, context.projectRoot, 'vector lab root');
   await prepareCleanFrameDirectory(context.frameRoot, context.labRoot, context.projectRoot);
   await prepareOutputPath(context.outputPath, context.labRoot, context.projectRoot);
+  const recordPath = path.join(path.dirname(context.frameRoot), 'render-run.json');
+  await assertNoSymlinkSegments(recordPath, 'render record');
+  await rm(recordPath, { force: true });
 
   const browserType = dependencies.browserType ?? chromium;
   const browser = await browserType.launch({ headless: true, args: ['--no-sandbox'] });
@@ -272,8 +275,6 @@ export async function renderVectorCommand(context, options, dependencies = {}) {
     dependencies.processTimeoutMs ?? VECTOR_PROOF.timeoutMs
   );
   const outputSha256 = await sha256File(context.outputPath);
-  const recordPath = path.join(path.dirname(context.frameRoot), 'render-run.json');
-  await assertNoSymlinkSegments(recordPath, 'render record');
   await writeFile(recordPath, `${JSON.stringify({
     manifest_id: context.manifest.id,
     source_sha256: context.sourceSha256,
@@ -400,6 +401,7 @@ async function prepareOutputPath(outputPath, labRoot, projectRoot) {
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error;
   }
+  await rm(outputPath, { force: true });
 }
 
 function runProcess(executable, args, spawnImpl, timeoutMs) {
