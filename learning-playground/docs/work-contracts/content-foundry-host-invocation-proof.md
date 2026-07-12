@@ -293,8 +293,8 @@ were removed.
 - Issue #79 post-read: open, host item checked, parent-receipt and integration
   blockers retained.
 - `npm ci`: installed 56 locked packages; audit found zero vulnerabilities.
-- `npm test`: passed 46 Content Foundry tests with one intentional skip, 57
-  Vitest files, and 764 app tests.
+- `npm test`: passed 46 Content Foundry tests with one intentional skip, 58
+  Vitest files, and 775 app tests after integrating current `origin/main`.
 - `npm run typecheck`: passed.
 - `npm run build`: passed; Vite transformed 125 modules.
 - `npm run lint --if-present`: passed; no lint script is declared.
