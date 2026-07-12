@@ -91,6 +91,60 @@ failed the owner look gate, so it would not reach the root cause.
 - This proof may show only subtle controlled movement. Preschool readability,
   stable identity, and clean object contact outrank animation amplitude.
 
+## Owner Look Correction: Spoon Contact and Stir Path
+
+### Root Cause
+
+Owner review on 2026-07-12 found that the Bear appears to move the spoon up and
+down outside the bowl instead of stirring inside it. The source draws the spoon
+bowl above the Bear's hand and rotates the entire arm/spoon/grip assembly by up
+to five degrees around the shoulder. That geometry and pivot produce a broad
+vertical arc; deterministic rendering faithfully reproduces the wrong authored
+motion.
+
+The same review wake exposed three current-head P2 runner findings. The runner
+derives its protected root from the manifest tree rather than this checkout,
+hashes one SVG read but navigates Chromium back to the mutable file path, and
+counts only some SMIL tags instead of whitelisting every animation element and
+target. Those are proof-integrity defects in the active replacement runner and
+must be closed in this correction.
+
+### Correct Fix Must Touch
+
+- Redraw the spoon so its handle passes through the visible grip and its working
+  end remains visibly inside the dough, behind the bowl's foreground rim.
+- Replace the broad shoulder rotation with a small synchronized, predominantly
+  horizontal arm/spoon/grip stir. Limit vertical travel to two pixels, keep the
+  arm start covered by the body overlap, and keep the spoon tip inside the bowl
+  for every sampled frame. Keep the dough response subtle and synchronized.
+- Update the source hash, regenerate the review WebM, contact sheet, and source
+  previews, and replace all recorded deterministic hashes.
+- Anchor the protected project root to the checked-in runner location, require
+  the manifest/source to remain inside that checkout, render the already-read
+  validated SVG bytes, and whitelist the complete SMIL element/target set.
+- Add focused regressions for checkout escape, mutable source avoidance, and
+  extra SMIL elements; rerun the full proof and repository verification.
+- Reconstruct and line-cite the revised diff before the next push.
+
+### Must Not Change
+
+All prior Explicit Non-Scope boundaries remain unchanged. In particular, do not
+change runtime video assets, child routes, narration, events, curriculum,
+evidence, approval, dependencies, other games, or the other two Bear Bakes Bread
+beats. Do not broaden the visual revision beyond spoon geometry, grip/contact,
+and the bounded mixing motion required by the owner feedback.
+
+### Verification Plan
+
+- Sample every rendered frame and confirm the spoon working end stays inside the
+  bowl/dough region while the hand/grip remains connected to the arm and shaft.
+- Inspect a new contact sheet and final WebM at desktop and source-scale mobile
+  sizes; owner approval remains the final motion-quality gate.
+- Render twice from clean directories and compare source, frame-set, and WebM
+  hashes byte for byte.
+- Run the focused runner tests, full test suite, typecheck, build, viewport,
+  contract, media decode, XML/JSON, protected-path, and diff checks.
+
 ## Deterministic Proof Standard
 
 - Source: one editable Inkscape SVG composed only of local vector shapes.
@@ -132,11 +186,15 @@ properties. Owner approval, not CI, determines whether the motion feels good.
 - Reconstruct the final PR diff against current `origin/main`, cite every
   change, prove every contract item is present, and lead with any gap.
 
-## Cold Diff Audit
+## Superseded First-Pass Audit
 
 ### Gaps First
 
-No gap remains in the final diff.
+This audit describes the first deterministic proof and is superseded by the
+2026-07-12 owner look correction above. The current proof has a confirmed visual
+gap: its authored spoon geometry and shoulder pivot do not depict stirring
+inside the bowl. Three proof-integrity findings also remain open until the
+correction is implemented and verified.
 
 The cold read did find three runner gaps before completion. A symlinked manifest
 could reach parsing before the symlink boundary, an inline SVG event attribute
@@ -254,9 +312,155 @@ diff rather than retained as dead tooling.
   contact, nonblank frames, and calm bounded movement. Owner look approval is
   still pending and is not implied by these technical checks.
 
+## Superseded Gap Audit
+
+NOT DONE. The rejected generated workflow remains absent and the protected
+surface remains unchanged, but owner review rejected the spoon contact/stir
+motion and the current-head runner findings require correction. Do not push the
+next head until the revised proof, focused regressions, repeated hashes, full
+verification, and a new cold diff audit are complete.
+
+## Revised Cold Diff Audit
+
+### Gaps First
+
+No implementation gap remains in the corrected diff. Owner visual approval is
+still pending and cannot be inferred from automated checks.
+
+- **Confirmed and corrected:** the first deterministic proof placed the spoon's
+  working end above the hand and used a broad shoulder rotation, producing the
+  owner-reported up/down motion outside the bowl. The revised source puts the
+  shaft through the grip, places the working end inside the dough behind the
+  foreground rim, and synchronizes arm, spoon, and grip with 14 pixels of
+  horizontal travel and no more than two pixels vertically
+  (`design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg:89`,
+  `design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg:99`,
+  `design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg:110`,
+  `design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg:120`,
+  `design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg:129`).
+- **Confirmed and corrected:** the runner formerly trusted the manifest tree as
+  the protected root. It now derives the root from its own checked-in location
+  and requires both manifest and source to remain inside it
+  (`scripts/video-production/vector-video.mjs:20`,
+  `scripts/video-production/vector-video.mjs:186`).
+- **Confirmed and corrected:** Chromium formerly reopened the mutable SVG path
+  after hashing. It now navigates a data URL built from the already-read,
+  validated bytes and blocks every other request
+  (`scripts/video-production/vector-video.mjs:260`).
+- **Confirmed and corrected:** source validation formerly counted only a subset
+  of SMIL. Text and browser validation now require exactly the declared four
+  transforms and blink, their exact targets, and no extra animation tag
+  (`scripts/video-production/vector-video.mjs:112`,
+  `scripts/video-production/vector-video.mjs:140`,
+  `scripts/video-production/vector-video.mjs:362`).
+- **Confirmed and corrected:** every captured frame now checks the spoon working
+  end against the dough bounds and checks hand/grip/shaft contact before the PNG
+  is written (`scripts/video-production/vector-video.mjs:277`,
+  `scripts/video-production/vector-video.mjs:419`). Both clean 77-frame renders
+  completed this guard without an escape.
+- **Could not determine:** whether the corrected motion meets the owner's look
+  standard. The refreshed contact sheet and WebM require owner inspection.
+
+The final `git diff --name-status origin/main` contains exactly ten declared
+proof files. A protected-path scan returns no `public/`, `src/`, package,
+Content Foundry, runtime, activity, curriculum, evidence, or approval file.
+
+### Change-by-Change Reconstruction
+
+- The editable SVG preserves the 1280x704, 77-frame, fourteen-layer Bear Cafe
+  scene (`mix-dough-vector-animation.svg:2`,
+  `mix-dough-vector-animation.svg:5`). It keeps Bear identity and the blink
+  unchanged (`mix-dough-vector-animation.svg:53`,
+  `mix-dough-vector-animation.svg:76`) while changing only the mixing arm,
+  dough, spoon, grip, and foreground layering needed for the corrected action
+  (`mix-dough-vector-animation.svg:89`,
+  `mix-dough-vector-animation.svg:99`,
+  `mix-dough-vector-animation.svg:110`,
+  `mix-dough-vector-animation.svg:120`,
+  `mix-dough-vector-animation.svg:129`).
+- The manifest remains proof-only with production writes forbidden and pins the
+  corrected source hash, geometry, external paths, local no-network browser,
+  and deterministic audio-free VP9 settings
+  (`vector-render-manifest.json:2`, `vector-render-manifest.json:7`,
+  `vector-render-manifest.json:8`, `vector-render-manifest.json:13`,
+  `vector-render-manifest.json:15`, `vector-render-manifest.json:20`).
+- The repository CLI keeps its bounded `render`/`--dry-run` interface and fixed
+  manifest/encoding validation (`vector-video.mjs:31`, `vector-video.mjs:56`).
+  It now anchors the checkout, hashes and renders the same source bytes,
+  whitelists all motion, enforces per-frame physical geometry, cleans failed
+  output, and retains bounded FFmpeg handling (`vector-video.mjs:112`,
+  `vector-video.mjs:186`, `vector-video.mjs:260`, `vector-video.mjs:277`,
+  `vector-video.mjs:290`, `vector-video.mjs:296`, `vector-video.mjs:419`,
+  `vector-video.mjs:484`, `vector-video.mjs:499`).
+- The nine focused tests still cover CLI/manifest limits, committed source,
+  external content, frame timing, FFmpeg arguments, paths/symlinks, source hash,
+  stale evidence, and failed output. The correction adds explicit extra-SMIL,
+  outside-checkout manifest, and immutable source-byte assertions
+  (`tests/scripts/vector-video.test.ts:54`,
+  `tests/scripts/vector-video.test.ts:68`,
+  `tests/scripts/vector-video.test.ts:80`,
+  `tests/scripts/vector-video.test.ts:113`,
+  `tests/scripts/vector-video.test.ts:132`,
+  `tests/scripts/vector-video.test.ts:149`,
+  `tests/scripts/vector-video.test.ts:217`).
+- The provenance ledger remains draft/review-only, documents original project
+  ownership and no AI or third-party asset content, records the owner-feedback
+  correction and exact repeated-render hashes, and keeps owner approval pending
+  (`docs/art/asset-provenance.md:101`,
+  `docs/art/asset-provenance.md:106`,
+  `docs/art/asset-provenance.md:110`,
+  `docs/art/asset-provenance.md:124`,
+  `docs/art/asset-provenance.md:129`,
+  `docs/art/asset-provenance.md:130`).
+- The four binary files named at `docs/art/asset-provenance.md:106` and
+  `docs/art/asset-provenance.md:126` replace only the review WebM, contact sheet,
+  and desktop/mobile source previews. They are not under `public` and have no
+  line-addressable content.
+- This contract records the original root cause and boundaries plus the owner
+  feedback correction before implementation
+  (`docs/work-contracts/bear-vector-video-deterministic-proof.md:11`,
+  `docs/work-contracts/bear-vector-video-deterministic-proof.md:26`,
+  `docs/work-contracts/bear-vector-video-deterministic-proof.md:59`,
+  `docs/work-contracts/bear-vector-video-deterministic-proof.md:94`).
+
+Every changed file traces to the original or owner-correction Correct Fix Must
+Touch list. Nothing in Must Not Change moved. The twelve outdated ComfyUI review
+threads target a deleted file; the three current runner findings trace directly
+to the corrected checkout, immutable-byte, and SMIL boundaries above.
+
+### Verification
+
+- `npx vitest run tests/scripts/vector-video.test.ts`: 9/9 passed.
+- `npm test`: work-contract check passed; Content Foundry 46 passed with one
+  expected skip; Vitest 58 files and 773 tests passed.
+- `npm run typecheck`: passed.
+- `npm run build`: passed; Vite transformed 125 modules.
+- `npm run test:viewport`: 6/6 Playwright checks passed.
+- `npm run lint --if-present`: exited 0; no lint script exists.
+- `node scripts/check-work-contract.mjs`, `git diff --check`, XML validation,
+  JSON parsing, external-reference scan, rejected-workflow scan, and temporary
+  output scan passed.
+- Inkscape 1.4.4 exported a 1280x704 initial frame. Its expected warning that it
+  does not preview SMIL leaves Chromium as the pinned timeline renderer.
+- Two clean corrected renders matched exactly: source SHA-256
+  `8926e9082ca11ad3fd240c1d583a7d4d0e93c4c3f37888a7989982b63fda1a4f`,
+  frame-set SHA-256
+  `5635b8874f137c35eae7ea3edcd0c986a5ff0e2f609c39cf4144300eaaf1a7d6`,
+  and WebM SHA-256
+  `67e0e28b72cfbe6fd0922b6330724d44191b3a501d507ac05eebcd5c330b904b`.
+- The committed WebM is byte-identical to the final external render. FFprobe
+  reports VP9, 1280x704, `yuv420p`, 24 FPS, 3.209 seconds, 85,546 bytes, and no
+  audio; full decode passed. Black-frame and scene-cut checks emitted no
+  detections. The generic freeze detector reports the mostly-static full scene
+  from frame zero even though sampled frames and the per-frame geometry guard
+  confirm bounded local movement; it is not a useful pass/fail signal for this
+  composition. The refreshed contact sheet was inspected for stable identity,
+  visible hand/grip/shaft contact, spoon immersion, and horizontal motion.
+
 ## Gap Audit
 
-DONE for this review-only deterministic proof. The rejected workflow is absent,
-the repeated hashes match, all declared verification passed, and no protected
-surface changed. Owner visual approval remains the next gate before any runtime
-integration or additional Bear Bakes Bread beat.
+DONE for the owner-feedback correction implementation. The spoon geometry and
+motion now satisfy the written physical constraints, all three active runner
+findings are corrected, repeated hashes match, verification passes, and no
+protected surface changed. Owner visual approval remains pending before merge,
+runtime integration, or additional Bear Bakes Bread beats.

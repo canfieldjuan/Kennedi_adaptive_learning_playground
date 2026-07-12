@@ -89,46 +89,46 @@
   <g inkscape:groupmode="layer" inkscape:label="09 Mixing arm" id="mixing-arm">
     <path d="M596 443C662 431 704 449 752 480" fill="none" stroke="#3a2461" stroke-width="52" stroke-linecap="round"/>
     <path d="M596 443C662 431 704 449 752 480" fill="none" stroke="#b97850" stroke-width="36" stroke-linecap="round"/>
-    <circle cx="754" cy="480" r="24" fill="#b97850" stroke="#3a2461" stroke-width="8"/>
-    <animateTransform attributeName="transform" type="rotate" begin="0s" dur="3.208333s"
+    <circle id="mixing-hand" cx="754" cy="480" r="24" fill="#b97850" stroke="#3a2461" stroke-width="8"/>
+    <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"
                       repeatCount="1" fill="freeze"
-                      values="0 596 443;-5 596 443;5 596 443;-4 596 443;4 596 443;0 596 443"
+                      values="0 0;14 2;-14 -1;12 1;-12 -1;0 0"
                       keyTimes="0;0.18;0.38;0.58;0.78;1"/>
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="10 Spoon" id="spoon">
-    <path d="M786 493L844 320" fill="none" stroke="#3a2461" stroke-width="27" stroke-linecap="round"/>
-    <path d="M786 493L844 320" fill="none" stroke="#b97850" stroke-width="17" stroke-linecap="round"/>
-    <ellipse cx="851" cy="301" rx="20" ry="31" transform="rotate(18 851 301)" fill="#d9a06f" stroke="#3a2461" stroke-width="8"/>
-    <animateTransform attributeName="transform" type="rotate" begin="0s" dur="3.208333s"
-                      repeatCount="1" fill="freeze"
-                      values="0 596 443;-5 596 443;5 596 443;-4 596 443;4 596 443;0 596 443"
-                      keyTimes="0;0.18;0.38;0.58;0.78;1"/>
-  </g>
-
-  <g inkscape:groupmode="layer" inkscape:label="11 Bowl and dough" id="bowl-and-dough">
+  <g inkscape:groupmode="layer" inkscape:label="10 Bowl and dough back" id="bowl-and-dough">
     <ellipse cx="824" cy="532" rx="190" ry="83" fill="#fffdf7" stroke="#3a2461" stroke-width="11"/>
-    <ellipse cx="824" cy="516" rx="154" ry="52" fill="#e7b969" stroke="#3a2461" stroke-width="6"/>
+    <ellipse id="dough-surface" cx="824" cy="516" rx="154" ry="52" fill="#e7b969" stroke="#3a2461" stroke-width="6"/>
     <path id="dough-swirl" d="M728 514q48-39 96 0t96 0" fill="none" stroke="#ffe8a3" stroke-width="17" stroke-linecap="round">
       <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"
                         repeatCount="1" fill="freeze"
                         values="0 0;-10 0;10 0;-8 0;8 0;0 0"
                         keyTimes="0;0.18;0.38;0.58;0.78;1"/>
     </path>
-    <path d="M653 539q24 88 171 91 147-3 171-91" fill="#f8cbd5" stroke="#3a2461" stroke-width="11" stroke-linejoin="round"/>
-    <path d="M699 572q125 40 250 0" fill="none" stroke="#fff8eb" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="11 Spoon" id="spoon">
+    <path d="M770 420L822 538" fill="none" stroke="#3a2461" stroke-width="27" stroke-linecap="round"/>
+    <path id="spoon-shaft" d="M770 420L822 538" fill="none" stroke="#b97850" stroke-width="17" stroke-linecap="round"/>
+    <ellipse id="spoon-working-end" cx="829" cy="550" rx="20" ry="31" transform="rotate(-22 829 550)" fill="#d9a06f" stroke="#3a2461" stroke-width="8"/>
+    <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"
+                      repeatCount="1" fill="freeze"
+                      values="0 0;14 2;-14 -1;12 1;-12 -1;0 0"
+                      keyTimes="0;0.18;0.38;0.58;0.78;1"/>
   </g>
 
   <g inkscape:groupmode="layer" inkscape:label="12 Spoon grip" id="spoon-grip">
     <circle cx="788" cy="464" r="27" fill="#b97850" stroke="#3a2461" stroke-width="8"/>
     <path d="M776 462q12 11 24 0" fill="none" stroke="#efb28d" stroke-width="5" stroke-linecap="round"/>
-    <animateTransform attributeName="transform" type="rotate" begin="0s" dur="3.208333s"
+    <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"
                       repeatCount="1" fill="freeze"
-                      values="0 596 443;-5 596 443;5 596 443;-4 596 443;4 596 443;0 596 443"
+                      values="0 0;14 2;-14 -1;12 1;-12 -1;0 0"
                       keyTimes="0;0.18;0.38;0.58;0.78;1"/>
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="13 Foreground details" id="foreground-details">
+  <g inkscape:groupmode="layer" inkscape:label="13 Bowl front and props" id="foreground-details">
+    <path d="M653 539q24 88 171 91 147-3 171-91" fill="#f8cbd5" stroke="#3a2461" stroke-width="11" stroke-linejoin="round"/>
+    <path d="M699 572q125 40 250 0" fill="none" stroke="#fff8eb" stroke-width="7" stroke-linecap="round"/>
     <rect x="1062" y="454" width="108" height="76" rx="18" fill="#d9f0e8" stroke="#3a2461" stroke-width="8"/>
     <path d="M1080 454q36-44 72 0" fill="#91bd72" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
     <circle cx="1100" cy="486" r="8" fill="#f6c64e"/>

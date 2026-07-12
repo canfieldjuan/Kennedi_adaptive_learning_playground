@@ -14,8 +14,10 @@ import {
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
+
+const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 export const VECTOR_PROOF = Object.freeze({
   width: 1280,
@@ -129,12 +131,20 @@ export function validateSourceText(source, manifest) {
   for (const value of expectedRootValues) {
     if (!source.includes(value)) throw new Error(`source is missing pinned root value ${value}`);
   }
-  for (const id of ['mixing-arm', 'spoon', 'spoon-grip', 'dough-swirl', 'blink']) {
+  for (const id of [
+    'mixing-arm', 'mixing-hand', 'spoon', 'spoon-shaft', 'spoon-working-end',
+    'spoon-grip', 'dough-surface', 'dough-swirl', 'blink',
+  ]) {
     if (!source.includes(`id="${id}"`)) throw new Error(`source is missing animation target ${id}`);
   }
-  const transforms = source.match(/<animateTransform\b/g) ?? [];
-  if (transforms.length !== 4 || !source.includes('<animate attributeName="opacity"')) {
-    throw new Error('source must contain exactly four motion transforms and one blink animation');
+  const animationTags = [...source.matchAll(/<(animate[a-z]*|set|mpath|discard)\b/gi)]
+    .map((match) => match[1].toLowerCase());
+  if (
+    animationTags.length !== 5
+    || animationTags.filter((tag) => tag === 'animatetransform').length !== 4
+    || animationTags.filter((tag) => tag === 'animate').length !== 1
+  ) {
+    throw new Error('source must contain only four motion transforms and one blink animation');
   }
   return source;
 }
@@ -175,10 +185,11 @@ export function buildFfmpegArgs(manifest, frameRoot, outputPath) {
 
 export async function loadVectorContext(manifestArgument, environment = process.env) {
   const manifestPath = path.resolve(manifestArgument);
+  const projectRoot = PROJECT_ROOT;
+  assertWithin(manifestPath, projectRoot, 'manifest');
   await assertNoSymlinkSegments(manifestPath, 'manifest');
   const manifest = validateManifest(JSON.parse(await readFile(manifestPath, 'utf8')));
   const sourceRoot = path.dirname(manifestPath);
-  const projectRoot = await findProjectRoot(sourceRoot);
   const labRoot = path.resolve(
     environment.KENNEDI_VECTOR_VIDEO_LAB
       ?? path.join(homedir(), '.local', 'share', 'kennedi-vector-video-lab')
@@ -187,11 +198,12 @@ export async function loadVectorContext(manifestArgument, environment = process.
   await assertNoSymlinkSegments(labRoot, 'vector lab root');
 
   const sourcePath = resolveSourcePath(sourceRoot, manifest.source_svg, 'source SVG');
+  assertWithin(sourcePath, projectRoot, 'source SVG');
   await assertNoSymlinkSegments(sourcePath, 'source SVG');
   await access(sourcePath);
   const source = validateSourceText(await readFile(sourcePath, 'utf8'), manifest);
   const sourceSha256 = await sha256File(sourcePath);
-  if (sourceSha256 !== manifest.source_sha256) throw new Error('source SVG SHA-256 mismatch');
+  assertSourceSha256(sourceSha256, manifest.source_sha256);
 
   const frameRoot = path.resolve(labRoot, manifest.frame_directory);
   const outputPath = path.resolve(labRoot, manifest.review_output);
@@ -245,11 +257,12 @@ export async function renderVectorCommand(context, options, dependencies = {}) {
       deviceScaleFactor: context.manifest.browser.device_scale_factor,
     });
     page.setDefaultTimeout(15_000);
+    const sourceUrl = `data:image/svg+xml;base64,${Buffer.from(context.source, 'utf8').toString('base64')}`;
     await page.route('**/*', async (route) => {
-      if (route.request().url().startsWith('file:')) await route.continue();
+      if (route.request().url() === sourceUrl) await route.continue();
       else await route.abort('blockedbyclient');
     });
-    await page.goto(pathToFileURL(context.sourcePath).href, { waitUntil: 'load' });
+    await page.goto(sourceUrl, { waitUntil: 'load' });
     await validateBrowserDocument(page, context.manifest);
 
     for (const frame of framePlan) {
@@ -261,6 +274,7 @@ export async function renderVectorCommand(context, options, dependencies = {}) {
       await page.evaluate(() => new Promise((resolve) => {
         requestAnimationFrame(() => requestAnimationFrame(resolve));
       }));
+      await validateMixingGeometry(page, frame.index);
       await page.screenshot({
         path: path.join(context.frameRoot, frame.filename),
         clip: { x: 0, y: 0, width: context.manifest.width, height: context.manifest.height },
@@ -315,6 +329,10 @@ export async function sha256File(filePath) {
   });
 }
 
+export function assertSourceSha256(actual, expected) {
+  if (actual !== expected) throw new Error('source SVG SHA-256 mismatch');
+}
+
 export async function sha256FrameSet(frameRoot, framePlan) {
   const hash = createHash('sha256');
   for (const frame of framePlan) {
@@ -346,13 +364,26 @@ async function validateBrowserDocument(page, manifest) {
     const svg = document.documentElement;
     const viewBox = svg.viewBox.baseVal;
     const prohibited = svg.querySelector('text,image,script,style,foreignObject,audio,video');
-    const targets = ['mixing-arm', 'spoon', 'spoon-grip', 'dough-swirl', 'blink'];
+    const targets = [
+      'mixing-arm', 'mixing-hand', 'spoon', 'spoon-shaft', 'spoon-working-end',
+      'spoon-grip', 'dough-surface', 'dough-swirl', 'blink',
+    ];
+    const animations = [...svg.querySelectorAll(
+      'animate,animateTransform,animateMotion,animateColor,set,mpath,discard'
+    )]
+      .map((element) => [
+        element.parentElement?.id ?? '',
+        element.localName.toLowerCase(),
+        element.getAttribute('attributeName') ?? '',
+      ].join(':'))
+      .sort();
     return {
       localName: svg.localName,
       width: viewBox.width,
       height: viewBox.height,
       prohibited: prohibited?.localName ?? null,
       missingTargets: targets.filter((id) => !document.getElementById(id)),
+      animations,
       frameCount: Number(svg.dataset.frameCount),
       fps: Number(svg.dataset.fps),
       canPause: typeof svg.pauseAnimations === 'function',
@@ -369,12 +400,64 @@ async function validateBrowserDocument(page, manifest) {
     || result.height !== result.expectedHeight
     || result.prohibited !== null
     || result.missingTargets.length > 0
+    || result.animations.join('|') !== [
+      'blink:animate:opacity',
+      'dough-swirl:animatetransform:transform',
+      'mixing-arm:animatetransform:transform',
+      'spoon-grip:animatetransform:transform',
+      'spoon:animatetransform:transform',
+    ].join('|')
     || result.frameCount !== result.expectedFrames
     || result.fps !== result.expectedFps
     || !result.canPause
     || !result.canSeek
   ) {
     throw new Error(`browser SVG validation failed: ${JSON.stringify(result)}`);
+  }
+}
+
+async function validateMixingGeometry(page, frameIndex) {
+  const geometry = await page.evaluate((sampledFrame) => {
+    const rect = (id) => {
+      const bounds = document.getElementById(id)?.getBoundingClientRect();
+      if (!bounds) return null;
+      return {
+        left: bounds.left,
+        right: bounds.right,
+        top: bounds.top,
+        bottom: bounds.bottom,
+        x: bounds.left + bounds.width / 2,
+        y: bounds.top + bounds.height / 2,
+      };
+    };
+    return {
+      frame: sampledFrame,
+      dough: rect('dough-surface'),
+      hand: rect('mixing-hand'),
+      grip: rect('spoon-grip'),
+      shaft: rect('spoon-shaft'),
+      workingEnd: rect('spoon-working-end'),
+    };
+  }, frameIndex);
+  const { dough, hand, grip, shaft, workingEnd } = geometry;
+  if (!dough || !hand || !grip || !shaft || !workingEnd) {
+    throw new Error(`mixing geometry missing at frame ${frameIndex}`);
+  }
+  const handGripDistance = Math.hypot(hand.x - grip.x, hand.y - grip.y);
+  const workingEndInsideDough = (
+    workingEnd.x >= dough.left + 20
+    && workingEnd.x <= dough.right - 20
+    && workingEnd.y >= dough.top + 20
+    && workingEnd.y <= dough.bottom + 2
+  );
+  const gripTouchesShaft = (
+    grip.x >= shaft.left - 8
+    && grip.x <= shaft.right + 8
+    && grip.y >= shaft.top - 8
+    && grip.y <= shaft.bottom + 8
+  );
+  if (!workingEndInsideDough || handGripDistance > 45 || !gripTouchesShaft) {
+    throw new Error(`mixing geometry escaped at frame ${frameIndex}: ${JSON.stringify(geometry)}`);
   }
 }
 
@@ -477,21 +560,6 @@ function assertOutside(candidate, root, label) {
   const relative = path.relative(path.resolve(root), path.resolve(candidate));
   if (relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))) {
     throw new Error(`${label} cannot be inside the repository`);
-  }
-}
-
-async function findProjectRoot(start) {
-  let current = path.resolve(start);
-  while (true) {
-    try {
-      const packageValue = JSON.parse(await readFile(path.join(current, 'package.json'), 'utf8'));
-      if (packageValue.name === 'learning-playground') return current;
-    } catch {
-      // Keep walking toward the filesystem root.
-    }
-    const parent = path.dirname(current);
-    if (parent === current) throw new Error('could not locate learning-playground project root');
-    current = parent;
   }
 }
 

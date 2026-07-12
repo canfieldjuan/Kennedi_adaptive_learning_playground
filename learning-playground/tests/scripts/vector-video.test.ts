@@ -14,6 +14,7 @@ import * as vectorVideo from '../../scripts/video-production/vector-video.mjs';
 
 const {
   assertNoSymlinkSegments,
+  assertSourceSha256,
   buildFfmpegArgs,
   loadVectorContext,
   parseCliArgs,
@@ -58,6 +59,9 @@ describe('deterministic vector video proof boundary', () => {
     expect(source.match(/inkscape:groupmode="layer"/g)).toHaveLength(14);
     expect(source.match(/<animateTransform\b/g)).toHaveLength(4);
     expect(source).toContain('id="spoon-grip"');
+    expect(source).toContain('id="spoon-working-end"');
+    expect(source).toContain('id="mixing-hand"');
+    expect(source).toContain('id="dough-surface"');
     expect(source).not.toMatch(/<(?:text|image|script|foreignObject)\b/i);
   });
 
@@ -73,6 +77,10 @@ describe('deterministic vector video proof boundary', () => {
       .toThrow(/external/);
     expect(() => validateSourceText(source.replace('<svg ', '<svg onload="fetch(\'https://example.com\')" '), manifest))
       .toThrow(/event-handler/);
+    expect(() => validateSourceText(source.replace('</svg>', '<path><animate attributeName="d"/></path></svg>'), manifest))
+      .toThrow(/only four/);
+    expect(() => validateSourceText(source.replace('</svg>', '<set attributeName="opacity"/></svg>'), manifest))
+      .toThrow(/only four/);
     expect(() => validateSourceText(source.replace('id="spoon-grip"', 'id="removed"'), manifest))
       .toThrow(/spoon-grip/);
   });
@@ -118,7 +126,7 @@ describe('deterministic vector video proof boundary', () => {
     const manifestLink = path.join(root, 'manifest-link.json');
     await writeFile(manifestTarget, JSON.stringify(makeManifest()));
     await symlink(manifestTarget, manifestLink);
-    await expect(loadVectorContext(manifestLink)).rejects.toThrow(/symbolic/);
+    await expect(loadVectorContext(manifestLink)).rejects.toThrow(/allowed root/);
   });
 
   test('verifies the committed source hash before planning a dry run', async () => {
@@ -135,18 +143,7 @@ describe('deterministic vector video proof boundary', () => {
       last_frame_seconds: 76 / 24,
     });
 
-    const project = await mkdtemp(path.join(tmpdir(), 'kennedi-vector-hash-test-'));
-    const sourceRoot = path.join(project, 'design-source');
-    await mkdir(sourceRoot, { recursive: true });
-    await writeFile(path.join(project, 'package.json'), '{"name":"learning-playground"}\n');
-    await writeFile(path.join(sourceRoot, 'source.svg'), validSource());
-    await writeFile(path.join(sourceRoot, 'manifest.json'), JSON.stringify(makeManifest({
-      source_svg: 'source.svg',
-      source_sha256: '0'.repeat(64),
-    })));
-    await expect(loadVectorContext(path.join(sourceRoot, 'manifest.json'), {
-      KENNEDI_VECTOR_VIDEO_LAB: path.join(project, '..', 'external-lab'),
-    })).rejects.toThrow(/SHA-256/);
+    expect(() => assertSourceSha256('a'.repeat(64), '0'.repeat(64))).toThrow(/SHA-256/);
   });
 
   test('removes stale output evidence before a failed rerender', async () => {
@@ -160,16 +157,34 @@ describe('deterministic vector video proof boundary', () => {
     await writeFile(context.outputPath, 'stale video');
     await writeFile(recordPath, '{"stale":true}\n');
 
+    let navigatedSourceUrl = '';
     const page = {
       setDefaultTimeout() {},
       async route() {},
-      async goto() {},
+      async goto(url: string) { navigatedSourceUrl = url; },
       async evaluate(callback: Function) {
         if (callback.toString().includes('missingTargets')) {
           return {
             localName: 'svg', width: 1280, height: 704, prohibited: null,
             missingTargets: [], frameCount: 77, fps: 24, canPause: true, canSeek: true,
+            animations: [
+              'blink:animate:opacity',
+              'dough-swirl:animatetransform:transform',
+              'mixing-arm:animatetransform:transform',
+              'spoon-grip:animatetransform:transform',
+              'spoon:animatetransform:transform',
+            ],
             expectedFrames: 77, expectedFps: 24, expectedWidth: 1280, expectedHeight: 704,
+          };
+        }
+        if (callback.toString().includes("workingEnd: rect('spoon-working-end')")) {
+          return {
+            frame: 0,
+            dough: { left: 670, right: 978, top: 464, bottom: 568, x: 824, y: 516 },
+            hand: { left: 730, right: 778, top: 456, bottom: 504, x: 754, y: 480 },
+            grip: { left: 761, right: 815, top: 437, bottom: 491, x: 788, y: 464 },
+            shaft: { left: 761, right: 831, top: 411, bottom: 547, x: 796, y: 479 },
+            workingEnd: { left: 800, right: 858, top: 520, bottom: 580, x: 829, y: 550 },
           };
         }
       },
@@ -199,6 +214,8 @@ describe('deterministic vector video proof boundary', () => {
     })).rejects.toThrow(/exited with code 1/);
     await expect(access(context.outputPath)).rejects.toThrow();
     await expect(access(recordPath)).rejects.toThrow();
+    expect(navigatedSourceUrl).toMatch(/^data:image\/svg\+xml;base64,/);
+    expect(atob(navigatedSourceUrl.split(',')[1])).toBe(context.source);
   });
 });
 
@@ -209,7 +226,7 @@ function makeManifest(overrides: Record<string, unknown> = {}) {
     proof_only: true,
     production_writes_allowed: false,
     source_svg: 'mix-dough-vector-animation.svg',
-    source_sha256: '3fdf8aac7903e0c25478eb6c91eec6e53b618b791133fda20dc5c1a511f12984',
+    source_sha256: '8926e9082ca11ad3fd240c1d583a7d4d0e93c4c3f37888a7989982b63fda1a4f',
     width: 1280,
     height: 704,
     frames: 77,
@@ -228,7 +245,7 @@ function makeManifest(overrides: Record<string, unknown> = {}) {
 }
 
 function validSource() {
-  return `<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="1280" height="704" viewBox="0 0 1280 704" data-duration-seconds="3.208333" data-fps="24" data-frame-count="77"><g id="mixing-arm"><animateTransform/></g><g id="spoon"><animateTransform/></g><g id="spoon-grip"><animateTransform/></g><path id="dough-swirl"><animateTransform/></path><g id="blink"><animate attributeName="opacity"/></g></svg>`;
+  return `<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="1280" height="704" viewBox="0 0 1280 704" data-duration-seconds="3.208333" data-fps="24" data-frame-count="77"><g id="mixing-arm"><circle id="mixing-hand"/><animateTransform/></g><g id="spoon"><path id="spoon-shaft"/><ellipse id="spoon-working-end"/><animateTransform/></g><g id="spoon-grip"><animateTransform/></g><ellipse id="dough-surface"/><path id="dough-swirl"><animateTransform/></path><g id="blink"><animate attributeName="opacity"/></g></svg>`;
 }
 
 function flagValue(args: string[], flag: string) {
