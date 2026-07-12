@@ -192,3 +192,30 @@ and must also document every legacy asset family it modifies or re-exports.
   owner merges proof PRs, so this asset cannot reach child mode without the
   approval having happened. Do not extend the style until then.
 - **Restrictions and notes:** Counting-guardrail revision (2026-07-11, review): the cloud, signal lights, and town blocks are redrawn as single continuous silhouettes so the backdrop holds zero countable clusters; the library components were updated first and the scene + export re-derived from them. Reserved clear zones: title/progress strip, question line, the train band, the answer-card band. No digits or countable clusters in the backdrop (skyline blocks are abstract, low contrast) — the count evidence stays runtime-owned.
+
+## Art studio room scene (proof)
+
+- **Asset family:** Art studio backdrop scene (all-neutral)
+- **Game:** Art (Bear Art Studio + legacy coloring, shared studio environment)
+- **Status:** `rights_verified` (owner look approval pending)
+- **Production path(s):** `public/assets/images/studio-room-proof.svg`;
+  `public/assets/images/studio-room-proof-mobile.svg` (bands-only phone
+  crop of the same editable source — delete the `studio-*` prop layers
+  and re-export)
+- **Editable source path(s):** `design-source/art-studio/studio-room-proof.svg` (instances of the shared component library; the library gained `wall-frame-dot`, `wall-frame-hill`, `art-shelf`)
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-11
+- **Creation tool:** Composed from the component library with an authoring-time neutral-palette remap; editable in Inkscape 1.4.4; headless-render verified
+- **Origin:** Category A original composition, adapting Category B motifs from the prior in-code studio scene
+- **Third-party elements:** None
+- **AI assistance:** None
+- **Commercial use / modification / distribution / public repository:** Project-owned, permitted
+- **Contact sheet path:** `docs/captures/art-studio/studio-room-proof-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/art-studio/studio-room-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/art-studio/studio-room-proof-mobile.webp`
+- **Owner look approval:** Pending — recorded by the owner's merge of this
+  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
+  the post-merge rollout PR flips this line to `look_approved`. Only the
+  owner merges proof PRs, so this asset cannot reach child mode without the
+  approval having happened. Do not extend the style until then.
+- **Restrictions and notes:** HARD GUARDRAIL — the art screens teach color, so the backdrop is ALL-NEUTRAL (every paint from the contract's neutral set; enforced by tests/modules/coloring.test.ts sweeping this shipped file). Reserved clear zones: request/bear strip, canvas, tool row, palette row.

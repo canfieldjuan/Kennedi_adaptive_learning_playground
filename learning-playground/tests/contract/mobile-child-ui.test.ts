@@ -207,9 +207,18 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toMatch(
       /\.studio-environment \{[\s\S]*?pointer-events: none;[\s\S]*?\}/
     );
-    expect(childUiCss).toMatch(
-      /\.studio-environment \.studio-env__prop--minor \{\s*display: none;/
+    // The scene is one <img>, so page CSS cannot reach internal SVG props; the
+    // shallow-on-phones mechanism is the <picture> source swap to the
+    // bands-only mobile export at the compact media query.
+    const studioEnvironmentSource = readFixture(
+      '../../src/modules/coloring-book/studio-environment.ts'
     );
+    expect(studioEnvironmentSource).toContain(
+      'srcset="/assets/images/studio-room-proof-mobile.svg"'
+    );
+    expect(studioEnvironmentSource).toContain('(max-width: 768px)');
+    expect(studioEnvironmentSource).toContain('(orientation: landscape)');
+    expect(childUiCss).not.toContain('.studio-env__prop--minor');
     // The decorative easel legs disappear on phones so the shape's footprint
     // stays exactly what the landscape grid expects.
     expect(childUiCss).toMatch(
