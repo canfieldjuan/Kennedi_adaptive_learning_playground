@@ -133,9 +133,18 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toMatch(
       /\.workshop-environment \{[\s\S]*?pointer-events: none;[\s\S]*?\}/
     );
-    expect(childUiCss).toMatch(
-      /\.workshop-environment \.workshop-env__prop--minor \{\s*display: none;/
+    // The scene is one <img>, so page CSS cannot reach internal SVG props; the
+    // shallow-on-phones mechanism is the <picture> source swap to the
+    // bands-only mobile export at the compact media query.
+    const workshopEnvironmentSource = readFixture(
+      '../../src/modules/phonics-match/workshop-environment.ts'
     );
+    expect(workshopEnvironmentSource).toContain(
+      'srcset="/assets/images/words-workshop-proof-mobile.svg"'
+    );
+    expect(workshopEnvironmentSource).toContain('(max-width: 768px)');
+    expect(workshopEnvironmentSource).toContain('(orientation: landscape)');
+    expect(childUiCss).not.toContain('.workshop-env__prop--minor');
   });
 
   test('keeps the Bear Cafe environment inert and shallow on phones', () => {
@@ -180,9 +189,18 @@ describe('mobile child UI contract', () => {
     expect(childUiCss).toMatch(
       /\.station-environment \{[\s\S]*?pointer-events: none;[\s\S]*?\}/
     );
-    expect(childUiCss).toMatch(
-      /\.station-environment \.station-env__prop--minor \{\s*display: none;/
+    // The scene is one <img>, so page CSS cannot reach internal SVG props; the
+    // shallow-on-phones mechanism is the <picture> source swap to the
+    // bands-only mobile export at the compact media query.
+    const stationEnvironmentSource = readFixture(
+      '../../src/modules/number-train/station-environment.ts'
     );
+    expect(stationEnvironmentSource).toContain(
+      'srcset="/assets/images/train-station-proof-mobile.svg"'
+    );
+    expect(stationEnvironmentSource).toContain('(max-width: 768px)');
+    expect(stationEnvironmentSource).toContain('(orientation: landscape)');
+    expect(childUiCss).not.toContain('.station-env__prop--minor');
   });
 
   test('keeps the Art studio environment inert and shallow on phones', () => {

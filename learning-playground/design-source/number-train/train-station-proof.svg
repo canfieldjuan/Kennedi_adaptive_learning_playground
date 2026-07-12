@@ -18,11 +18,7 @@
   </g>
   <g id="train-cloud-puff" inkscape:label="cloud-puff" inkscape:groupmode="layer">
   <g transform="translate(1200 90)">
-    <g fill="#fff8eb" stroke="#3a2461" stroke-width="4" opacity="0.85">
-      <circle cx="0" cy="0" r="26"/>
-      <circle cx="-30" cy="10" r="18"/>
-      <circle cx="30" cy="10" r="18"/>
-    </g>
+    <path d="M -50 26 Q -62 26 -60 12 Q -58 -2 -42 -6 Q -36 -24 -12 -26 Q 10 -27 20 -12 Q 40 -14 48 0 Q 56 12 48 26 Z" fill="#fff8eb" stroke="#3a2461" stroke-width="4" opacity="0.85"/>
   </g>
   </g>
   <g id="train-station-house" inkscape:label="station-house" inkscape:groupmode="layer">
@@ -39,19 +35,14 @@
   </g>
   <g id="train-skyline-blocks" inkscape:label="skyline-blocks" inkscape:groupmode="layer">
   <g transform="translate(1092 300)">
-    <g opacity="0.55">
-      <rect x="0" y="40" width="82" height="120" fill="#c3cede"/>
-      <rect x="94" y="0" width="70" height="160" fill="#b3c0d4"/>
-      <rect x="176" y="64" width="96" height="96" fill="#c3cede"/>
-    </g>
+    <path d="M 0 160 V 40 H 88 V 0 H 168 V 64 H 272 V 160 Z" fill="#b3c0d4" opacity="0.55"/>
   </g>
   </g>
   <g id="train-signal-post" inkscape:label="signal-post" inkscape:groupmode="layer">
   <g transform="translate(1290 430)">
     <line x1="16" y1="0" x2="16" y2="150" stroke="#3a2461" stroke-width="7" stroke-linecap="round"/>
     <rect x="0" y="0" width="60" height="22" rx="8" fill="#e05d5d" stroke="#3a2461" stroke-width="4"/>
-    <circle cx="16" cy="44" r="11" fill="#9fd0a8" stroke="#3a2461" stroke-width="4"/>
-    <circle cx="16" cy="74" r="11" fill="#f0c65f" stroke="#3a2461" stroke-width="4"/>
+    <circle cx="16" cy="52" r="12" fill="#9fd0a8" stroke="#3a2461" stroke-width="4"/>
   </g>
   </g>
 </svg>

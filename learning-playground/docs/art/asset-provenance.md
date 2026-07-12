@@ -101,7 +101,11 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Contact sheet path:** `docs/captures/cohesion/home-room-proof-contact-sheet.webp`
 - **Desktop screenshot path(s):** `docs/captures/cohesion/home-room-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/cohesion/home-room-proof-mobile.webp`
-- **Owner look approval:** Pending; do not extend the style until approved
+- **Owner look approval:** Pending — recorded by the owner's merge of this
+  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
+  the post-merge rollout PR flips this line to `look_approved`. Only the
+  owner merges proof PRs, so this asset cannot reach child mode without the
+  approval having happened. Do not extend the style until then.
 - **Restrictions and notes:** Reserved clear zones (card grid center, greeting strip, Parent button corner) are load-bearing: props live in the margins only. Mobile cover-crop lands on the reserved center by design — a props-free wall; whether mobile should peek a prop is an owner look call.
 
 ## Words workshop scene (proof)
@@ -109,7 +113,10 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Asset family:** Pip's Word Workshop backdrop scene
 - **Game:** Words (all three modes: find, blending, builder)
 - **Status:** `rights_verified` (owner look approval pending)
-- **Production path(s):** `public/assets/images/words-workshop-proof.svg`
+- **Production path(s):** `public/assets/images/words-workshop-proof.svg`;
+  `public/assets/images/words-workshop-proof-mobile.svg` (bands-only phone
+  crop of the same editable source — delete the six `words-*` prop layers
+  and re-export)
 - **Editable source path(s):** `design-source/words/words-workshop-proof.svg` (instances of the shared component library; the library gained `bookshelf-low`, `pin-board`, `pencil-pot`)
 - **Creator:** Project developer (session-authored)
 - **Creation date:** 2026-07-11
@@ -121,7 +128,11 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Contact sheet path:** `docs/captures/word-workshop/words-workshop-proof-contact-sheet.webp`
 - **Desktop screenshot path(s):** `docs/captures/word-workshop/words-workshop-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/word-workshop/words-workshop-proof-mobile.webp`
-- **Owner look approval:** Pending; do not extend the style until approved
+- **Owner look approval:** Pending — recorded by the owner's merge of this
+  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
+  the post-merge rollout PR flips this line to `look_approved`. Only the
+  owner merges proof PRs, so this asset cannot reach child mode without the
+  approval having happened. Do not extend the style until then.
 - **Restrictions and notes:** HARD GUARDRAIL preserved — nothing reads as a letter, word, tile, or choice (plain spines, abstract pin-board, no `<text>`). Reserved clear zones: title/prompt strip, Pip column, the card/tile band. Portrait crop intentionally exits both edge prop groups.
 
 ## Number Train station scene (proof)
@@ -129,7 +140,10 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Asset family:** Number Train station backdrop scene
 - **Game:** Math (Number Train, all bands)
 - **Status:** `rights_verified` (owner look approval pending)
-- **Production path(s):** `public/assets/images/train-station-proof.svg`
+- **Production path(s):** `public/assets/images/train-station-proof.svg`;
+  `public/assets/images/train-station-proof-mobile.svg` (bands-only phone
+  crop of the same editable source — delete the five `train-*` prop layers
+  and re-export)
 - **Editable source path(s):** `design-source/number-train/train-station-proof.svg` (instances of the shared component library; the library gained `station-house`, `signal-post`, `skyline-blocks`, `sun-simple`, `cloud-puff`)
 - **Creator:** Project developer (session-authored)
 - **Creation date:** 2026-07-11
@@ -141,9 +155,12 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Contact sheet path:** `docs/captures/train-station/train-station-proof-contact-sheet.webp`
 - **Desktop screenshot path(s):** `docs/captures/train-station/train-station-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/train-station/train-station-proof-mobile.webp`
-- **Owner look approval:** Pending; do not extend the style until approved
-- **Restrictions and notes:** Reserved clear zones: title/progress strip, question line, the train band, the answer-card band. No digits or countable clusters in the backdrop (skyline blocks are abstract, low contrast) — the count evidence stays runtime-owned.
-
+- **Owner look approval:** Pending — recorded by the owner's merge of this
+  proof PR (owner merge IS the approval act, per the #92 -> #100 precedent);
+  the post-merge rollout PR flips this line to `look_approved`. Only the
+  owner merges proof PRs, so this asset cannot reach child mode without the
+  approval having happened. Do not extend the style until then.
+- **Restrictions and notes:** Counting-guardrail revision (2026-07-11, review): the cloud, signal lights, and town blocks are redrawn as single continuous silhouettes so the backdrop holds zero countable clusters; the library components were updated first and the scene + export re-derived from them. Reserved clear zones: title/progress strip, question line, the train band, the answer-card band. No digits or countable clusters in the backdrop (skyline blocks are abstract, low contrast) — the count evidence stays runtime-owned.
 ## Art studio room scene (proof)
 
 - **Asset family:** Art studio backdrop scene (all-neutral)
