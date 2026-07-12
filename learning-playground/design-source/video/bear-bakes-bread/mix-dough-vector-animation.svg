@@ -97,7 +97,7 @@
   </g>
 
   <g inkscape:groupmode="layer" inkscape:label="10 Bowl and dough back" id="bowl-and-dough">
-    <ellipse cx="824" cy="532" rx="190" ry="83" fill="#fffdf7" stroke="#3a2461" stroke-width="11"/>
+    <ellipse id="bowl-back" cx="824" cy="532" rx="190" ry="83" fill="#fffdf7" stroke="#3a2461" stroke-width="11"/>
     <ellipse id="dough-surface" cx="824" cy="516" rx="154" ry="52" fill="#e7b969" stroke="#3a2461" stroke-width="6"/>
     <path id="dough-swirl" d="M728 514q48-39 96 0t96 0" fill="none" stroke="#ffe8a3" stroke-width="17" stroke-linecap="round">
       <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"

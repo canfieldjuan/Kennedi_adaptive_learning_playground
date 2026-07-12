@@ -4,7 +4,7 @@
   "proof_only": true,
   "production_writes_allowed": false,
   "source_svg": "mix-dough-vector-animation.svg",
-  "source_sha256": "8926e9082ca11ad3fd240c1d583a7d4d0e93c4c3f37888a7989982b63fda1a4f",
+  "source_sha256": "af4947db573ba04e7f6a32dfa370d8068751e04675930ee3dc3fc5efaea390df",
   "width": 1280,
   "height": 704,
   "frames": 77,

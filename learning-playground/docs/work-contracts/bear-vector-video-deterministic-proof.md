@@ -145,6 +145,55 @@ and the bounded mixing motion required by the owner feedback.
 - Run the focused runner tests, full test suite, typecheck, build, viewport,
   contract, media decode, XML/JSON, protected-path, and diff checks.
 
+## Review Correction: Exact Bytes, Viewport, and Full Spoon Bounds
+
+### Root Cause
+
+The review of head `8a202197923824121d881b082fad362e6f72179d`
+identified three proof-integrity gaps. The runner reads the source once into the
+string rendered by Chromium and again through `sha256File`, so a concurrent
+rewrite can make the recorded hash describe different bytes. Browser validation
+checks the `viewBox` but not the SVG root's intrinsic/rendered viewport. The
+mixing guard checks only the spoon working-end center, allowing an enlarged or
+shifted ellipse to cross the bowl boundary while its midpoint remains accepted.
+
+Verification of the first implementation produced one cold-render frame/output
+hash mismatch before two later renders stabilized. SMIL begins running at page
+load, so allowing browser validation to occur before the first explicit pause
+leaves a cold-start timing window. The timeline must be paused and reset to zero
+immediately after navigation, before validation or frame sampling.
+
+### Correct Fix Must Touch
+
+- Read the SVG once as bytes, derive validation text and SHA-256 from that same
+  buffer, and build Chromium's data URL from those exact bytes.
+- Validate root intrinsic width/height and rendered bounding width/height in the
+  browser in addition to the viewBox and timeline contract.
+- Give the bowl back an explicit geometry target and require the full spoon
+  working-end bounds to remain inside the bowl while its center remains in the
+  dough region on every frame.
+- Pause the SVG timeline and seek to zero immediately after navigation, before
+  browser validation, then retain exact per-frame seeks.
+- Add focused regressions for exact-byte hashing/data navigation, root viewport
+  pinning, and a spoon ellipse whose center passes but full bounds escape.
+- Rerun deterministic rendering, media validation, repository gates, and the
+  cold diff audit before another push.
+
+### Must Not Change
+
+All original and owner-look non-scope remains protected. Do not alter the
+approved corrected stir path, scene composition, runtime assets, child behavior,
+dependencies, curriculum, evidence, parent boundaries, or another game/beat.
+
+### Verification Plan
+
+- Prove the loaded source hash equals the exact byte buffer embedded in the data
+  URL without a second source-file read.
+- Probe both a passing and failing side of root viewport and full spoon-bound
+  validation.
+- Repeat all owner-look correction rendering, hash, media, test, build, viewport,
+  protected-path, and audit checks.
+
 ## Deterministic Proof Standard
 
 - Source: one editable Inkscape SVG composed only of local vector shapes.
@@ -324,8 +373,9 @@ verification, and a new cold diff audit are complete.
 
 ### Gaps First
 
-No implementation gap remains in the corrected diff. Owner visual approval is
-still pending and cannot be inferred from automated checks.
+This audit is superseded by the exact-bytes, viewport, and full-spoon-bounds
+review correction above. Those three confirmed implementation gaps remain until
+the next verified head. Owner visual approval also remains pending.
 
 - **Confirmed and corrected:** the first deterministic proof placed the spoon's
   working end above the hand and used a broad shoulder rotation, producing the
@@ -457,10 +507,122 @@ to the corrected checkout, immutable-byte, and SMIL boundaries above.
   composition. The refreshed contact sheet was inspected for stable identity,
   visible hand/grip/shaft contact, spoon immersion, and horizontal motion.
 
-## Gap Audit
+## Superseded Review Gap Audit
 
-DONE for the owner-feedback correction implementation. The spoon geometry and
-motion now satisfy the written physical constraints, all three active runner
-findings are corrected, repeated hashes match, verification passes, and no
-protected surface changed. Owner visual approval remains pending before merge,
-runtime integration, or additional Bear Bakes Bread beats.
+NOT DONE. The owner-feedback geometry remains corrected, but the exact-byte,
+root-viewport, and full-spoon-bounds findings on head `8a20219` must be fixed,
+tested, rerendered, and cold-audited before another push. Owner visual approval
+remains pending before merge, runtime integration, or additional Bear Bakes
+Bread beats.
+
+## Final Review Closure Audit
+
+### Gaps First
+
+No implementation gap remains after the current-head review correction. Owner
+visual approval remains pending and is not an automated result.
+
+One verification gap appeared during implementation: the first render after the
+review fixes produced different frame/output hashes than the next two despite an
+identical source hash. The SVG had been allowed to run between navigation and
+the first loop pause. The final runner now pauses and seeks to zero immediately
+after navigation, before browser validation (`scripts/video-production/vector-video.mjs:268`).
+Three consecutive clean renders after that fix match exactly. The mismatch is
+therefore recorded and corrected rather than omitted from the deterministic
+claim.
+
+The three review findings are each confirmed and corrected:
+
+- One `readFile` now produces the byte buffer used for validation text, SHA-256,
+  and the Chromium data URL (`scripts/video-production/vector-video.mjs:205`,
+  `scripts/video-production/vector-video.mjs:263`,
+  `scripts/video-production/vector-video.mjs:344`). There is no second source
+  read or source-path hash race.
+- Browser validation now checks viewBox, intrinsic root width/height, and actual
+  rendered root width/height before capture
+  (`scripts/video-production/vector-video.mjs:396`,
+  `scripts/video-production/vector-video.mjs:417`). Root-tag validation also
+  limits pinned source attributes to the actual opening SVG element
+  (`scripts/video-production/vector-video.mjs:113`).
+- The SVG gives the bowl back an explicit geometry target
+  (`design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg:100`).
+  Every frame now requires the spoon center inside the dough and the full spoon
+  working-end bounds inside the bowl while retaining hand/grip/shaft checks
+  (`scripts/video-production/vector-video.mjs:455`,
+  `scripts/video-production/vector-video.mjs:466`,
+  `scripts/video-production/vector-video.mjs:478`).
+
+### Change-by-Change Reconstruction
+
+- `mix-dough-vector-animation.svg` adds only `bowl-back` to the existing bowl
+  ellipse so the full-bound guard has an explicit project-owned target
+  (`mix-dough-vector-animation.svg:99`). The corrected art and stir transforms
+  remain unchanged (`mix-dough-vector-animation.svg:89`,
+  `mix-dough-vector-animation.svg:110`).
+- `vector-render-manifest.json` changes only the source SHA-256 to match those
+  exact revised SVG bytes (`vector-render-manifest.json:7`); proof-only,
+  no-production-write, geometry, browser, and encoding constraints remain pinned
+  (`vector-render-manifest.json:4`, `vector-render-manifest.json:8`,
+  `vector-render-manifest.json:15`, `vector-render-manifest.json:20`).
+- `vector-video.mjs` changes the proof integrity path only: one source buffer,
+  exact-byte hashing/navigation, immediate timeline freeze, full root viewport
+  validation, and full spoon bounds (`vector-video.mjs:205`,
+  `vector-video.mjs:263`, `vector-video.mjs:268`, `vector-video.mjs:396`,
+  `vector-video.mjs:455`). Existing output isolation, failure cleanup, and
+  bounded FFmpeg handling remain at `vector-video.mjs:521` and
+  `vector-video.mjs:536`.
+- `vector-video.test.ts` expands the focused suite from nine to ten tests. It
+  verifies the committed bowl target, rejects a root width copied outside the
+  opening tag, checks the exact loaded byte hash and data URL, supplies intrinsic
+  and rendered viewport values, and probes a spoon whose center passes while its
+  edge escapes (`tests/scripts/vector-video.test.ts:67`,
+  `tests/scripts/vector-video.test.ts:89`,
+  `tests/scripts/vector-video.test.ts:152`,
+  `tests/scripts/vector-video.test.ts:177`,
+  `tests/scripts/vector-video.test.ts:217`,
+  `tests/scripts/vector-video.test.ts:224`).
+- `asset-provenance.md` updates the source hash and documents the single-buffer,
+  immediate-freeze, intrinsic viewport, and full spoon-bound proof behavior
+  while preserving draft status and owner approval pending
+  (`docs/art/asset-provenance.md:105`,
+  `docs/art/asset-provenance.md:129`,
+  `docs/art/asset-provenance.md:130`).
+- This work contract records the review root cause, allowed correction surface,
+  protected behavior, the observed mismatch, and this final cold audit before
+  push (`docs/work-contracts/bear-vector-video-deterministic-proof.md:148`).
+
+The total PR diff against current `origin/main` remains the same ten declared
+proof files. The review correction itself modifies only the six files above.
+No `public/`, `src/`, package, Content Foundry, runtime, activity, curriculum,
+evidence, approval, or unrelated game file moved.
+
+### Verification
+
+- `npx vitest run tests/scripts/vector-video.test.ts`: 10/10 passed.
+- `npm test`: work-contract check passed; Content Foundry 46 passed with one
+  expected skip; Vitest 58 files and 774 tests passed.
+- `npm run typecheck`: passed.
+- `npm run build`: passed; Vite transformed 125 modules.
+- `npm run test:viewport`: 6/6 Playwright checks passed.
+- `npm run lint --if-present`: exited 0; no lint script exists.
+- `node scripts/check-work-contract.mjs`, `git diff --check`, XML validation,
+  JSON parsing, external-reference scan, media decode, black-frame, scene-cut,
+  protected-path, rejected-workflow, and temporary-output checks passed.
+- Three consecutive clean post-freeze renders matched: source SHA-256
+  `af4947db573ba04e7f6a32dfa370d8068751e04675930ee3dc3fc5efaea390df`,
+  frame-set SHA-256
+  `5635b8874f137c35eae7ea3edcd0c986a5ff0e2f609c39cf4144300eaaf1a7d6`,
+  and WebM SHA-256
+  `67e0e28b72cfbe6fd0922b6330724d44191b3a501d507ac05eebcd5c330b904b`.
+- The committed review WebM is byte-identical to the final external render and
+  remains VP9, 1280x704, `yuv420p`, 24 FPS, 3.209 seconds, 85,546 bytes, with no
+  audio. The explicit bowl target changes source/provenance bytes but no rendered
+  pixels, so the already-corrected review WebM/contact sheet remain current.
+
+## Final Gap Audit
+
+DONE for the three current-head review findings. Exact source bytes, actual root
+viewport, and full spoon bounds are enforced and covered; cold-start rendering
+is stabilized; repeated hashes and all repository/media gates pass; and no
+protected surface changed. Owner visual approval and review-thread resolution
+remain separate gates before merge or runtime integration.

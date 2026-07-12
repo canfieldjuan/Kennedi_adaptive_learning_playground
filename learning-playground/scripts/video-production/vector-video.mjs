@@ -110,7 +110,8 @@ export function validateManifest(value) {
 }
 
 export function validateSourceText(source, manifest) {
-  if (!/^<\?xml[\s\S]*?<svg\b/.test(source)) throw new Error('source must be an SVG document');
+  const rootTag = source.match(/^<\?xml[\s\S]*?<svg\b[^>]*>/)?.[0];
+  if (!rootTag) throw new Error('source must be an SVG document');
   const prohibited = /<(?:text|image|script|style|foreignObject|audio|video)\b/i;
   if (prohibited.test(source)) throw new Error('source contains a prohibited embedded-content element');
   if (/\son[a-z][a-z0-9:.-]*\s*=/i.test(source)) {
@@ -129,11 +130,11 @@ export function validateSourceText(source, manifest) {
     `data-frame-count="${manifest.frames}"`,
   ];
   for (const value of expectedRootValues) {
-    if (!source.includes(value)) throw new Error(`source is missing pinned root value ${value}`);
+    if (!rootTag.includes(value)) throw new Error(`source is missing pinned root value ${value}`);
   }
   for (const id of [
     'mixing-arm', 'mixing-hand', 'spoon', 'spoon-shaft', 'spoon-working-end',
-    'spoon-grip', 'dough-surface', 'dough-swirl', 'blink',
+    'spoon-grip', 'bowl-back', 'dough-surface', 'dough-swirl', 'blink',
   ]) {
     if (!source.includes(`id="${id}"`)) throw new Error(`source is missing animation target ${id}`);
   }
@@ -201,8 +202,9 @@ export async function loadVectorContext(manifestArgument, environment = process.
   assertWithin(sourcePath, projectRoot, 'source SVG');
   await assertNoSymlinkSegments(sourcePath, 'source SVG');
   await access(sourcePath);
-  const source = validateSourceText(await readFile(sourcePath, 'utf8'), manifest);
-  const sourceSha256 = await sha256File(sourcePath);
+  const sourceBytes = await readFile(sourcePath);
+  const source = validateSourceText(sourceBytes.toString('utf8'), manifest);
+  const sourceSha256 = sha256Bytes(sourceBytes);
   assertSourceSha256(sourceSha256, manifest.source_sha256);
 
   const frameRoot = path.resolve(labRoot, manifest.frame_directory);
@@ -216,6 +218,7 @@ export async function loadVectorContext(manifestArgument, environment = process.
     manifest,
     manifestPath,
     source,
+    sourceBytes,
     sourcePath,
     sourceSha256,
     sourceRoot,
@@ -257,12 +260,17 @@ export async function renderVectorCommand(context, options, dependencies = {}) {
       deviceScaleFactor: context.manifest.browser.device_scale_factor,
     });
     page.setDefaultTimeout(15_000);
-    const sourceUrl = `data:image/svg+xml;base64,${Buffer.from(context.source, 'utf8').toString('base64')}`;
+    const sourceUrl = `data:image/svg+xml;base64,${context.sourceBytes.toString('base64')}`;
     await page.route('**/*', async (route) => {
       if (route.request().url() === sourceUrl) await route.continue();
       else await route.abort('blockedbyclient');
     });
     await page.goto(sourceUrl, { waitUntil: 'load' });
+    await page.evaluate(() => {
+      const svg = document.documentElement;
+      svg.pauseAnimations();
+      svg.setCurrentTime(0);
+    });
     await validateBrowserDocument(page, context.manifest);
 
     for (const frame of framePlan) {
@@ -333,6 +341,10 @@ export function assertSourceSha256(actual, expected) {
   if (actual !== expected) throw new Error('source SVG SHA-256 mismatch');
 }
 
+export function sha256Bytes(value) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
 export async function sha256FrameSet(frameRoot, framePlan) {
   const hash = createHash('sha256');
   for (const frame of framePlan) {
@@ -366,7 +378,7 @@ async function validateBrowserDocument(page, manifest) {
     const prohibited = svg.querySelector('text,image,script,style,foreignObject,audio,video');
     const targets = [
       'mixing-arm', 'mixing-hand', 'spoon', 'spoon-shaft', 'spoon-working-end',
-      'spoon-grip', 'dough-surface', 'dough-swirl', 'blink',
+      'spoon-grip', 'bowl-back', 'dough-surface', 'dough-swirl', 'blink',
     ];
     const animations = [...svg.querySelectorAll(
       'animate,animateTransform,animateMotion,animateColor,set,mpath,discard'
@@ -381,6 +393,10 @@ async function validateBrowserDocument(page, manifest) {
       localName: svg.localName,
       width: viewBox.width,
       height: viewBox.height,
+      intrinsicWidth: svg.width.baseVal.value,
+      intrinsicHeight: svg.height.baseVal.value,
+      renderedWidth: svg.getBoundingClientRect().width,
+      renderedHeight: svg.getBoundingClientRect().height,
       prohibited: prohibited?.localName ?? null,
       missingTargets: targets.filter((id) => !document.getElementById(id)),
       animations,
@@ -398,6 +414,10 @@ async function validateBrowserDocument(page, manifest) {
     result.localName !== 'svg'
     || result.width !== result.expectedWidth
     || result.height !== result.expectedHeight
+    || result.intrinsicWidth !== result.expectedWidth
+    || result.intrinsicHeight !== result.expectedHeight
+    || result.renderedWidth !== result.expectedWidth
+    || result.renderedHeight !== result.expectedHeight
     || result.prohibited !== null
     || result.missingTargets.length > 0
     || result.animations.join('|') !== [
@@ -432,6 +452,7 @@ async function validateMixingGeometry(page, frameIndex) {
     };
     return {
       frame: sampledFrame,
+      bowl: rect('bowl-back'),
       dough: rect('dough-surface'),
       hand: rect('mixing-hand'),
       grip: rect('spoon-grip'),
@@ -439,8 +460,12 @@ async function validateMixingGeometry(page, frameIndex) {
       workingEnd: rect('spoon-working-end'),
     };
   }, frameIndex);
-  const { dough, hand, grip, shaft, workingEnd } = geometry;
-  if (!dough || !hand || !grip || !shaft || !workingEnd) {
+  assertMixingGeometry(geometry, frameIndex);
+}
+
+export function assertMixingGeometry(geometry, frameIndex) {
+  const { bowl, dough, hand, grip, shaft, workingEnd } = geometry;
+  if (!bowl || !dough || !hand || !grip || !shaft || !workingEnd) {
     throw new Error(`mixing geometry missing at frame ${frameIndex}`);
   }
   const handGripDistance = Math.hypot(hand.x - grip.x, hand.y - grip.y);
@@ -450,13 +475,24 @@ async function validateMixingGeometry(page, frameIndex) {
     && workingEnd.y >= dough.top + 20
     && workingEnd.y <= dough.bottom + 2
   );
+  const fullWorkingEndInsideBowl = (
+    workingEnd.left >= bowl.left + 10
+    && workingEnd.right <= bowl.right - 10
+    && workingEnd.top >= bowl.top + 5
+    && workingEnd.bottom <= bowl.bottom - 10
+  );
   const gripTouchesShaft = (
     grip.x >= shaft.left - 8
     && grip.x <= shaft.right + 8
     && grip.y >= shaft.top - 8
     && grip.y <= shaft.bottom + 8
   );
-  if (!workingEndInsideDough || handGripDistance > 45 || !gripTouchesShaft) {
+  if (
+    !workingEndInsideDough
+    || !fullWorkingEndInsideBowl
+    || handGripDistance > 45
+    || !gripTouchesShaft
+  ) {
     throw new Error(`mixing geometry escaped at frame ${frameIndex}: ${JSON.stringify(geometry)}`);
   }
 }

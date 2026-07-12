@@ -13,6 +13,7 @@ import { describe, expect, test } from 'vitest';
 import * as vectorVideo from '../../scripts/video-production/vector-video.mjs';
 
 const {
+  assertMixingGeometry,
   assertNoSymlinkSegments,
   assertSourceSha256,
   buildFfmpegArgs,
@@ -20,6 +21,7 @@ const {
   parseCliArgs,
   planFrameTimes,
   renderVectorCommand,
+  sha256Bytes,
   validateManifest,
   validateSourceText,
 } = vectorVideo;
@@ -62,6 +64,7 @@ describe('deterministic vector video proof boundary', () => {
     expect(source).toContain('id="spoon-working-end"');
     expect(source).toContain('id="mixing-hand"');
     expect(source).toContain('id="dough-surface"');
+    expect(source).toContain('id="bowl-back"');
     expect(source).not.toMatch(/<(?:text|image|script|foreignObject)\b/i);
   });
 
@@ -83,6 +86,10 @@ describe('deterministic vector video proof boundary', () => {
       .toThrow(/only four/);
     expect(() => validateSourceText(source.replace('id="spoon-grip"', 'id="removed"'), manifest))
       .toThrow(/spoon-grip/);
+    const misplacedWidth = source
+      .replace('width="1280"', 'width="640"')
+      .replace('</svg>', '<!-- width="1280" --></svg>');
+    expect(() => validateSourceText(misplacedWidth, manifest)).toThrow(/pinned root/);
   });
 
   test('plans exactly 77 monotonically increasing frame times', () => {
@@ -142,6 +149,7 @@ describe('deterministic vector video proof boundary', () => {
       first_frame_seconds: 0,
       last_frame_seconds: 76 / 24,
     });
+    expect(sha256Bytes(context.sourceBytes)).toBe(context.sourceSha256);
 
     expect(() => assertSourceSha256('a'.repeat(64), '0'.repeat(64))).toThrow(/SHA-256/);
   });
@@ -166,6 +174,8 @@ describe('deterministic vector video proof boundary', () => {
         if (callback.toString().includes('missingTargets')) {
           return {
             localName: 'svg', width: 1280, height: 704, prohibited: null,
+            intrinsicWidth: 1280, intrinsicHeight: 704,
+            renderedWidth: 1280, renderedHeight: 704,
             missingTargets: [], frameCount: 77, fps: 24, canPause: true, canSeek: true,
             animations: [
               'blink:animate:opacity',
@@ -178,14 +188,7 @@ describe('deterministic vector video proof boundary', () => {
           };
         }
         if (callback.toString().includes("workingEnd: rect('spoon-working-end')")) {
-          return {
-            frame: 0,
-            dough: { left: 670, right: 978, top: 464, bottom: 568, x: 824, y: 516 },
-            hand: { left: 730, right: 778, top: 456, bottom: 504, x: 754, y: 480 },
-            grip: { left: 761, right: 815, top: 437, bottom: 491, x: 788, y: 464 },
-            shaft: { left: 761, right: 831, top: 411, bottom: 547, x: 796, y: 479 },
-            workingEnd: { left: 800, right: 858, top: 520, bottom: 580, x: 829, y: 550 },
-          };
+          return validGeometry();
         }
       },
       async screenshot({ path: framePath }: { path: string }) {
@@ -215,7 +218,16 @@ describe('deterministic vector video proof boundary', () => {
     await expect(access(context.outputPath)).rejects.toThrow();
     await expect(access(recordPath)).rejects.toThrow();
     expect(navigatedSourceUrl).toMatch(/^data:image\/svg\+xml;base64,/);
-    expect(atob(navigatedSourceUrl.split(',')[1])).toBe(context.source);
+    expect(navigatedSourceUrl.split(',')[1]).toBe(context.sourceBytes.toString('base64'));
+  });
+
+  test('rejects a spoon working end whose center passes but full bounds escape', () => {
+    const geometry = validGeometry();
+    expect(() => assertMixingGeometry(geometry, 0)).not.toThrow();
+    expect(() => assertMixingGeometry({
+      ...geometry,
+      workingEnd: { ...geometry.workingEnd, left: geometry.bowl.left + 5 },
+    }, 0)).toThrow(/escaped/);
   });
 });
 
@@ -226,7 +238,7 @@ function makeManifest(overrides: Record<string, unknown> = {}) {
     proof_only: true,
     production_writes_allowed: false,
     source_svg: 'mix-dough-vector-animation.svg',
-    source_sha256: '8926e9082ca11ad3fd240c1d583a7d4d0e93c4c3f37888a7989982b63fda1a4f',
+    source_sha256: 'af4947db573ba04e7f6a32dfa370d8068751e04675930ee3dc3fc5efaea390df',
     width: 1280,
     height: 704,
     frames: 77,
@@ -245,7 +257,19 @@ function makeManifest(overrides: Record<string, unknown> = {}) {
 }
 
 function validSource() {
-  return `<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="1280" height="704" viewBox="0 0 1280 704" data-duration-seconds="3.208333" data-fps="24" data-frame-count="77"><g id="mixing-arm"><circle id="mixing-hand"/><animateTransform/></g><g id="spoon"><path id="spoon-shaft"/><ellipse id="spoon-working-end"/><animateTransform/></g><g id="spoon-grip"><animateTransform/></g><ellipse id="dough-surface"/><path id="dough-swirl"><animateTransform/></path><g id="blink"><animate attributeName="opacity"/></g></svg>`;
+  return `<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" width="1280" height="704" viewBox="0 0 1280 704" data-duration-seconds="3.208333" data-fps="24" data-frame-count="77"><g id="mixing-arm"><circle id="mixing-hand"/><animateTransform/></g><g id="spoon"><path id="spoon-shaft"/><ellipse id="spoon-working-end"/><animateTransform/></g><g id="spoon-grip"><animateTransform/></g><ellipse id="bowl-back"/><ellipse id="dough-surface"/><path id="dough-swirl"><animateTransform/></path><g id="blink"><animate attributeName="opacity"/></g></svg>`;
+}
+
+function validGeometry() {
+  return {
+    frame: 0,
+    bowl: { left: 628, right: 1020, top: 443, bottom: 621, x: 824, y: 532 },
+    dough: { left: 670, right: 978, top: 464, bottom: 568, x: 824, y: 516 },
+    hand: { left: 730, right: 778, top: 456, bottom: 504, x: 754, y: 480 },
+    grip: { left: 761, right: 815, top: 437, bottom: 491, x: 788, y: 464 },
+    shaft: { left: 761, right: 831, top: 411, bottom: 547, x: 796, y: 479 },
+    workingEnd: { left: 800, right: 858, top: 520, bottom: 580, x: 829, y: 550 },
+  };
 }
 
 function flagValue(args: string[], flag: string) {
