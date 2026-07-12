@@ -23,7 +23,7 @@ automatic content publisher.
   integration change explicitly moves approved assets.
 - Image tools expose only `video_scene` (960x544) and `square_asset`
   (1024x1024) presets with fixed draft/final sampler budgets.
-- Wan v1 emits one 81-frame, 24fps, 960x544 silent scene per job. It is limited
+- Wan safe-motion v2 emits one 81-frame, 24fps, 960x544 silent scene per job. It is limited
   to ambient or micro-motion, not evidence-bearing object manipulation.
 - Jobs have bounded file sizes, seeds, timeouts, and output counts.
 - Storyboard scenes are snapshotted before inspection and assembly. Decoded
