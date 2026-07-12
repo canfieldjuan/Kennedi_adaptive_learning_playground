@@ -10,9 +10,13 @@ Start ComfyUI separately, then run the MCP server with an environment that has
 `mcp==1.27.2` installed:
 
 ```bash
-cd learning-playground/tools/content-foundry
-/home/juan-canfield/Desktop/ComfyUI-master/venv/bin/python mcp_server.py
+export COMFYUI_VENV_PYTHON="<COMFYUI_ROOT>/venv/bin/python"
+export REPO_ROOT="<REPO_ROOT>"
+cd "$REPO_ROOT/learning-playground/tools/content-foundry"
+"$COMFYUI_VENV_PYTHON" mcp_server.py
 ```
+
+Replace `<COMFYUI_ROOT>` and `<REPO_ROOT>` with absolute paths on the host.
 
 LM Studio can add the server as a stdio MCP entry using that exact interpreter
 and script. FTL's trusted host-stdio path uses the `MCP_STDIO_SERVERS`
@@ -25,9 +29,9 @@ Example LM Studio server entry:
 
 ```json
 {
-  "command": "/home/juan-canfield/Desktop/ComfyUI-master/venv/bin/python",
+  "command": "<COMFYUI_ROOT>/venv/bin/python",
   "args": [
-    "/home/juan-canfield/Desktop/Kennedi_adaptive_learning_playground/learning-playground/tools/content-foundry/mcp_server.py"
+    "<REPO_ROOT>/learning-playground/tools/content-foundry/mcp_server.py"
   ]
 }
 ```
@@ -35,7 +39,7 @@ Example LM Studio server entry:
 Example FTL trusted-host value:
 
 ```bash
-MCP_STDIO_SERVERS='[{"name":"kennedi-content-foundry","command":"/home/juan-canfield/Desktop/ComfyUI-master/venv/bin/python","args":["/home/juan-canfield/Desktop/Kennedi_adaptive_learning_playground/learning-playground/tools/content-foundry/mcp_server.py"]}]'
+export MCP_STDIO_SERVERS='[{"name":"kennedi-content-foundry","command":"<COMFYUI_ROOT>/venv/bin/python","args":["<REPO_ROOT>/learning-playground/tools/content-foundry/mcp_server.py"]}]'
 ```
 
 ## Local roots

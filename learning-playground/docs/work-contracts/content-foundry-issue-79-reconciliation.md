@@ -85,7 +85,7 @@ without direct evidence.
   `/home/juan-canfield/Desktop/finetunelab.ai/lib/tools/mcp/host-config.ts:1-73`,
   but that environment key is absent and the FTL web/training services are
   stopped. User-managed FTL MCP rows are intentionally HTTP-only at
-  `supabase/migrations/20260628000000_create_mcp_servers.sql:4-29`.
+  `/home/juan-canfield/Desktop/finetunelab.ai/supabase/migrations/20260628000000_create_mcp_servers.sql:4-29`.
 - No real manual parent decision receipt currently survives. The live-run
   evidence explicitly records the successful draft as `status: draft` with no
   publication at `docs/work-contracts/content-foundry-live-run.md:75-78`, and
@@ -174,7 +174,15 @@ unchecked host status, and all three remaining completion blockers.
 
 ## Contract Amendments
 
-Record any scope change before touching a newly required area.
+### 2026-07-12 Review Follow-up
+
+Three current-head review claims were checked against the source and confirmed:
+the README host examples embed this machine's absolute paths, its FTL bash
+example does not export `MCP_STDIO_SERVERS`, and the FTL migration citation
+omits the external checkout root. Correcting those instructions and this
+evidence citation is required to keep the original host-configuration contract
+accurate and portable. No runtime, host configuration, dependency, issue, or
+application behavior enters scope.
 
 ## Cold Diff Audit
 
@@ -193,9 +201,10 @@ bound to the versioned server.
 - `docs/work-contracts/content-foundry-issue-79-reconciliation.md:1` records the
   before-code contract, source-grounded claim classifications, exact protocol
   proof, live host state, issue mutation receipt, and this cold audit.
-- `tools/content-foundry/README.md:17` replaces the false shared-host setup claim
-  with separate LM Studio stdio and FTL trusted-host instructions; lines 24-39
-  provide concrete configuration shapes while preserving the rule that the
+- `tools/content-foundry/README.md:21` replaces the false shared-host setup claim
+  with separate LM Studio stdio and FTL trusted-host instructions; lines 28-43
+  provide portable placeholder-based configuration shapes, export FTL's host
+  variable for child-process inheritance, and preserve the rule that the
   repository never writes home-level client configuration.
 - GitHub issue #79 was reconciled in place: ten confirmed items are checked,
   host verification and integration remain unchecked, the absence of a real
@@ -220,11 +229,13 @@ bound to the versioned server.
 - Issue #79 post-update read: open, ten checked items, two unchecked arc items,
   and three explicit completion blockers.
 - `npm ci`: installed 56 locked packages; audit found zero vulnerabilities.
-- `npm test`: passed 46 Content Foundry tests with one intentional default live
-  skip, 57 Vitest files, and 764 app tests.
-- `npm run typecheck`: passed.
-- `npm run build`: passed; Vite transformed 125 modules.
-- `npm run lint --if-present`: passed; no lint script is declared.
+- `npm test`: passed again after the review follow-up: 46 Content Foundry tests
+  with one intentional default live skip, 57 Vitest files, and 764 app tests.
+- `npm run typecheck`: passed again after the review follow-up.
+- `npm run build`: passed again after the review follow-up; Vite transformed 125
+  modules.
+- `npm run lint --if-present`: passed after the review follow-up; no lint script
+  is declared.
 - `npm run check:work-contract`: passed as part of `npm test`.
 - `git diff --check`: passed after the final evidence update.
 
