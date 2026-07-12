@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-     width="1280" height="704" viewBox="0 0 1280 704" version="1.1">
+     width="1280" height="704" viewBox="0 0 1280 704" version="1.1"
+     data-duration-seconds="3.208333" data-fps="24" data-frame-count="77">
   <g inkscape:groupmode="layer" inkscape:label="01 Background shell" id="background-shell">
     <rect x="10" y="10" width="1260" height="684" rx="42" fill="#fff8eb" stroke="#3a2461" stroke-width="12"/>
     <rect x="34" y="34" width="1212" height="636" rx="28" fill="#f9e8d0"/>
@@ -72,6 +73,14 @@
     <path d="M442 188h148" fill="none" stroke="#f8cbd5" stroke-width="13" stroke-linecap="round"/>
   </g>
 
+  <g inkscape:groupmode="layer" inkscape:label="07b Blink" id="blink" opacity="0"
+     fill="none" stroke="#3a2461" stroke-width="8" stroke-linecap="round">
+    <path d="M466 307h22"/>
+    <path d="M532 307h22"/>
+    <animate attributeName="opacity" begin="0s" dur="3.208333s" repeatCount="1" fill="freeze"
+             values="0;0;1;1;0;0" keyTimes="0;0.42;0.44;0.47;0.49;1"/>
+  </g>
+
   <g inkscape:groupmode="layer" inkscape:label="08 Stable left arm" id="stable-left-arm">
     <path d="M418 442C370 449 342 480 320 515" fill="none" stroke="#3a2461" stroke-width="50" stroke-linecap="round"/>
     <path d="M418 442C370 449 342 480 320 515" fill="none" stroke="#b97850" stroke-width="34" stroke-linecap="round"/>
@@ -81,18 +90,31 @@
     <path d="M596 443C662 431 704 449 752 480" fill="none" stroke="#3a2461" stroke-width="52" stroke-linecap="round"/>
     <path d="M596 443C662 431 704 449 752 480" fill="none" stroke="#b97850" stroke-width="36" stroke-linecap="round"/>
     <circle cx="754" cy="480" r="24" fill="#b97850" stroke="#3a2461" stroke-width="8"/>
+    <animateTransform attributeName="transform" type="rotate" begin="0s" dur="3.208333s"
+                      repeatCount="1" fill="freeze"
+                      values="0 596 443;-5 596 443;5 596 443;-4 596 443;4 596 443;0 596 443"
+                      keyTimes="0;0.18;0.38;0.58;0.78;1"/>
   </g>
 
   <g inkscape:groupmode="layer" inkscape:label="10 Spoon" id="spoon">
     <path d="M786 493L844 320" fill="none" stroke="#3a2461" stroke-width="27" stroke-linecap="round"/>
     <path d="M786 493L844 320" fill="none" stroke="#b97850" stroke-width="17" stroke-linecap="round"/>
     <ellipse cx="851" cy="301" rx="20" ry="31" transform="rotate(18 851 301)" fill="#d9a06f" stroke="#3a2461" stroke-width="8"/>
+    <animateTransform attributeName="transform" type="rotate" begin="0s" dur="3.208333s"
+                      repeatCount="1" fill="freeze"
+                      values="0 596 443;-5 596 443;5 596 443;-4 596 443;4 596 443;0 596 443"
+                      keyTimes="0;0.18;0.38;0.58;0.78;1"/>
   </g>
 
   <g inkscape:groupmode="layer" inkscape:label="11 Bowl and dough" id="bowl-and-dough">
     <ellipse cx="824" cy="532" rx="190" ry="83" fill="#fffdf7" stroke="#3a2461" stroke-width="11"/>
     <ellipse cx="824" cy="516" rx="154" ry="52" fill="#e7b969" stroke="#3a2461" stroke-width="6"/>
-    <path d="M728 514q48-39 96 0t96 0" fill="none" stroke="#ffe8a3" stroke-width="17" stroke-linecap="round"/>
+    <path id="dough-swirl" d="M728 514q48-39 96 0t96 0" fill="none" stroke="#ffe8a3" stroke-width="17" stroke-linecap="round">
+      <animateTransform attributeName="transform" type="translate" begin="0s" dur="3.208333s"
+                        repeatCount="1" fill="freeze"
+                        values="0 0;-10 0;10 0;-8 0;8 0;0 0"
+                        keyTimes="0;0.18;0.38;0.58;0.78;1"/>
+    </path>
     <path d="M653 539q24 88 171 91 147-3 171-91" fill="#f8cbd5" stroke="#3a2461" stroke-width="11" stroke-linejoin="round"/>
     <path d="M699 572q125 40 250 0" fill="none" stroke="#fff8eb" stroke-width="7" stroke-linecap="round"/>
   </g>
@@ -100,6 +122,10 @@
   <g inkscape:groupmode="layer" inkscape:label="12 Spoon grip" id="spoon-grip">
     <circle cx="788" cy="464" r="27" fill="#b97850" stroke="#3a2461" stroke-width="8"/>
     <path d="M776 462q12 11 24 0" fill="none" stroke="#efb28d" stroke-width="5" stroke-linecap="round"/>
+    <animateTransform attributeName="transform" type="rotate" begin="0s" dur="3.208333s"
+                      repeatCount="1" fill="freeze"
+                      values="0 596 443;-5 596 443;5 596 443;-4 596 443;4 596 443;0 596 443"
+                      keyTimes="0;0.18;0.38;0.58;0.78;1"/>
   </g>
 
   <g inkscape:groupmode="layer" inkscape:label="13 Foreground details" id="foreground-details">

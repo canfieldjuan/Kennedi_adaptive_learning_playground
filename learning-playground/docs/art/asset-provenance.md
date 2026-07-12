@@ -98,64 +98,33 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Owner look approval:** APPROVED — the owner merged PR #92 on 2026-07-11; status `look_approved`, stage rollout authorized
 - **Restrictions and notes:** Static decorative environment only. Dynamic bear, order, tray, and Deliver control remain runtime-owned. No Canva/Figma library content, stock media, font, icon pack, texture, Content Foundry output, or generative image tool was used. Decrowd revision (2026-07-11, owner feedback "crowded, elements overlap"): awning rebuilt as true half-disc scallops, painted counter plate removed (live order owns the zone), glass shine moved off the customer, wall shelf lowered out of the awning band, base environment props quieted during delivery, mobile delivery centered; editable source and export updated together.
 
-## Bear Bakes Bread Mixing Video Proof
+## Bear Bakes Bread Deterministic Mixing Video Proof
 
-- **Asset family:** Bear Bakes Bread mixing-beat video proof
+- **Asset family:** Bear Bakes Bread deterministic mixing vector proof
 - **Game:** Video Vault / Bear Bakes Bread
 - **Status:** `draft`
-- **Production path(s):** None; the selected proof is review-only at `docs/captures/video/bear-mixes-dough-proof.webm`
-- **Editable source path(s):** `design-source/video/bear-bakes-bread/mix-dough-source.svg`, `design-source/video/bear-bakes-bread/workflow.json`, `design-source/video/bear-bakes-bread/workflow-api.json`, `design-source/video/bear-bakes-bread/render-manifest.json`, `design-source/video/bear-bakes-bread/prompts.md`, `design-source/video/bear-bakes-bread/environment.json`
-- **Creator:** Project developer, Codex video-production proof session
-- **Creation date:** 2026-07-11
-- **Creation tool and version:** Inkscape 1.4.4 Flatpak; ComfyUI 0.25.0; Wan2.2 TI2V 5B; FFmpeg 6.1.1
-- **Origin category:** B project-owned source, transformed into an AI-assisted review proof
-- **Original or third-party status:** Project-owned source illustration plus non-exclusive AI-assisted output; no claim that the generated motion is original, exclusive, or independently copyrightable
-- **Project-owned source material used:** Existing Bear Bakes Bread mixing illustration from `public/assets/images/video-bear-mixes-dough.svg`, adapted as the editable 1280x704 source frame
-- **Third-party elements:** Wan2.2 TI2V 5B model, Wan2.2 VAE, and UMT5 text encoder used only as external authoring dependencies; no third-party visual input, LoRA, custom node, cloud node, stock asset, font, character, or voice
-- **Source URL(s):** `https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B`, `https://github.com/Wan-Video/Wan2.2`
-- **License name and version/date:** Apache License 2.0 for the Wan2.2 model files; model publisher states it claims no rights over generated content
-- **License file path:** External model license at the source URLs; model weights and license are not redistributed by this repository
-- **Commercial use permitted:** yes under the published model terms, subject to lawful use and unresolved source-by-source training-data provenance
+- **Production path(s):** None; review-only WebM at `docs/captures/video/bear-mixes-dough-vector-proof.webm`
+- **Editable source path(s):** `design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg`, `design-source/video/bear-bakes-bread/vector-render-manifest.json`
+- **Creator:** Project developer, Codex deterministic-vector animation session
+- **Creation date:** 2026-07-12
+- **Creation tool and version:** Inkscape 1.4.4 Flatpak; Playwright Chromium 149.0.7827.55; FFmpeg 6.1.1
+- **Origin category:** A original animation-ready vector artwork informed by B project-owned Bear Cafe visual direction
+- **Original or third-party status:** Original project artwork and deterministic project-authored motion
+- **Project-owned source material used:** Bear Cafe pickup-window palette, line language, awning, tile, shelf, and counter direction; the character, cooking pose, bowl, spoon, grip, dough, and motion timeline were drawn specifically for this proof
+- **Third-party elements:** None; Chromium and FFmpeg are local authoring/rendering tools, not embedded assets or runtime dependencies
+- **Source URL(s):** Not applicable
+- **License name and version/date:** Not applicable; original project artwork
+- **License file path:** Not applicable
+- **Commercial use permitted:** yes
 - **Modification permitted:** yes
-- **Software distribution permitted:** yes for this review output; model weights are not distributed
-- **Public repository distribution permitted:** yes for this review output under the published model terms; model weights are not distributed
-- **Continued use after subscription ends:** not applicable; all authoring tools and weights are local
-- **Attribution requirement:** Apache-2.0 notice applies to redistributed model files; none are redistributed here
-- **AI assistance:** reference only
-- **AI approval/terms record:** Owner authorized the private one-beat proof on 2026-07-11 after disclosure that training-data provenance is incomplete, no indemnification is provided, outputs are not assumed exclusive or copyrightable, and production use requires a separate owner look decision; see `docs/work-contracts/comfy-bear-video-one-beat-proof.md`
-- **Contact sheet path:** `docs/captures/video/bear-mixes-dough-four-seed-contact-sheet.webp`
-- **Desktop screenshot path(s):** Not applicable; no runtime integration in this proof
-- **Mobile screenshot path(s):** Not applicable; no runtime integration in this proof
-- **Owner look approval:** Pending; seed `31415926` was selected for owner review after all four fixed candidates were inspected
-- **Restrictions and notes:** Review artifact only. The selected seed preserves the bear silhouette and scene while moving the spoon through the bowl; seeds `11235813` and `27182818` showed long final freezes, and seed `27182818` also distorted the reaching arm. Exact model SHA-256 values, prompts, seeds, graph bindings, environment, and generation limits are recorded in the editable source bundle. The current child-visible WebM, human narration, video manifest, runtime, evidence, and approval behavior are unchanged. No unlisted stock or library element remains, and the game does not depend on Inkscape, ComfyUI, Wan2.2, or FFmpeg at runtime.
-
-## Bear Bakes Bread Inkscape Source A/B Proof
-
-- **Asset family:** Bear Bakes Bread Inkscape kitchen plate and mixing-beat A/B proof
-- **Game:** Video Vault / Bear Bakes Bread
-- **Status:** `draft`
-- **Production path(s):** None; the selected proof is review-only at `docs/captures/video/bear-mixes-dough-inkscape-proof.webm`
-- **Editable source path(s):** `design-source/video/bear-bakes-bread/mix-dough-inkscape-source.svg`, `design-source/video/bear-bakes-bread/workflow-inkscape.json`, `design-source/video/bear-bakes-bread/workflow-api-inkscape.json`, `design-source/video/bear-bakes-bread/render-manifest-inkscape.json`, `design-source/video/bear-bakes-bread/environment-inkscape.json`
-- **Creator:** Project developer, Codex Inkscape A/B proof session
-- **Creation date:** 2026-07-11
-- **Creation tool and version:** Inkscape 1.4.4 Flatpak; ComfyUI 0.25.0; Wan2.2 TI2V 5B; FFmpeg 6.1.1
-- **Origin category:** A original animation-ready kitchen plate informed by B project-owned Bear Cafe visual direction, transformed into an AI-assisted review proof
-- **Original or third-party status:** Original layered project artwork plus non-exclusive AI-assisted output; no claim that the generated motion is original, exclusive, or independently copyrightable
-- **Project-owned source material used:** Bear Cafe pickup-window palette, line language, awning, tile, shelf, and counter direction; the character, cooking pose, bowl, spoon, and animation plate were redrawn for this proof
-- **Third-party elements:** Wan2.2 TI2V 5B model, Wan2.2 VAE, and UMT5 text encoder used only as external authoring dependencies; no third-party visual input, LoRA, custom node, cloud node, stock asset, font, character, or voice
-- **Source URL(s):** `https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B`, `https://github.com/Wan-Video/Wan2.2`
-- **License name and version/date:** Apache License 2.0 for the Wan2.2 model files; model publisher states it claims no rights over generated content
-- **License file path:** External model license at the source URLs; model weights and license are not redistributed by this repository
-- **Commercial use permitted:** yes under the published model terms, subject to lawful use and unresolved source-by-source training-data provenance
-- **Modification permitted:** yes
-- **Software distribution permitted:** yes for this review output; model weights are not distributed
-- **Public repository distribution permitted:** yes for this review output under the published model terms; model weights are not distributed
-- **Continued use after subscription ends:** not applicable; all authoring tools and weights are local
-- **Attribution requirement:** Apache-2.0 notice applies to redistributed model files; none are redistributed here
-- **AI assistance:** reference only
-- **AI approval/terms record:** Owner explicitly requested the Inkscape-source A/B proof on 2026-07-11 under the same disclosed Wan2.2 terms and limits as the first proof; see `docs/work-contracts/comfy-bear-video-inkscape-ab-proof.md`
-- **Contact sheet path:** `docs/captures/video/bear-mixes-dough-inkscape-four-seed-contact-sheet.webp`, `docs/captures/video/bear-mixes-dough-source-ab-contact-sheet.webp`
-- **Desktop screenshot path(s):** `docs/captures/video/bear-mixes-dough-inkscape-source-desktop.webp`
-- **Mobile screenshot path(s):** `docs/captures/video/bear-mixes-dough-inkscape-source-mobile.webp`; 390x215 scale inspection only, not a runtime screenshot
-- **Owner look approval:** Pending; seed `16180339` was selected for review after all four final-source candidates were inspected
-- **Restrictions and notes:** Review artifact only. The source contains thirteen named Inkscape layers and only local vector shapes, with no text, embedded raster, font, or external reference. The manifest preserves the first proof's exact models, hashes, prompts, four seeds, 1280x704 geometry, 77 frames, 24 FPS, and sampling values, changing only the source plate and external output namespace. Seed `31415926` was rejected for face/hat deformation, `11235813` for spoon stretching, and `27182818` for minimal motion; `16180339` best balances stable identity, intact spoon grip, and calm visible motion. Black, freeze, and scene-cut checks found no issue in the final four candidates. The same-seed A/B sheet places legacy seed `16180339` above the Inkscape-source result. No shipped video, human narration, runtime, manifest, evidence, or approval behavior changed, and the game has no authoring-tool runtime dependency.
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None
+- **AI assistance:** none
+- **AI approval/terms record:** Not applicable; rejected Wan-generated concepts and their tooling were removed from the final PR diff
+- **Contact sheet path:** `docs/captures/video/bear-mixes-dough-vector-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/video/bear-mixes-dough-vector-source-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/video/bear-mixes-dough-vector-source-mobile.webp`; 390x215 source-scale review, not a runtime screenshot
+- **Owner look approval:** Pending; deterministic proof replaces the owner-rejected generated-video direction
+- **Restrictions and notes:** Review artifact only. Fourteen named Inkscape layers preserve exact Bear, hat, face, cafe, bowl, arm, grip, spoon, dough, and blink geometry. Chromium pauses and seeks the SVG timeline at each of 77 frame times; FFmpeg encodes single-threaded bit-exact VP9 with no audio and no inherited source metadata. Two independently cleaned full renders matched exactly: source SHA-256 `3fdf8aac7903e0c25478eb6c91eec6e53b618b791133fda20dc5c1a511f12984`, combined frame-set SHA-256 `fa802b6e28d788aa2e708d87b5ea85ae6424c16de88d6b8466cad7eebaeec115`, and WebM SHA-256 `ddfb83043806636d0cf16a775c90d8e21de11e6d96a2715c7a6f963741d9bdf1`. Generic deterministic FFmpeg encoder/duration fields remain; no prompt, authoring, source, or user metadata is present. No shipped video, narration, runtime, manifest, evidence, or approval behavior changed, and the game has no Inkscape, Chromium, FFmpeg, or renderer dependency at runtime.
