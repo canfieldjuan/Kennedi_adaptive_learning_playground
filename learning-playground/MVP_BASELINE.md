@@ -1,10 +1,21 @@
 # MVP Baseline
 
-Version: v0.3.58 Kennedi's Story Stage slice 7 baseline (visual enrichment + child-entry proposal — ARC COMPLETE)
+Version: v0.3.59 Ownership Completion Principle baseline
 
 ## Current Working MVP
 
 The Learning Playground is a local-first adaptive learning playground for a preschool child. The current MVP has a child home shell, four large child choices, playable activities, a child home Bear Cafe entry backed by the direct-route Kennedi's Orders adapter and Parent Panel launch path, a local Video Vault with one approved clip and separate response activity reachable by direct route, a parent panel, local attempt logging, local progress tracking, and parent-controlled export/reset.
+
+The product now has a permanent Ownership Completion Contract: the child
+changes the world rather than merely answering questions, and completion leaves
+behind something she made, changed, personalized, or placed into that world.
+The contract requires exact-choice continuity, child-controlled inspection,
+bounded local revisit, expression without payment mechanics, and a strict
+boundary between ownership state and learning evidence. Existing primary games
+are **not** grandfathered in as compliant. Their code-grounded gaps and the
+ordered one-game-per-PR retrofit arc are recorded in
+`docs/work-contracts/v0.3.59-ownership-completion-principle.md`; Bear Cafe is
+the first planned retrofit after this principle slice is reviewed and merged.
 
 ## Child Modules
 

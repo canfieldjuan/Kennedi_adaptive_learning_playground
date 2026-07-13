@@ -25,12 +25,19 @@ Parent/admin who configures learning packs, reviews AI-generated content, monito
 ## Product principles
 1. Challenge by mastery, not age.
 2. Preserve preschool-safe interaction design.
-3. Reward effort, curiosity, and completion, not compulsive streaks.
-4. Avoid external links, ads, feeds, open search, and autoplay chains.
-5. Store child data locally by default.
-6. Let the parent approve all generated content before child exposure.
-7. Use sessions, not endless engagement.
-8. Every activity must be observable, testable, and resettable.
+3. The child should change the world, not merely answer questions about it.
+4. Completion should create ownership, not payment: the child finishes with
+   something she made, changed, personalized, or placed into the world.
+5. Preserve the child's exact choices through payoff and local revisit.
+6. Respond to effort, curiosity, and completion without compulsive rewards.
+7. Avoid external links, ads, feeds, open search, and autoplay chains.
+8. Store child data locally by default.
+9. Let the parent approve all generated content before child exposure.
+10. Use sessions, not endless engagement.
+11. Every activity must be observable, testable, and resettable.
+
+Primary game design and maturity work must satisfy
+`docs/contracts/ownership-completion.contract.md`.
 
 ## MVP modules
 - Home shell

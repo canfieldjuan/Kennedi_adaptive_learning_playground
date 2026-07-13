@@ -18,6 +18,9 @@ Before a built game can be wired into current main, the repo must have an intake
 - compatibility with current safety rules
 - compatibility with current event logging requirements
 - compatibility with current transfer truth rules
+- compatibility with the ownership completion contract, including the proposed
+  completion object, unscored ownership choice, exact-choice payoff, bounded
+  preservation surface, and evidence boundary
 - current blockers and required adapter work
 - recommended integration strategy
 
@@ -35,6 +38,10 @@ Before a built game can be wired into current main, the repo must have an intake
 - Do not expose a game on the child home screen during intake.
 - Do not treat branch tests as sufficient for current main if current main has newer contracts.
 - Do not weaken activity schema, transfer truth, mastery, parent approval, event logging, storage, or safety rules to fit a game.
+- Do not call a game child-ready when its completion substitutes praise,
+  generic animation, or rewards for a child-owned result. Any temporary
+  ownership gap must produce an explicit adapter slice rather than an implied
+  waiver.
 - Do not add backend services, auth, cloud sync, AI tutor chat, open web content, rewards, streaks, leaderboards, or public sharing as part of game intake.
 
 ## Wiring Gate
@@ -47,4 +54,5 @@ A game may move from intake to implementation only when the next slice names:
 - how child entry is exposed or withheld
 - how parent approval remains required
 - how rich transfer claims are proven by game-specific truth guards
-
+- how `docs/contracts/ownership-completion.contract.md` is satisfied, or the
+  exact ordered adapter slice that will satisfy it before child launch
