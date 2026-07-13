@@ -3,6 +3,11 @@
   "voice": "kokoro/bf_emma",
   "lines": [
     {
+      "id": "004b22e1",
+      "text": "You have 16. Take off 4.",
+      "style": "prompt"
+    },
+    {
       "id": "0169ac41",
       "text": "Hi! Let us play and learn.",
       "style": "prompt"
@@ -13,8 +18,33 @@
       "style": "prompt"
     },
     {
+      "id": "01c2b707",
+      "text": "The express reached the station! What a trip!",
+      "style": "prompt"
+    },
+    {
+      "id": "0233b5b7",
+      "text": "Which number is missing on the track?",
+      "style": "prompt"
+    },
+    {
       "id": "0274af2a",
       "text": "Words",
+      "style": "prompt"
+    },
+    {
+      "id": "03eea656",
+      "text": "Count each passenger: 1, 2.",
+      "style": "prompt"
+    },
+    {
+      "id": "05e7b887",
+      "text": "You have 8. Put on 4 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "05fbd3d4",
+      "text": "Yes! 12 passengers. All aboard!",
       "style": "prompt"
     },
     {
@@ -25,6 +55,11 @@
     {
       "id": "09595758",
       "text": "It goes right on the wall! Beautiful.",
+      "style": "prompt"
+    },
+    {
+      "id": "09776cb4",
+      "text": "Put 30 passengers on the train.",
       "style": "prompt"
     },
     {
@@ -43,9 +78,19 @@
       "style": "prompt"
     },
     {
+      "id": "0a8d501b",
+      "text": "You have 14. Put on 16 more.",
+      "style": "prompt"
+    },
+    {
       "id": "0b5a4bb0",
       "text": "Luna the gentle unicorn lives beside the enchanted forest, where the trees sparkle softly.",
       "style": "story"
+    },
+    {
+      "id": "0c22398c",
+      "text": "One full car is ten passengers. Count on: 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49.",
+      "style": "prompt"
     },
     {
       "id": "0cd0b6d9",
@@ -65,6 +110,16 @@
     {
       "id": "0f287ccb",
       "text": "Yes. Three hearts.",
+      "style": "prompt"
+    },
+    {
+      "id": "10330c68",
+      "text": "4 too many. Take some off.",
+      "style": "prompt"
+    },
+    {
+      "id": "105e830d",
+      "text": "Yes! 39, 40, 41, 42. All aboard!",
       "style": "prompt"
     },
     {
@@ -96,6 +151,11 @@
       "id": "131637cd",
       "text": "The little bridge sways gently — wibble, wobble! Robo the helpful robot hugs the basket close and takes slow, careful tiptoe steps.",
       "style": "story"
+    },
+    {
+      "id": "144ae1bf",
+      "text": "14 more passengers needed.",
+      "style": "prompt"
     },
     {
       "id": "17422266",
@@ -138,8 +198,43 @@
       "style": "prompt"
     },
     {
+      "id": "1d1c0ea7",
+      "text": "You have 28. Put on 2 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "1dafc9e1",
+      "text": "You have 27. Put on 3 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "1dbb4b99",
+      "text": "You have 17. Take off 5.",
+      "style": "prompt"
+    },
+    {
       "id": "1dcb277c",
       "text": "Check the word card and try the next letter.",
+      "style": "prompt"
+    },
+    {
+      "id": "1e6bc4eb",
+      "text": "The moon castle, glowing in the sky.",
+      "style": "story"
+    },
+    {
+      "id": "1eee74f5",
+      "text": "7 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "1f12c35b",
+      "text": "Baby Polar Bear asked for 3. Let's count.",
+      "style": "prompt"
+    },
+    {
+      "id": "20545639",
+      "text": "You have 13. Take off 1.",
       "style": "prompt"
     },
     {
@@ -151,6 +246,16 @@
       "id": "2194ad4d",
       "text": "Finn the friendly dragon visits the moon castle, where the towers glow like little moons. On a little table sits a tiny music box.",
       "style": "story"
+    },
+    {
+      "id": "22ba0d20",
+      "text": "One full car is ten passengers. Count on: 10, 11, 12.",
+      "style": "prompt"
+    },
+    {
+      "id": "22f4bf71",
+      "text": "The train reached the station! What a trip!",
+      "style": "prompt"
     },
     {
       "id": "23184414",
@@ -188,6 +293,11 @@
       "style": "story"
     },
     {
+      "id": "24b7002f",
+      "text": "Finn the dragon gives warm, cozy hugs.",
+      "style": "story"
+    },
+    {
       "id": "27fb2035",
       "text": "How should Poppy help the music box find its song?",
       "style": "story"
@@ -201,6 +311,16 @@
       "id": "286c0da7",
       "text": "Where should Luna look for Biscuit?",
       "style": "story"
+    },
+    {
+      "id": "28c9068f",
+      "text": "You have 17. Put on 13 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "29e9d177",
+      "text": "3 too many. Take some off.",
+      "style": "prompt"
     },
     {
       "id": "2a4476ed",
@@ -218,6 +338,11 @@
       "style": "story"
     },
     {
+      "id": "2ca7cc3a",
+      "text": "You have 20. Take off 8.",
+      "style": "prompt"
+    },
+    {
       "id": "2d973ad5",
       "text": "Bear starts with b!",
       "style": "phonics"
@@ -231,6 +356,16 @@
       "id": "2e7b9650",
       "text": "Ball starts with b!",
       "style": "phonics"
+    },
+    {
+      "id": "2e8ff13f",
+      "text": "You have 19. Put on 11 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "2f1f9f3e",
+      "text": "Yes! 9 passengers. All aboard!",
+      "style": "prompt"
     },
     {
       "id": "2fa7a6d5",
@@ -293,6 +428,11 @@
       "style": "story"
     },
     {
+      "id": "38963ac3",
+      "text": "21 more passengers needed.",
+      "style": "prompt"
+    },
+    {
       "id": "38b97e71",
       "text": "Sound it out. Which word do these sounds make?",
       "style": "phonics"
@@ -301,6 +441,11 @@
       "id": "38fdbec3",
       "text": "Where should Poppy look for Biscuit?",
       "style": "story"
+    },
+    {
+      "id": "3a2090d4",
+      "text": "You have 9. Put on 4 more.",
+      "style": "prompt"
     },
     {
       "id": "3ab1d2c8",
@@ -353,9 +498,19 @@
       "style": "prompt"
     },
     {
+      "id": "42b2833b",
+      "text": "You have 22. Put on 8 more.",
+      "style": "prompt"
+    },
+    {
       "id": "42fe74ee",
       "text": "The sparkly path leads to a giggling bush — Poppy can see Biscuit’s waggly tail! But the branches are all tangled, and Biscuit feels a little shy.",
       "style": "story"
+    },
+    {
+      "id": "433732fb",
+      "text": "You have 2. Put on 28 more.",
+      "style": "prompt"
     },
     {
       "id": "4439f988",
@@ -373,6 +528,16 @@
       "style": "story"
     },
     {
+      "id": "44bc2b59",
+      "text": "Yes! 12 passengers aboard. All aboard!",
+      "style": "prompt"
+    },
+    {
+      "id": "44fee32f",
+      "text": "You have 13. Put on 17 more.",
+      "style": "prompt"
+    },
+    {
       "id": "451be1c9",
       "text": "c ... a ... t. Cat.",
       "style": "prompt"
@@ -388,13 +553,38 @@
       "style": "prompt"
     },
     {
+      "id": "47b2be1c",
+      "text": "Daddy Bear wanted that color.",
+      "style": "prompt"
+    },
+    {
+      "id": "47ba78b9",
+      "text": "You have 3. Put on 9 more.",
+      "style": "prompt"
+    },
+    {
       "id": "487821e7",
       "text": "The party is just ahead! How should Finn bring the basket in?",
       "style": "story"
     },
     {
+      "id": "499ba387",
+      "text": "Baby Polar Bear asked for banana.",
+      "style": "prompt"
+    },
+    {
       "id": "4a6a32af",
       "text": "Daddy Bear is calling.",
+      "style": "prompt"
+    },
+    {
+      "id": "4aa1092c",
+      "text": "Put 12 passengers on the train.",
+      "style": "prompt"
+    },
+    {
+      "id": "4ad56f74",
+      "text": "Count each passenger: 1, 2, 3, 4, 5, 6, 7, 8, 9.",
       "style": "prompt"
     },
     {
@@ -413,8 +603,23 @@
       "style": "story"
     },
     {
+      "id": "4d71cef8",
+      "text": "Mama Bear wanted that color.",
+      "style": "prompt"
+    },
+    {
       "id": "4e0b7fbc",
       "text": "Tuh, tuh, top.",
+      "style": "prompt"
+    },
+    {
+      "id": "4e1a1509",
+      "text": "You have 7. Put on 5 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "4e26bb67",
+      "text": "You have 7. Put on 23 more.",
       "style": "prompt"
     },
     {
@@ -433,6 +638,11 @@
       "style": "phonics"
     },
     {
+      "id": "4f74356d",
+      "text": "1 too many. Take one off.",
+      "style": "prompt"
+    },
+    {
       "id": "50179032",
       "text": "Pick food for the tray.",
       "style": "prompt"
@@ -443,8 +653,28 @@
       "style": "story"
     },
     {
+      "id": "50293d87",
+      "text": "You have 6. Put on 6 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "52bfff2b",
+      "text": "You have 16. Put on 14 more.",
+      "style": "prompt"
+    },
+    {
       "id": "52ee3b83",
       "text": "This letter comes next.",
+      "style": "prompt"
+    },
+    {
+      "id": "53128c63",
+      "text": "You have 18. Put on 12 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "533a4234",
+      "text": "You have 10. Put on 2 more.",
       "style": "prompt"
     },
     {
@@ -455,6 +685,11 @@
     {
       "id": "539f55c8",
       "text": "Buh, buh, ball.",
+      "style": "prompt"
+    },
+    {
+      "id": "5543a861",
+      "text": "You have 25. Put on 5 more.",
       "style": "prompt"
     },
     {
@@ -483,6 +718,16 @@
       "style": "prompt"
     },
     {
+      "id": "562350db",
+      "text": "You have 26. Put on 4 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "562ffc68",
+      "text": "11 more passengers needed.",
+      "style": "prompt"
+    },
+    {
       "id": "5650dda5",
       "text": "Luna the gentle unicorn lifts the basket up high and marches in — ta-da! Friends cheer, the berries shine, and the surprise party begins. The end.",
       "style": "story"
@@ -493,8 +738,18 @@
       "style": "story"
     },
     {
+      "id": "586d35d6",
+      "text": "22 more passengers needed.",
+      "style": "prompt"
+    },
+    {
       "id": "5884970d",
       "text": "Tap a sticker, then tap a spot on the card.",
+      "style": "prompt"
+    },
+    {
+      "id": "58a156e0",
+      "text": "Baby Polar Bear wanted that color.",
       "style": "prompt"
     },
     {
@@ -518,6 +773,11 @@
       "style": "prompt"
     },
     {
+      "id": "59c7d37d",
+      "text": "You have 5. Put on 7 more.",
+      "style": "prompt"
+    },
+    {
       "id": "59cb96ba",
       "text": "Baby Polar Bear is outside in the daytime. What would be there?",
       "style": "prompt"
@@ -528,9 +788,29 @@
       "style": "story"
     },
     {
+      "id": "5b625c91",
+      "text": "23 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "5cbb67c9",
+      "text": "You have 3. Put on 10 more.",
+      "style": "prompt"
+    },
+    {
       "id": "5d29117b",
       "text": "Finn hums Biscuit’s favorite song, soft and warm. Biscuit wiggles out, tail wagging! They walk home together, safe and happy. The end.",
       "style": "story"
+    },
+    {
+      "id": "5d4bd0e6",
+      "text": "Yes! 14, 15, 16, 17. All aboard!",
+      "style": "prompt"
+    },
+    {
+      "id": "5d5f3427",
+      "text": "You have 9. Put on 21 more.",
+      "style": "prompt"
     },
     {
       "id": "5daf2c8b",
@@ -543,6 +823,21 @@
       "style": "story"
     },
     {
+      "id": "5e1cb275",
+      "text": "30 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "5e5d0a46",
+      "text": "2 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "5e962e1c",
+      "text": "Daddy Bear asked for berry.",
+      "style": "prompt"
+    },
+    {
       "id": "5ea640b7",
       "text": "Finn the friendly dragon lives beside the cozy town, where every window twinkles hello.",
       "style": "story"
@@ -551,6 +846,16 @@
       "id": "5f652aa5",
       "text": "Luna the gentle unicorn asks a kind friend, and together they nudge the wheel home. The music box sings again — fixing is even sweeter together! The end.",
       "style": "story"
+    },
+    {
+      "id": "5f69962c",
+      "text": "8 too many. Take some off.",
+      "style": "prompt"
+    },
+    {
+      "id": "5f78ac67",
+      "text": "You have 2. Put on 11 more.",
+      "style": "prompt"
     },
     {
       "id": "5fe5ec84",
@@ -563,9 +868,19 @@
       "style": "story"
     },
     {
+      "id": "61d3f19a",
+      "text": "You have 10. Put on 20 more.",
+      "style": "prompt"
+    },
+    {
       "id": "6345502c",
       "text": "Listen again. c-a-t.",
       "style": "phonics"
+    },
+    {
+      "id": "642961d1",
+      "text": "You have 14. Take off 2.",
+      "style": "prompt"
     },
     {
       "id": "643a5ceb",
@@ -578,8 +893,18 @@
       "style": "prompt"
     },
     {
+      "id": "64eff483",
+      "text": "18 more passengers needed.",
+      "style": "prompt"
+    },
+    {
       "id": "666fea64",
       "text": "Oops. Daddy Bear ordered berries, but the tray has soup. Fix the order.",
+      "style": "prompt"
+    },
+    {
+      "id": "66f621e3",
+      "text": "One full car is ten passengers. Count on: 10, 11, 12, 13, 14, 15, 16, 17, 18.",
       "style": "prompt"
     },
     {
@@ -603,9 +928,19 @@
       "style": "prompt"
     },
     {
+      "id": "67b1cbe4",
+      "text": "The cozy town, where every window twinkles.",
+      "style": "story"
+    },
+    {
       "id": "67c16193",
       "text": "Shimmery bubbles float and pop — Biscuit bounces out laughing! Finn hugs his friend, and they walk home together, safe and happy. The end.",
       "style": "story"
+    },
+    {
+      "id": "6a4f6f24",
+      "text": "Mama Bear asked for any snack.",
+      "style": "prompt"
     },
     {
       "id": "6bfa3dde",
@@ -618,14 +953,39 @@
       "style": "story"
     },
     {
+      "id": "6cecdc73",
+      "text": "What happens?",
+      "style": "prompt"
+    },
+    {
       "id": "6d0db303",
       "text": "Mama Bear is calling.",
+      "style": "prompt"
+    },
+    {
+      "id": "6d58f3c0",
+      "text": "19 more passengers needed.",
       "style": "prompt"
     },
     {
       "id": "6d59379c",
       "text": "Find the word that starts with the letter B.",
       "style": "phonics"
+    },
+    {
+      "id": "6e63244c",
+      "text": "You have 19. Take off 6.",
+      "style": "prompt"
+    },
+    {
+      "id": "709c3b8f",
+      "text": "You have 12. Put on 1 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "70d4fa58",
+      "text": "You have 2. Put on 10 more.",
+      "style": "prompt"
     },
     {
       "id": "71e95e5e",
@@ -653,6 +1013,11 @@
       "style": "story"
     },
     {
+      "id": "74b9ce44",
+      "text": "One full car is ten passengers. Count on: 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21.",
+      "style": "prompt"
+    },
+    {
       "id": "758e623e",
       "text": "Try again. Listen for t.",
       "style": "prompt"
@@ -663,14 +1028,59 @@
       "style": "prompt"
     },
     {
+      "id": "761892cc",
+      "text": "You have 15. Take off 2.",
+      "style": "prompt"
+    },
+    {
+      "id": "76307d0f",
+      "text": "You have 4. Put on 8 more.",
+      "style": "prompt"
+    },
+    {
       "id": "768ea79f",
       "text": "Buh, buh, banana starts with b.",
       "style": "phonics"
     },
     {
+      "id": "76ccd3fb",
+      "text": "You have 8. Put on 22 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "76e7e7ed",
+      "text": "The summit! What a climb!",
+      "style": "prompt"
+    },
+    {
+      "id": "771e1dc6",
+      "text": "You have 18. Take off 5.",
+      "style": "prompt"
+    },
+    {
+      "id": "77898f20",
+      "text": "You have 20. Put on 10 more.",
+      "style": "prompt"
+    },
+    {
       "id": "78279900",
       "text": "Oh! Their puppy friend Biscuit wandered off to play — Biscuit is safe, but Robo wants to find him. Look, tiny paw prints!",
       "style": "story"
+    },
+    {
+      "id": "791edea1",
+      "text": "You have 21. Put on 9 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "79b9fd77",
+      "text": "You have 3. Put on 27 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "7a05d180",
+      "text": "You have 4. Put on 9 more.",
+      "style": "prompt"
     },
     {
       "id": "7b81428d",
@@ -718,6 +1128,26 @@
       "style": "story"
     },
     {
+      "id": "80c2ae27",
+      "text": "Who is the story about?",
+      "style": "prompt"
+    },
+    {
+      "id": "80c6e24b",
+      "text": "10 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "8118ac3e",
+      "text": "Milo the puppy is ready to play!",
+      "style": "story"
+    },
+    {
+      "id": "81ab8af8",
+      "text": "You have 8. Put on 5 more.",
+      "style": "prompt"
+    },
+    {
       "id": "81b787f7",
       "text": "How should Finn help Biscuit feel brave enough to come out?",
       "style": "story"
@@ -725,6 +1155,11 @@
     {
       "id": "82eb1487",
       "text": "h ... a ... t. Hat.",
+      "style": "prompt"
+    },
+    {
+      "id": "8354c469",
+      "text": "How many passengers are on board?",
       "style": "prompt"
     },
     {
@@ -753,8 +1188,18 @@
       "style": "story"
     },
     {
+      "id": "85999311",
+      "text": "You have 29. Put on 1 more.",
+      "style": "prompt"
+    },
+    {
       "id": "873144b5",
       "text": "Copy this word. Tap the matching letters in order.",
+      "style": "prompt"
+    },
+    {
+      "id": "874a5021",
+      "text": "One full car is ten passengers. Count on: 10, 11, 12, 13, 14, 15, 16, 17, 18, 19.",
       "style": "prompt"
     },
     {
@@ -793,8 +1238,18 @@
       "style": "prompt"
     },
     {
+      "id": "896f75df",
+      "text": "You have 24. Put on 6 more.",
+      "style": "prompt"
+    },
+    {
       "id": "8a5b7001",
       "text": "Daddy Bear wants 4 cookies.",
+      "style": "prompt"
+    },
+    {
+      "id": "8be406b4",
+      "text": "Yes! 3 passengers. All aboard!",
       "style": "prompt"
     },
     {
@@ -803,8 +1258,18 @@
       "style": "story"
     },
     {
+      "id": "8ecd3759",
+      "text": "You have 20. Take off 7.",
+      "style": "prompt"
+    },
+    {
       "id": "8ee9ed8b",
       "text": "Tap a color for the picture, or a sticker, then a spot.",
+      "style": "prompt"
+    },
+    {
+      "id": "8fae0f7b",
+      "text": "9 more passengers needed.",
       "style": "prompt"
     },
     {
@@ -815,6 +1280,11 @@
     {
       "id": "901440d4",
       "text": "Count each star as you tap. Mama Bear wants three.",
+      "style": "prompt"
+    },
+    {
+      "id": "90659869",
+      "text": "You have 19. Take off 7.",
       "style": "prompt"
     },
     {
@@ -838,6 +1308,11 @@
       "style": "prompt"
     },
     {
+      "id": "918f5aad",
+      "text": "16 more passengers needed.",
+      "style": "prompt"
+    },
+    {
       "id": "91fb442a",
       "text": "Art",
       "style": "prompt"
@@ -848,9 +1323,29 @@
       "style": "phonics"
     },
     {
+      "id": "9293dc37",
+      "text": "Count along the track: hmm, 16, 17, 18. What comes before 16?",
+      "style": "prompt"
+    },
+    {
+      "id": "92dca9da",
+      "text": "2 too many. Take some off.",
+      "style": "prompt"
+    },
+    {
+      "id": "93e76e12",
+      "text": "The enchanted forest, where the trees sparkle.",
+      "style": "story"
+    },
+    {
       "id": "93e8cf4c",
       "text": "Bear baked b-b-bread.",
       "style": "prompt"
+    },
+    {
+      "id": "93ea62b0",
+      "text": "Someone wandered off to play!",
+      "style": "story"
     },
     {
       "id": "9536402e",
@@ -873,9 +1368,34 @@
       "style": "prompt"
     },
     {
+      "id": "97d86b9e",
+      "text": "Yes! 21 passengers. All aboard!",
+      "style": "prompt"
+    },
+    {
+      "id": "981b06e9",
+      "text": "You have 15. Take off 3.",
+      "style": "prompt"
+    },
+    {
       "id": "986249f8",
       "text": "Robo the helpful robot visits the moon castle, where the towers glow like little moons. On a little table sits a tiny music box.",
       "style": "story"
+    },
+    {
+      "id": "986e8e3e",
+      "text": "13 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "990189d7",
+      "text": "25 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "99b8b609",
+      "text": "You have 1. Put on 12 more.",
+      "style": "prompt"
     },
     {
       "id": "9a16f315",
@@ -898,6 +1418,11 @@
       "style": "prompt"
     },
     {
+      "id": "9d3cf619",
+      "text": "The little music box stopped singing!",
+      "style": "story"
+    },
+    {
       "id": "9d56537a",
       "text": "Let's check the pattern. What comes next?",
       "style": "prompt"
@@ -918,9 +1443,19 @@
       "style": "prompt"
     },
     {
+      "id": "9eba28ef",
+      "text": "Mama Bear asked for 2 banana, cookie.",
+      "style": "prompt"
+    },
+    {
       "id": "9ed9fe19",
       "text": "Princess Poppy the explorer visits the cloud village, where the streets are soft as pillows. Today feels like a very special day.",
       "style": "story"
+    },
+    {
+      "id": "9f34c463",
+      "text": "You have 6. Put on 24 more.",
+      "style": "prompt"
     },
     {
       "id": "a0c02e00",
@@ -933,14 +1468,54 @@
       "style": "prompt"
     },
     {
+      "id": "a12d984d",
+      "text": "Yes! 19 passengers. All aboard!",
+      "style": "prompt"
+    },
+    {
+      "id": "a1ef8c5c",
+      "text": "You have 7. Put on 6 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "a20b0384",
+      "text": "24 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "a241d6b6",
+      "text": "Robo the robot loves to help!",
+      "style": "story"
+    },
+    {
       "id": "a2d7d0f0",
       "text": "The flower meadow is full of sleepy butterflies. Finn the friendly dragon walks so-o-o softly, keeping the basket safe and steady.",
       "style": "story"
     },
     {
+      "id": "a2e59b6c",
+      "text": "You have 0. Put on 12 more.",
+      "style": "prompt"
+    },
+    {
       "id": "a3acd7ec",
       "text": "A basket of sunshine berries needs to reach the big surprise party — and Milo gets to carry it!",
       "style": "story"
+    },
+    {
+      "id": "a3ccc15a",
+      "text": "26 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "a43ddd8b",
+      "text": "Princess Poppy loves to explore.",
+      "style": "story"
+    },
+    {
+      "id": "a4d62415",
+      "text": "Count along the track: 39, 40, 41, hmm. What comes after 41?",
+      "style": "prompt"
     },
     {
       "id": "a50fde92",
@@ -956,6 +1531,11 @@
       "id": "a76ad19a",
       "text": "Luna the gentle unicorn winds the little handle, gentle and slow. The box hums one wobbly note — so close! The tiny wheel still wants to sit back in its place.",
       "style": "story"
+    },
+    {
+      "id": "a80d75ad",
+      "text": "5 too many. Take some off.",
+      "style": "prompt"
     },
     {
       "id": "a82bfeec",
@@ -998,6 +1578,11 @@
       "style": "phonics"
     },
     {
+      "id": "ab674fad",
+      "text": "Put 13 passengers on the train.",
+      "style": "prompt"
+    },
+    {
       "id": "ab69bf49",
       "text": "Where should Robo look for Biscuit?",
       "style": "story"
@@ -1038,6 +1623,11 @@
       "style": "prompt"
     },
     {
+      "id": "aff6dd51",
+      "text": "You have 23. Put on 7 more.",
+      "style": "prompt"
+    },
+    {
       "id": "b05bb005",
       "text": "Find the one that does not match, then paint it.",
       "style": "prompt"
@@ -1058,6 +1648,11 @@
       "style": "prompt"
     },
     {
+      "id": "b1a1b6ff",
+      "text": "Daddy Bear asked for more. Let's count.",
+      "style": "prompt"
+    },
+    {
       "id": "b2144344",
       "text": "Princess Poppy the explorer lives beside the cozy town, where every window twinkles hello.",
       "style": "story"
@@ -1070,6 +1665,31 @@
     {
       "id": "b3ae105e",
       "text": "What did Bear bake?",
+      "style": "prompt"
+    },
+    {
+      "id": "b43cd4e8",
+      "text": "Yes! 7 passengers. All aboard!",
+      "style": "prompt"
+    },
+    {
+      "id": "b564f98b",
+      "text": "29 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "b5aa4c2b",
+      "text": "Mama Bear asked for more. Let's count.",
+      "style": "prompt"
+    },
+    {
+      "id": "b5ebe38e",
+      "text": "6 too many. Take some off.",
+      "style": "prompt"
+    },
+    {
+      "id": "b65a7228",
+      "text": "Yes! 49 passengers. All aboard!",
       "style": "prompt"
     },
     {
@@ -1088,6 +1708,21 @@
       "style": "story"
     },
     {
+      "id": "b9df0764",
+      "text": "You have 5. Put on 8 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "bbb872bc",
+      "text": "You have 17. Take off 4.",
+      "style": "prompt"
+    },
+    {
+      "id": "bbd9c7db",
+      "text": "You have 0. Put on 13 more.",
+      "style": "prompt"
+    },
+    {
       "id": "bc02cb42",
       "text": "Luna the gentle unicorn visits the moon castle, where the towers glow like little moons. Today feels like a very special day.",
       "style": "story"
@@ -1098,9 +1733,24 @@
       "style": "story"
     },
     {
+      "id": "bfbdfaea",
+      "text": "Yes! 15, 16, 17, 18. All aboard!",
+      "style": "prompt"
+    },
+    {
       "id": "c00e0f84",
       "text": "c-a-t. Cat!",
       "style": "phonics"
+    },
+    {
+      "id": "c01f220a",
+      "text": "6 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "c21ca2fa",
+      "text": "That one belongs in the order.",
+      "style": "prompt"
     },
     {
       "id": "c22a5514",
@@ -1118,6 +1768,16 @@
       "style": "prompt"
     },
     {
+      "id": "c45dbca2",
+      "text": "17 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "c4abf000",
+      "text": "20 more passengers needed.",
+      "style": "prompt"
+    },
+    {
       "id": "c63abcc3",
       "text": "Which way should Poppy carry the basket?",
       "style": "story"
@@ -1130,6 +1790,11 @@
     {
       "id": "c7600c86",
       "text": "Baby Polar Bear looks wonderful!",
+      "style": "prompt"
+    },
+    {
+      "id": "c8342951",
+      "text": "Count each passenger: 1, 2, 3, 4, 5, 6, 7.",
       "style": "prompt"
     },
     {
@@ -1158,6 +1823,16 @@
       "style": "story"
     },
     {
+      "id": "cb490f64",
+      "text": "You can fix it.",
+      "style": "prompt"
+    },
+    {
+      "id": "cbed0ff8",
+      "text": "You have 6. Put on 7 more.",
+      "style": "prompt"
+    },
+    {
       "id": "cc5d23e3",
       "text": "Moon starts with m!",
       "style": "phonics"
@@ -1171,6 +1846,11 @@
       "id": "ccb525c9",
       "text": "Milo the playful puppy winds the little handle, gentle and slow. The box hums one wobbly note — so close! The tiny wheel still wants to sit back in its place.",
       "style": "story"
+    },
+    {
+      "id": "ccbe21f3",
+      "text": "Mama Bear asked for 3. Let's count.",
+      "style": "prompt"
     },
     {
       "id": "cdd7b20e",
@@ -1193,8 +1873,38 @@
       "style": "prompt"
     },
     {
+      "id": "cf3abefc",
+      "text": "Baby Polar Bear asked for any snack.",
+      "style": "prompt"
+    },
+    {
+      "id": "cf5eac25",
+      "text": "Yes! 30 passengers aboard. All aboard!",
+      "style": "prompt"
+    },
+    {
+      "id": "d002aea1",
+      "text": "Baby Polar Bear asked for banana, berry, bread.",
+      "style": "prompt"
+    },
+    {
+      "id": "d04dd5c5",
+      "text": "27 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "d10adc18",
+      "text": "8 more passengers needed.",
+      "style": "prompt"
+    },
+    {
       "id": "d1947851",
       "text": "Yes. Bear baked bread.",
+      "style": "prompt"
+    },
+    {
+      "id": "d21020bc",
+      "text": "1 more passenger needed.",
       "style": "prompt"
     },
     {
@@ -1208,6 +1918,16 @@
       "style": "prompt"
     },
     {
+      "id": "d3e985db",
+      "text": "7 too many. Take some off.",
+      "style": "prompt"
+    },
+    {
+      "id": "d51f9fd8",
+      "text": "Daddy Bear asked for any snack.",
+      "style": "prompt"
+    },
+    {
       "id": "d5c2ea88",
       "text": "The little bridge sways gently — wibble, wobble! Finn the friendly dragon hugs the basket close and takes slow, careful tiptoe steps.",
       "style": "story"
@@ -1216,6 +1936,21 @@
       "id": "d5f50ba3",
       "text": "You built cat!",
       "style": "prompt"
+    },
+    {
+      "id": "d6025c47",
+      "text": "You have 5. Put on 25 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "d6d7e6f7",
+      "text": "You have 1. Put on 29 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "d6e6f5f9",
+      "text": "The cloud village, soft as pillows.",
+      "style": "story"
     },
     {
       "id": "d6eb4d7d",
@@ -1228,8 +1963,33 @@
       "style": "story"
     },
     {
+      "id": "d7b60853",
+      "text": "Yes! 2 passengers. All aboard!",
+      "style": "prompt"
+    },
+    {
+      "id": "d7fa873f",
+      "text": "You have 15. Put on 15 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "d8d7cdde",
+      "text": "Yes! 18 passengers. All aboard!",
+      "style": "prompt"
+    },
+    {
+      "id": "d927a2d9",
+      "text": "12 more passengers needed.",
+      "style": "prompt"
+    },
+    {
       "id": "d96dc853",
       "text": "Your story picture is ready!",
+      "style": "prompt"
+    },
+    {
+      "id": "d98119c1",
+      "text": "Your story is ready!",
       "style": "prompt"
     },
     {
@@ -1248,6 +2008,26 @@
       "style": "story"
     },
     {
+      "id": "dd9684e3",
+      "text": "You have 10. Put on 3 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "ddb0104b",
+      "text": "Where does it happen?",
+      "style": "prompt"
+    },
+    {
+      "id": "ddc92c92",
+      "text": "Something special needs to be delivered!",
+      "style": "story"
+    },
+    {
+      "id": "de766d9f",
+      "text": "You have 11. Put on 19 more.",
+      "style": "prompt"
+    },
+    {
       "id": "df9d0e4a",
       "text": "Yummy! Thank you.",
       "style": "prompt"
@@ -1258,8 +2038,33 @@
       "style": "story"
     },
     {
+      "id": "dfe5c2b5",
+      "text": "You have 9. Put on 3 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "e13bce9e",
+      "text": "You have 11. Put on 1 more.",
+      "style": "prompt"
+    },
+    {
       "id": "e2170fb4",
       "text": "Baby Polar Bear plays in the garden today. Add what belongs to the story.",
+      "style": "prompt"
+    },
+    {
+      "id": "e221d966",
+      "text": "You have 14. Take off 1.",
+      "style": "prompt"
+    },
+    {
+      "id": "e253c534",
+      "text": "4 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "e2bbd5a8",
+      "text": "28 more passengers needed.",
       "style": "prompt"
     },
     {
@@ -1303,6 +2108,11 @@
       "style": "prompt"
     },
     {
+      "id": "e8228ac3",
+      "text": "Baby Polar Bear asked for more. Let's count.",
+      "style": "prompt"
+    },
+    {
       "id": "e8cd4a9a",
       "text": "Count 2 bananas and 1 cookie.",
       "style": "prompt"
@@ -1310,6 +2120,11 @@
     {
       "id": "e98a7d09",
       "text": "A circle is round, with no corners.",
+      "style": "prompt"
+    },
+    {
+      "id": "e9c07df3",
+      "text": "You have 12. Put on 18 more.",
       "style": "prompt"
     },
     {
@@ -1348,9 +2163,19 @@
       "style": "prompt"
     },
     {
+      "id": "ed8e2d5c",
+      "text": "You have 1. Put on 11 more.",
+      "style": "prompt"
+    },
+    {
       "id": "edde9883",
       "text": "Listen again. h-a-t.",
       "style": "phonics"
+    },
+    {
+      "id": "ee2b19d0",
+      "text": "Count along the track: 14, 15, 16, hmm. What comes after 16?",
+      "style": "prompt"
     },
     {
       "id": "ef0669e9",
@@ -1368,6 +2193,16 @@
       "style": "story"
     },
     {
+      "id": "f004024c",
+      "text": "15 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "f00fd2f8",
+      "text": "Luna the unicorn is gentle and kind.",
+      "style": "story"
+    },
+    {
       "id": "f1c4341c",
       "text": "You made the order.",
       "style": "prompt"
@@ -1381,6 +2216,16 @@
       "id": "f4765d07",
       "text": "Princess Poppy the explorer visits the cozy town, where every window twinkles hello. On a little table sits a tiny music box.",
       "style": "story"
+    },
+    {
+      "id": "f4b7fd4e",
+      "text": "Daddy Bear asked for 4 cookie.",
+      "style": "prompt"
+    },
+    {
+      "id": "f51ba681",
+      "text": "3 more passengers needed.",
+      "style": "prompt"
     },
     {
       "id": "f5a42199",
@@ -1428,6 +2273,26 @@
       "style": "prompt"
     },
     {
+      "id": "f925a631",
+      "text": "You have 18. Take off 6.",
+      "style": "prompt"
+    },
+    {
+      "id": "f9342f37",
+      "text": "You have 11. Put on 2 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "f9370507",
+      "text": "5 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "f9e08ca4",
+      "text": "You have 0. Put on 30 more.",
+      "style": "prompt"
+    },
+    {
       "id": "fc77dd32",
       "text": "Finn the friendly dragon winds the little handle, gentle and slow. The box hums one wobbly note — so close! The tiny wheel still wants to sit back in its place.",
       "style": "story"
@@ -1435,6 +2300,11 @@
     {
       "id": "fc9dba48",
       "text": "Baby Polar Bear loves your picture!",
+      "style": "prompt"
+    },
+    {
+      "id": "fcde3bb5",
+      "text": "Count each passenger: 1, 2, 3.",
       "style": "prompt"
     },
     {
@@ -1453,8 +2323,23 @@
       "style": "story"
     },
     {
+      "id": "fe01ad50",
+      "text": "Yes! 13 passengers aboard. All aboard!",
+      "style": "prompt"
+    },
+    {
       "id": "fe0a16cc",
       "text": "Pick a new color for the circle.",
+      "style": "prompt"
+    },
+    {
+      "id": "fe39d69a",
+      "text": "You have 16. Take off 3.",
+      "style": "prompt"
+    },
+    {
+      "id": "fe540f43",
+      "text": "You have 4. Put on 26 more.",
       "style": "prompt"
     },
     {
