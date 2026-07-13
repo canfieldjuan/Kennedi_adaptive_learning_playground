@@ -21,9 +21,9 @@ or invoked the server.
   `kennedi-content-foundry` stdio entry in its live MCP configuration, reload
   the host, and prove the host synchronized that binding.
 - Add the same trusted stdio binding to the supported FTL checkout's local
-  environment, start only the FTL web surface needed for the proof from that
-  checkout, and prove its host loader discovers the server and its MCP client
-  lists the versioned server's tools.
+  environment, make the installed FTL entry point resolve to that checkout,
+  launch the real host path, and prove that launched host discovers the server
+  and invokes one of its tools.
 - From each named host path, invoke `content_foundry_status` and record the
   returned server readiness, canonical workflow list, and bounded limits. A
   config-file match or generic stdio probe alone is insufficient.
@@ -96,17 +96,20 @@ that commit both hashed to
 - The supported checkout's `.env.local` gained only the
   `kennedi-content-foundry` trusted stdio binding to the same interpreter and
   immutable runtime snapshot.
-- A status-only probe loaded that file through Next's environment loader, then
-  invoked FTL's own `loadHostStdioServers` and `McpClientManager`. The resolved
-  host was `host-stdio:kennedi-content-foundry`, enabled over stdio, and the
-  manager connected with client identity `finetunelab-mcp-client`.
-- FTL listed the same six expected tools, found no approval/publication tool,
-  called only `content_foundry_status`, and received `is_error: false`,
-  `content_foundry: ready`, the four workflows and bounded limits, ComfyUI
-  0.25.0, and empty running and pending queues.
+- A status-only core-loader probe loaded that file through Next's environment
+  loader, then invoked FTL's own `loadHostStdioServers` and `McpClientManager`.
+  The resolved host was `host-stdio:kennedi-content-foundry`, enabled over
+  stdio, and the manager connected with client identity
+  `finetunelab-mcp-client`.
+- The core-loader probe listed the same six expected tools, found no
+  approval/publication tool, called only `content_foundry_status`, and received
+  `is_error: false`, `content_foundry: ready`, the four workflows and bounded
+  limits, ComfyUI 0.25.0, and empty running and pending queues. This establishes
+  the supported checkout's MCP capability, but it is not a receipt from the
+  installed `ftl` entry point and does not close issue #79's FTL host gate.
 
-No generation call was submitted by either host. The ComfyUI queue was empty
-before and after both proofs.
+No generation call was submitted by LM Studio or the FTL core-loader probe. The
+ComfyUI queue was empty before and after both checks.
 
 ### Decisive Commands
 
@@ -177,17 +180,17 @@ npx --yes tsx@4.23.0 -e '
 
 ### Issue Mutation And Host Cleanup
 
-Issue #79 remains open. Its host-invocation checklist item is now checked, the
-reconciliation names both successful named-host paths, and the remaining gates
-are limited to a real parent decision receipt and separate reviewed app
-integration of approved media.
+Issue #79 remains open. Its combined host-invocation checklist item is unchecked
+again: LM Studio has a complete named-host receipt, while FTL has only a
+successful core-loader/client receipt and the installed `ftl` command still
+resolves to the stale checkout. A real parent decision receipt and separate
+reviewed app integration of approved media also remain open.
 
-The temporary ComfyUI process stopped cleanly after both proofs. LM Studio was
+The temporary ComfyUI process stopped cleanly after both checks. LM Studio was
 restored to its normal launch command without the temporary debugging port; its
 active synchronized MCP state still contains both the preserved legacy
 `comfyui` entry and the additive `kennedi-content-foundry` entry. No FTL web,
-training, Graphiti, or database service was started for the core host-stack
-proof.
+training, Graphiti, or database service was started for the core-loader check.
 
 ## Contract Amendments
 
@@ -204,16 +207,17 @@ and bind both hosts to that snapshot. This adds only a local host runtime
 artifact; the unowned shared checkout and every application source remain
 protected.
 
-### FTL Core Host Path
+### FTL Core Loader Boundary
 
-The supported FTL web route is authenticated, but its MCP behavior delegates to
-the same trusted-host loader and client manager exercised by this proof. No web
-surface was needed to establish named-host discovery and invocation, and
-starting it would add authentication/database state without strengthening that
-claim. The contract's "only the FTL web surface needed" bound therefore resolves
-to no service start; the proof uses the load-and-call path at
+The supported FTL web route delegates MCP behavior to the trusted-host loader
+and client manager exercised by the probe at
 `lib/tools/mcp/host-config.ts:10-73` and
-`lib/tools/mcp/client.ts:82-271` directly.
+`lib/tools/mcp/client.ts:82-271`. That confirms the supported implementation is
+capable of the required discovery and invocation. It does not establish that
+the installed operator entry point launches that implementation: `ftl` still
+resolves to `/home/juan-canfield/Desktop/web-ui`. The core-loader result is
+therefore retained as useful partial evidence, not a named-host completion
+receipt.
 
 ### 2026-07-12 Review Follow-up
 
@@ -224,24 +228,48 @@ those two references with `/home/juan-canfield/.lmstudio/...` keeps the original
 proof reproducible. No host configuration, runtime snapshot, process, issue, or
 application behavior enters scope.
 
+### 2026-07-12 FTL Entry-Point Review Contract
+
+**Root cause:** the FTL receipt proves that the supported checkout's loader and
+client can discover and invoke Content Foundry, but the installed `ftl` command
+still resolves to the stale `/home/juan-canfield/Desktop/web-ui` checkout. The
+standalone core-loader probe therefore does not prove the host path an operator
+actually launches, so checking issue #79's combined LM Studio-and-FTL gate
+overstates the evidence.
+
+**Correct fix must touch:** distinguish the successful FTL core-loader probe
+from an end-user FTL host invocation; retract the combined completion claim in
+this receipt; restore issue #79's host-invocation item to incomplete; and name
+the installed launcher mismatch as the remaining FTL blocker. The gate may be
+checked again only after the installed FTL entry point resolves to the supported
+checkout and that launched host discovers and invokes the versioned server.
+
+**Must not change:** do not weaken the gate to accept a standalone import, and
+do not modify the installed launcher, shell startup files, either FTL checkout,
+the trusted stdio binding, LM Studio proof or configuration, runtime snapshot,
+Content Foundry source, generated media, parent decisions, child application,
+or any unrelated issue, PR, branch, worktree, service, or dependency.
+
 ## Cold Diff Audit
 
 ### Gaps
 
 - change without contract trace: none
-- contract requirement not delivered: none
+- contract requirement not delivered: the installed FTL entry point has not
+  launched the supported host and produced a Content Foundry invocation receipt
 - protected surface touched: none
 
-No standing gap remains. The host checklist moved only after both named hosts
-performed a real status call, and the temporary proof processes and debug port
-were removed.
+The combined issue gate remains open. LM Studio performed a real named-host
+status call; the FTL result is bounded to the supported checkout's loader and
+client because the installed command still launches the stale checkout. The
+temporary proof processes and debug port were removed.
 
 ### Change By Change Reconstruction
 
 - `docs/work-contracts/content-foundry-host-invocation-proof.md:5-49` defines the
   source-derived root cause, required named-host proof, and protected surfaces;
-  lines 53-190 record source identity, both host results, decisive commands,
-  issue mutation, and process cleanup.
+  lines 53-194 record source identity, the LM Studio receipt, FTL's partial
+  core-loader result, decisive commands, issue mutation, and process cleanup.
 - `/home/juan-canfield/.local/share/kennedi-content-foundry/b5af98d/SOURCE_COMMIT:1`
   pins the immutable runtime snapshot to the merged source SHA. The snapshot's
   `mcp_server.py` hash matches `git show` of that commit as recorded at this
@@ -253,10 +281,10 @@ were removed.
 - `/home/juan-canfield/Desktop/finetunelab.ai/.env.local:2` adds the single
   trusted stdio binding. Removing that one line produces a byte-identical copy
   of the pre-change backup; FTL's loader/client result is recorded at lines
-  88-106.
-- GitHub issue #79 checks only the now-proven host-invocation item, records both
-  host receipts, remains open, and retains the two real completion blockers at
-  this contract's lines 178-183.
+  88-109.
+- GitHub issue #79 leaves the combined host-invocation item unchecked, separates
+  the complete LM Studio receipt from FTL's partial core-loader evidence, and
+  retains the parent-decision and app-integration blockers.
 
 ### Contract Traceability
 
@@ -264,10 +292,10 @@ were removed.
   replace stale host claims with named-host evidence.
 - The LM Studio and FTL bindings trace to `Correct Fix Must Touch` lines 20-31.
 - The immutable runtime snapshot traces only to the stable-runtime amendment at
-  lines 194-205; it prevents either binding from depending on an unowned or
+  lines 198-209; it prevents either binding from depending on an unowned or
   short-lived worktree.
-- The FTL core-stack probe traces to the clarified host path immediately above;
-  no authenticated web/database behavior was required or changed.
+- The FTL core-loader probe traces to the partial capability check immediately
+  above; it is no longer represented as end-user host proof.
 - No LM Studio, FTL, ComfyUI, Content Foundry, playground, curriculum, parent UI,
   or child runtime source changed. No package manifest/lockfile, generated media,
   draft, approval record, public asset, PR #101 artifact, stale launcher tree,
@@ -281,17 +309,19 @@ were removed.
   additive versioned entries; the Integration picker found the named server;
   the persisted conversation listed exactly six expected tools, no
   approval/publication tool, and a successful ready/empty-queue status result.
-- FTL: Next's environment loader plus FTL's `loadHostStdioServers` and
+- FTL partial evidence: Next's environment loader plus FTL's
+  `loadHostStdioServers` and
   `McpClientManager` resolved `host-stdio:kennedi-content-foundry`, listed the
   same six tools, and returned `is_error: false`, ready status, bounded limits,
-  ComfyUI 0.25.0, and an empty queue.
+  ComfyUI 0.25.0, and an empty queue. No installed-entry-point host receipt was
+  produced.
 - Config delta audit: LM Studio's prior entry compared equal to backup; FTL's
   prior environment compared byte-for-byte equal after removing its one new
   binding.
 - Cleanup audit: ComfyUI port 8188 and temporary debug port 9223 were closed;
   LM Studio was running normally with both bindings still synchronized.
-- Issue #79 post-read: open, host item checked, parent-receipt and integration
-  blockers retained.
+- Issue #79 post-read: open, combined host item unchecked, installed FTL entry
+  point plus parent-receipt and integration blockers retained.
 - `npm ci`: installed 56 locked packages; audit found zero vulnerabilities.
 - `npm test`: passed 46 Content Foundry tests with one intentional skip, 58
   Vitest files, and 775 app tests after integrating current `origin/main`.
@@ -301,4 +331,5 @@ were removed.
 - `npm run check:work-contract`: passed.
 - `git diff --check`: passed.
 
-Gap audit: DONE.
+Gap audit: NOT DONE. The installed FTL entry point still requires a real
+named-host invocation receipt before issue #79's combined host gate can close.
