@@ -271,3 +271,37 @@ and must also document every legacy asset family it modifies or re-exports.
   game content and require a shipped clip per line. Regeneration:
   `npx vite-node scripts/voice/build-voice-manifest.ts` then
   `python scripts/voice/generate_voice_pack.py --only-missing`.
+
+## Tara voice pack (spoken prompts and story narration — default voice)
+
+- **Asset family:** Recorded prompt/narration voice pack ("Tara")
+- **Game:** All games; the parent picker default (Emma remains selectable)
+- **Status:** `look_approved` (owner listen-approval 2026-07-13: picked the
+  expressive Orpheus tara samples from the Round-2 bakeoff — 4 Orpheus
+  voices vs the shipped Kokoro Emma)
+- **Production path(s):** `public/assets/audio/voice/tara/<id>.mp3`
+  (one clip per manifest line; 48 kbps mono, loudness-normalized; 14MB)
+- **Editable source path(s):** `src/content/voice/tara-voice-manifest.json`
+  + `scripts/voice/generate_voice_pack.py` (recipe incl. the curated
+  performance map: <gasp> on the five story openings, <giggle> on the
+  three celebration lines; clip ids hash the CLEAN text)
+- **Creator:** Project developer (session-generated)
+- **Creation date:** 2026-07-13
+- **Creation tool:** Orpheus TTS (orpheus-3b-ft.gguf via LM Studio +
+  Orpheus-FastAPI SNAC decoder in ~/Desktop/tts) run as an OFFLINE build
+  tool; ffmpeg encoding; phonics clips atempo-slowed (owner pacing pick
+  pending final tune, provisional 0.85)
+- **Origin:** Category A original recordings of project-authored text
+- **Third-party elements:** Orpheus model weights (Apache-2.0) produced the
+  audio; the spoken text is project-owned
+- **AI assistance:** Yes — synthesized speech (Orpheus-3B, local via
+  LM Studio, offline). No cloud service, no account, no child data
+- **Commercial use / modification / distribution / public repository:**
+  Apache-2.0 model output, project-owned text — permitted
+- **Owner look approval:** APPROVED (listen approval) — the owner pointed at
+  orpheus-tara-expressive as the pick, 2026-07-13
+- **Restrictions and notes:** Same runtime rules as the Emma pack: local
+  static clips only, fail-open to device speech. Both packs share one line
+  enumeration; the lockstep contract test sweeps BOTH. Regeneration:
+  `npx vite-node scripts/voice/build-voice-manifest.ts` then
+  `python scripts/voice/generate_voice_pack.py --pack tara --only-missing`.

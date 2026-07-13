@@ -30,18 +30,22 @@ const outPath = join(
   'emma-voice-manifest.json'
 );
 
-const manifest: VoiceManifest = {
-  pack: 'emma',
-  voice: 'kokoro/bf_emma',
-  lines: collectVoiceLines(),
-};
+const lines = collectVoiceLines();
+const PACKS: Array<Pick<VoiceManifest, 'pack' | 'voice'>> = [
+  { pack: 'tara', voice: 'orpheus/tara' },
+  { pack: 'emma', voice: 'kokoro/bf_emma' },
+];
 
 mkdirSync(dirname(outPath), { recursive: true });
-writeFileSync(outPath, `${JSON.stringify(manifest, null, 2)}\n`);
+for (const packInfo of PACKS) {
+  const manifest: VoiceManifest = { ...packInfo, lines };
+  const packPath = outPath.replace('emma-voice-manifest', `${packInfo.pack}-voice-manifest`);
+  writeFileSync(packPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(`wrote ${lines.length} lines to ${packPath}`);
+}
 
-const styles = manifest.lines.reduce<Record<string, number>>((acc, line) => {
+const styles = lines.reduce<Record<string, number>>((acc, line) => {
   acc[line.style] = (acc[line.style] ?? 0) + 1;
   return acc;
 }, {});
-console.log(`wrote ${manifest.lines.length} lines to ${outPath}`);
 console.log(styles);

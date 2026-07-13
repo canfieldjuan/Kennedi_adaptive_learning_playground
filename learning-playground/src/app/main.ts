@@ -26,6 +26,7 @@ import { SpeechService } from '../core/speech';
 import { VoicePackSpeech } from '../core/voice-pack';
 import type { VoiceManifest } from '../core/voice-lines';
 import emmaVoiceManifest from '../content/voice/emma-voice-manifest.json';
+import taraVoiceManifest from '../content/voice/tara-voice-manifest.json';
 import { StorageService } from '../core/storage';
 import { applyParentApprovedDifficulty } from '../core/parent-difficulty-application';
 import type { LearningActivity } from '../types/activity';
@@ -82,10 +83,10 @@ const storage = new StorageService();
 const settings = storage.getSettings();
 // The Emma voice pack speaks known lines from local recorded clips; anything
 // unpacked (or a parent-chosen device voice) goes through speech synthesis.
-const speech = new VoicePackSpeech(
-  new SpeechService(settings.speech_enabled),
-  emmaVoiceManifest as unknown as VoiceManifest
-);
+const speech = new VoicePackSpeech(new SpeechService(settings.speech_enabled), [
+  taraVoiceManifest as unknown as VoiceManifest,
+  emmaVoiceManifest as unknown as VoiceManifest,
+]);
 speech.setVoiceURI(settings.speech_voice_uri);
 const audio = new AudioService(settings.sound_enabled);
 const sessionId = createSessionId();

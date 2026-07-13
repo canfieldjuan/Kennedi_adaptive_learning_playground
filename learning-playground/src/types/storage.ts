@@ -19,9 +19,10 @@ export interface ParentSettings {
   sound_enabled: boolean;
   speech_enabled: boolean;
   /**
-   * Preferred prompt voice. undefined or 'voice-pack:emma' = the recorded
-   * Emma voice pack (default); 'device' = the device's default speech
-   * synthesis; any other value = that specific device voiceURI.
+   * Preferred prompt voice. undefined or 'voice-pack:tara' = the recorded
+   * Tara voice pack (default); 'voice-pack:emma' = the recorded Emma pack;
+   * 'device' = the device's default speech synthesis; any other value =
+   * that specific device voiceURI.
    */
   speech_voice_uri?: string;
   video_enabled: boolean;

@@ -17,21 +17,26 @@ import {
   voiceLineId,
   type VoiceManifest,
 } from '../../src/core/voice-lines';
-import manifestJson from '../../src/content/voice/emma-voice-manifest.json';
+import emmaJson from '../../src/content/voice/emma-voice-manifest.json';
+import taraJson from '../../src/content/voice/tara-voice-manifest.json';
 
-const manifest = manifestJson as unknown as VoiceManifest;
+const PACKS: Array<[string, VoiceManifest]> = [
+  ['emma', emmaJson as unknown as VoiceManifest],
+  ['tara', taraJson as unknown as VoiceManifest],
+];
 
-describe('emma voice pack contract', () => {
+describe.each(PACKS)('%s voice pack contract', (packName, manifest) => {
   test('the committed manifest matches the live content enumeration', () => {
     // Exact lockstep: a new prompt, feedback line, story scene, or character
     // must re-run the manifest builder (and render its clips) to ship.
+    expect(manifest.pack).toBe(packName);
     expect(manifest.lines).toEqual(collectVoiceLines());
   });
 
   test('every manifest line has a committed local clip', () => {
     const shipped = new Set(
       readdirSync(
-        new URL('../../public/assets/audio/voice/emma/', import.meta.url)
+        new URL(`../../public/assets/audio/voice/${packName}/`, import.meta.url)
       ) as string[]
     );
     const missing = manifest.lines
