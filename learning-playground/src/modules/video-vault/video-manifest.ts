@@ -237,6 +237,7 @@ function validateBilingualStory(
   const targetWordIds = validateLanguageTargets(
     value.target_words,
     `${prefix} target_words`,
+    1,
     MAX_TARGET_WORDS,
     visualTargetIds,
     issues,
@@ -245,6 +246,7 @@ function validateBilingualStory(
   validateLanguageTargets(
     value.target_phrases,
     `${prefix} target_phrases`,
+    0,
     MAX_TARGET_PHRASES,
     visualTargetIds,
     issues,
@@ -335,6 +337,7 @@ function validateStoryModes(
     if (modeValue.approved_by_parent !== true) {
       issues.push(`${modePrefix} must be approved by a parent`);
     }
+    rejectAutomaticPlayback(modeValue, modePrefix, issues);
     if (!isSha256(modeValue.sha256)) {
       issues.push(`${modePrefix} sha256 must be a lowercase SHA-256 digest`);
     }
@@ -438,12 +441,13 @@ function validateInteractionSlots(
 function validateLanguageTargets(
   value: unknown,
   prefix: string,
+  minItems: number,
   maxItems: number,
   visualTargetIds: Set<string>,
   issues: string[],
   sharedIds: Set<string>
 ): Set<string> {
-  const targets = getBoundedArray(value, prefix, 1, maxItems, issues);
+  const targets = getBoundedArray(value, prefix, minItems, maxItems, issues);
   const targetIds = new Set<string>();
   for (const [index, target] of targets.entries()) {
     const targetPrefix = `${prefix} ${index}`;
@@ -698,7 +702,7 @@ function validateResponsePause(
   ) {
     issues.push(`${prefix} response_pause repeat must return to the paused cue`);
   }
-  if (cue.timeout_ms !== undefined || cue.auto_resume === true) {
+  if (cue.timeout_ms !== undefined || cue.auto_resume !== undefined) {
     issues.push(`${prefix} response_pause cannot declare timeout or auto-resume behavior`);
   }
 }

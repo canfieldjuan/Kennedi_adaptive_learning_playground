@@ -41,6 +41,13 @@ describe('bilingual story manifest v3 boundary', () => {
     expectInvalid(manifest, 'mode spanish_replay must be an object');
   });
 
+  test('accepts a story with no reusable target phrases', () => {
+    const manifest = makeStoryManifest();
+    getStory(manifest).target_phrases = [];
+
+    expect(validateVideoManifest(manifest, 'family-safe-videos-v1').valid).toBe(true);
+  });
+
   test.each([
     ['remote mode path', (story: Record<string, unknown>) => {
       getRecord(getRecord(story.modes).english).path = 'https://example.com/story.webm';
@@ -58,6 +65,15 @@ describe('bilingual story manifest v3 boundary', () => {
     }, 'media id must be unique'],
     ['automatic playback', (story: Record<string, unknown>) => {
       story.autoplay = true;
+    }, 'cannot autoplay, loop, or autoplay the next item'],
+    ['mode autoplay', (story: Record<string, unknown>) => {
+      getRecord(getRecord(story.modes).english).autoplay = true;
+    }, 'cannot autoplay, loop, or autoplay the next item'],
+    ['mode autoplay next', (story: Record<string, unknown>) => {
+      getRecord(getRecord(story.modes).story_bridge).autoplay_next = true;
+    }, 'cannot autoplay, loop, or autoplay the next item'],
+    ['mode loop', (story: Record<string, unknown>) => {
+      getRecord(getRecord(story.modes).spanish_replay).loop = true;
     }, 'cannot autoplay, loop, or autoplay the next item'],
   ])('rejects %s', (_label, mutate, expectedIssue) => {
     const manifest = makeStoryManifest();
@@ -97,6 +113,12 @@ describe('bilingual story manifest v3 boundary', () => {
     }, 'resumes only after explicit child action'],
     ['timeout', (cue: Record<string, unknown>) => {
       cue.timeout_ms = 2_000;
+    }, 'cannot declare timeout or auto-resume'],
+    ['auto_resume false metadata', (cue: Record<string, unknown>) => {
+      cue.auto_resume = false;
+    }, 'cannot declare timeout or auto-resume'],
+    ['auto_resume string metadata', (cue: Record<string, unknown>) => {
+      cue.auto_resume = 'after-2s';
     }, 'cannot declare timeout or auto-resume'],
     ['too few choices', (cue: Record<string, unknown>) => {
       cue.visual_targets = [getArray(cue.visual_targets)[0]];

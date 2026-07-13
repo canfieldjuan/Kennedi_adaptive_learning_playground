@@ -140,13 +140,34 @@ The first cold read found two implementation gaps before this audit was closed:
   export. Stable media ids, manifest/content provenance, and record schema
   versions were added at `src/modules/video-vault/video-vault.types.ts:78` and
   `src/modules/video-vault/video-vault.types.ts:232`, then validated for
-  uniqueness at `src/modules/video-vault/video-manifest.ts:317`.
+  uniqueness at `src/modules/video-vault/video-manifest.ts:319`.
 - The legacy normalizer initially spread the untrusted record after assigning
   `kind`, so an explicit `kind: undefined` property could defeat the normalized
   discriminator. The final spread order makes the normalized kind authoritative
   at `src/modules/video-vault/video-manifest.ts:152`.
 
 Both gaps were corrected and the complete verification suite was rerun.
+
+The current-head Codex review then identified three additional boundary gaps:
+
+- response pauses rejected only `auto_resume: true`, so `false` and string
+  values could still attach forbidden auto-resume metadata. The presence check
+  now rejects every declared value at
+  `src/modules/video-vault/video-manifest.ts:705`.
+- automatic-playback flags were rejected on the story item but not on each mode
+  export. Every export now runs the same guard at
+  `src/modules/video-vault/video-manifest.ts:340`.
+- the shared language-target validator required at least one phrase even though
+  the permanent contract only caps phrases at two. Words retain a minimum of
+  one while phrases explicitly allow zero at
+  `src/modules/video-vault/video-manifest.ts:237` and
+  `src/modules/video-vault/video-manifest.ts:246`.
+
+Focused regression tests cover all six exact review inputs at
+`tests/modules/bilingual-story-manifest.test.ts:44`,
+`tests/modules/bilingual-story-manifest.test.ts:69`, and
+`tests/modules/bilingual-story-manifest.test.ts:110`. All three review gaps are
+closed in the final diff.
 
 Do not declare done while any gap stands.
 
@@ -174,13 +195,13 @@ Do not declare done while any gap stands.
    existing `playable_videos` adapter (lines 79-87). Lines 120-179 reject unknown
    schemas/kinds and normalize v2. Lines 210-375 validate story policy, the
    exact mode set, stable media ids, local paths, MIME/duration, approval, and
-   hashes. Lines 377-544 validate bounded target/slot/language registries and
-   per-mode cue requirements. Lines 546-727 validate language, timing, explicit
+   hashes. Lines 380-548 validate bounded target/slot/language registries and
+   per-mode cue requirements. Lines 550-731 validate language, timing, explicit
    response action, no timeout, guided targets, and authored repeat return
-   state. Lines 751-828 validate exact Spanish approval artifacts and the
-   versioned completion page. Lines 830-1037 validate semantic registries,
+   state. Lines 755-832 validate exact Spanish approval artifacts and the
+   versioned completion page. Lines 834-1041 validate semantic registries,
    references, color values, bounded arrays, and sticker limits. Lines
-   1039-1094 preserve safe local paths, supported media, hashes, and strict UTC
+   1043-1098 preserve safe local paths, supported media, hashes, and strict UTC
    approval timestamps.
 4. `src/content/videos/family-safe-videos.v1.json:3` identifies the real manifest
    as schema v3 while retaining content `version: 2`; line 13 marks Bear Bakes
@@ -192,14 +213,14 @@ Do not declare done while any gap stands.
    and failing local-video boundaries, and lines 149-183 prove event metadata
    still records content version 2 and exposure-only completion.
 6. `tests/modules/bilingual-story-manifest.test.ts:5` proves a complete v3 story
-   validates while remaining absent from `playable_videos`. Lines 20-92 reject
+   validates while remaining absent from `playable_videos`. Lines 20-108 reject
    unknown schemas/kinds, missing modes, remote/duplicate media, missing hashes,
    autoplay, timing overflow, language mismatch, and dangling word references.
-   Lines 94-170 reject automatic/timeout resume, insufficient or dangling
+   Lines 110-192 reject automatic/timeout resume, insufficient or dangling
    choices, arbitrary repeat spans, unapproved/mismatched Spanish, invalid
-   dates, unsafe audio, and mismatched prompt audio. Lines 172-210 reject
+   dates, unsafe audio, and mismatched prompt audio. Lines 194-232 reject
    malformed semantic page references, unsafe assets, sticker overflow, unknown
-   page schemas, and target-word overflow. Lines 214-508 construct the complete
+   page schemas, and target-word overflow. Lines 236-530 construct the complete
    three-mode, cue, approval, registry, and page fixture used by both sides of
    those probes.
 7. This work contract records the root cause and protected surface before code
@@ -223,11 +244,13 @@ Do not declare done while any gap stands.
 ### Verification
 
 - `npm ci` - passed; 56 locked packages installed, 0 vulnerabilities.
-- Focused manifest/evidence/runtime run - passed: 4 files, 74 tests.
+- Focused manifest/evidence/runtime run - passed: 4 files, 80 tests.
 - `npm test` - passed: change-contract gate; 46 Content Foundry tests with 1
-  intentional skip; 62 Vitest files and 831/831 tests.
+  intentional skip; 62 Vitest files and 843/843 tests on the rebased head.
 - `npm run typecheck` - passed.
-- `npm run build` - passed; Vite transformed 130 modules.
+- `npm run build` - passed; Vite transformed 131 modules. The rebased Tara
+  voice-pack baseline emits a non-failing chunk-size warning; this slice does
+  not touch voice or bundling code.
 - `npm run lint --if-present` - exited 0; no lint script is defined.
 - `git diff --check` - passed.
 - Browser QA - not run because Slice 1 changes no runtime, route, UI, style, or
