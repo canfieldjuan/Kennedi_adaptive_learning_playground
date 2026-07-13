@@ -28,6 +28,17 @@ import type {
 } from './number-train.types';
 import { buildSessionPlan } from './round-plan';
 import { createStationEnvironment } from './station-environment';
+import {
+  SEATS_PER_CAR,
+  DEFAULT_SUCCESS_TAIL,
+  countSuccessLine,
+  loadSuccessLine,
+  sequenceSuccessLine,
+  loadSupportLine,
+  loadStructuralHintLine,
+  buildCountingHint,
+  buildSequenceHint,
+} from './train-lines';
 import { trainEngineSvg, passengerSvg } from './train-art';
 
 interface NumberTrainOptions {
@@ -45,7 +56,7 @@ interface FeedbackRule {
   highlight_target?: boolean;
 }
 
-const SEATS_PER_CAR = 10;
+
 
 let container: HTMLElement | null = null;
 let cleanupHandlers: Array<() => void> = [];
@@ -252,11 +263,11 @@ export function renderNumberTrainActivity(
             const isLastRound = roundIndex === plan.rounds.length - 1;
             showFeedback(
               feedback,
-              `Yes! ${round.quantity} ${round.quantity === 1 ? 'passenger' : 'passengers'}. ${correctFeedback.speech ?? 'All aboard!'}`,
+              countSuccessLine(round.quantity, correctFeedback.speech ?? DEFAULT_SUCCESS_TAIL),
               'success'
             );
             options.speech.speak(
-              `Yes! ${round.quantity} ${round.quantity === 1 ? 'passenger' : 'passengers'}. ${correctFeedback.speech ?? 'All aboard!'}`
+              countSuccessLine(round.quantity, correctFeedback.speech ?? DEFAULT_SUCCESS_TAIL)
             );
             if (correctFeedback.sound) options.audio.play(correctFeedback.sound);
 
@@ -441,7 +452,7 @@ export function renderNumberTrainActivity(
           checkButton.disabled = true;
           stations[roundIndex]?.classList.add('is-done');
 
-          const line = `Yes! ${round.target} ${round.target === 1 ? 'passenger' : 'passengers'} aboard. ${correctFeedback.speech ?? 'All aboard!'}`;
+          const line = loadSuccessLine(round.target, correctFeedback.speech ?? DEFAULT_SUCCESS_TAIL);
           showFeedback(feedback, line, 'success');
           options.speech.speak(line);
           if (correctFeedback.sound) options.audio.play(correctFeedback.sound);
@@ -463,10 +474,7 @@ export function renderNumberTrainActivity(
         }
 
         const diff = round.target - built;
-        const supportLine =
-          diff > 0
-            ? `${diff} more ${diff === 1 ? 'passenger' : 'passengers'} needed.`
-            : `${-diff} too many. Take ${-diff === 1 ? 'one' : 'some'} off.`;
+        const supportLine = loadSupportLine(diff);
         showFeedback(feedback, supportLine, 'support');
         options.speech.speak(supportLine);
         if (incorrectFeedback.sound) options.audio.play(incorrectFeedback.sound);
@@ -475,10 +483,7 @@ export function renderNumberTrainActivity(
           hintShown = true;
           // Structural hint: say where the count stands and light the seat to
           // act on next. Never fill or empty seats for the child.
-          const hintLine =
-            diff > 0
-              ? `You have ${built}. Put on ${diff} more.`
-              : `You have ${built}. Take off ${-diff}.`;
+          const hintLine = loadStructuralHintLine(built, diff);
           showFeedback(feedback, hintLine, 'hint');
           options.speech.speak(hintLine);
           if (hintFeedback.sound) options.audio.play(hintFeedback.sound);
@@ -611,7 +616,7 @@ export function renderNumberTrainActivity(
               missingStop.classList.add('is-filled');
             }
 
-            const line = `Yes! ${round.sequence.join(', ')}. ${correctFeedback.speech ?? 'All aboard!'}`;
+            const line = sequenceSuccessLine(round.sequence, correctFeedback.speech ?? DEFAULT_SUCCESS_TAIL);
             showFeedback(feedback, line, 'success');
             options.speech.speak(line);
             if (correctFeedback.sound) options.audio.play(correctFeedback.sound);
@@ -843,38 +848,6 @@ function buildTrainVisual(
   }
 
   return { train, seats: allSeats };
-}
-
-/**
- * Structural counting hint. Up to ten: count along seat by seat. Above ten:
- * teach the tens structure — one full car is ten, then count on.
- */
-function buildCountingHint(quantity: number): string {
-  if (quantity <= SEATS_PER_CAR) {
-    const counts = Array.from({ length: quantity }, (_, i) => String(i + 1));
-    return `Count each passenger: ${counts.join(', ')}.`;
-  }
-  const countOn = Array.from(
-    { length: quantity - SEATS_PER_CAR + 1 },
-    (_, i) => String(SEATS_PER_CAR + i)
-  );
-  return `One full car is ten passengers. Count on: ${countOn.join(', ')}.`;
-}
-
-/**
- * Walk the number track aloud: the sequence with the blank spoken as "hmm",
- * then the question anchored to the neighbor ("what comes after N?" — or
- * "before N" when the blank leads the path).
- */
-function buildSequenceHint(round: MissingStationRound): string {
-  const walked = round.sequence
-    .map((value, i) => (i === round.missing_index ? 'hmm' : String(value)))
-    .join(', ');
-  const question =
-    round.missing_index === 0
-      ? `What comes before ${round.sequence[1]}?`
-      : `What comes after ${round.sequence[round.missing_index - 1]}?`;
-  return `Count along the track: ${walked}. ${question}`;
 }
 
 function getSessionConfig(activity: LearningActivity): NumberTrainSessionConfig {

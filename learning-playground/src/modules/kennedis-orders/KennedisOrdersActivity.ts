@@ -1,4 +1,10 @@
 import type { LearningActivity } from '../../types/activity';
+import {
+  getFixFeedback,
+  getCorrectAnswer,
+  getRequestedQuantity,
+  getFoodLabel,
+} from './cafe-lines';
 import type { ActivityAttemptEvent, SkillAttemptOutcome } from '../../types/events';
 import type {
   AudioServiceInterface,
@@ -1048,35 +1054,6 @@ function evaluateFoodSelection(
   return { correct: true, issue: 'none' };
 }
 
-function getFixFeedback(
-  content: BearCafeContent,
-  issue: string,
-  attemptNumber: number
-): string {
-  if (attemptNumber < 2) return "Let's check the order.";
-
-  const required = content.required_order;
-  switch (issue) {
-    case 'quantity_under':
-    case 'quantity_over':
-      return `${content.character.name} asked for ${getRequestedQuantity(required) ?? 'more'}. Let's count.`;
-    case 'color': {
-      const colorLabel = content.colors?.find((color) => (
-        color.id === required?.color_id
-      ))?.label ?? 'that color';
-      return `${content.character.name} wanted ${colorLabel}.`;
-    }
-    case 'first_sound_sort':
-      return 'Bear starts with b-b-b. Banana starts with b-b-b.';
-    case 'food':
-      return `${content.character.name} asked for ${getCorrectAnswer(content)}.`;
-    case 'food_removed':
-      return "That one belongs in the order.";
-    default:
-      return 'You can fix it.';
-  }
-}
-
 function shouldShowColors(content: BearCafeContent): boolean {
   return Array.isArray(content.colors) && (
     content.mode === 'free_make' ||
@@ -1129,39 +1106,6 @@ function getSelectedAnswer(content: BearCafeContent, tray: TrayState): string {
   ))?.label;
 
   return [...foods, color, decoration].filter(Boolean).join(', ') || 'empty tray';
-}
-
-function getCorrectAnswer(content: BearCafeContent): string {
-  const required = content.required_order;
-  if (!required) return 'any snack';
-
-  if (required.food_counts) {
-    return Object.entries(required.food_counts)
-      .filter(([, count]) => count > 0)
-      .map(([foodId, count]) => {
-        const label = getFoodLabel(content, foodId);
-        return count > 1 ? `${count} ${label}` : label;
-      })
-      .join(', ');
-  }
-
-  if (required.food_ids) {
-    return required.food_ids.map((foodId) => getFoodLabel(content, foodId)).join(', ');
-  }
-
-  const parts = [];
-  if (typeof required.quantity === 'number') parts.push(String(required.quantity));
-  if (required.color_id) {
-    const colorLabel = content.colors?.find((entry) => entry.id === required.color_id)?.label;
-    parts.push(colorLabel ?? required.color_id);
-  }
-  if (required.food_id) parts.push(getFoodLabel(content, required.food_id));
-  return parts.join(' ');
-}
-
-function getFoodLabel(content: BearCafeContent, foodId: string | undefined): string {
-  if (!foodId) return 'food';
-  return content.foods.find((food) => food.id === foodId)?.label ?? foodId;
 }
 
 function emitAttemptEvent(params: {
@@ -1531,16 +1475,6 @@ function getCorrectChoiceId(required: BearCafeRequiredOrder | undefined): string
   if (required.food_counts) return serializeFoodCounts(required.food_counts);
   if (required.food_ids) return required.food_ids.join(',');
   return required.food_id;
-}
-
-function getRequestedQuantity(required: BearCafeRequiredOrder | undefined): number | undefined {
-  if (!required) return undefined;
-  if (typeof required.quantity === 'number') return required.quantity;
-  if (required.food_counts) {
-    return Object.values(required.food_counts).reduce((sum, count) => sum + count, 0);
-  }
-  if (required.food_ids) return required.food_ids.length;
-  return undefined;
 }
 
 function getTargetSound(content: BearCafeContent): string | undefined {
