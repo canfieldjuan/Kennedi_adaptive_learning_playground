@@ -1,0 +1,1476 @@
+{
+  "pack": "emma",
+  "voice": "kokoro/bf_emma",
+  "lines": [
+    {
+      "id": "0169ac41",
+      "text": "Hi! Let us play and learn.",
+      "style": "prompt"
+    },
+    {
+      "id": "0174b4f7",
+      "text": "Look at the dot card. Which number matches?",
+      "style": "prompt"
+    },
+    {
+      "id": "0274af2a",
+      "text": "Words",
+      "style": "prompt"
+    },
+    {
+      "id": "06a10184",
+      "text": "Mmm, mmm, moon.",
+      "style": "prompt"
+    },
+    {
+      "id": "09595758",
+      "text": "It goes right on the wall! Beautiful.",
+      "style": "prompt"
+    },
+    {
+      "id": "09f51be7",
+      "text": "Yes. Three stars.",
+      "style": "prompt"
+    },
+    {
+      "id": "0a06d763",
+      "text": "Let's remember what came out of the oven.",
+      "style": "prompt"
+    },
+    {
+      "id": "0a419a5f",
+      "text": "How many stars do you see?",
+      "style": "prompt"
+    },
+    {
+      "id": "0b5a4bb0",
+      "text": "Luna the gentle unicorn lives beside the enchanted forest, where the trees sparkle softly.",
+      "style": "story"
+    },
+    {
+      "id": "0cd0b6d9",
+      "text": "You built map!",
+      "style": "prompt"
+    },
+    {
+      "id": "0e068e96",
+      "text": "Robo hums Biscuit’s favorite song, soft and warm. Biscuit wiggles out, tail wagging! They walk home together, safe and happy. The end.",
+      "style": "story"
+    },
+    {
+      "id": "0e3bf076",
+      "text": "Find the color that matches Baby Polar Bear's card.",
+      "style": "prompt"
+    },
+    {
+      "id": "0f287ccb",
+      "text": "Yes. Three hearts.",
+      "style": "prompt"
+    },
+    {
+      "id": "10729c90",
+      "text": "Baby Polar Bear wants foods that start with B. Pick foods that start like bear.",
+      "style": "prompt"
+    },
+    {
+      "id": "1081dfc9",
+      "text": "A basket of sunshine berries needs to reach the big surprise party — and Luna gets to carry it!",
+      "style": "story"
+    },
+    {
+      "id": "10cd4553",
+      "text": "b ... a ... t. Bat.",
+      "style": "prompt"
+    },
+    {
+      "id": "1119fe01",
+      "text": "Listen again. b-a-t.",
+      "style": "phonics"
+    },
+    {
+      "id": "11ae8226",
+      "text": "How should Robo help Biscuit feel brave enough to come out?",
+      "style": "story"
+    },
+    {
+      "id": "131637cd",
+      "text": "The little bridge sways gently — wibble, wobble! Robo the helpful robot hugs the basket close and takes slow, careful tiptoe steps.",
+      "style": "story"
+    },
+    {
+      "id": "17422266",
+      "text": "All done.",
+      "style": "prompt"
+    },
+    {
+      "id": "17e37b58",
+      "text": "How should Luna help Biscuit feel brave enough to come out?",
+      "style": "story"
+    },
+    {
+      "id": "17f8d1f6",
+      "text": "Look at the scarf start. Pink, then yellow.",
+      "style": "prompt"
+    },
+    {
+      "id": "186eaa25",
+      "text": "Mama Bear is putting on a show tonight! Make the poster.",
+      "style": "prompt"
+    },
+    {
+      "id": "18e26cdd",
+      "text": "Count each flower as you tap. Daddy Bear wants five.",
+      "style": "prompt"
+    },
+    {
+      "id": "1a8efcdc",
+      "text": "Where should Finn look for Biscuit?",
+      "style": "story"
+    },
+    {
+      "id": "1b37ee52",
+      "text": "Story time! This is the tale of Finn the friendly dragon.",
+      "style": "story"
+    },
+    {
+      "id": "1c11351b",
+      "text": "Baby Polar Bear is calling.",
+      "style": "prompt"
+    },
+    {
+      "id": "1dcb277c",
+      "text": "Check the word card and try the next letter.",
+      "style": "prompt"
+    },
+    {
+      "id": "20c86e9c",
+      "text": "Bear Cafe",
+      "style": "prompt"
+    },
+    {
+      "id": "2194ad4d",
+      "text": "Finn the friendly dragon visits the moon castle, where the towers glow like little moons. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "23184414",
+      "text": "Baby Polar Bear shows you a card. Make the heart match it.",
+      "style": "prompt"
+    },
+    {
+      "id": "2325c41a",
+      "text": "Top starts with t!",
+      "style": "phonics"
+    },
+    {
+      "id": "234289e2",
+      "text": "The party is just ahead! How should Poppy bring the basket in?",
+      "style": "story"
+    },
+    {
+      "id": "23a3db38",
+      "text": "Finn the friendly dragon lives beside the enchanted forest, where the trees sparkle softly.",
+      "style": "story"
+    },
+    {
+      "id": "23d15b7f",
+      "text": "One, two, three dots.",
+      "style": "prompt"
+    },
+    {
+      "id": "240c2e5e",
+      "text": "All aboard the Number Train! How many passengers are on board?",
+      "style": "prompt"
+    },
+    {
+      "id": "24929e0d",
+      "text": "The flower meadow is full of sleepy butterflies. Milo the playful puppy walks so-o-o softly, keeping the basket safe and steady.",
+      "style": "story"
+    },
+    {
+      "id": "27fb2035",
+      "text": "How should Poppy help the music box find its song?",
+      "style": "story"
+    },
+    {
+      "id": "28268fed",
+      "text": "Find the color that matches the card.",
+      "style": "prompt"
+    },
+    {
+      "id": "286c0da7",
+      "text": "Where should Luna look for Biscuit?",
+      "style": "story"
+    },
+    {
+      "id": "2a4476ed",
+      "text": "Yes. Banana starts with b!",
+      "style": "phonics"
+    },
+    {
+      "id": "2a50c2a4",
+      "text": "Finn the friendly dragon visits the cloud village, where the streets are soft as pillows. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "2b478a9c",
+      "text": "Luna the gentle unicorn visits the cloud village, where the streets are soft as pillows. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "2d973ad5",
+      "text": "Bear starts with b!",
+      "style": "phonics"
+    },
+    {
+      "id": "2dc73b8d",
+      "text": "The tiny wheel is ready. How should Luna set it just right?",
+      "style": "story"
+    },
+    {
+      "id": "2e7b9650",
+      "text": "Ball starts with b!",
+      "style": "phonics"
+    },
+    {
+      "id": "2fa7a6d5",
+      "text": "You delivered it.",
+      "style": "prompt"
+    },
+    {
+      "id": "30118411",
+      "text": "Try again. Listen to banana.",
+      "style": "prompt"
+    },
+    {
+      "id": "3070e776",
+      "text": "Milo the playful puppy asks a kind friend, and together they nudge the wheel home. The music box sings again — fixing is even sweeter together! The end.",
+      "style": "story"
+    },
+    {
+      "id": "31f99dc2",
+      "text": "Robo the helpful robot tucks the basket into a little wagon and rolls it in, smooth and steady. Friends cheer — sunshine berries for everyone! The end.",
+      "style": "story"
+    },
+    {
+      "id": "32f05e4e",
+      "text": "A basket of sunshine berries needs to reach the big surprise party — and Finn gets to carry it!",
+      "style": "story"
+    },
+    {
+      "id": "34e0e05b",
+      "text": "Find the circle.",
+      "style": "prompt"
+    },
+    {
+      "id": "355b7124",
+      "text": "Make the circle match this color card.",
+      "style": "prompt"
+    },
+    {
+      "id": "355e35aa",
+      "text": "Finn the friendly dragon visits the moon castle, where the towers glow like little moons. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "35d1734b",
+      "text": "Not that letter. Try the next sound.",
+      "style": "phonics"
+    },
+    {
+      "id": "36a67349",
+      "text": "You finished the pattern! Daddy Bear is cozy.",
+      "style": "prompt"
+    },
+    {
+      "id": "37107b3b",
+      "text": "The little bridge sways gently — wibble, wobble! Princess Poppy the explorer hugs the basket close and takes slow, careful tiptoe steps.",
+      "style": "story"
+    },
+    {
+      "id": "3877dce5",
+      "text": "Shimmery bubbles float and pop — Biscuit bounces out laughing! Luna hugs her friend, and they walk home together, safe and happy. The end.",
+      "style": "story"
+    },
+    {
+      "id": "38b97e71",
+      "text": "Sound it out. Which word do these sounds make?",
+      "style": "phonics"
+    },
+    {
+      "id": "38fdbec3",
+      "text": "Where should Poppy look for Biscuit?",
+      "style": "story"
+    },
+    {
+      "id": "3ab1d2c8",
+      "text": "The flower meadow is full of sleepy butterflies. Luna the gentle unicorn walks so-o-o softly, keeping the basket safe and steady.",
+      "style": "story"
+    },
+    {
+      "id": "3ccb1ffb",
+      "text": "You fixed it.",
+      "style": "prompt"
+    },
+    {
+      "id": "3dd1c3ed",
+      "text": "Luna the gentle unicorn tucks the basket into a little wagon and rolls it in, smooth and steady. Friends cheer — sunshine berries for everyone! The end.",
+      "style": "story"
+    },
+    {
+      "id": "3e367d38",
+      "text": "The tiny wheel is ready. How should Finn set it just right?",
+      "style": "story"
+    },
+    {
+      "id": "3e40f17c",
+      "text": "What a treat! Great shift, chef.",
+      "style": "prompt"
+    },
+    {
+      "id": "3e563958",
+      "text": "Luna hums Biscuit’s favorite song, soft and warm. Biscuit wiggles out, tail wagging! They walk home together, safe and happy. The end.",
+      "style": "story"
+    },
+    {
+      "id": "3fb20c0b",
+      "text": "What a poster! The show will be wonderful.",
+      "style": "prompt"
+    },
+    {
+      "id": "40417e47",
+      "text": "Let us count the passengers again.",
+      "style": "prompt"
+    },
+    {
+      "id": "40813754",
+      "text": "Listen again. Duh ... ah ... guh.",
+      "style": "prompt"
+    },
+    {
+      "id": "42321eae",
+      "text": "Daddy Bear wants a new picture for the bear house wall. Make one!",
+      "style": "prompt"
+    },
+    {
+      "id": "42fe74ee",
+      "text": "The sparkly path leads to a giggling bush — Poppy can see Biscuit’s waggly tail! But the branches are all tangled, and Biscuit feels a little shy.",
+      "style": "story"
+    },
+    {
+      "id": "4439f988",
+      "text": "Robo the helpful robot lives beside the cozy town, where every window twinkles hello.",
+      "style": "story"
+    },
+    {
+      "id": "444b6915",
+      "text": "Robo the helpful robot visits the cloud village, where the streets are soft as pillows. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "444cc8ef",
+      "text": "A basket of sunshine berries needs to reach the big surprise party — and Poppy gets to carry it!",
+      "style": "story"
+    },
+    {
+      "id": "451be1c9",
+      "text": "c ... a ... t. Cat.",
+      "style": "prompt"
+    },
+    {
+      "id": "471c8fbd",
+      "text": "Oh! His puppy friend Biscuit wandered off to play — Biscuit is safe, but Finn wants to find him. Look, tiny paw prints!",
+      "style": "story"
+    },
+    {
+      "id": "47550632",
+      "text": "Daddy Bear wants five flowers on his card. Add five flowers, then press Check.",
+      "style": "prompt"
+    },
+    {
+      "id": "487821e7",
+      "text": "The party is just ahead! How should Finn bring the basket in?",
+      "style": "story"
+    },
+    {
+      "id": "4a6a32af",
+      "text": "Daddy Bear is calling.",
+      "style": "prompt"
+    },
+    {
+      "id": "4c0557af",
+      "text": "Bear baked bread. Tap the question mark.",
+      "style": "prompt"
+    },
+    {
+      "id": "4c33be2e",
+      "text": "The party is just ahead! How should Luna bring the basket in?",
+      "style": "story"
+    },
+    {
+      "id": "4cb372f8",
+      "text": "Princess Poppy the explorer asks a kind friend, and together they nudge the wheel home. The music box sings again — fixing is even sweeter together! The end.",
+      "style": "story"
+    },
+    {
+      "id": "4e0b7fbc",
+      "text": "Tuh, tuh, top.",
+      "style": "prompt"
+    },
+    {
+      "id": "4e3068e2",
+      "text": "You found the B foods.",
+      "style": "prompt"
+    },
+    {
+      "id": "4f38b4b7",
+      "text": "Find the word that starts with the letter M.",
+      "style": "phonics"
+    },
+    {
+      "id": "4f5b46f9",
+      "text": "Find the word that starts with the letter C.",
+      "style": "phonics"
+    },
+    {
+      "id": "50179032",
+      "text": "Pick food for the tray.",
+      "style": "prompt"
+    },
+    {
+      "id": "50277ccb",
+      "text": "Milo the playful puppy visits the cloud village, where the streets are soft as pillows. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "52ee3b83",
+      "text": "This letter comes next.",
+      "style": "prompt"
+    },
+    {
+      "id": "534657bb",
+      "text": "Let's check the order.",
+      "style": "prompt"
+    },
+    {
+      "id": "539f55c8",
+      "text": "Buh, buh, ball.",
+      "style": "prompt"
+    },
+    {
+      "id": "555800fa",
+      "text": "Pick a video.",
+      "style": "prompt"
+    },
+    {
+      "id": "5569c3af",
+      "text": "Math",
+      "style": "prompt"
+    },
+    {
+      "id": "5582d44c",
+      "text": "Mama Bear wants 2 bananas and 1 cookie.",
+      "style": "prompt"
+    },
+    {
+      "id": "55a637b6",
+      "text": "Click! With the tiny toolkit, the wheel pops snugly into place. The music box sings its sweet song again, and everyone dances. The end.",
+      "style": "story"
+    },
+    {
+      "id": "55fd24a9",
+      "text": "Tap a color for the shirt, or a sticker, then a spot.",
+      "style": "prompt"
+    },
+    {
+      "id": "5650dda5",
+      "text": "Luna the gentle unicorn lifts the basket up high and marches in — ta-da! Friends cheer, the berries shine, and the surprise party begins. The end.",
+      "style": "story"
+    },
+    {
+      "id": "5675fed4",
+      "text": "Princess Poppy the explorer visits the moon castle, where the towers glow like little moons. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "5884970d",
+      "text": "Tap a sticker, then tap a spot on the card.",
+      "style": "prompt"
+    },
+    {
+      "id": "58c45cb0",
+      "text": "The party is just ahead! How should Robo bring the basket in?",
+      "style": "story"
+    },
+    {
+      "id": "58e0954d",
+      "text": "Finn the friendly dragon asks a kind friend, and together they nudge the wheel home. The music box sings again — fixing is even sweeter together! The end.",
+      "style": "story"
+    },
+    {
+      "id": "58e747fe",
+      "text": "Orders delivered. Bake a treat.",
+      "style": "prompt"
+    },
+    {
+      "id": "590ba120",
+      "text": "Baby Polar Bear wants a banana.",
+      "style": "prompt"
+    },
+    {
+      "id": "59cb96ba",
+      "text": "Baby Polar Bear is outside in the daytime. What would be there?",
+      "style": "prompt"
+    },
+    {
+      "id": "5a10113f",
+      "text": "Luna the gentle unicorn lives beside the cozy town, where every window twinkles hello.",
+      "style": "story"
+    },
+    {
+      "id": "5d29117b",
+      "text": "Finn hums Biscuit’s favorite song, soft and warm. Biscuit wiggles out, tail wagging! They walk home together, safe and happy. The end.",
+      "style": "story"
+    },
+    {
+      "id": "5daf2c8b",
+      "text": "The tiny wheel is ready. How should Robo set it just right?",
+      "style": "story"
+    },
+    {
+      "id": "5dd6cc8c",
+      "text": "Poppy hums Biscuit’s favorite song, soft and warm. Biscuit wiggles out, tail wagging! They walk home together, safe and happy. The end.",
+      "style": "story"
+    },
+    {
+      "id": "5ea640b7",
+      "text": "Finn the friendly dragon lives beside the cozy town, where every window twinkles hello.",
+      "style": "story"
+    },
+    {
+      "id": "5f652aa5",
+      "text": "Luna the gentle unicorn asks a kind friend, and together they nudge the wheel home. The music box sings again — fixing is even sweeter together! The end.",
+      "style": "story"
+    },
+    {
+      "id": "5fe5ec84",
+      "text": "Tap play when you are ready.",
+      "style": "prompt"
+    },
+    {
+      "id": "61bf4493",
+      "text": "Story time! This is the tale of Princess Poppy the explorer.",
+      "style": "story"
+    },
+    {
+      "id": "6345502c",
+      "text": "Listen again. c-a-t.",
+      "style": "phonics"
+    },
+    {
+      "id": "643a5ceb",
+      "text": "Story time! This is the tale of Milo the playful puppy.",
+      "style": "story"
+    },
+    {
+      "id": "64e811d6",
+      "text": "Pick a color for the circle.",
+      "style": "prompt"
+    },
+    {
+      "id": "666fea64",
+      "text": "Oops. Daddy Bear ordered berries, but the tray has soup. Fix the order.",
+      "style": "prompt"
+    },
+    {
+      "id": "670dc7f4",
+      "text": "You found the circle!",
+      "style": "prompt"
+    },
+    {
+      "id": "676939f3",
+      "text": "Robo the helpful robot winds the little handle, gentle and slow. The box hums one wobbly note — so close! The tiny wheel still wants to sit back in its place.",
+      "style": "story"
+    },
+    {
+      "id": "6782c26d",
+      "text": "Finn the friendly dragon lifts the basket up high and marches in — ta-da! Friends cheer, the berries shine, and the surprise party begins. The end.",
+      "style": "story"
+    },
+    {
+      "id": "67a8bd5f",
+      "text": "Try a sticker or a color.",
+      "style": "prompt"
+    },
+    {
+      "id": "67c16193",
+      "text": "Shimmery bubbles float and pop — Biscuit bounces out laughing! Finn hugs his friend, and they walk home together, safe and happy. The end.",
+      "style": "story"
+    },
+    {
+      "id": "6bfa3dde",
+      "text": "Duh-ah-guh. Dog!",
+      "style": "prompt"
+    },
+    {
+      "id": "6c83e6d8",
+      "text": "Story time! This is the tale of Luna the gentle unicorn.",
+      "style": "story"
+    },
+    {
+      "id": "6d0db303",
+      "text": "Mama Bear is calling.",
+      "style": "prompt"
+    },
+    {
+      "id": "6d59379c",
+      "text": "Find the word that starts with the letter B.",
+      "style": "phonics"
+    },
+    {
+      "id": "71e95e5e",
+      "text": "h-a-t. Hat!",
+      "style": "phonics"
+    },
+    {
+      "id": "727b4f8c",
+      "text": "Daddy Bear asked for berries.",
+      "style": "prompt"
+    },
+    {
+      "id": "736c3c13",
+      "text": "The flower meadow is full of sleepy butterflies. Princess Poppy the explorer walks so-o-o softly, keeping the basket safe and steady.",
+      "style": "story"
+    },
+    {
+      "id": "73bdf534",
+      "text": "It matches!",
+      "style": "prompt"
+    },
+    {
+      "id": "745d5787",
+      "text": "Princess Poppy the explorer winds the little handle, gentle and slow. The box hums one wobbly note — so close! The tiny wheel still wants to sit back in its place.",
+      "style": "story"
+    },
+    {
+      "id": "758e623e",
+      "text": "Try again. Listen for t.",
+      "style": "prompt"
+    },
+    {
+      "id": "75b0f480",
+      "text": "Try again. Listen for b.",
+      "style": "prompt"
+    },
+    {
+      "id": "768ea79f",
+      "text": "Buh, buh, banana starts with b.",
+      "style": "phonics"
+    },
+    {
+      "id": "78279900",
+      "text": "Oh! Their puppy friend Biscuit wandered off to play — Biscuit is safe, but Robo wants to find him. Look, tiny paw prints!",
+      "style": "story"
+    },
+    {
+      "id": "7b81428d",
+      "text": "The express train is busy today! Count carefully.",
+      "style": "prompt"
+    },
+    {
+      "id": "7cdc105b",
+      "text": "Which way should Robo carry the basket?",
+      "style": "story"
+    },
+    {
+      "id": "7d444116",
+      "text": "Luna the gentle unicorn peeks inside with a little light. There it is — the tiny wheel, just a bit loose, waiting to be nudged home.",
+      "style": "story"
+    },
+    {
+      "id": "7e43069d",
+      "text": "Mama Bear wants three stars on her card. Add three stars, then press Check.",
+      "style": "prompt"
+    },
+    {
+      "id": "7f2acd28",
+      "text": "Oops! One thing on the card does not match Baby Polar Bear's picture. Fix it.",
+      "style": "prompt"
+    },
+    {
+      "id": "7f6223eb",
+      "text": "Robo the helpful robot lives beside the enchanted forest, where the trees sparkle softly.",
+      "style": "story"
+    },
+    {
+      "id": "7fabbf2f",
+      "text": "Shimmery bubbles float and pop — Biscuit bounces out laughing! Poppy hugs her friend, and they walk home together, safe and happy. The end.",
+      "style": "story"
+    },
+    {
+      "id": "7fcaf79b",
+      "text": "Check the color card and try again.",
+      "style": "prompt"
+    },
+    {
+      "id": "7ffb2346",
+      "text": "Finn the friendly dragon visits the cozy town, where every window twinkles hello. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "81b787f7",
+      "text": "How should Finn help Biscuit feel brave enough to come out?",
+      "style": "story"
+    },
+    {
+      "id": "82eb1487",
+      "text": "h ... a ... t. Hat.",
+      "style": "prompt"
+    },
+    {
+      "id": "83f4d160",
+      "text": "Find the next letter on the word card.",
+      "style": "prompt"
+    },
+    {
+      "id": "8403c413",
+      "text": "Look at the little house. What shape is the roof?",
+      "style": "prompt"
+    },
+    {
+      "id": "8424de23",
+      "text": "How should Luna help the music box find its song?",
+      "style": "story"
+    },
+    {
+      "id": "84492b5e",
+      "text": "Dress Baby Polar Bear! Pick a color for the shirt and add stickers.",
+      "style": "prompt"
+    },
+    {
+      "id": "84783d19",
+      "text": "Princess Poppy the explorer visits the enchanted forest, where the trees sparkle softly. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "873144b5",
+      "text": "Copy this word. Tap the matching letters in order.",
+      "style": "prompt"
+    },
+    {
+      "id": "87a8d61d",
+      "text": "Which way should Luna carry the basket?",
+      "style": "story"
+    },
+    {
+      "id": "8819201b",
+      "text": "You colored the circle.",
+      "style": "prompt"
+    },
+    {
+      "id": "889621d0",
+      "text": "Tap a color for the poster, or a sticker, then a spot.",
+      "style": "prompt"
+    },
+    {
+      "id": "88b871bf",
+      "text": "Princess Poppy the explorer lives beside the enchanted forest, where the trees sparkle softly.",
+      "style": "story"
+    },
+    {
+      "id": "890041f9",
+      "text": "You built sun!",
+      "style": "prompt"
+    },
+    {
+      "id": "891cd72b",
+      "text": "The summit train carries big groups. Count the full cars of ten!",
+      "style": "prompt"
+    },
+    {
+      "id": "894cbad0",
+      "text": "Build the word sun. Tap the letters in order.",
+      "style": "prompt"
+    },
+    {
+      "id": "8a5b7001",
+      "text": "Daddy Bear wants 4 cookies.",
+      "style": "prompt"
+    },
+    {
+      "id": "8c417de1",
+      "text": "Milo the playful puppy visits the moon castle, where the towers glow like little moons. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "8ee9ed8b",
+      "text": "Tap a color for the picture, or a sticker, then a spot.",
+      "style": "prompt"
+    },
+    {
+      "id": "8fca5b93",
+      "text": "The little bridge sways gently — wibble, wobble! Milo the playful puppy hugs the basket close and takes slow, careful tiptoe steps.",
+      "style": "story"
+    },
+    {
+      "id": "901440d4",
+      "text": "Count each star as you tap. Mama Bear wants three.",
+      "style": "prompt"
+    },
+    {
+      "id": "9094b9ca",
+      "text": "Robo the helpful robot visits the cloud village, where the streets are soft as pillows. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "90976c4a",
+      "text": "Listen: duh ... ah ... guh. Put the sounds together. Which picture?",
+      "style": "prompt"
+    },
+    {
+      "id": "9153d0e8",
+      "text": "You fixed it! Now it matches.",
+      "style": "prompt"
+    },
+    {
+      "id": "917ebcfe",
+      "text": "Hmm, does that belong in the story?",
+      "style": "prompt"
+    },
+    {
+      "id": "91fb442a",
+      "text": "Art",
+      "style": "prompt"
+    },
+    {
+      "id": "922ffb86",
+      "text": "Banana starts with what letter?",
+      "style": "phonics"
+    },
+    {
+      "id": "93e8cf4c",
+      "text": "Bear baked b-b-bread.",
+      "style": "prompt"
+    },
+    {
+      "id": "9536402e",
+      "text": "Finn the friendly dragon peeks inside with a little light. There it is — the tiny wheel, just a bit loose, waiting to be nudged home.",
+      "style": "story"
+    },
+    {
+      "id": "95c908ce",
+      "text": "Princess Poppy the explorer tucks the basket into a little wagon and rolls it in, smooth and steady. Friends cheer — sunshine berries for everyone! The end.",
+      "style": "story"
+    },
+    {
+      "id": "9732470e",
+      "text": "Sun starts with s!",
+      "style": "phonics"
+    },
+    {
+      "id": "978c592d",
+      "text": "Try again. Listen for s.",
+      "style": "prompt"
+    },
+    {
+      "id": "986249f8",
+      "text": "Robo the helpful robot visits the moon castle, where the towers glow like little moons. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "9a16f315",
+      "text": "That is not a circle. Try again.",
+      "style": "prompt"
+    },
+    {
+      "id": "9b279652",
+      "text": "Yes. The roof is a triangle.",
+      "style": "prompt"
+    },
+    {
+      "id": "9b9be027",
+      "text": "Luna the gentle unicorn visits the cloud village, where the streets are soft as pillows. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "9b9e8663",
+      "text": "Let's check the card.",
+      "style": "prompt"
+    },
+    {
+      "id": "9d56537a",
+      "text": "Let's check the pattern. What comes next?",
+      "style": "prompt"
+    },
+    {
+      "id": "9d9cf465",
+      "text": "The friendly owl blinks kindly and points a wing at the old hollow log. Biscuit is curled up inside — safe, but a little shy about coming out.",
+      "style": "story"
+    },
+    {
+      "id": "9df1fed7",
+      "text": "Bananas and cookie! Wonderful.",
+      "style": "prompt"
+    },
+    {
+      "id": "9e3d8b74",
+      "text": "Five flowers! Daddy Bear loves it.",
+      "style": "prompt"
+    },
+    {
+      "id": "9ed9fe19",
+      "text": "Princess Poppy the explorer visits the cloud village, where the streets are soft as pillows. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "a0c02e00",
+      "text": "That matches!",
+      "style": "prompt"
+    },
+    {
+      "id": "a0d531e8",
+      "text": "Baby Polar Bear asked for a banana.",
+      "style": "prompt"
+    },
+    {
+      "id": "a2d7d0f0",
+      "text": "The flower meadow is full of sleepy butterflies. Finn the friendly dragon walks so-o-o softly, keeping the basket safe and steady.",
+      "style": "story"
+    },
+    {
+      "id": "a3acd7ec",
+      "text": "A basket of sunshine berries needs to reach the big surprise party — and Milo gets to carry it!",
+      "style": "story"
+    },
+    {
+      "id": "a50fde92",
+      "text": "How should Milo help the music box find its song?",
+      "style": "story"
+    },
+    {
+      "id": "a6a7eca7",
+      "text": "Oh! Her puppy friend Biscuit wandered off to play — Biscuit is safe, but Poppy wants to find him. Look, tiny paw prints!",
+      "style": "story"
+    },
+    {
+      "id": "a76ad19a",
+      "text": "Luna the gentle unicorn winds the little handle, gentle and slow. The box hums one wobbly note — so close! The tiny wheel still wants to sit back in its place.",
+      "style": "story"
+    },
+    {
+      "id": "a82bfeec",
+      "text": "Which way should Milo carry the basket?",
+      "style": "story"
+    },
+    {
+      "id": "a86cd604",
+      "text": "Shimmery bubbles float and pop — Biscuit bounces out laughing! Robo hugs their friend, and they walk home together, safe and happy. The end.",
+      "style": "story"
+    },
+    {
+      "id": "a8857c56",
+      "text": "The sparkly path leads to a giggling bush — Robo can see Biscuit’s waggly tail! But the branches are all tangled, and Biscuit feels a little shy.",
+      "style": "story"
+    },
+    {
+      "id": "a981297f",
+      "text": "The flower meadow is full of sleepy butterflies. Robo the helpful robot walks so-o-o softly, keeping the basket safe and steady.",
+      "style": "story"
+    },
+    {
+      "id": "a9c26e2d",
+      "text": "Count each heart and try again.",
+      "style": "prompt"
+    },
+    {
+      "id": "a9fb2705",
+      "text": "You built dog!",
+      "style": "prompt"
+    },
+    {
+      "id": "aa1bb66f",
+      "text": "Finn the friendly dragon visits the cloud village, where the streets are soft as pillows. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "aac6a3da",
+      "text": "b-a-t. Bat!",
+      "style": "phonics"
+    },
+    {
+      "id": "ab69bf49",
+      "text": "Where should Robo look for Biscuit?",
+      "style": "story"
+    },
+    {
+      "id": "ab870225",
+      "text": "Robo the helpful robot visits the enchanted forest, where the trees sparkle softly. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "acacc6e8",
+      "text": "Milo the playful puppy lifts the basket up high and marches in — ta-da! Friends cheer, the berries shine, and the surprise party begins. The end.",
+      "style": "story"
+    },
+    {
+      "id": "acbb6c7a",
+      "text": "The little bridge sways gently — wibble, wobble! Luna the gentle unicorn hugs the basket close and takes slow, careful tiptoe steps.",
+      "style": "story"
+    },
+    {
+      "id": "ad2f9e81",
+      "text": "The tiny wheel is ready. How should Poppy set it just right?",
+      "style": "story"
+    },
+    {
+      "id": "ae360f32",
+      "text": "Daddy Bear asked for 4. Let's count.",
+      "style": "prompt"
+    },
+    {
+      "id": "ae4c5694",
+      "text": "Four cookies! Thank you.",
+      "style": "prompt"
+    },
+    {
+      "id": "aeac1b9c",
+      "text": "All aboard!",
+      "style": "prompt"
+    },
+    {
+      "id": "b05bb005",
+      "text": "Find the one that does not match, then paint it.",
+      "style": "prompt"
+    },
+    {
+      "id": "b07cf86e",
+      "text": "Try another choice.",
+      "style": "prompt"
+    },
+    {
+      "id": "b0af4d15",
+      "text": "Finn the friendly dragon tucks the basket into a little wagon and rolls it in, smooth and steady. Friends cheer — sunshine berries for everyone! The end.",
+      "style": "story"
+    },
+    {
+      "id": "b10c3f32",
+      "text": "Look at Baby Polar Bear's picture. Which one looks different?",
+      "style": "prompt"
+    },
+    {
+      "id": "b2144344",
+      "text": "Princess Poppy the explorer lives beside the cozy town, where every window twinkles hello.",
+      "style": "story"
+    },
+    {
+      "id": "b2554aeb",
+      "text": "Sss, sss, sun.",
+      "style": "prompt"
+    },
+    {
+      "id": "b3ae105e",
+      "text": "What did Bear bake?",
+      "style": "prompt"
+    },
+    {
+      "id": "b70a1aa7",
+      "text": "Milo the playful puppy peeks inside with a little light. There it is — the tiny wheel, just a bit loose, waiting to be nudged home.",
+      "style": "story"
+    },
+    {
+      "id": "b84b50d5",
+      "text": "Let's count the stars together.",
+      "style": "prompt"
+    },
+    {
+      "id": "b85cddbd",
+      "text": "How should Robo help the music box find its song?",
+      "style": "story"
+    },
+    {
+      "id": "bc02cb42",
+      "text": "Luna the gentle unicorn visits the moon castle, where the towers glow like little moons. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "bdb3d35b",
+      "text": "Robo the helpful robot visits the cozy town, where every window twinkles hello. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "c00e0f84",
+      "text": "c-a-t. Cat!",
+      "style": "phonics"
+    },
+    {
+      "id": "c22a5514",
+      "text": "How should Finn help the music box find its song?",
+      "style": "story"
+    },
+    {
+      "id": "c28133d3",
+      "text": "Look at the roof shape and try again.",
+      "style": "prompt"
+    },
+    {
+      "id": "c2991b6f",
+      "text": "Look at each dot and try again.",
+      "style": "prompt"
+    },
+    {
+      "id": "c63abcc3",
+      "text": "Which way should Poppy carry the basket?",
+      "style": "story"
+    },
+    {
+      "id": "c6d58864",
+      "text": "The sparkly path leads to a giggling bush — Luna can see Biscuit’s waggly tail! But the branches are all tangled, and Biscuit feels a little shy.",
+      "style": "story"
+    },
+    {
+      "id": "c7600c86",
+      "text": "Baby Polar Bear looks wonderful!",
+      "style": "prompt"
+    },
+    {
+      "id": "c887f5c7",
+      "text": "Kuh, kuh, cat.",
+      "style": "prompt"
+    },
+    {
+      "id": "c8aff633",
+      "text": "Count each star and try again.",
+      "style": "prompt"
+    },
+    {
+      "id": "c8bae8fd",
+      "text": "Robo the helpful robot peeks inside with a little light. There it is — the tiny wheel, just a bit loose, waiting to be nudged home.",
+      "style": "story"
+    },
+    {
+      "id": "c9795014",
+      "text": "Build the word dog. Tap the letters in order.",
+      "style": "prompt"
+    },
+    {
+      "id": "caf64785",
+      "text": "Oh! The little music box has gone quiet — one tiny wheel slipped loose, so its song is taking a rest.",
+      "style": "story"
+    },
+    {
+      "id": "cc5d23e3",
+      "text": "Moon starts with m!",
+      "style": "phonics"
+    },
+    {
+      "id": "ccac48a7",
+      "text": "Princess Poppy the explorer visits the moon castle, where the towers glow like little moons. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "ccb525c9",
+      "text": "Milo the playful puppy winds the little handle, gentle and slow. The box hums one wobbly note — so close! The tiny wheel still wants to sit back in its place.",
+      "style": "story"
+    },
+    {
+      "id": "cdd7b20e",
+      "text": "Princess Poppy the explorer visits the cloud village, where the streets are soft as pillows. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "ce092cfa",
+      "text": "Make Baby Polar Bear a picture. Pick colors and stickers.",
+      "style": "prompt"
+    },
+    {
+      "id": "cf05c113",
+      "text": "Duh ... ah ... guh says dog.",
+      "style": "phonics"
+    },
+    {
+      "id": "cf3345b4",
+      "text": "Pick a color first.",
+      "style": "prompt"
+    },
+    {
+      "id": "d1947851",
+      "text": "Yes. Bear baked bread.",
+      "style": "prompt"
+    },
+    {
+      "id": "d2c2b172",
+      "text": "Princess Poppy the explorer lifts the basket up high and marches in — ta-da! Friends cheer, the berries shine, and the surprise party begins. The end.",
+      "style": "story"
+    },
+    {
+      "id": "d388e97b",
+      "text": "How many hearts do you see?",
+      "style": "prompt"
+    },
+    {
+      "id": "d5c2ea88",
+      "text": "The little bridge sways gently — wibble, wobble! Finn the friendly dragon hugs the basket close and takes slow, careful tiptoe steps.",
+      "style": "story"
+    },
+    {
+      "id": "d5f50ba3",
+      "text": "You built cat!",
+      "style": "prompt"
+    },
+    {
+      "id": "d6eb4d7d",
+      "text": "Oh! Her puppy friend Biscuit wandered off to play — Biscuit is safe, but Luna wants to find him. Look, tiny paw prints!",
+      "style": "story"
+    },
+    {
+      "id": "d725e851",
+      "text": "Milo the playful puppy visits the cozy town, where every window twinkles hello. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "d96dc853",
+      "text": "Your story picture is ready!",
+      "style": "prompt"
+    },
+    {
+      "id": "db6cfcc2",
+      "text": "Which way should Finn carry the basket?",
+      "style": "story"
+    },
+    {
+      "id": "dbbd80a0",
+      "text": "Let's count the flowers together.",
+      "style": "prompt"
+    },
+    {
+      "id": "dceaca2c",
+      "text": "Milo the playful puppy tucks the basket into a little wagon and rolls it in, smooth and steady. Friends cheer — sunshine berries for everyone! The end.",
+      "style": "story"
+    },
+    {
+      "id": "df9d0e4a",
+      "text": "Yummy! Thank you.",
+      "style": "prompt"
+    },
+    {
+      "id": "dfc24745",
+      "text": "Luna the gentle unicorn visits the moon castle, where the towers glow like little moons. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "e2170fb4",
+      "text": "Baby Polar Bear plays in the garden today. Add what belongs to the story.",
+      "style": "prompt"
+    },
+    {
+      "id": "e36f2b07",
+      "text": "A basket of sunshine berries needs to reach the big surprise party — and Robo gets to carry it!",
+      "style": "story"
+    },
+    {
+      "id": "e471fc3e",
+      "text": "Luna the gentle unicorn visits the cozy town, where every window twinkles hello. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "e48b23de",
+      "text": "Order ready.",
+      "style": "prompt"
+    },
+    {
+      "id": "e48cfddd",
+      "text": "Buh, buh, bear.",
+      "style": "prompt"
+    },
+    {
+      "id": "e5494c82",
+      "text": "Bear starts with b-b-b. Banana starts with b-b-b.",
+      "style": "phonics"
+    },
+    {
+      "id": "e59ed1fe",
+      "text": "How should Poppy help Biscuit feel brave enough to come out?",
+      "style": "story"
+    },
+    {
+      "id": "e5a98c80",
+      "text": "Luna the gentle unicorn visits the enchanted forest, where the trees sparkle softly. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "e6886ff4",
+      "text": "One, two, three hearts.",
+      "style": "prompt"
+    },
+    {
+      "id": "e8cd4a9a",
+      "text": "Count 2 bananas and 1 cookie.",
+      "style": "prompt"
+    },
+    {
+      "id": "e98a7d09",
+      "text": "A circle is round, with no corners.",
+      "style": "prompt"
+    },
+    {
+      "id": "e9ed1999",
+      "text": "Yes. That card shows three.",
+      "style": "prompt"
+    },
+    {
+      "id": "ea345bdb",
+      "text": "Milo the playful puppy visits the enchanted forest, where the trees sparkle softly. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "ecd1046d",
+      "text": "Daddy Bear wants a pattern scarf. Pink, yellow, pink, yellow. Keep it going!",
+      "style": "prompt"
+    },
+    {
+      "id": "ed225422",
+      "text": "Find the word that starts with the letter T.",
+      "style": "phonics"
+    },
+    {
+      "id": "ed3c2fba",
+      "text": "Build the word cat. Tap the letters in order.",
+      "style": "prompt"
+    },
+    {
+      "id": "ed67af56",
+      "text": "Milo the playful puppy visits the moon castle, where the towers glow like little moons. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "ed7c57da",
+      "text": "One, two, three stars.",
+      "style": "prompt"
+    },
+    {
+      "id": "edde9883",
+      "text": "Listen again. h-a-t.",
+      "style": "phonics"
+    },
+    {
+      "id": "ef0669e9",
+      "text": "Story time! This is the tale of Robo the helpful robot.",
+      "style": "story"
+    },
+    {
+      "id": "ef33a069",
+      "text": "Find the word that starts with the letter S.",
+      "style": "phonics"
+    },
+    {
+      "id": "ef49a5d8",
+      "text": "Finn the friendly dragon visits the enchanted forest, where the trees sparkle softly. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "f1c4341c",
+      "text": "You made the order.",
+      "style": "prompt"
+    },
+    {
+      "id": "f3c6759c",
+      "text": "Robo the helpful robot asks a kind friend, and together they nudge the wheel home. The music box sings again — fixing is even sweeter together! The end.",
+      "style": "story"
+    },
+    {
+      "id": "f4765d07",
+      "text": "Princess Poppy the explorer visits the cozy town, where every window twinkles hello. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "f5a42199",
+      "text": "Count each passenger.",
+      "style": "prompt"
+    },
+    {
+      "id": "f5f3fa69",
+      "text": "The party is just ahead! How should Milo bring the basket in?",
+      "style": "story"
+    },
+    {
+      "id": "f60950bb",
+      "text": "Robo the helpful robot visits the moon castle, where the towers glow like little moons. Today feels like a very special day.",
+      "style": "story"
+    },
+    {
+      "id": "f676a914",
+      "text": "Cat starts with c!",
+      "style": "phonics"
+    },
+    {
+      "id": "f7596b97",
+      "text": "Three stars! Mama Bear loves it.",
+      "style": "prompt"
+    },
+    {
+      "id": "f77c5af9",
+      "text": "Tap a color, then tap the circle.",
+      "style": "prompt"
+    },
+    {
+      "id": "f7a4f533",
+      "text": "Try again. Listen for m.",
+      "style": "prompt"
+    },
+    {
+      "id": "f7b3ffbd",
+      "text": "Try again. Listen for c.",
+      "style": "prompt"
+    },
+    {
+      "id": "f8c96670",
+      "text": "Trace the roof's three sides with your eyes.",
+      "style": "prompt"
+    },
+    {
+      "id": "fc77dd32",
+      "text": "Finn the friendly dragon winds the little handle, gentle and slow. The box hums one wobbly note — so close! The tiny wheel still wants to sit back in its place.",
+      "style": "story"
+    },
+    {
+      "id": "fc9dba48",
+      "text": "Baby Polar Bear loves your picture!",
+      "style": "prompt"
+    },
+    {
+      "id": "fcf2afc8",
+      "text": "Milo the playful puppy visits the cloud village, where the streets are soft as pillows. On a little table sits a tiny music box.",
+      "style": "story"
+    },
+    {
+      "id": "fd61d219",
+      "text": "The sparkly path leads to a giggling bush — Finn can see Biscuit’s waggly tail! But the branches are all tangled, and Biscuit feels a little shy.",
+      "style": "story"
+    },
+    {
+      "id": "fd6e2429",
+      "text": "Princess Poppy the explorer peeks inside with a little light. There it is — the tiny wheel, just a bit loose, waiting to be nudged home.",
+      "style": "story"
+    },
+    {
+      "id": "fe0a16cc",
+      "text": "Pick a new color for the circle.",
+      "style": "prompt"
+    },
+    {
+      "id": "fec4936a",
+      "text": "Time for a break! You did great today.",
+      "style": "prompt"
+    },
+    {
+      "id": "ff92e0de",
+      "text": "The tiny wheel is ready. How should Milo set it just right?",
+      "style": "story"
+    },
+    {
+      "id": "ffc2feb6",
+      "text": "Robo the helpful robot lifts the basket up high and marches in — ta-da! Friends cheer, the berries shine, and the surprise party begins. The end.",
+      "style": "story"
+    }
+  ]
+}

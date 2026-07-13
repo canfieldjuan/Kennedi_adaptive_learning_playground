@@ -18,7 +18,11 @@ export interface ParentSettings {
   session_limit_minutes: number;
   sound_enabled: boolean;
   speech_enabled: boolean;
-  /** Preferred speech-synthesis voiceURI; undefined = the device default voice. */
+  /**
+   * Preferred prompt voice. undefined or 'voice-pack:emma' = the recorded
+   * Emma voice pack (default); 'device' = the device's default speech
+   * synthesis; any other value = that specific device voiceURI.
+   */
   speech_voice_uri?: string;
   video_enabled: boolean;
   max_activity_choices: number;

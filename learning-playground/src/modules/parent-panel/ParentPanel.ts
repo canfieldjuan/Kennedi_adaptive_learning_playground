@@ -29,6 +29,13 @@ import type {
 import type { SkillMasteryState } from '../../types/progress';
 import { SpeechService, listSpeechVoices } from '../../core/speech';
 import {
+  VoicePackSpeech,
+  VOICE_PACK_URI_PREFIX,
+  DEVICE_VOICE_URI,
+} from '../../core/voice-pack';
+import type { VoiceManifest } from '../../core/voice-lines';
+import emmaVoiceManifest from '../../content/voice/emma-voice-manifest.json';
+import {
   buildParentSessionReview,
   type ParentSessionReview,
   type SkillAccuracySummary,
@@ -774,10 +781,21 @@ function createVoiceSettingsSection(
   select.className = 'parent-voice-settings__select';
   select.id = 'parent-voice-setting';
 
+  const emmaOption = document.createElement('option');
+  emmaOption.value = `${VOICE_PACK_URI_PREFIX}emma`;
+  emmaOption.textContent = 'Emma — storyteller (recorded, default)';
+  if (
+    !settings.speech_voice_uri ||
+    settings.speech_voice_uri === `${VOICE_PACK_URI_PREFIX}emma`
+  ) {
+    emmaOption.selected = true;
+  }
+  select.appendChild(emmaOption);
+
   const defaultOption = document.createElement('option');
-  defaultOption.value = '';
+  defaultOption.value = DEVICE_VOICE_URI;
   defaultOption.textContent = 'Device default';
-  if (!settings.speech_voice_uri) defaultOption.selected = true;
+  if (settings.speech_voice_uri === DEVICE_VOICE_URI) defaultOption.selected = true;
   select.appendChild(defaultOption);
 
   for (const voice of voices) {
@@ -825,8 +843,13 @@ function createVoiceSettingsSection(
   testButton.type = 'button';
   testButton.textContent = '🔊 Test voice';
   testButton.addEventListener('click', () => {
-    // Preview honors the parent speech toggle (silent when speech is off).
-    const preview = new SpeechService(settings.speech_enabled, select.value || undefined);
+    // Preview honors the parent speech toggle (silent when speech is off) and
+    // routes through the pack so the Emma option previews the real recording.
+    const preview = new VoicePackSpeech(
+      new SpeechService(settings.speech_enabled),
+      emmaVoiceManifest as unknown as VoiceManifest
+    );
+    preview.setVoiceURI(select.value || undefined);
     preview.speak('Hi! Let us play and learn.');
   });
   actions.appendChild(testButton);
