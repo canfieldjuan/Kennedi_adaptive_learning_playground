@@ -20,24 +20,36 @@ import { voiceLineId, type VoiceManifest } from './voice-lines';
 export const VOICE_PACK_URI_PREFIX = 'voice-pack:';
 export const DEVICE_VOICE_URI = 'device';
 
+interface PackEntry {
+  clipIds: Set<string>;
+  baseUrl: string;
+}
+
 export class VoicePackSpeech implements SpeechServiceInterface {
   private readonly base: SpeechServiceInterface;
-  private readonly packName: string;
-  private readonly clipIds: Set<string>;
-  private readonly baseUrl: string;
+  private readonly packs: Map<string, PackEntry>;
+  private readonly defaultPack: string;
   private voiceURI: string | undefined;
   private lastText = '';
   private currentClip: HTMLAudioElement | null = null;
 
   constructor(
     base: SpeechServiceInterface,
-    manifest: VoiceManifest,
+    manifests: VoiceManifest | VoiceManifest[],
     voiceURI?: string
   ) {
     this.base = base;
-    this.packName = manifest.pack;
-    this.clipIds = new Set(manifest.lines.map((line) => line.id));
-    this.baseUrl = `/assets/audio/voice/${manifest.pack}/`;
+    const list = Array.isArray(manifests) ? manifests : [manifests];
+    this.packs = new Map(
+      list.map((manifest) => [
+        manifest.pack,
+        {
+          clipIds: new Set(manifest.lines.map((line) => line.id)),
+          baseUrl: `/assets/audio/voice/${manifest.pack}/`,
+        },
+      ])
+    );
+    this.defaultPack = list[0]?.pack ?? '';
     this.voiceURI = voiceURI || undefined;
   }
 
@@ -52,15 +64,21 @@ export class VoicePackSpeech implements SpeechServiceInterface {
   setVoiceURI(voiceURI?: string): void {
     this.voiceURI = voiceURI || undefined;
     this.base.setVoiceURI?.(
-      this.packActive() || voiceURI === DEVICE_VOICE_URI ? undefined : voiceURI
+      this.activePack() || voiceURI === DEVICE_VOICE_URI ? undefined : voiceURI
     );
   }
 
-  private packActive(): boolean {
-    return (
-      this.voiceURI === undefined ||
-      this.voiceURI === `${VOICE_PACK_URI_PREFIX}${this.packName}`
-    );
+  /** The pack the current voiceURI selects, or null for device speech. */
+  private activePack(): PackEntry | null {
+    if (this.voiceURI === undefined) {
+      return this.packs.get(this.defaultPack) ?? null;
+    }
+    if (this.voiceURI.startsWith(VOICE_PACK_URI_PREFIX)) {
+      return (
+        this.packs.get(this.voiceURI.slice(VOICE_PACK_URI_PREFIX.length)) ?? null
+      );
+    }
+    return null;
   }
 
   speak(text: string, options?: SpeechOptions): Promise<void> {
@@ -68,11 +86,10 @@ export class VoicePackSpeech implements SpeechServiceInterface {
     if (!this.enabled) return Promise.resolve();
 
     const clipId = voiceLineId(text);
+    const pack = this.activePack();
     const useClip =
-      this.packActive() &&
-      this.clipIds.has(clipId) &&
-      typeof Audio !== 'undefined';
-    if (!useClip) {
+      pack !== null && pack.clipIds.has(clipId) && typeof Audio !== 'undefined';
+    if (!useClip || pack === null) {
       return this.base.speak(text, options);
     }
 
@@ -81,7 +98,7 @@ export class VoicePackSpeech implements SpeechServiceInterface {
     }
 
     return new Promise((resolve) => {
-      const clip = new Audio(`${this.baseUrl}${clipId}.mp3`);
+      const clip = new Audio(`${pack.baseUrl}${clipId}.mp3`);
       this.currentClip = clip;
       const finish = () => {
         if (this.currentClip === clip) this.currentClip = null;

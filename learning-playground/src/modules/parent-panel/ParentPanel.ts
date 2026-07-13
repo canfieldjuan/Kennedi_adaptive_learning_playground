@@ -35,6 +35,7 @@ import {
 } from '../../core/voice-pack';
 import type { VoiceManifest } from '../../core/voice-lines';
 import emmaVoiceManifest from '../../content/voice/emma-voice-manifest.json';
+import taraVoiceManifest from '../../content/voice/tara-voice-manifest.json';
 import {
   buildParentSessionReview,
   type ParentSessionReview,
@@ -781,13 +782,21 @@ function createVoiceSettingsSection(
   select.className = 'parent-voice-settings__select';
   select.id = 'parent-voice-setting';
 
-  const emmaOption = document.createElement('option');
-  emmaOption.value = `${VOICE_PACK_URI_PREFIX}emma`;
-  emmaOption.textContent = 'Emma — storyteller (recorded, default)';
+  const taraOption = document.createElement('option');
+  taraOption.value = `${VOICE_PACK_URI_PREFIX}tara`;
+  taraOption.textContent = 'Tara — storyteller (recorded, default)';
   if (
     !settings.speech_voice_uri ||
-    settings.speech_voice_uri === `${VOICE_PACK_URI_PREFIX}emma`
+    settings.speech_voice_uri === `${VOICE_PACK_URI_PREFIX}tara`
   ) {
+    taraOption.selected = true;
+  }
+  select.appendChild(taraOption);
+
+  const emmaOption = document.createElement('option');
+  emmaOption.value = `${VOICE_PACK_URI_PREFIX}emma`;
+  emmaOption.textContent = 'Emma — storyteller (recorded)';
+  if (settings.speech_voice_uri === `${VOICE_PACK_URI_PREFIX}emma`) {
     emmaOption.selected = true;
   }
   select.appendChild(emmaOption);
@@ -845,10 +854,10 @@ function createVoiceSettingsSection(
   testButton.addEventListener('click', () => {
     // Preview honors the parent speech toggle (silent when speech is off) and
     // routes through the pack so the Emma option previews the real recording.
-    const preview = new VoicePackSpeech(
-      new SpeechService(settings.speech_enabled),
-      emmaVoiceManifest as unknown as VoiceManifest
-    );
+    const preview = new VoicePackSpeech(new SpeechService(settings.speech_enabled), [
+      taraVoiceManifest as unknown as VoiceManifest,
+      emmaVoiceManifest as unknown as VoiceManifest,
+    ]);
     preview.setVoiceURI(select.value || undefined);
     preview.speak('Hi! Let us play and learn.');
   });

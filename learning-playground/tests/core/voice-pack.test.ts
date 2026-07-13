@@ -161,6 +161,25 @@ describe('voice pack speech', () => {
     expect(MockAudio.instances).toHaveLength(2);
   });
 
+  test('with two packs the first is the default and the URI switches packs', async () => {
+    const base = createBase();
+    const second: VoiceManifest = {
+      pack: 'other',
+      voice: 'x/other',
+      lines: manifest.lines,
+    };
+    const speech = new VoicePackSpeech(base, [second, manifest]);
+
+    // Default = first pack in the list.
+    void speech.speak(PACKED_LINE);
+    expect(MockAudio.instances[0].src).toContain('/voice/other/');
+
+    // Explicit pack URI selects the other pack.
+    speech.setVoiceURI('voice-pack:emma');
+    void speech.speak(PACKED_LINE);
+    expect(MockAudio.instances[1].src).toContain('/voice/emma/');
+  });
+
   test('disabled speech stays silent but remembers the line for repeat', async () => {
     const base = createBase();
     base.enabled = false;
