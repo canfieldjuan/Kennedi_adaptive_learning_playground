@@ -544,12 +544,30 @@ function buildToolTray(shared: SharedRefs, options: ToolTrayOptions): {
   stickerRow.setAttribute('aria-label', 'Sticker choices');
   stickerRow.hidden = true;
 
+  // One visible choice-row at a time: brush/bucket show the colors, the
+  // sticker tool shows the stickers in the same slot. Both rows fighting for
+  // attention is how the sticker tray went undiscovered.
+  let swatchesGrid: HTMLElement | null = null;
+  let selectedSticker: StudioShapeId | null = null;
+
   const setActiveTool = (tool: 'brush' | 'bucket' | 'sticker') => {
     for (const [id, button] of toolButtons) {
       button.classList.toggle('is-selected', id === tool);
     }
-    stickerRow.hidden = tool !== 'sticker' || stickerButtons.size === 0;
+    const stickerMode = tool === 'sticker' && stickerButtons.size > 0;
+    stickerRow.hidden = !stickerMode;
+    if (swatchesGrid) {
+      swatchesGrid.hidden = stickerMode;
+    }
     options.onTool(tool);
+    if (stickerMode) {
+      // The brush auto-arms its first color; the sticker tool must do the
+      // same, or the canvas is silently dead until a chip is discovered.
+      if (!selectedSticker) {
+        stickerButtons.values().next().value?.click();
+      }
+      showFeedback(shared.feedback, 'Tap your picture to add stickers!', 'hint');
+    }
   };
 
   for (const tool of options.tools) {
@@ -572,6 +590,7 @@ function buildToolTray(shared: SharedRefs, options: ToolTrayOptions): {
     options.onColor(color);
     markSelected(swatches, color.id);
   });
+  swatchesGrid = swatches.values().next().value?.parentElement ?? null;
 
   for (const shape of options.stickers ?? []) {
     const chip = document.createElement('button');
@@ -580,6 +599,7 @@ function buildToolTray(shared: SharedRefs, options: ToolTrayOptions): {
     chip.setAttribute('aria-label', `${shape} sticker`);
     chip.innerHTML = studioShapeSvg(shape);
     const onChip = () => {
+      selectedSticker = shape;
       options.onSticker?.(shape);
       for (const [id, other] of stickerButtons) {
         other.classList.toggle('is-selected', id === shape);

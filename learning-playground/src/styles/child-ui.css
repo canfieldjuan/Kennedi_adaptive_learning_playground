@@ -1769,17 +1769,25 @@
   display: none;
 }
 
+/* The swatches grid's display would defeat the hidden attribute while the
+   sticker tool owns the choice row (same trap as the sticker/shelf pins). */
+.bear-art-studio__swatches[hidden] {
+  display: none;
+}
+
 .bear-art-studio__stickers {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-sm);
+  gap: var(--space-md);
 }
 
+/* Sticker chips own the choice row in sticker mode, so they get swatch-scale
+   prominence — small chips below the swatches read as decoration, not tools. */
 .bear-art-studio__sticker {
   display: grid;
   place-items: center;
-  width: 68px;
+  width: 96px;
   aspect-ratio: 1;
   border: 3px solid rgba(58, 36, 97, 0.25);
   border-radius: var(--radius-md);
@@ -1799,12 +1807,13 @@
   box-shadow:
     0 0 0 5px rgba(58, 36, 97, 0.14),
     0 8px 22px rgba(58, 36, 97, 0.18);
+  transform: scale(1.08);
 }
 
 .bear-art-studio__sticker svg {
   display: block;
-  width: 44px;
-  height: 44px;
+  width: 62px;
+  height: 62px;
 }
 
 .bear-art-studio__actions {
@@ -4124,12 +4133,12 @@
   }
 
   .bear-art-studio__sticker {
-    width: 58px;
+    width: 76px;
   }
 
   .bear-art-studio__sticker svg {
-    width: 38px;
-    height: 38px;
+    width: 50px;
+    height: 50px;
   }
 
   .bear-art-studio__request-slot {

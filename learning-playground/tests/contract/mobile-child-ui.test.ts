@@ -177,6 +177,14 @@ describe('mobile child UI contract', () => {
     );
   });
 
+  test('the color swatches honor the hidden attribute', () => {
+    // In sticker mode the swatches grid hides so one choice-row shows at a
+    // time; its grid display would defeat [hidden] without this pin.
+    expect(childUiCss).toMatch(
+      /\.bear-art-studio__swatches\[hidden\] \{\s*display: none;/
+    );
+  });
+
   test('the art gallery shelf honors the hidden attribute', () => {
     // The shelf's flex display would otherwise override the UA's
     // [hidden] { display: none } and show an empty strip during play.
