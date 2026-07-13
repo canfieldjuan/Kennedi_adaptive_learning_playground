@@ -149,6 +149,36 @@ describe('parent review formatting contract', () => {
     });
   });
 
+  test('shows Free Make completion without assigning a tracked skill', () => {
+    const activity = getActivity('kennedis-orders-free-make-001');
+    const content = getBearCafeContent(activity);
+    if (!content) throw new Error('Expected Bear Cafe content');
+
+    const event = createKennedisOrdersEvent({
+      activity,
+      content,
+      sessionId: 'session-1',
+      childId: 'local-child',
+      outcome: 'completed',
+      tray: { foodCounts: { cupcake: 1 } },
+      attemptNumber: 1,
+      responseTimeMs: 1800,
+      hintShown: false,
+      eventName: 'order_delivered',
+    });
+
+    const recentAttempts = formatRecentAttempts([event], ACTIVITY_TITLE_LOOKUP);
+
+    expect(event.skill_outcomes).toEqual([]);
+    expect(recentAttempts).toHaveLength(1);
+    expect(recentAttempts[0]).toMatchObject({
+      activity_id: 'kennedis-orders-free-make-001',
+      outcome_label: 'Completed',
+      skill_ids: [],
+      skill_labels: [],
+    });
+  });
+
   test('does not show Bear Cafe food-selection telemetry as recent attempts', () => {
     const activity = getActivity('kennedis-orders-two-cookies-001');
     const content = getBearCafeContent(activity);

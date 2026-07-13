@@ -11,6 +11,7 @@ import type {
   ParentReviewScheduleRecord,
 } from '../types/mastery-records';
 import type { StoryHistoryRecord } from '../types/story-history';
+import type { CafeOrderCompletion } from '../types/cafe-order-completion';
 import type { ChildProgressProfile } from '../types/progress';
 import type { ParentSettings } from '../types/storage';
 
@@ -51,6 +52,7 @@ export interface ProgressExportPayload {
   parent_mastery_snapshots: ParentMasterySnapshot[];
   parent_review_schedule_records: ParentReviewScheduleRecord[];
   story_history: StoryHistoryRecord[];
+  cafe_order_history: CafeOrderCompletion[];
 }
 
 export function buildProgressExportPayload(params: {
@@ -65,6 +67,7 @@ export function buildProgressExportPayload(params: {
   masterySnapshots?: ParentMasterySnapshot[];
   reviewScheduleRecords?: ParentReviewScheduleRecord[];
   storyHistory?: StoryHistoryRecord[];
+  cafeOrderHistory?: CafeOrderCompletion[];
   exportedAt?: string;
 }): ProgressExportPayload {
   const exportedAt = params.exportedAt ?? new Date().toISOString();
@@ -75,6 +78,7 @@ export function buildProgressExportPayload(params: {
   const masterySnapshots = params.masterySnapshots ?? [];
   const reviewScheduleRecords = params.reviewScheduleRecords ?? [];
   const storyHistory = params.storyHistory ?? [];
+  const cafeOrderHistory = params.cafeOrderHistory ?? [];
 
   return {
     exported_at: exportedAt,
@@ -94,6 +98,7 @@ export function buildProgressExportPayload(params: {
         'parent_mastery_snapshots',
         'parent_review_schedule_records',
         'story_history',
+        'cafe_order_history',
       ],
     },
     data_health: buildLocalDataHealth(
@@ -116,6 +121,7 @@ export function buildProgressExportPayload(params: {
     parent_mastery_snapshots: masterySnapshots,
     parent_review_schedule_records: reviewScheduleRecords,
     story_history: storyHistory,
+    cafe_order_history: cafeOrderHistory,
   };
 }
 
@@ -161,6 +167,7 @@ export function buildProgressExportJson(params: {
   masterySnapshots?: ParentMasterySnapshot[];
   reviewScheduleRecords?: ParentReviewScheduleRecord[];
   storyHistory?: StoryHistoryRecord[];
+  cafeOrderHistory?: CafeOrderCompletion[];
   exportedAt?: string;
 }): string {
   return JSON.stringify(buildProgressExportPayload(params), null, 2);

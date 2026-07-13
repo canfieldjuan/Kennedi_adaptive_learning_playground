@@ -125,6 +125,23 @@ describe('parent session review contract', () => {
     expect(review.most_repeated_activity).toBe('phonics-find-b');
   });
 
+  test('keeps explicitly unscored completion out of skills touched and accuracy', () => {
+    const review = buildParentSessionReview([
+      makeEvent({
+        activityId: 'kennedis-orders-free-make-001',
+        activityVersion: 4,
+        outcome: 'completed',
+        skillIds: ['vocabulary'],
+        skillOutcomes: [],
+        metadata: { event_name: 'order_delivered' },
+      }),
+    ], [], 'session-1');
+
+    expect(review.completed_activities).toEqual(['kennedis-orders-free-make-001']);
+    expect(review.skills_touched).toEqual([]);
+    expect(review.accuracy_by_skill).toEqual([]);
+  });
+
   test('preserves activity versions for parent summary title resolution', () => {
     const events: ActivityAttemptEvent[] = [
       makeEvent({

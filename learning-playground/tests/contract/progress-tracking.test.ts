@@ -459,6 +459,19 @@ describe('progress tracking contract', () => {
     expect(Object.keys(storage.getProgressProfile(CHILD_ID).skill_mastery)).toHaveLength(0);
   });
 
+  test('explicitly unscored ownership completion creates no mastery state', () => {
+    const event = makeEvent({
+      outcome: 'completed',
+      timestamp: timestamp(0),
+      skillIds: ['vocabulary'],
+      skillOutcomes: [],
+    });
+
+    const profile = buildProgressProfileFromEvents(CHILD_ID, [event]);
+
+    expect(profile.skill_mastery).toEqual({});
+  });
+
   test('storage translates legacy saved levels before parent review or export', () => {
     const keyValueStorage = new MemoryKeyValueStorage();
     const staleProfile = makeExistingProfile(makeSkillState({ currentLevel: 2 }), {

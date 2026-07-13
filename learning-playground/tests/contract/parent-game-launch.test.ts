@@ -212,6 +212,25 @@ describe('parent game launch contract', () => {
     expect(saved[0].skill_ids).toBeUndefined();
   });
 
+  test('Clear Progress Data clears the permanent Bear Cafe order wall', () => {
+    const clearCafeOrderHistory = vi.fn();
+    const storage: StorageServiceInterface = {
+      ...createMockStorage(),
+      clearCafeOrderHistory,
+    };
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    vi.stubGlobal('alert', vi.fn());
+    const root = document.createElement('div');
+
+    renderParentPanel(root, storage, {
+      childId: 'local-child',
+      sessionId: 'session-1',
+    });
+    findElementById(root, 'clear-data-btn')?.click();
+
+    expect(clearCafeOrderHistory).toHaveBeenCalledTimes(1);
+  });
+
   test('Bear Cafe replaces Videos on the four-slot child home grid', () => {
     const sources = import.meta.glob(
       '../../src/modules/home/HomeScreen.ts',
@@ -383,6 +402,9 @@ function createMockStorage(profile: ChildProgressProfile = {
     getStoryHistory: () => [],
     appendStoryHistory: () => undefined,
     clearStoryHistory: () => undefined,
+    getCafeOrderHistory: () => [],
+    appendCafeOrderHistory: () => undefined,
+    clearCafeOrderHistory: () => undefined,
     exportProgressData: () => '{}',
   };
 }

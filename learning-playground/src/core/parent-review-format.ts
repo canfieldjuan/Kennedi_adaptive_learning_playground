@@ -1,4 +1,5 @@
 import type { ActivityAttemptEvent, AttemptOutcome } from '../types/events';
+import { eventAppliesToSkill } from './skill-outcomes';
 
 export interface ActivityTitleEntry {
   current: string;
@@ -88,22 +89,35 @@ export function formatRecentAttempts(
     .filter((event) => isReviewAttemptEvent(event, supersededBearCafeTrayCheckIds))
     .sort(compareNewestFirst)
     .slice(0, Math.max(0, limit))
-    .map((event) => ({
-      event_id: event.event_id,
-      activity_id: event.activity_id,
-      activity_title: resolveActivityTitle(event.activity_id, titleLookup, event.activity_version),
-      skill_ids: event.skill_ids,
-      skill_labels: event.skill_ids.map(formatSkillLabel),
-      prompt_text: event.prompt_text,
-      selected_answer: event.selected_answer,
-      correct_answer: event.correct_answer,
-      outcome: event.outcome,
-      outcome_label: formatOutcomeLabel(event.outcome),
-      hint_used: event.hint_shown || event.outcome === 'hint_used',
-      response_time_ms: event.response_time_ms,
-      response_time_label: formatResponseTime(event.response_time_ms),
-      parent_guidance_label: formatParentGuidanceLabel(event.metadata),
-    }));
+    .map((event) => {
+      const skillIds = getEventSkillIds(event);
+      return {
+        event_id: event.event_id,
+        activity_id: event.activity_id,
+        activity_title: resolveActivityTitle(event.activity_id, titleLookup, event.activity_version),
+        skill_ids: skillIds,
+        skill_labels: skillIds.map(formatSkillLabel),
+        prompt_text: event.prompt_text,
+        selected_answer: event.selected_answer,
+        correct_answer: event.correct_answer,
+        outcome: event.outcome,
+        outcome_label: formatOutcomeLabel(event.outcome),
+        hint_used: event.hint_shown || event.outcome === 'hint_used',
+        response_time_ms: event.response_time_ms,
+        response_time_label: formatResponseTime(event.response_time_ms),
+        parent_guidance_label: formatParentGuidanceLabel(event.metadata),
+      };
+    });
+}
+
+function getEventSkillIds(event: ActivityAttemptEvent): string[] {
+  if (!event.skill_outcomes) return event.skill_ids;
+
+  return [...new Set(
+    event.skill_outcomes
+      .map((item) => item.skill_id)
+      .filter((skillId) => eventAppliesToSkill(event, skillId))
+  )];
 }
 
 function isReviewAttemptEvent(

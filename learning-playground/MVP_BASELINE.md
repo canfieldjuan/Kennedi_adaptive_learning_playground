@@ -1,6 +1,6 @@
 # MVP Baseline
 
-Version: v0.3.59 Ownership Completion Principle baseline
+Version: v0.3.61 Bear Cafe Ownership Completion baseline
 
 ## Current Working MVP
 
@@ -14,8 +14,9 @@ bounded local revisit, expression without payment mechanics, and a strict
 boundary between ownership state and learning evidence. Existing primary games
 are **not** grandfathered in as compliant. Their code-grounded gaps and the
 ordered one-game-per-PR retrofit arc are recorded in
-`docs/work-contracts/v0.3.59-ownership-completion-principle.md`; Bear Cafe is
-the first planned retrofit after this principle slice is reviewed and merged.
+`docs/audits/v0.3.60-existing-game-ownership-audit.md`. Bear Cafe is the first
+completed retrofit: its exact personalized order package persists locally and
+can be revisited from the child-accessible order wall.
 
 ## Child Modules
 
@@ -79,16 +80,17 @@ the first planned retrofit after this principle slice is reviewed and merged.
   The child sees a local illustrated house and identifies the triangle roof,
   crossing from isolated circle cards to a new target shape in context.
 - Kennedi's Orders / Bear Cafe is registered as a six-activity local game route, can be started from the Parent Panel, and now occupies the second child home grid slot.
-- Bear Cafe now plays inside one continuous illustrated cafe (visual arc stage 2): a game-owned decorative environment layer (wall, window, pendant, icon-only menu board, shelf, plant, counter, floor — inert: `aria-hidden`, `pointer-events: none`) sits behind every stage and reframes per stage — the wall phone station appears during the call, and the customer waits at an illustrated service window (sky, ink frame, counter sill) instead of a floating card. The delivery stage's bell/basket emoji are replaced by illustrated SVG (the Deliver control renders the serving tray, accessible name unchanged); the order sits visibly on the tray at the counter. Scenery hides minor props on phones and never covers controls; no event, timing, or rule changes.
+- Bear Cafe now plays inside one continuous illustrated cafe (visual arc stage 2): a game-owned decorative environment layer (wall, window, pendant, icon-only menu board, shelf, plant, counter, floor — inert: `aria-hidden`, `pointer-events: none`) sits behind every stage and reframes per stage — the wall phone station appears during the call, and the customer waits at an illustrated service window (sky, ink frame, counter sill) instead of a floating card. The delivery bell and the child's personalized takeout package are local illustrated SVG; scenery hides minor props on phones and never covers controls.
 - Short-landscape Bear Cafe uses the two-column workbench from 568px upward,
   keeping 80px food choices, Check, wrong feedback, Deliver, and completion
   commands reachable in browser-tested phone viewports.
-- Bear Cafe delivery now plays a short handoff beat: the plated food travels to the bear and the bear reacts before the order-delivered screen (reduced-motion-guarded); the same completion event still fires.
+- Bear Cafe delivery now plays a short handoff beat: the exact chosen bag, seal, caller, and food travel to the bear and remain visible on the order-delivered screen (reduced-motion-guarded); the existing assessed completion event still fires once at delivery.
 - The Bear Cafe bear is now an illustrated inline-SVG character (first slice of the chosen illustrated art standard) that expresses the order arc through its face — waiting while its order is prepared, receiving at the handoff, happy on completion — tinted per caller. Local SVG only (no external assets/network/deps); the emoji `content.character.icon` stays in the data (no schema change). This supersedes the earlier emoji reaction accents.
 - The seven Bear Cafe foods (apple, banana, berry, bread, cookie, cupcake, soup) are now illustrated inline SVG matching the bear's style — in the choice buttons, the tray, and the count-expanded plating/handoff plates. Local SVG only; `content.food.icon` stays in the data (no schema change); plate count integrity preserved.
 - The four Bear Cafe decorations (bubbles, hearts, sprinkles, stars) are now illustrated inline SVG matching the bear/food style — in the decoration choice buttons and the tray plate badge. Local SVG only; `content.decoration.icon` stays in the data (no schema change). This completes the Bear Cafe item art (bear + foods + decorations all illustrated).
 - The child home screen now has an illustrated Bear Cafe environment backdrop (a cozy scene — window, hanging sign, pendant light, counter with treats) sitting softened behind the four choices. Local inline SVG only; scoped to the home screen (decorative, `aria-hidden`, `pointer-events: none`), so it sets the mood without competing with the play.
-- A correct Bear Cafe check now plays a short cook/plating beat (the order plates up) before "Order ready!"; `tray_checked` still emits on the check (the beat is cosmetic), reduced-motion-guarded.
+- A correct assessed Bear Cafe check plays a short cook/plating beat before the ownership step. The child then chooses one of four bag colors and one of three seals before delivery; these always-available expressive choices emit no learning evidence and are never scored or gated.
+- Each delivered package is stored locally as a strict, non-evaluative completion object (newest 48 retained), included in parent export/reset, and shown newest-first on a child-accessible order wall with six exact packages per page and detail inspection. Revisit requires no replayed lesson and offers no child delete action. Free Make emits one completed event with explicit empty skill outcomes, so its food, bag, and seal preferences do not become vocabulary or mastery evidence.
 - Feedback cues (`soft_chime`, `soft_boing`) now produce real sound — synthesized in-process with the Web Audio API (no external assets/network/deps, so the local-only safety boundary holds), soft and short, gated by the parent Sound Effects setting. Shared across all game runtimes; silent no-op where Web Audio is unavailable.
 - The Bear Cafe complete screen now plays a one-time celebration burst (a consistent 12-piece confetti/star burst) — positive completion feedback, deterministic (no randomness), not a reward loop or streak; reduced-motion hides it.
 - If the child pauses ~9s on the make/fix stage, the order card plays a gentle bounded nudge (a 3-pulse scale/glow) to re-draw attention; it resets on any interaction and fires no speech (not a nag/loop), reduced-motion-guarded.
@@ -104,7 +106,7 @@ the first planned retrofit after this principle slice is reviewed and merged.
 - Settings summary for display name, difficulty mode, session length, audio, speech, video, and enabled domains.
 - Local progress summary by skill.
 - Parent-readable session review with completed activities, skills touched, accuracy by skill, hints used, abandoned activities, most repeated activity, recent attempts, parent-approved guidance evidence, applied-fit review, and structured parent observations.
-- Recent Attempts includes Bear Cafe delivered-order completion evidence so parent review can show the order prompt, selected tray, correct order, outcome, hint state, and response time after child-started Cafe play without duplicating its matching tray-check success, hiding a later unfinished identical order, or crowding out earlier struggle evidence.
+- Recent Attempts includes Bear Cafe delivered-order completion evidence so parent review can show the order prompt, selected tray, correct order, outcome, hint state, and response time after child-started Cafe play without duplicating its matching tray-check success, hiding a later unfinished identical order, or crowding out earlier struggle evidence. Free Make remains visible as completed ownership with no tracked skill.
 - Parent Guidance with plain-language status and parent-controlled recommendations by reviewed skill.
 - Parent Guidance includes skill graph evidence, mastery status, suggested next action, evidence summary, graph rule, and source references.
 - Parent Guidance now joins each stored current curriculum rung to the approved

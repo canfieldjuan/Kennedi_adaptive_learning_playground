@@ -59,7 +59,7 @@ export function buildParentSessionReview(
       sessionEvents.filter((event) => event.outcome === 'completed')
     ),
     skills_touched: getUniqueValues(
-      sessionEvents.flatMap((event) => event.skill_ids)
+      sessionEvents.flatMap(getEventSkillIds)
     ),
     accuracy_by_skill: buildAccuracyBySkill(sessionEvents),
     hints_used: sessionEvents.filter((event) => event.outcome === 'hint_used').length,

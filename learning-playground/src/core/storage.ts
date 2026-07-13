@@ -13,6 +13,23 @@ import type {
 } from '../types/parent-actions';
 import type { ParentTransferDecision } from '../types/transfer';
 import type { StoryHistoryRecord } from '../types/story-history';
+import {
+  CAFE_ORDER_BAG_COLORS,
+  CAFE_ORDER_CALLER_IDS,
+  CAFE_ORDER_FOOD_COLOR_IDS,
+  CAFE_ORDER_FOOD_DECORATION_IDS,
+  CAFE_ORDER_FOOD_IDS,
+  CAFE_ORDER_HISTORY_LIMIT,
+  CAFE_ORDER_SEALS,
+  type CafeOrderBagColorId,
+  type CafeOrderCallerId,
+  type CafeOrderCompletion,
+  type CafeOrderFoodColorId,
+  type CafeOrderFoodDecorationId,
+  type CafeOrderFoodId,
+  type CafeOrderFoodItem,
+  type CafeOrderSealId,
+} from '../types/cafe-order-completion';
 import type { ParentActivityBriefDecision } from '../types/activity-briefs';
 import type {
   ParentMasterySnapshot,
@@ -36,6 +53,7 @@ const ACTIVITY_BRIEF_DECISIONS_KEY = 'lp_parent_activity_brief_decisions';
 const MASTERY_SNAPSHOTS_KEY = 'lp_parent_mastery_snapshots';
 const REVIEW_SCHEDULE_RECORDS_KEY = 'lp_parent_review_schedule_records';
 const STORY_HISTORY_KEY = 'lp_story_history';
+const CAFE_ORDER_HISTORY_KEY = 'lp_cafe_order_history';
 const DEFAULT_CHILD_ID = 'local-child';
 
 export interface KeyValueStorage {
@@ -442,6 +460,47 @@ export class StorageService implements StorageServiceInterface {
     this.localStore.removeItem(STORY_HISTORY_KEY);
   }
 
+  getCafeOrderHistory(): CafeOrderCompletion[] {
+    try {
+      const raw = this.localStore.getItem(CAFE_ORDER_HISTORY_KEY);
+      if (!raw) return [];
+
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed
+        .map(toCafeOrderCompletion)
+        .filter((record): record is CafeOrderCompletion => record !== null)
+        .sort(compareCafeOrdersOldestFirst)
+        .slice(-CAFE_ORDER_HISTORY_LIMIT);
+    } catch {
+      return [];
+    }
+  }
+
+  appendCafeOrderHistory(record: CafeOrderCompletion): void {
+    try {
+      const safeRecord = toCafeOrderCompletion(record);
+      if (!safeRecord) return;
+
+      const records = this.getCafeOrderHistory();
+      if (records.some((stored) => stored.completion_id === safeRecord.completion_id)) {
+        return;
+      }
+
+      const nextRecords = [...records, safeRecord]
+        .sort(compareCafeOrdersOldestFirst)
+        .slice(-CAFE_ORDER_HISTORY_LIMIT);
+      this.localStore.setItem(CAFE_ORDER_HISTORY_KEY, JSON.stringify(nextRecords));
+    } catch (err) {
+      console.error('[Storage] Failed to append cafe order history:', err);
+    }
+  }
+
+  clearCafeOrderHistory(): void {
+    this.localStore.removeItem(CAFE_ORDER_HISTORY_KEY);
+  }
+
   exportProgressData(events: ActivityAttemptEvent[]): string {
     return buildProgressExportJson({
       settings: this.getSettings(),
@@ -455,8 +514,137 @@ export class StorageService implements StorageServiceInterface {
       masterySnapshots: this.getParentMasterySnapshots(),
       reviewScheduleRecords: this.getParentReviewScheduleRecords(),
       storyHistory: this.getStoryHistory(),
+      cafeOrderHistory: this.getCafeOrderHistory(),
     });
   }
+}
+
+const CAFE_ORDER_CALLER_ID_SET = new Set<string>(CAFE_ORDER_CALLER_IDS);
+const CAFE_ORDER_FOOD_ID_SET = new Set<string>(CAFE_ORDER_FOOD_IDS);
+const CAFE_ORDER_FOOD_COLOR_ID_SET = new Set<string>(CAFE_ORDER_FOOD_COLOR_IDS);
+const CAFE_ORDER_FOOD_DECORATION_ID_SET = new Set<string>(CAFE_ORDER_FOOD_DECORATION_IDS);
+const CAFE_ORDER_BAG_COLOR_ID_SET = new Set<string>(CAFE_ORDER_BAG_COLORS.map((item) => item.id));
+const CAFE_ORDER_SEAL_ID_SET = new Set<string>(CAFE_ORDER_SEALS.map((item) => item.id));
+
+function toCafeOrderCompletion(value: unknown): CafeOrderCompletion | null {
+  if (typeof value !== 'object' || value === null) return null;
+
+  const record = value as Record<string, unknown>;
+  if (
+    record.schema_version !== 1 ||
+    record.game !== 'kennedis-orders' ||
+    !isBoundedIdentifier(record.completion_id) ||
+    !isBoundedIdentifier(record.session_id) ||
+    !isBoundedIdentifier(record.child_id) ||
+    !isBoundedIdentifier(record.activity_id) ||
+    !Number.isInteger(record.activity_version) ||
+    (record.activity_version as number) < 1 ||
+    (record.activity_version as number) > 1000 ||
+    !isAllowedString(record.caller_id, CAFE_ORDER_CALLER_ID_SET) ||
+    !isAllowedString(record.bag_color_id, CAFE_ORDER_BAG_COLOR_ID_SET) ||
+    !isAllowedString(record.seal_id, CAFE_ORDER_SEAL_ID_SET) ||
+    !isIsoTimestamp(record.completed_at)
+  ) {
+    return null;
+  }
+
+  const foodItems = toCafeOrderFoodItems(record.food_items);
+  if (!foodItems) return null;
+
+  if (
+    record.food_color_id !== undefined &&
+    !isAllowedString(record.food_color_id, CAFE_ORDER_FOOD_COLOR_ID_SET)
+  ) {
+    return null;
+  }
+  if (
+    record.food_decoration_id !== undefined &&
+    !isAllowedString(record.food_decoration_id, CAFE_ORDER_FOOD_DECORATION_ID_SET)
+  ) {
+    return null;
+  }
+
+  return {
+    schema_version: 1,
+    game: 'kennedis-orders',
+    completion_id: record.completion_id,
+    session_id: record.session_id,
+    child_id: record.child_id,
+    activity_id: record.activity_id,
+    activity_version: record.activity_version as number,
+    caller_id: record.caller_id as CafeOrderCallerId,
+    food_items: foodItems,
+    ...(record.food_color_id !== undefined
+      ? { food_color_id: record.food_color_id as CafeOrderFoodColorId }
+      : {}),
+    ...(record.food_decoration_id !== undefined
+      ? { food_decoration_id: record.food_decoration_id as CafeOrderFoodDecorationId }
+      : {}),
+    bag_color_id: record.bag_color_id as CafeOrderBagColorId,
+    seal_id: record.seal_id as CafeOrderSealId,
+    completed_at: record.completed_at,
+  };
+}
+
+function toCafeOrderFoodItems(value: unknown): CafeOrderFoodItem[] | null {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 6) return null;
+
+  const items: CafeOrderFoodItem[] = [];
+  const seenFoodIds = new Set<string>();
+  let totalCount = 0;
+
+  for (const valueItem of value) {
+    if (typeof valueItem !== 'object' || valueItem === null) return null;
+    const item = valueItem as Record<string, unknown>;
+    if (
+      !isAllowedString(item.food_id, CAFE_ORDER_FOOD_ID_SET) ||
+      seenFoodIds.has(item.food_id) ||
+      !Number.isInteger(item.count) ||
+      (item.count as number) < 1 ||
+      (item.count as number) > 5
+    ) {
+      return null;
+    }
+
+    seenFoodIds.add(item.food_id);
+    totalCount += item.count as number;
+    items.push({
+      food_id: item.food_id as CafeOrderFoodId,
+      count: item.count as number,
+    });
+  }
+
+  return totalCount <= 12 ? items : null;
+}
+
+function isAllowedString(value: unknown, allowed: Set<string>): value is string {
+  return typeof value === 'string' && allowed.has(value);
+}
+
+function isBoundedIdentifier(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length >= 1 &&
+    value.length <= 120 &&
+    value.trim() === value
+  );
+}
+
+function isIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== 'string' || value.length > 40) return false;
+
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
+}
+
+function compareCafeOrdersOldestFirst(
+  first: CafeOrderCompletion,
+  second: CafeOrderCompletion
+): number {
+  return (
+    first.completed_at.localeCompare(second.completed_at) ||
+    first.completion_id.localeCompare(second.completion_id)
+  );
 }
 
 /** The §21 allowlist made literal: only these fields ever come back out. */
