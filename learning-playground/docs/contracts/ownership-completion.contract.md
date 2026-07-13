@@ -204,4 +204,3 @@ budget in their written change contract.
 Existing primary games are not grandfathered in as compliant. Their current
 behavior must be audited from code and retrofitted through small game-owned
 slices. A permanent contract does not authorize one broad cross-game rewrite.
-

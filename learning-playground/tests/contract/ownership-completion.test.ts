@@ -17,8 +17,8 @@ describe('ownership completion contract', () => {
     expect(ownershipContract).toContain(
       'Completion should create ownership, not payment.'
     );
-    expect(ownershipContract).toContain(
-      'The child should finish\nwith something she made, changed, personalized, or placed into the world.'
+    expect(collapseWhitespace(ownershipContract)).toContain(
+      'The child should finish with something she made, changed, personalized, or placed into the world.'
     );
     expect(productContract).toContain(
       'The child should change the world, not merely answer questions about it.'
