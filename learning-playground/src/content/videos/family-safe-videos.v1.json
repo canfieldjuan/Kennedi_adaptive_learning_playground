@@ -1,5 +1,6 @@
 {
   "id": "family-safe-videos-v1",
+  "schema_version": 3,
   "version": 2,
   "title": "Family Safe Videos",
   "description": "Parent-approved repo-bundled videos with separate response activities.",
@@ -9,6 +10,7 @@
   "evidence_role": "exposure_only",
   "items": [
     {
+      "kind": "approved_video",
       "id": "bear-bakes-bread",
       "title": "Bear Bakes Bread",
       "path": "/assets/videos/bear-bakes-bread.webm",

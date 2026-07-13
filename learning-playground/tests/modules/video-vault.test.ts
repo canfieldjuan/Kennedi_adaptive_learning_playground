@@ -11,13 +11,43 @@ describe('video vault manifest boundary', () => {
 
     expect(result.valid).toBe(true);
     expect(result.issues).toEqual([]);
+    expect(realManifest.schema_version).toBe(3);
     expect(realManifest.version).toBe(2);
+    expect(result.source_schema_version).toBe(3);
+    expect(result.approved_items[0]).toMatchObject({ kind: 'approved_video' });
     expect(result.playable_videos).toHaveLength(1);
     expect(result.playable_videos[0]).toMatchObject({
       id: 'bear-bakes-bread',
       mime_type: 'video/webm',
       response_activity_id: 'video-bear-bakes-bread-response',
     });
+  });
+
+  test('accepts and normalizes the explicit legacy version 2 shape', () => {
+    const legacyManifest = makeManifest();
+    Reflect.deleteProperty(legacyManifest, 'schema_version');
+    Reflect.deleteProperty(legacyManifest.items[0]!, 'kind');
+
+    const result = validateVideoManifest(legacyManifest, 'family-safe-videos-v1');
+
+    expect(result.valid).toBe(true);
+    expect(result.source_schema_version).toBe(2);
+    expect(result.approved_items[0]).toMatchObject({
+      kind: 'approved_video',
+      id: 'bear-bakes-bread',
+    });
+    expect(result.playable_videos).toHaveLength(1);
+  });
+
+  test('rejects a pre-discriminator manifest that is not the supported legacy version 2', () => {
+    const legacyManifest = makeManifest();
+    Reflect.deleteProperty(legacyManifest, 'schema_version');
+    Reflect.deleteProperty(legacyManifest.items[0]!, 'kind');
+    legacyManifest.version = 1;
+
+    expect(validateVideoManifest(legacyManifest).issues).toContain(
+      'manifest without schema_version must be the legacy version 2 shape'
+    );
   });
 
   test('accepts a non-empty parent-approved local exposure item', () => {
@@ -160,13 +190,15 @@ function makeManifest(
 ) {
   return {
     id: 'family-safe-videos-v1',
-    version: 1,
+    schema_version: 3,
+    version: 2,
     title: 'Family Safe Videos',
     intake_mode: 'repo_bundled',
     parent_imports_supported: false,
     approved_by_parent: true,
     evidence_role: 'exposure_only',
     items: [{
+      kind: 'approved_video',
       id: 'bear-bakes-bread',
       title: 'Bear Bakes Bread',
       path: '/assets/videos/bear-bakes-bread.mp4',
