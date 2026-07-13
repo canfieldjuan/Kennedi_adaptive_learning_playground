@@ -32,6 +32,7 @@ A game-maturity pass may:
 - add richer order or problem logic
 - emit stronger evidence through the existing event shape
 - improve completion payoff without adding reward loops
+- add a bounded ownership action and local completion-object preservation
 
 A game-maturity pass must not:
 
@@ -42,6 +43,26 @@ A game-maturity pass must not:
 - weaken mastery or transfer rules
 - create a second progress system
 - turn challenge into speed pressure, shame, or punishment
+
+## Ownership Completion Standard
+
+A mature primary game must satisfy
+`docs/contracts/ownership-completion.contract.md`.
+
+The game must define and test:
+
+- the world state created or changed by the learning action;
+- one unscored choice that makes the result distinctly the child's;
+- a structured completion object containing the exact visible choices;
+- a payoff rendered from that same completion object;
+- a child-controlled inspection moment before Next, Home, or Play Again;
+- a bounded local revisit surface that does not require earning access again;
+- an evidence boundary that keeps expressive choices out of scoring, mastery,
+  transfer strength, and recommendations.
+
+The default bounded flow is one core learning action, one or two ownership
+actions, and one payoff. Open-ended creation games may use more because
+creation is their primary action.
 
 ## UI Noise Standard
 
@@ -77,6 +98,10 @@ Use the existing `ActivityAttemptEvent` shape. A mature game should emit events 
 - activity or order completion
 - final shift or round-set completion when applicable
 
+Learning evidence and ownership state are different responsibilities. The
+existing `ActivityAttemptEvent` remains the evidence source; a completion
+object is not a score and must not become a second progress system.
+
 Use event metadata for game-specific details such as:
 
 - round number
@@ -98,4 +123,3 @@ Feedback must remain gentle:
 - no failure screens
 - no public sharing
 - no external content
-

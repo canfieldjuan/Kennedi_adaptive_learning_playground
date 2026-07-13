@@ -5,6 +5,33 @@ const root = process.cwd();
 
 const checks = [
   {
+    file: 'docs/contracts/ownership-completion.contract.md',
+    requiredText: [
+      '# Ownership Completion Contract',
+      '## Child Principle #1: Transformative Agency',
+      'The child should change the world, not merely answer questions about it.',
+      '## Child Principle #2: Ownership Completion',
+      'Completion should create ownership, not payment.',
+      '## Completion Object',
+      '## Exact-Choice Continuity',
+      '## Customization Rules',
+      'chosen, not randomized',
+      'expressive, not scored',
+      'available without streaks or currency',
+      'connected to what the child created',
+      'preserved long enough to admire or revisit',
+      '## Bounded Enrichment',
+      'one core learning action -> one or two ownership actions -> one payoff',
+      '## Child-Controlled Finish',
+      '## Preservation and Revisit',
+      '## Evidence Boundary',
+      'The completion object is not a score and is not a second progress system.',
+      '## Acceptance Test',
+      '## Rejection Tests',
+      '## Adoption Gate',
+    ],
+  },
+  {
     file: 'docs/contracts/change-workflow.contract.md',
     requiredText: [
       '# Change Workflow Contract',
