@@ -6,20 +6,38 @@
  * Sources, in order:
  * 1. Activity JSON: prompts (content.prompt_audio ?? title), feedback speech
  *    (correct/incorrect/hint), and the phonics letter-first composed prompt.
- * 2. Story Stage: EVERY resolvable story — all families x their compatible
- *    character/setting/problem selections through the real resolver, so the
- *    narration Emma performs is exactly what the game can ever say.
- * 3. Bear Cafe: character call/happy lines and the static stage lines.
- * 4. System lines: session break, home speech labels, parent voice preview.
+ * 2. Bear Cafe: character call/happy lines, every fix-feedback line
+ *    (via the shared cafe-lines builders), and the static stage lines.
+ * 3. Number Train: plans are SEEDED in the JSON, so every round is
+ *    deterministic — prompts, success lines, hints, and the full
+ *    reachable support/structural space (via the shared train-lines
+ *    builders and the real buildSessionPlan).
+ * 4. Story Stage: the Pick Three setup lines (step prompts + entity
+ *    spoken intros) and EVERY resolvable story through the real resolver.
+ * 5. System lines: session break, home speech labels, parent voice preview.
  *
- * Anything OUTSIDE this enumeration (e.g. Number Train's templated count
- * lines, cafe fix-feedback with quantities) falls back to the device voice by
- * design; those move into the pack when their line builders are extracted.
+ * This enumeration is intended to be TOTAL: the device voice remains only
+ * as the fail-open path (missing clip, autoplay refusal, future content
+ * added without regeneration — which the lockstep contract test catches).
  */
 
 import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import { FIRST_STORY_PACK } from '../../src/modules/story-stage/first-tale';
 import { resolveStory } from '../../src/modules/story-stage/story-resolver';
+import { buildSessionPlan } from '../../src/modules/number-train/round-plan';
+import {
+  DEFAULT_SUCCESS_TAIL,
+  countSuccessLine,
+  loadSuccessLine,
+  sequenceSuccessLine,
+  loadSupportLine,
+  loadStructuralHintLine,
+  buildCountingHint,
+  buildSequenceHint,
+  loadSeatCapacity,
+} from '../../src/modules/number-train/train-lines';
+import { getFixFeedback } from '../../src/modules/kennedis-orders/cafe-lines';
+import type { BearCafeContent } from '../../src/modules/kennedis-orders/kennedis-orders.types';
 import {
   normalizeVoiceLine,
   voiceLineId,
@@ -74,14 +92,79 @@ export function collectVoiceLines(): VoiceLineEntry[] {
       );
     }
 
-    // Bear Cafe character lines.
+    // Bear Cafe character lines + every fix-feedback line the cafe can say.
     const character = content.character as
       | { name?: unknown; happyLine?: unknown }
       | undefined;
     if (character && typeof character.name === 'string') {
       add(`${character.name} is calling.`);
       add(character.happyLine);
+      const cafeContent = content as unknown as BearCafeContent;
+      for (const issue of [
+        'quantity_under',
+        'color',
+        'first_sound_sort',
+        'food',
+        'food_removed',
+        'other',
+      ]) {
+        add(getFixFeedback(cafeContent, issue, 1));
+        add(getFixFeedback(cafeContent, issue, 2));
+      }
     }
+
+    // Number Train: plans are seeded in the JSON, so every round — and every
+    // line the round can produce — is deterministic and enumerable.
+    if (typeof content.seed === 'number' && typeof content.max_quantity === 'number') {
+      const tailRule = activity.feedback_rules?.correct as
+        | { speech?: unknown }
+        | undefined;
+      const tail =
+        typeof tailRule?.speech === 'string' ? tailRule.speech : DEFAULT_SUCCESS_TAIL;
+      add(
+        typeof content.arrival_audio === 'string'
+          ? content.arrival_audio
+          : 'The train reached the station! What a trip!'
+      );
+      const plan = buildSessionPlan({
+        seed: content.seed as number,
+        round_count:
+          typeof content.round_count === 'number' ? (content.round_count as number) : 6,
+        max_quantity: content.max_quantity as number,
+      });
+      for (const round of plan.rounds) {
+        add(round.prompt);
+        if (round.kind === 'count_train') {
+          add(countSuccessLine(round.quantity, tail));
+          add(buildCountingHint(round.quantity));
+        } else if (round.kind === 'load_train') {
+          add(loadSuccessLine(round.target, tail));
+          const capacity = loadSeatCapacity(round.target);
+          for (let built = 0; built <= capacity; built += 1) {
+            const diff = round.target - built;
+            if (diff === 0) continue;
+            add(loadSupportLine(diff));
+            add(loadStructuralHintLine(built, diff));
+          }
+        } else {
+          add(sequenceSuccessLine(round.sequence, tail));
+          add(buildSequenceHint(round));
+        }
+      }
+    }
+  }
+
+  // — Story Stage setup phase (Pick Three) —
+  add('Who is the story about?');
+  add('Where does it happen?');
+  add('What happens?');
+  add('Your story is ready!');
+  for (const entity of [
+    ...FIRST_STORY_PACK.characters,
+    ...FIRST_STORY_PACK.settings,
+    ...FIRST_STORY_PACK.problems,
+  ]) {
+    add(entity.spokenIntro, 'story');
   }
 
   // — 2. Story Stage: the full resolvable story space —
