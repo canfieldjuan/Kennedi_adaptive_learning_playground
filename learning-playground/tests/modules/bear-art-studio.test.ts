@@ -98,6 +98,44 @@ describe('bear art studio runtime', () => {
     expect(events).toHaveLength(2);
   });
 
+  test('the sticker tool arms a sticker by itself and owns the choice row', () => {
+    const { root } = setup('art-studio-free-decorate');
+
+    const swatchGrid = findByClass(root, 'bear-art-studio__swatches');
+    const stickerRow = findByClass(root, 'bear-art-studio__stickers');
+    // Brush mode: colors visible, stickers hidden.
+    expect(swatchGrid?.hidden).toBe(false);
+    expect(stickerRow?.hidden).toBe(true);
+
+    // Choosing the sticker tool must never leave the canvas dead: the first
+    // sticker arms automatically and a canvas tap places it with no other
+    // discovery step (this exact flow used to no-op silently).
+    findByAria(root, 'Stickers')?.click();
+    expect(stickerRow?.hidden).toBe(false);
+    expect(swatchGrid?.hidden).toBe(true);
+    expect(
+      findByAria(root, 'star sticker')?.classList.contains('is-selected')
+    ).toBe(true);
+    expect(findByClassText(root, 'activity-feedback')).toBe(
+      'Tap your picture to add stickers!'
+    );
+    placeStickerAt(root, 240, 180);
+    expect(findAllByClass(root, 'bear-art-studio__placed')).toHaveLength(1);
+
+    // Picking a different sticker still works exactly as before.
+    findByAria(root, 'heart sticker')?.click();
+    expect(
+      findByAria(root, 'star sticker')?.classList.contains('is-selected')
+    ).toBe(false);
+    placeStickerAt(root, 420, 260);
+    expect(findAllByClass(root, 'bear-art-studio__placed')).toHaveLength(2);
+
+    // Back to brush: the rows swap back.
+    findByAria(root, 'Brush')?.click();
+    expect(swatchGrid?.hidden).toBe(false);
+    expect(stickerRow?.hidden).toBe(true);
+  });
+
   test('the chain button routes to the next art request', () => {
     const { root } = setup('art-studio-free-decorate');
     findByAria(root, 'star sticker')?.click();
