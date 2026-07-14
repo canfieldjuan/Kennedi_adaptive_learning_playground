@@ -98,6 +98,38 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Owner look approval:** APPROVED — the owner merged PR #92 on 2026-07-11; status `look_approved`, stage rollout authorized
 - **Restrictions and notes:** Static decorative environment only. Dynamic bear, order, tray, and Deliver control remain runtime-owned. No Canva/Figma library content, stock media, font, icon pack, texture, Content Foundry output, or generative image tool was used. Decrowd revision (2026-07-11, owner feedback "crowded, elements overlap"): awning rebuilt as true half-disc scallops, painted counter plate removed (live order owns the zone), glass shine moved off the customer, wall shelf lowered out of the awning band, base environment props quieted during delivery, mobile delivery centered; editable source and export updated together.
 
+## Bear Cafe Personalized Order Package
+
+- **Asset family:** Bear Cafe reusable takeout bag frame and heart, star, and bubbles seal set
+- **Game:** Kennedi's Orders / Bear Cafe
+- **Status:** `rights_verified`
+- **Production path(s):** `public/assets/images/bear-cafe-order-bag-frame.svg`; `public/assets/images/bear-cafe-seal-heart.svg`; `public/assets/images/bear-cafe-seal-star.svg`; `public/assets/images/bear-cafe-seal-bubbles.svg`
+- **Editable source path(s):** `design-source/bear-cafe/bear-cafe-order-bag.svg`
+- **Creator:** Project developer, Codex Bear Cafe ownership-completion session
+- **Creation date:** 2026-07-13
+- **Creation tool and version:** Inkscape 1.4.4 Flatpak (`org.inkscape.Inkscape`), component exports produced with `--export-id-only --export-plain-svg`
+- **Origin category:** A original
+- **Original or third-party status:** Original project artwork
+- **Project-owned source material used:** Established Bear Cafe palette and line language only; no prior asset geometry embedded
+- **Third-party elements:** None
+- **Source URL(s):** Not applicable
+- **License name and version/date:** Not applicable; original project artwork
+- **License file path:** Not applicable
+- **Commercial use permitted:** yes
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None
+- **AI assistance:** none
+- **AI approval/terms record:** Not applicable
+- **Contact sheet path:** `docs/captures/bear-cafe/order-package-contact-sheet.webp`
+- **Existing/proposed comparison path:** `docs/captures/bear-cafe/order-package-before-after.webp`
+- **Desktop screenshot path(s):** `docs/captures/bear-cafe/order-package-desktop.webp`; `docs/captures/bear-cafe/order-wall-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/bear-cafe/order-package-mobile.webp`; `docs/captures/bear-cafe/order-wall-mobile.webp`
+- **Owner look approval:** Pending owner review of the representative package, delivery continuity, and order-wall proof in this PR
+- **Restrictions and notes:** Runtime uses only the exported local SVG files; Inkscape is an authoring/export tool and is not a dependency. Bag color remains runtime-owned CSS state so one original frame supports every child-chosen color without duplicated art. No `<text>`, font, remote reference, stock/library content, Canva content, plugin resource, or generative image tool is present. The exact package component is reused across packaging, delivery, handoff, final admiration, and revisit rather than substituted by a generic asset.
+
 ## Bear Bakes Bread Deterministic Mixing Video Proof
 
 - **Asset family:** Bear Bakes Bread deterministic mixing vector proof

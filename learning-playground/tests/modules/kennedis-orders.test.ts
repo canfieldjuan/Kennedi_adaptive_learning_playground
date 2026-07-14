@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'vitest';
+// @ts-expect-error Vitest runs in Node; the app intentionally does not ship Node typings.
+import { readFileSync } from 'node:fs';
 import type { AnySchema } from 'ajv';
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
@@ -20,6 +22,12 @@ import {
   type TrayState,
 } from '../../src/modules/kennedis-orders/KennedisOrdersActivity';
 import type { LearningActivity } from '../../src/types/activity';
+import {
+  createCafeOrderCompletion,
+  getCafeOrderAccessibleLabel,
+  renderCafeOrderContents,
+  renderCafeOrderPackage,
+} from '../../src/modules/kennedis-orders/cafe-order-package';
 
 const ajv = new Ajv2020({ strict: false });
 addFormats(ajv);
@@ -91,7 +99,7 @@ describe("Kennedi's Orders adapter contract", () => {
   test('rewritten shipped cafe orders bump their activity version', () => {
     expect(getActivity('kennedis-orders-two-cookies-001').version).toBe(2);
     expect(getActivity('kennedis-orders-pink-berries-001').version).toBe(2);
-    expect(getActivity('kennedis-orders-free-make-001').version).toBe(3);
+    expect(getActivity('kennedis-orders-free-make-001').version).toBe(4);
   });
 
   test('every cafe skill exists in the curriculum graph and allows its context', () => {
@@ -127,9 +135,8 @@ describe("Kennedi's Orders adapter contract", () => {
   });
 
   test('child UI hides adult labels behind icon-only controls and visual tickets', () => {
-    // The Deliver control is no longer a text glyph: it renders the
-    // illustrated serving tray (visual arc stage 2) with the accessible name
-    // "Deliver order" — icon-only/no-reading still holds without an entry here.
+    // The Deliver control renders the child's exact package with the accessible
+    // name "Deliver order", so icon-only/no-reading holds without an entry here.
     expect(BEAR_CAFE_CHILD_CONTROL_LABELS).toMatchObject({
       home: '⌂',
       repeat: '↻',
@@ -542,7 +549,7 @@ describe("Kennedi's Orders adapter contract", () => {
     });
   });
 
-  test('food selections emit decision-level events without completing the order', () => {
+  test('free-make preference events remain explicitly unscored', () => {
     const activity = getActivity('kennedis-orders-free-make-001');
     const content = getRequiredContent(activity);
     const event = createKennedisOrdersEvent({
@@ -565,13 +572,8 @@ describe("Kennedi's Orders adapter contract", () => {
     });
 
     expect(event.outcome).toBe('correct');
-    expect(event.skill_outcomes).toEqual([
-      {
-        skill_id: 'vocabulary',
-        outcome: 'correct',
-        reason: 'food_selected',
-      },
-    ]);
+    expect(event.skill_outcomes).toEqual([]);
+    expect(eventAppliesToSkill(event, 'vocabulary')).toBe(false);
     expect(event.selected_choice_id).toBe('cupcake');
     expect(event.selected_answer).toBe('cupcake');
     expect(event.metadata).toMatchObject({
@@ -679,6 +681,74 @@ describe("Kennedi's Orders adapter contract", () => {
       event_name: 'order_delivered',
       shift_completed: true,
     });
+    expect(event.skill_outcomes).toEqual([]);
+    expect(eventAppliesToSkill(event, 'vocabulary')).toBe(false);
+  });
+
+  test('builds one exact personalized package for every payoff surface', () => {
+    const activity = getActivity('kennedis-orders-pink-berries-001');
+    const content = getRequiredContent(activity);
+    const record = createCafeOrderCompletion({
+      activity,
+      content,
+      tray: {
+        foodCounts: { banana: 2, cookie: 1 },
+        colorId: 'pink',
+        decorationId: 'stars',
+      },
+      sessionId: 'session-1',
+      childId: 'local-child',
+      bagColorId: 'blue',
+      sealId: 'star',
+      completionId: 'cafe-order-exact',
+      completedAt: '2026-07-13T12:00:00.000Z',
+    });
+
+    expect(record).toMatchObject({
+      completion_id: 'cafe-order-exact',
+      caller_id: 'mama-bear',
+      food_items: [
+        { food_id: 'banana', count: 2 },
+        { food_id: 'cookie', count: 1 },
+      ],
+      food_color_id: 'pink',
+      food_decoration_id: 'stars',
+      bag_color_id: 'blue',
+      seal_id: 'star',
+    });
+    if (!record) throw new Error('Expected a valid completion record');
+
+    const markup = renderCafeOrderPackage(record);
+    expect(markup).toContain('data-bag-color="blue"');
+    expect(markup).toContain('data-seal="star"');
+    expect(markup).toContain('/assets/images/bear-cafe-seal-star.svg');
+    expect((markup.match(/class="food-art"/g) ?? [])).toHaveLength(3);
+    const contents = renderCafeOrderContents(record);
+    expect(contents).toContain('--bear-cafe-food-color: #f5a9c4');
+    expect(contents).toContain('bear-cafe-order-contents__decoration');
+    expect((contents.match(/class="food-art"/g) ?? [])).toHaveLength(4);
+    expect(getCafeOrderAccessibleLabel(record)).toBe(
+      '2 bananas and 1 cookie, pink, with stars in a Blue bag with a Star seal'
+    );
+  });
+
+  test('ships original editable package art with local safe exports', () => {
+    const paths = [
+      '../../design-source/bear-cafe/bear-cafe-order-bag.svg',
+      '../../public/assets/images/bear-cafe-order-bag-frame.svg',
+      '../../public/assets/images/bear-cafe-seal-heart.svg',
+      '../../public/assets/images/bear-cafe-seal-star.svg',
+      '../../public/assets/images/bear-cafe-seal-bubbles.svg',
+    ];
+
+    for (const path of paths) {
+      const source = readFileSync(new URL(path, import.meta.url), 'utf8');
+      expect(source).toContain('<svg');
+      expect(source).not.toMatch(/<(?:text|image)\b/i);
+      expect(source).not.toMatch(/font-family/i);
+      expect(source).not.toMatch(/\b(?:href|src)=["']https?:/i);
+      expect(source).not.toMatch(/<script\b/i);
+    }
   });
 
   test('food choices expose tray count and pressed state to assistive tech', () => {

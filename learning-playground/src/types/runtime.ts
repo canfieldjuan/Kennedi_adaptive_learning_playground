@@ -6,6 +6,7 @@
 import type { LearningActivity } from './activity';
 import type { ActivityAttemptEvent } from './events';
 import type { StoryHistoryRecord } from './story-history';
+import type { CafeOrderCompletion } from './cafe-order-completion';
 import type { ParentObservation } from './observations';
 import type {
   ParentDifficultyAction,
@@ -75,6 +76,9 @@ export interface StorageServiceInterface {
   getStoryHistory(): StoryHistoryRecord[];
   appendStoryHistory(record: StoryHistoryRecord): void;
   clearStoryHistory(): void;
+  getCafeOrderHistory(): CafeOrderCompletion[];
+  appendCafeOrderHistory(record: CafeOrderCompletion): void;
+  clearCafeOrderHistory(): void;
   exportProgressData(events: ActivityAttemptEvent[]): string;
 }
 

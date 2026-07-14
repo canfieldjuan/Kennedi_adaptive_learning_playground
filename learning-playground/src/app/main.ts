@@ -222,6 +222,10 @@ function renderActivityRoute(activityId: string): void {
       speech,
       audio,
       onEvent: handleActivityEvent,
+      history: {
+        list: () => storage.getCafeOrderHistory(),
+        append: (record) => storage.appendCafeOrderHistory(record),
+      },
     });
     return;
   }

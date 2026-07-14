@@ -3122,12 +3122,6 @@
   min-height: 72px;
 }
 
-.bear-cafe-deliver-button .bear-cafe-tray-svg {
-  display: block;
-  width: 92px;
-  height: 46px;
-}
-
 .bear-cafe-check:disabled {
   opacity: 0.45;
   transform: none;
@@ -3172,23 +3166,12 @@
   }
 }
 
-/* The finished order on its serving tray at the counter. */
+/* The child's confirmed order at the pickup counter. */
 .bear-cafe-delivery__order {
   display: flex;
   flex-direction: column;
   align-items: center;
   animation: cafeSlideIn 420ms ease-out;
-}
-
-.bear-cafe-delivery__order .bear-cafe-tray-svg {
-  width: 116px;
-  height: 56px;
-  margin-top: -30px;
-}
-
-.bear-cafe-delivery__order-food {
-  z-index: 1;
-  font-size: 2.1rem;
 }
 
 .bear-cafe-delivery__scene {
@@ -3398,7 +3381,7 @@
   width: min(82vw, 420px);
 }
 
-.bear-cafe-handoff__tray {
+.bear-cafe-handoff__package {
   display: grid;
   place-items: center;
   min-width: 72px;
@@ -3425,6 +3408,477 @@
   text-align: center;
 }
 
+/* Bear Cafe completion object: one exact package is reused for delivery,
+   handoff, admiration, and the permanent order wall. */
+.bear-cafe-package {
+  --bear-cafe-package-size: 144px;
+  position: relative;
+  display: block;
+  width: var(--bear-cafe-package-size);
+  aspect-ratio: 4 / 5;
+  isolation: isolate;
+}
+
+.bear-cafe-package__food {
+  position: absolute;
+  z-index: 1;
+  top: 1%;
+  left: 10%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  align-content: flex-end;
+  width: 80%;
+  height: 43%;
+  overflow: hidden;
+  font-size: calc(var(--bear-cafe-package-size) * 0.24);
+  filter: drop-shadow(0 3px 2px rgba(58, 36, 97, 0.16));
+}
+
+.bear-cafe-package__food .food-art {
+  flex: 0 0 29%;
+}
+
+.bear-cafe-package__bag {
+  position: absolute;
+  z-index: 2;
+  inset: 27% 5% 2%;
+  overflow: hidden;
+  background: var(--bear-cafe-bag-color, #f5a9c4);
+  clip-path: polygon(5% 0, 95% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 8px 8px rgba(58, 36, 97, 0.2));
+}
+
+.bear-cafe-package__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+}
+
+.bear-cafe-package__seal {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 52%;
+  width: 31%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 3px 3px rgba(58, 36, 97, 0.2));
+  pointer-events: none;
+  user-select: none;
+}
+
+.bear-cafe-packaging {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(320px, 1.1fr);
+  place-items: center;
+  gap: var(--space-lg);
+  width: min(94vw, 820px);
+  min-height: 360px;
+  margin-block: auto;
+}
+
+.bear-cafe-packaging__preview {
+  display: grid;
+  place-items: center;
+  width: min(100%, 300px);
+  min-height: 300px;
+  padding: var(--space-md);
+  border-bottom: 18px solid #c9874e;
+  background: rgba(255, 250, 238, 0.62);
+  box-shadow: 0 16px 28px rgba(58, 36, 97, 0.12);
+}
+
+.bear-cafe-packaging__preview .bear-cafe-package {
+  --bear-cafe-package-size: 210px;
+  animation: cafePop 280ms ease-out;
+}
+
+.bear-cafe-packaging__controls {
+  display: grid;
+  gap: var(--space-lg);
+  width: 100%;
+}
+
+.bear-cafe-packaging__colors,
+.bear-cafe-packaging__seals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(64px, 1fr));
+  gap: var(--space-sm);
+}
+
+.bear-cafe-packaging__seals {
+  grid-template-columns: repeat(3, minmax(76px, 1fr));
+}
+
+.bear-cafe-packaging__color,
+.bear-cafe-packaging__seal {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 64px;
+  min-height: 72px;
+  border: 4px solid rgba(58, 36, 97, 0.24);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 18px rgba(58, 36, 97, 0.12);
+}
+
+.bear-cafe-packaging__color::before,
+.bear-cafe-packaging__seal::before,
+.bear-cafe-order-wall__card::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  pointer-events: none;
+}
+
+.bear-cafe-packaging__color span {
+  width: 42px;
+  aspect-ratio: 1;
+  border: 4px solid rgba(255, 255, 255, 0.78);
+  border-radius: var(--radius-round);
+  background: var(--bear-cafe-bag-choice);
+  box-shadow: 0 0 0 3px rgba(58, 36, 97, 0.18);
+}
+
+.bear-cafe-packaging__seal img {
+  width: 54px;
+  height: 54px;
+}
+
+.bear-cafe-packaging__color[data-selected='true'],
+.bear-cafe-packaging__seal[data-selected='true'] {
+  border-color: #168665;
+  box-shadow:
+    0 0 0 6px rgba(22, 134, 101, 0.18),
+    0 10px 24px rgba(58, 36, 97, 0.14);
+}
+
+.bear-cafe-packaging__confirm {
+  grid-column: 1 / -1;
+  min-width: 116px;
+  min-height: 72px;
+}
+
+.bear-cafe-phone {
+  position: relative;
+}
+
+.bear-cafe-phone__wall {
+  position: absolute;
+  right: max(4px, 4vw);
+  bottom: 8px;
+  display: grid;
+  grid-template-columns: auto auto;
+  place-items: center;
+  gap: 4px;
+  min-width: 82px;
+  min-height: 72px;
+  padding: 8px 10px;
+  border: 4px solid #3a2461;
+  border-radius: var(--radius-sm);
+  background: #fff7ed;
+  color: #3a2461;
+  font-size: 1.6rem;
+  font-weight: 900;
+  box-shadow: 0 10px 22px rgba(58, 36, 97, 0.18);
+}
+
+.bear-cafe-phone__wall img {
+  width: 38px;
+  height: 46px;
+}
+
+.bear-cafe-order-wall,
+.bear-cafe-order-detail {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: var(--space-md);
+  width: min(94vw, 920px);
+  min-height: 480px;
+  margin-block: auto;
+}
+
+.bear-cafe-order-wall__back {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.bear-cafe-order-wall__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: var(--space-md);
+  width: 100%;
+  padding: 72px 0 4px;
+}
+
+.bear-cafe-order-wall__card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 0.65fr 1fr;
+  place-items: center;
+  min-height: 170px;
+  padding: var(--space-sm);
+  border: 4px solid rgba(58, 36, 97, 0.3);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 246, 226, 0.92));
+  box-shadow: 0 9px 20px rgba(58, 36, 97, 0.13);
+}
+
+.bear-cafe-order-wall__card:focus-visible,
+.bear-cafe-order-wall__card:hover {
+  outline: 4px solid #f4cd58;
+  outline-offset: 2px;
+  transform: translateY(-2px);
+}
+
+.bear-cafe-order-wall__caller {
+  font-size: 3.5rem;
+}
+
+.bear-cafe-order-wall__card .bear-cafe-package {
+  --bear-cafe-package-size: 96px;
+}
+
+.bear-cafe-order-wall__pagination {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+}
+
+.bear-cafe-order-wall__pagination button:disabled {
+  opacity: 0.35;
+}
+
+.bear-cafe-order-detail {
+  grid-template-columns: minmax(160px, 0.7fr) minmax(220px, 1fr);
+  align-content: center;
+}
+
+.bear-cafe-order-detail__customer {
+  font-size: 7rem;
+}
+
+.bear-cafe-order-detail__package .bear-cafe-package {
+  --bear-cafe-package-size: 240px;
+}
+
+.bear-cafe-order-contents {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 68px;
+}
+
+.bear-cafe-order-contents__foods {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: min(70vw, 520px);
+}
+
+.bear-cafe-order-contents__foods .food-art,
+.bear-cafe-order-contents__decoration .food-art {
+  width: 58px;
+  height: 58px;
+}
+
+.bear-cafe-order-contents__color {
+  width: 48px;
+  aspect-ratio: 1;
+  border: 4px solid rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-round);
+  background: var(--bear-cafe-food-color);
+  box-shadow: 0 0 0 3px rgba(58, 36, 97, 0.2);
+}
+
+.bear-cafe-order-detail__summary {
+  grid-column: 1 / -1;
+  color: #3a2461;
+  font-size: 1.15rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.bear-cafe-order-detail__back {
+  grid-column: 1 / -1;
+  min-width: 112px;
+}
+
+.bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__order .bear-cafe-package {
+  --bear-cafe-package-size: 112px;
+}
+
+.bear-cafe-deliver-button {
+  min-width: 150px;
+  padding-block: 6px;
+}
+
+.bear-cafe-deliver-button .bear-cafe-package {
+  --bear-cafe-package-size: 72px;
+}
+
+.bear-cafe-handoff__package {
+  min-width: 100px;
+  min-height: 116px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.bear-cafe-handoff__package .bear-cafe-package {
+  --bear-cafe-package-size: 100px;
+}
+
+.bear-cafe-complete__result {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.bear-cafe-complete__package .bear-cafe-package {
+  --bear-cafe-package-size: 150px;
+}
+
+.bear-cafe-complete__wall {
+  min-width: 96px;
+}
+
+@media (max-width: 700px) {
+  .bear-cafe-packaging {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+    min-height: 0;
+  }
+
+  .bear-cafe-packaging__preview {
+    min-height: 190px;
+    border-bottom-width: 12px;
+  }
+
+  .bear-cafe-packaging__preview .bear-cafe-package {
+    --bear-cafe-package-size: 145px;
+  }
+
+  .bear-cafe-packaging__controls {
+    gap: var(--space-sm);
+  }
+
+  .bear-cafe-packaging__color,
+  .bear-cafe-packaging__seal {
+    min-height: 64px;
+  }
+
+  .bear-cafe-order-wall {
+    min-height: 560px;
+  }
+
+  .bear-cafe-order-wall__grid {
+    grid-template-columns: repeat(2, minmax(130px, 1fr));
+    gap: var(--space-sm);
+  }
+
+  .bear-cafe-order-wall__card {
+    min-height: 150px;
+    padding: 6px;
+  }
+
+  .bear-cafe-order-wall__caller {
+    font-size: 2.8rem;
+  }
+
+  .bear-cafe-order-wall__card .bear-cafe-package {
+    --bear-cafe-package-size: 78px;
+  }
+
+  .bear-cafe-order-detail {
+    grid-template-columns: 1fr 1fr;
+    min-height: 500px;
+  }
+
+  .bear-cafe-order-detail__customer {
+    font-size: 5rem;
+  }
+
+  .bear-cafe-order-detail__package .bear-cafe-package {
+    --bear-cafe-package-size: 170px;
+  }
+
+  .bear-cafe-order-contents__foods .food-art,
+  .bear-cafe-order-contents__decoration .food-art {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media (max-height: 650px) and (orientation: landscape) {
+  .bear-cafe-packaging {
+    grid-template-columns: minmax(150px, 180px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 160px) 64px;
+    grid-template-areas:
+      'preview controls'
+      'confirm controls';
+    gap: 6px var(--space-sm);
+    min-height: 230px;
+  }
+
+  .bear-cafe-packaging__preview {
+    grid-area: preview;
+    min-height: 158px;
+    padding: 4px;
+    border-bottom-width: 10px;
+  }
+
+  .bear-cafe-packaging__preview .bear-cafe-package {
+    --bear-cafe-package-size: 112px;
+  }
+
+  .bear-cafe-packaging__controls {
+    grid-area: controls;
+    align-content: center;
+    gap: 8px;
+  }
+
+  .bear-cafe-packaging__color,
+  .bear-cafe-packaging__seal {
+    min-height: 62px;
+  }
+
+  .bear-cafe-packaging__confirm {
+    grid-area: confirm;
+    align-self: stretch;
+    min-height: 56px;
+  }
+
+  .bear-cafe-order-wall {
+    min-height: 300px;
+  }
+
+  .bear-cafe-order-wall__grid {
+    padding-top: 60px;
+  }
+
+  .bear-cafe-order-wall__card {
+    min-height: 118px;
+  }
+
+  .bear-cafe-order-wall__card .bear-cafe-package {
+    --bear-cafe-package-size: 66px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-card__icon,
   .bear-cafe-phone__button,
@@ -3434,9 +3888,11 @@
   .bear-cafe-plate__food,
   .bear-cafe-delivery__order,
   .bear-cafe-complete__bear,
-  .bear-cafe-handoff__tray,
+  .bear-cafe-handoff__package,
   .bear-cafe-handoff__bear,
   .bear-cafe-plating__plate,
+  .bear-cafe-packaging__preview .bear-cafe-package,
+  .bear-cafe-order-wall__card,
   .bear-cafe-celebrate__piece,
   .bear-cafe-order--nudge,
   .bear-cafe-food[data-selected="true"],
@@ -4043,11 +4499,6 @@
     padding: var(--space-sm) var(--space-md);
   }
 
-  .bear-cafe-delivery__order .bear-cafe-tray-svg {
-    width: 88px;
-    height: 52px;
-  }
-
   .bear-cafe-environment .cafe-env__prop--minor {
     display: none;
   }
@@ -4227,18 +4678,48 @@
     width: 25%;
   }
 
-  .bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__order .bear-cafe-tray-svg {
-    width: 82px;
-    height: 44px;
-    margin-top: -24px;
+  .bear-cafe-complete__text {
+    font-size: 1.15rem;
+  }
+}
+
+@media (min-width: 568px) and (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  .bear-cafe-complete {
+    grid-template-columns: minmax(0, 1fr) 164px;
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'result actions'
+      'text actions';
+    column-gap: var(--space-sm);
+    min-height: 220px;
   }
 
-  .bear-cafe-delivery__scene--art-proof .bear-cafe-delivery__order-food {
-    font-size: 1.55rem;
+  .bear-cafe-complete__result {
+    grid-area: result;
+    align-self: end;
   }
 
   .bear-cafe-complete__text {
-    font-size: 1.15rem;
+    grid-area: text;
+    align-self: start;
+    margin: 0;
+  }
+
+  .bear-cafe-complete__actions {
+    grid-area: actions;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-self: center;
+    gap: var(--space-sm);
+  }
+
+  .bear-cafe-complete__actions .child-button {
+    min-width: 112px;
+    min-height: 58px;
+  }
+
+  .bear-cafe-complete__package .bear-cafe-package {
+    --bear-cafe-package-size: 112px;
   }
 }
 

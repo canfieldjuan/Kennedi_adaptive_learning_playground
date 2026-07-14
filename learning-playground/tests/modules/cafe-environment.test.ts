@@ -15,6 +15,7 @@ import {
 import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import type { LearningActivity } from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
+import type { CafeOrderCompletion } from '../../src/types/cafe-order-completion';
 import type {
   AudioServiceInterface,
   SpeechServiceInterface,
@@ -63,10 +64,10 @@ describe('bear cafe environment', () => {
   });
 
   test('the delivery stage is illustrated end to end and delivers exactly once', () => {
-    const { root, events } = setup();
+    const { root, events, history } = setup();
 
     // Phone → make → build the one-banana order → Check → plating timer →
-    // delivery.
+    // packaging.
     findByAria(root, 'Baby Polar Bear is calling')?.click();
     findByAria(root, 'Choose banana, none on tray')?.click();
     findByAria(root, 'Check order')?.click();
@@ -74,18 +75,28 @@ describe('bear cafe environment', () => {
     expect(plating).toBeDefined();
     plating?.cb();
 
+    expect(findByClass(root, 'bear-cafe-environment')?.dataset.stage).toBe('packaging');
+    const packagingMarkup = collectMarkup(findByClass(root, 'bear-cafe-packaging')!);
+    expect(packagingMarkup).toContain('data-bag-color="pink"');
+    expect(packagingMarkup).toContain('data-seal="heart"');
+    expect(events.filter((event) => event.outcome === 'completed')).toHaveLength(0);
+    expect(history).toHaveLength(0);
+    findByAria(root, 'Package order')?.click();
+
     const environment = findByClass(root, 'bear-cafe-environment');
     expect(environment?.dataset.stage).toBe('delivery');
 
-    // No emoji anywhere in the delivery stage — bell, order tray, and the
-    // Deliver control are all local illustrated SVG.
+    // No emoji anywhere in the delivery stage — bell, exact order package,
+    // seal, and Deliver control are all local illustrated SVG.
     const delivery = findByClass(root, 'bear-cafe-delivery');
     const deliveryMarkup = collectMarkup(delivery!);
     expect(deliveryMarkup).not.toContain('🔔');
     expect(deliveryMarkup).not.toContain('🧺');
     expect(deliveryMarkup).not.toContain('☎');
     expect(deliveryMarkup).toContain('bear-cafe-bell-svg');
-    expect(deliveryMarkup).toContain('bear-cafe-tray-svg');
+    expect(deliveryMarkup).toContain('bear-cafe-package');
+    expect(deliveryMarkup).toContain('/assets/images/bear-cafe-order-bag-frame.svg');
+    expect(deliveryMarkup).toContain('/assets/images/bear-cafe-seal-heart.svg');
     expect(deliveryMarkup).toContain('bear-cafe-delivery__window');
     expect(deliveryMarkup).toContain('bear-cafe-delivery__order');
 
@@ -98,12 +109,20 @@ describe('bear cafe environment', () => {
     // synchronous completion emission.
     const deliver = findByAria(root, 'Deliver order');
     expect(deliver).toBeDefined();
-    expect(deliver?.innerHTML).toContain('bear-cafe-tray-svg');
+    expect(deliver?.innerHTML).toContain('bear-cafe-package');
+    deliver?.click();
     deliver?.click();
 
     const completions = events.filter((event) => event.outcome === 'completed');
     expect(completions).toHaveLength(1);
     expect(completions[0]?.metadata?.event_name).toBe('order_delivered');
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({
+      caller_id: 'baby-polar-bear',
+      food_items: [{ food_id: 'banana', count: 1 }],
+      bag_color_id: 'pink',
+      seal_id: 'heart',
+    });
     expect(findByClass(root, 'bear-cafe-environment')?.dataset.stage).toBe('handoff');
   });
 
@@ -114,6 +133,7 @@ describe('bear cafe environment', () => {
     findByAria(root, 'Choose banana, none on tray')?.click();
     findByAria(root, 'Check order')?.click();
     timers.find((timer) => timer.ms === PLATING_DURATION_MS)?.cb();
+    findByAria(root, 'Package order')?.click();
     findByAria(root, 'Deliver order')?.click();
     timers.find((timer) => timer.ms === HANDOFF_DURATION_MS)?.cb();
 
@@ -132,15 +152,86 @@ describe('bear cafe environment', () => {
       /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u
     );
   });
+
+  test('Free Make emits one unscored completion and revisits without more events', () => {
+    const { root, events, history } = setup({
+      activityId: 'kennedis-orders-free-make-001',
+    });
+
+    findByAria(root, 'Baby Polar Bear is calling')?.click();
+    findByAria(root, 'Choose cupcake, none on tray')?.click();
+    expect(events).toEqual([]);
+    findByAria(root, 'Check order')?.click();
+    expect(events).toEqual([]);
+    timers.find((timer) => timer.ms === PLATING_DURATION_MS)?.cb();
+    findByAria(root, 'Choose Blue bag')?.click();
+    findByAria(root, 'Choose Star seal')?.click();
+    findByAria(root, 'Package order')?.click();
+    expect(events).toEqual([]);
+    findByAria(root, 'Deliver order')?.click();
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      outcome: 'completed',
+      skill_outcomes: [],
+      metadata: { event_name: 'order_delivered' },
+    });
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({
+      food_items: [{ food_id: 'cupcake', count: 1 }],
+      bag_color_id: 'blue',
+      seal_id: 'star',
+    });
+
+    timers.find((timer) => timer.ms === HANDOFF_DURATION_MS)?.cb();
+    const completeMarkup = collectMarkup(findByClass(root, 'bear-cafe-complete')!);
+    expect(completeMarkup).toContain('data-bag-color="blue"');
+    expect(completeMarkup).toContain('data-seal="star"');
+    findByAria(root, 'Open order wall')?.click();
+    expect(events).toHaveLength(1);
+    expect(findAllByClass(root, 'bear-cafe-order-wall__card')).toHaveLength(1);
+    findByClass(root, 'bear-cafe-order-wall__card')?.click();
+    expect(findByClass(root, 'bear-cafe-environment')?.dataset.stage).toBe('order_detail');
+    expect(collectMarkup(findByClass(root, 'bear-cafe-order-detail')!)).toContain(
+      'data-bag-color="blue"'
+    );
+    expect(events).toHaveLength(1);
+  });
+
+  test('the child wall is newest-first, bounded to six cards per page, and has no delete', () => {
+    const saved = Array.from({ length: 7 }, (_, index) => savedOrder(index));
+    const { root, events } = setup({ history: saved });
+
+    findByAria(root, 'Open order wall')?.click();
+    const firstPageCards = findAllByClass(root, 'bear-cafe-order-wall__card');
+    expect(firstPageCards).toHaveLength(6);
+    expect(collectMarkup(firstPageCards[0])).toContain('data-bag-color="pink"');
+    expect(collectMarkup(firstPageCards[0])).toContain('data-seal="heart"');
+    expect(collectMarkup(firstPageCards[1])).toContain('data-bag-color="blue"');
+    expect(collectMarkup(firstPageCards[1])).toContain('data-seal="star"');
+    const wallMarkup = collectMarkup(findByClass(root, 'bear-cafe-order-wall')!);
+    expect(wallMarkup).not.toMatch(/delete|remove/i);
+    findByAria(root, 'Next order wall page')?.click();
+    expect(findAllByClass(root, 'bear-cafe-order-wall__card')).toHaveLength(1);
+    expect(events).toEqual([]);
+  });
 });
 
-function setup(): { root: MockElement; events: ActivityAttemptEvent[] } {
+function setup(params: {
+  activityId?: string;
+  history?: CafeOrderCompletion[];
+} = {}): {
+  root: MockElement;
+  events: ActivityAttemptEvent[];
+  history: CafeOrderCompletion[];
+} {
   const root = document.createElement('div') as unknown as MockElement;
   const events: ActivityAttemptEvent[] = [];
+  const history = params.history ?? [];
   const activity = APPROVED_ACTIVITIES.find(
-    (entry) => entry.id === 'kennedis-orders-banana-001'
+    (entry) => entry.id === (params.activityId ?? 'kennedis-orders-banana-001')
   );
-  if (!activity) throw new Error('Missing banana activity');
+  if (!activity) throw new Error('Missing Bear Cafe activity');
 
   renderKennedisOrdersActivity(root as unknown as HTMLElement, {
     activity: activity as LearningActivity,
@@ -149,8 +240,29 @@ function setup(): { root: MockElement; events: ActivityAttemptEvent[] } {
     speech: createMockSpeech(),
     audio: createMockAudio(),
     onEvent: (event) => events.push(event),
+    history: {
+      list: () => history,
+      append: (record) => history.push(record),
+    },
   });
-  return { root, events };
+  return { root, events, history };
+}
+
+function savedOrder(index: number): CafeOrderCompletion {
+  return {
+    schema_version: 1,
+    game: 'kennedis-orders',
+    completion_id: `saved-order-${index}`,
+    session_id: `session-${index}`,
+    child_id: 'local-child',
+    activity_id: 'kennedis-orders-banana-001',
+    activity_version: 1,
+    caller_id: 'baby-polar-bear',
+    food_items: [{ food_id: 'banana', count: 1 }],
+    bag_color_id: index % 2 === 0 ? 'pink' : 'blue',
+    seal_id: index % 2 === 0 ? 'heart' : 'star',
+    completed_at: new Date(Date.UTC(2026, 6, 13, 12, index)).toISOString(),
+  };
 }
 
 class MockClassList {

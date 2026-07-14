@@ -12,6 +12,7 @@ import type {
   ParentDifficultyAction,
   ParentDifficultyOverride,
 } from './parent-actions';
+import type { CafeOrderCompletion } from './cafe-order-completion';
 
 export interface ParentSettings {
   child_display_name: string;
@@ -53,4 +54,5 @@ export interface StorageContract {
   parent_difficulty_overrides: ParentDifficultyOverride[];
   content_packs: ContentPack[];
   approved_assets: ApprovedAsset[];
+  cafe_order_history: CafeOrderCompletion[];
 }

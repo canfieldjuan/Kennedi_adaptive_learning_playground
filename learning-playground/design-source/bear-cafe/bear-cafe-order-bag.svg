@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+  width="760"
+  height="260"
+  viewBox="0 0 760 260"
+  version="1.1"
+>
+  <g inkscape:groupmode="layer" inkscape:label="Bag frame component">
+    <g id="bag-frame" transform="translate(24 20)">
+      <path
+        d="M 12 8 H 188 L 200 216 H 0 Z"
+        fill="none"
+        stroke="#3a2461"
+        stroke-width="8"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M 10 42 Q 100 58 190 42 L 192 80 Q 100 96 8 80 Z"
+        fill="#ffffff"
+        fill-opacity="0.24"
+        stroke="#3a2461"
+        stroke-width="6"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M 26 105 L 20 194 M 174 105 L 180 194"
+        fill="none"
+        stroke="#3a2461"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-opacity="0.32"
+      />
+      <path
+        d="M 30 202 Q 100 188 170 202"
+        fill="none"
+        stroke="#ffffff"
+        stroke-width="5"
+        stroke-linecap="round"
+        stroke-opacity="0.48"
+      />
+    </g>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="Heart seal component">
+    <g id="seal-heart" transform="translate(280 76)">
+      <circle cx="54" cy="54" r="48" fill="#fff7ed" stroke="#3a2461" stroke-width="7" />
+      <circle cx="54" cy="54" r="38" fill="#f6c64e" stroke="#ef8fa5" stroke-width="5" stroke-dasharray="4 7" />
+      <path
+        d="M 54 82 C 22 63 24 34 42 31 C 49 30 54 34 54 41 C 54 34 59 30 66 31 C 84 34 86 63 54 82 Z"
+        fill="#ef8fa5"
+        stroke="#3a2461"
+        stroke-width="5"
+        stroke-linejoin="round"
+      />
+      <path d="M 40 42 Q 47 36 52 43" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
+    </g>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="Star seal component">
+    <g id="seal-star" transform="translate(440 76)">
+      <circle cx="54" cy="54" r="48" fill="#fff7ed" stroke="#3a2461" stroke-width="7" />
+      <circle cx="54" cy="54" r="38" fill="#74b9ff" stroke="#f6c64e" stroke-width="5" stroke-dasharray="4 7" />
+      <path
+        d="M 54 23 L 63 43 L 85 46 L 69 61 L 73 83 L 54 72 L 35 83 L 39 61 L 23 46 L 45 43 Z"
+        fill="#f6c64e"
+        stroke="#3a2461"
+        stroke-width="5"
+        stroke-linejoin="round"
+      />
+      <path d="M 47 38 L 54 31" fill="none" stroke="#fffdf7" stroke-width="4" stroke-linecap="round" />
+    </g>
+  </g>
+
+  <g inkscape:groupmode="layer" inkscape:label="Bubbles seal component">
+    <g id="seal-bubbles" transform="translate(600 76)">
+      <circle cx="54" cy="54" r="48" fill="#fff7ed" stroke="#3a2461" stroke-width="7" />
+      <circle cx="54" cy="54" r="38" fill="#8ed7c6" stroke="#74b9ff" stroke-width="5" stroke-dasharray="4 7" />
+      <circle cx="42" cy="59" r="15" fill="#dff8f2" stroke="#3a2461" stroke-width="4" />
+      <circle cx="64" cy="42" r="12" fill="#fffdf7" stroke="#3a2461" stroke-width="4" />
+      <circle cx="70" cy="67" r="9" fill="#b9ecdf" stroke="#3a2461" stroke-width="4" />
+      <path d="M 35 52 Q 39 47 44 50 M 59 37 Q 63 34 66 37" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
+    </g>
+  </g>
+</svg>

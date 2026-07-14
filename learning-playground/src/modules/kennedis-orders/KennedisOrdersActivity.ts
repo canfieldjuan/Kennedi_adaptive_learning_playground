@@ -11,6 +11,12 @@ import type {
   SpeechServiceInterface,
 } from '../../types/runtime';
 import type {
+  CafeOrderBagColorId,
+  CafeOrderCompletion,
+  CafeOrderHistoryPort,
+  CafeOrderSealId,
+} from '../../types/cafe-order-completion';
+import type {
   BearCafeColor,
   BearCafeContent,
   BearCafeDecoration,
@@ -23,9 +29,20 @@ import { renderDecorationArt } from './decoration-art';
 import {
   createCafeEnvironment,
   pickupBellSvg,
-  deliveryTraySvg,
   cafePhoneSvg,
 } from './cafe-environment';
+import {
+  CAFE_ORDER_BAG_COLORS,
+  CAFE_ORDER_SEALS,
+  DEFAULT_CAFE_ORDER_BAG_COLOR_ID,
+  DEFAULT_CAFE_ORDER_SEAL_ID,
+  createCafeOrderCompletion,
+  getCafeOrderAccessibleLabel,
+  getCafeOrderCallerLabel,
+  getCafeOrderFoodSummary,
+  renderCafeOrderContents,
+  renderCafeOrderPackage,
+} from './cafe-order-package';
 
 interface KennedisOrdersOptions {
   activity: LearningActivity;
@@ -34,6 +51,7 @@ interface KennedisOrdersOptions {
   speech: SpeechServiceInterface;
   audio: AudioServiceInterface;
   onEvent: (event: ActivityAttemptEvent) => void;
+  history: CafeOrderHistoryPort;
 }
 
 export interface TrayState {
@@ -47,10 +65,20 @@ export interface ChoiceAccessibilityState {
   ariaPressed: 'true' | 'false';
 }
 
-type ViewStage = 'phone' | 'make' | 'fix' | 'plating' | 'delivery' | 'handoff' | 'complete';
+type ViewStage =
+  | 'phone'
+  | 'make'
+  | 'fix'
+  | 'plating'
+  | 'packaging'
+  | 'delivery'
+  | 'handoff'
+  | 'complete'
+  | 'order_wall'
+  | 'order_detail';
 
-// Duration of the delivery handoff beat (the plated food travels to the bear and
-// the bear receives it) before the round completes. Kept in sync with the
+// Duration of the delivery handoff beat (the exact package travels to the bear
+// and the bear receives it) before the round completes. Kept in sync with the
 // cafeHandoffTravel/cafeHandoffReceive CSS animations.
 const HANDOFF_DURATION_MS = 900;
 
@@ -61,14 +89,16 @@ const HANDOFF_DURATION_MS = 900;
 const PLATING_DURATION_MS = 800;
 
 // Icon-only child controls (no reading required). The Deliver control renders
-// the illustrated serving tray (cafe-environment.ts) instead of a text glyph,
-// so it no longer appears here; its accessible name stays "Deliver order".
+// the child's exact package instead of a text glyph; its accessible name stays
+// "Deliver order".
 export const BEAR_CAFE_CHILD_CONTROL_LABELS = {
   home: '⌂',
   repeat: '↻',
   check: '✓',
   next: '→',
   restart: '↻',
+  back: '←',
+  wall: '▦',
 } as const;
 
 let container: HTMLElement | null = null;
@@ -105,6 +135,13 @@ export function renderKennedisOrdersActivity(
   let hintedSkillIds: string[] = [];
   let feedbackTone: 'success' | 'support' | 'hint' = 'support';
   let feedbackText = '';
+  let bagColorId: CafeOrderBagColorId = DEFAULT_CAFE_ORDER_BAG_COLOR_ID;
+  let sealId: CafeOrderSealId = DEFAULT_CAFE_ORDER_SEAL_ID;
+  let completedOrder: CafeOrderCompletion | null = null;
+  let deliveryCommitted = false;
+  let wallPage = 0;
+  let wallDetailId: string | null = null;
+  let wallReturnStage: Extract<ViewStage, 'phone' | 'complete'> = 'phone';
 
   container = document.createElement('div');
   container.className = 'child-container activity-screen bear-cafe';
@@ -127,16 +164,20 @@ export function renderKennedisOrdersActivity(
       idleNudgeTimer = null;
     }
 
-    container.appendChild(createTopBar(() => {
-      // Replaying the prompt is a no-penalty repeat, not a hint or an attempt.
-      // The count still reaches parent evidence via the replay_count metadata
-      // on the real tray_checked/order_delivered events. Emitting a separate
-      // event here would have to pick an AttemptOutcome, and every outcome
-      // pollutes a parent-facing metric (hint_used inflates the hint count).
-      replayCount += 1;
-      attemptStartedAt = Date.now();
-      options.speech.speak(content.prompt_audio);
-    }));
+    container.appendChild(
+      createTopBar(
+        stage === 'order_wall' || stage === 'order_detail'
+          ? undefined
+          : () => {
+              // Replaying the prompt is a no-penalty repeat, not a hint or an
+              // attempt. The count reaches parent evidence through metadata
+              // on the real tray_checked/order_delivered events.
+              replayCount += 1;
+              attemptStartedAt = Date.now();
+              options.speech.speak(content.prompt_audio);
+            }
+      )
+    );
 
     renderShiftPanel(container, content);
 
@@ -145,11 +186,62 @@ export function renderKennedisOrdersActivity(
         phoneIntroSpoken = true;
         options.speech.speak(`${content.character.name} is calling.`);
       }
-      renderPhoneStage(container, content, () => {
-        stage = 'make';
-        roundStartedAt = Date.now();
-        attemptStartedAt = roundStartedAt;
-        options.speech.speak(content.prompt_audio);
+      renderPhoneStage(
+        container,
+        content,
+        () => {
+          stage = 'make';
+          roundStartedAt = Date.now();
+          attemptStartedAt = roundStartedAt;
+          options.speech.speak(content.prompt_audio);
+          render();
+        },
+        getChildCafeOrderHistory(options).length > 0
+          ? () => {
+              wallReturnStage = 'phone';
+              wallPage = 0;
+              wallDetailId = null;
+              stage = 'order_wall';
+              render();
+            }
+          : undefined
+      );
+      return;
+    }
+
+    if (stage === 'order_wall') {
+      renderOrderWallStage(container, getChildCafeOrderHistory(options), wallPage, {
+        onBack: () => {
+          stage = wallReturnStage;
+          render();
+        },
+        onPageChange: (nextPage) => {
+          wallPage = nextPage;
+          render();
+        },
+        onOpenOrder: (completionId) => {
+          wallDetailId = completionId;
+          stage = 'order_detail';
+          render();
+        },
+      });
+      return;
+    }
+
+    if (stage === 'order_detail') {
+      const record = getChildCafeOrderHistory(options).find((item) => (
+        item.completion_id === wallDetailId
+      ));
+      if (!record) {
+        wallDetailId = null;
+        stage = 'order_wall';
+        render();
+        return;
+      }
+
+      renderOrderDetailStage(container, record, () => {
+        wallDetailId = null;
+        stage = 'order_wall';
         render();
       });
       return;
@@ -160,15 +252,52 @@ export function renderKennedisOrdersActivity(
       const platingTimer = window.setTimeout(() => {
         options.audio.play('soft_chime');
         options.speech.speak('Order ready.');
-        stage = 'delivery';
+        stage = 'packaging';
         render();
       }, PLATING_DURATION_MS);
       cleanupHandlers.push(() => window.clearTimeout(platingTimer));
       return;
     }
 
+    if (stage === 'packaging') {
+      renderPackagingStage(container, options, content, tray, bagColorId, sealId, {
+        onBagColorChange: (nextBagColorId) => {
+          bagColorId = nextBagColorId;
+          render();
+        },
+        onSealChange: (nextSealId) => {
+          sealId = nextSealId;
+          render();
+        },
+        onPackage: () => {
+          if (!completedOrder) {
+            completedOrder = createCafeOrderCompletion({
+              activity: options.activity,
+              content,
+              tray,
+              sessionId: options.sessionId,
+              childId: options.childId,
+              bagColorId,
+              sealId,
+            });
+          }
+          if (!completedOrder) return;
+
+          options.audio.play('soft_chime');
+          options.speech.speak('Order packed.');
+          stage = 'delivery';
+          render();
+        },
+      });
+      return;
+    }
+
     if (stage === 'delivery') {
-      renderDeliveryStage(container, content, tray, options, () => {
+      if (!completedOrder) return;
+      renderDeliveryStage(container, completedOrder, options, () => {
+        if (deliveryCommitted) return;
+        deliveryCommitted = true;
+        options.history.append(completedOrder!);
         // Emit completion synchronously on the delivery commit, before the
         // cosmetic handoff beat. Tapping Home during the beat tears the view
         // down and clears the handoff timer, so the order_delivered event must
@@ -190,7 +319,8 @@ export function renderKennedisOrdersActivity(
     }
 
     if (stage === 'handoff') {
-      renderHandoffStage(container, content, tray);
+      if (!completedOrder) return;
+      renderHandoffStage(container, completedOrder);
       const handoffTimer = window.setTimeout(() => {
         stage = 'complete';
         options.audio.play('soft_chime');
@@ -202,7 +332,14 @@ export function renderKennedisOrdersActivity(
     }
 
     if (stage === 'complete') {
-      renderCompleteStage(container, content);
+      if (!completedOrder) return;
+      renderCompleteStage(container, content, completedOrder, () => {
+        wallReturnStage = 'complete';
+        wallPage = 0;
+        wallDetailId = null;
+        stage = 'order_wall';
+        render();
+      });
       return;
     }
 
@@ -222,18 +359,20 @@ export function renderKennedisOrdersActivity(
         const wasSelected = (tray.foodCounts[food.id] ?? 0) > 0;
         updateFoodSelection(content, tray, food.id);
         selectionIndex += 1;
-        emitFoodSelectionEvent({
-          options,
-          content,
-          tray,
-          food,
-          wasSelected,
-          attemptNumber: getFoodSelectionAttemptNumber(attemptNumber),
-          selectionIndex,
-          responseTimeMs: Date.now() - attemptStartedAt,
-          hintShown,
-          replayCount,
-        });
+        if (content.mode !== 'free_make') {
+          emitFoodSelectionEvent({
+            options,
+            content,
+            tray,
+            food,
+            wasSelected,
+            attemptNumber: getFoodSelectionAttemptNumber(attemptNumber),
+            selectionIndex,
+            responseTimeMs: Date.now() - attemptStartedAt,
+            hintShown,
+            replayCount,
+          });
+        }
         feedbackText = '';
         render();
       },
@@ -252,18 +391,20 @@ export function renderKennedisOrdersActivity(
         const result = evaluateTray(content, tray);
         const responseTimeMs = Date.now() - attemptStartedAt;
 
-        emitAttemptEvent({
-          options,
-          content,
-          tray,
-          outcome: result.correct ? 'correct' : 'incorrect',
-          attemptNumber,
-          responseTimeMs,
-          hintShown,
-          hintedSkillIds,
-          replayCount,
-          issue: result.issue,
-        });
+        if (content.mode !== 'free_make') {
+          emitAttemptEvent({
+            options,
+            content,
+            tray,
+            outcome: result.correct ? 'correct' : 'incorrect',
+            attemptNumber,
+            responseTimeMs,
+            hintShown,
+            hintedSkillIds,
+            replayCount,
+            issue: result.issue,
+          });
+        }
 
         if (result.correct) {
           feedbackTone = 'success';
@@ -352,7 +493,7 @@ export function destroyKennedisOrdersActivity(): void {
   }
 }
 
-function createTopBar(onRepeat: () => void): HTMLElement {
+function createTopBar(onRepeat?: () => void): HTMLElement {
   const topBar = document.createElement('div');
   topBar.className = 'activity-topbar';
 
@@ -366,13 +507,15 @@ function createTopBar(onRepeat: () => void): HTMLElement {
   });
   topBar.appendChild(homeButton);
 
-  const repeatButton = document.createElement('button');
-  repeatButton.className = 'activity-icon-button';
-  repeatButton.type = 'button';
-  repeatButton.textContent = BEAR_CAFE_CHILD_CONTROL_LABELS.repeat;
-  repeatButton.setAttribute('aria-label', 'Repeat order');
-  repeatButton.addEventListener('click', onRepeat);
-  topBar.appendChild(repeatButton);
+  if (onRepeat) {
+    const repeatButton = document.createElement('button');
+    repeatButton.className = 'activity-icon-button';
+    repeatButton.type = 'button';
+    repeatButton.textContent = BEAR_CAFE_CHILD_CONTROL_LABELS.repeat;
+    repeatButton.setAttribute('aria-label', 'Repeat order');
+    repeatButton.addEventListener('click', onRepeat);
+    topBar.appendChild(repeatButton);
+  }
 
   return topBar;
 }
@@ -380,7 +523,8 @@ function createTopBar(onRepeat: () => void): HTMLElement {
 function renderPhoneStage(
   parent: HTMLElement,
   content: BearCafeContent,
-  onAnswer: () => void
+  onAnswer: () => void,
+  onOpenWall?: () => void
 ): void {
   const phoneCard = document.createElement('section');
   phoneCard.className = 'bear-cafe-phone';
@@ -396,6 +540,20 @@ function renderPhoneStage(
   phone.addEventListener('click', onAnswer);
 
   phoneCard.appendChild(phone);
+
+  if (onOpenWall) {
+    const wallButton = document.createElement('button');
+    wallButton.className = 'bear-cafe-phone__wall';
+    wallButton.type = 'button';
+    wallButton.setAttribute('aria-label', 'Open order wall');
+    wallButton.innerHTML = `
+      <span aria-hidden="true">${BEAR_CAFE_CHILD_CONTROL_LABELS.wall}</span>
+      <img src="/assets/images/bear-cafe-order-bag-frame.svg" alt="" draggable="false">
+    `;
+    wallButton.addEventListener('click', onOpenWall);
+    phoneCard.appendChild(wallButton);
+  }
+
   parent.appendChild(phoneCard);
 }
 
@@ -712,10 +870,201 @@ function renderPlatingStage(
   parent.appendChild(plating);
 }
 
+function renderPackagingStage(
+  parent: HTMLElement,
+  options: KennedisOrdersOptions,
+  content: BearCafeContent,
+  tray: TrayState,
+  bagColorId: CafeOrderBagColorId,
+  sealId: CafeOrderSealId,
+  handlers: {
+    onBagColorChange: (bagColorId: CafeOrderBagColorId) => void;
+    onSealChange: (sealId: CafeOrderSealId) => void;
+    onPackage: () => void;
+  }
+): void {
+  const preview = createCafeOrderCompletion({
+    activity: options.activity,
+    content,
+    tray,
+    sessionId: options.sessionId,
+    childId: options.childId,
+    bagColorId,
+    sealId,
+    completionId: 'cafe-order-preview',
+    completedAt: '1970-01-01T00:00:00.000Z',
+  });
+  if (!preview) return;
+
+  const packaging = document.createElement('section');
+  packaging.className = 'bear-cafe-packaging';
+  packaging.setAttribute('aria-label', 'Package the order');
+
+  const previewArea = document.createElement('div');
+  previewArea.className = 'bear-cafe-packaging__preview';
+  previewArea.setAttribute('aria-label', getCafeOrderAccessibleLabel(preview));
+  previewArea.innerHTML = renderCafeOrderPackage(preview);
+  packaging.appendChild(previewArea);
+
+  const controls = document.createElement('div');
+  controls.className = 'bear-cafe-packaging__controls';
+
+  const colorChoices = document.createElement('div');
+  colorChoices.className = 'bear-cafe-packaging__colors';
+  colorChoices.setAttribute('aria-label', 'Choose bag color');
+  for (const bagColor of CAFE_ORDER_BAG_COLORS) {
+    const selected = bagColor.id === bagColorId;
+    const button = document.createElement('button');
+    button.className = 'bear-cafe-packaging__color';
+    button.type = 'button';
+    button.dataset.selected = selected ? 'true' : 'false';
+    button.style.setProperty('--bear-cafe-bag-choice', bagColor.value);
+    button.setAttribute('aria-label', `Choose ${bagColor.label} bag`);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    button.innerHTML = '<span aria-hidden="true"></span>';
+    button.addEventListener('click', () => handlers.onBagColorChange(bagColor.id));
+    colorChoices.appendChild(button);
+  }
+  controls.appendChild(colorChoices);
+
+  const sealChoices = document.createElement('div');
+  sealChoices.className = 'bear-cafe-packaging__seals';
+  sealChoices.setAttribute('aria-label', 'Choose bag seal');
+  for (const seal of CAFE_ORDER_SEALS) {
+    const selected = seal.id === sealId;
+    const button = document.createElement('button');
+    button.className = 'bear-cafe-packaging__seal';
+    button.type = 'button';
+    button.dataset.selected = selected ? 'true' : 'false';
+    button.setAttribute('aria-label', `Choose ${seal.label} seal`);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    button.innerHTML = `
+      <img src="/assets/images/bear-cafe-seal-${seal.id}.svg" alt="" draggable="false">
+    `;
+    button.addEventListener('click', () => handlers.onSealChange(seal.id));
+    sealChoices.appendChild(button);
+  }
+  controls.appendChild(sealChoices);
+  packaging.appendChild(controls);
+
+  const packageButton = document.createElement('button');
+  packageButton.className = 'child-button bear-cafe-packaging__confirm';
+  packageButton.type = 'button';
+  packageButton.textContent = '✓';
+  packageButton.setAttribute('aria-label', 'Package order');
+  packageButton.addEventListener('click', handlers.onPackage);
+  packaging.appendChild(packageButton);
+
+  parent.appendChild(packaging);
+}
+
+const ORDER_WALL_PAGE_SIZE = 6;
+
+function renderOrderWallStage(
+  parent: HTMLElement,
+  records: CafeOrderCompletion[],
+  requestedPage: number,
+  handlers: {
+    onBack: () => void;
+    onPageChange: (page: number) => void;
+    onOpenOrder: (completionId: string) => void;
+  }
+): void {
+  const totalPages = Math.max(1, Math.ceil(records.length / ORDER_WALL_PAGE_SIZE));
+  const page = Math.max(0, Math.min(requestedPage, totalPages - 1));
+  const visibleRecords = records.slice(
+    page * ORDER_WALL_PAGE_SIZE,
+    (page + 1) * ORDER_WALL_PAGE_SIZE
+  );
+
+  const wall = document.createElement('section');
+  wall.className = 'bear-cafe-order-wall';
+  wall.setAttribute('aria-label', 'Bear Cafe order wall');
+
+  const wallBack = document.createElement('button');
+  wallBack.className = 'activity-icon-button bear-cafe-order-wall__back';
+  wallBack.type = 'button';
+  wallBack.textContent = BEAR_CAFE_CHILD_CONTROL_LABELS.back;
+  wallBack.setAttribute('aria-label', 'Back to cafe');
+  wallBack.addEventListener('click', handlers.onBack);
+  wall.appendChild(wallBack);
+
+  const grid = document.createElement('div');
+  grid.className = 'bear-cafe-order-wall__grid';
+  for (const record of visibleRecords) {
+    const card = document.createElement('button');
+    card.className = 'bear-cafe-order-wall__card';
+    card.type = 'button';
+    card.setAttribute(
+      'aria-label',
+      `Open order for ${getCafeOrderCallerLabel(record.caller_id)}: ${getCafeOrderAccessibleLabel(record)}`
+    );
+    card.innerHTML = `
+      <span class="bear-cafe-order-wall__caller" aria-hidden="true">${renderBearArt(record.caller_id, 'happy')}</span>
+      ${renderCafeOrderPackage(record)}
+    `;
+    card.addEventListener('click', () => handlers.onOpenOrder(record.completion_id));
+    grid.appendChild(card);
+  }
+  wall.appendChild(grid);
+
+  if (totalPages > 1) {
+    const pagination = document.createElement('div');
+    pagination.className = 'bear-cafe-order-wall__pagination';
+
+    const previous = document.createElement('button');
+    previous.className = 'activity-icon-button';
+    previous.type = 'button';
+    previous.textContent = BEAR_CAFE_CHILD_CONTROL_LABELS.back;
+    previous.setAttribute('aria-label', 'Previous order wall page');
+    previous.disabled = page === 0;
+    previous.addEventListener('click', () => handlers.onPageChange(page - 1));
+
+    const next = document.createElement('button');
+    next.className = 'activity-icon-button';
+    next.type = 'button';
+    next.textContent = BEAR_CAFE_CHILD_CONTROL_LABELS.next;
+    next.setAttribute('aria-label', 'Next order wall page');
+    next.disabled = page >= totalPages - 1;
+    next.addEventListener('click', () => handlers.onPageChange(page + 1));
+
+    pagination.append(previous, next);
+    wall.appendChild(pagination);
+  }
+
+  parent.appendChild(wall);
+}
+
+function renderOrderDetailStage(
+  parent: HTMLElement,
+  record: CafeOrderCompletion,
+  onBack: () => void
+): void {
+  const detail = document.createElement('section');
+  detail.className = 'bear-cafe-order-detail';
+  detail.setAttribute('aria-label', getCafeOrderAccessibleLabel(record));
+  detail.innerHTML = `
+    <div class="bear-cafe-order-detail__customer" aria-hidden="true">
+      ${renderBearArt(record.caller_id, 'happy')}
+    </div>
+    <div class="bear-cafe-order-detail__package">${renderCafeOrderPackage(record)}</div>
+    ${renderCafeOrderContents(record)}
+    <p class="bear-cafe-order-detail__summary">${getCafeOrderFoodSummary(record)}</p>
+  `;
+
+  const back = document.createElement('button');
+  back.className = 'child-button bear-cafe-order-detail__back';
+  back.type = 'button';
+  back.textContent = BEAR_CAFE_CHILD_CONTROL_LABELS.back;
+  back.setAttribute('aria-label', 'Back to order wall');
+  back.addEventListener('click', onBack);
+  detail.appendChild(back);
+  parent.appendChild(detail);
+}
+
 function renderHandoffStage(
   parent: HTMLElement,
-  content: BearCafeContent,
-  tray: TrayState
+  order: CafeOrderCompletion
 ): void {
   const handoff = document.createElement('section');
   handoff.className = 'bear-cafe-handoff';
@@ -723,18 +1072,17 @@ function renderHandoffStage(
   const track = document.createElement('div');
   track.className = 'bear-cafe-handoff__track';
 
-  const trayEl = document.createElement('div');
-  trayEl.className = 'bear-cafe-handoff__tray';
-  trayEl.setAttribute('aria-hidden', 'true');
-  const foodIcons = getPlatedFoodIcons(content, tray);
-  trayEl.innerHTML = foodIcons || renderFoodArt('plate');
+  const packageEl = document.createElement('div');
+  packageEl.className = 'bear-cafe-handoff__package';
+  packageEl.setAttribute('aria-hidden', 'true');
+  packageEl.innerHTML = renderCafeOrderPackage(order);
 
   const bear = document.createElement('div');
   bear.className = 'bear-cafe-handoff__bear';
   bear.setAttribute('aria-hidden', 'true');
-  bear.innerHTML = renderBearArt(content.character.id, 'receiving');
+  bear.innerHTML = renderBearArt(order.caller_id, 'receiving');
 
-  track.appendChild(trayEl);
+  track.appendChild(packageEl);
   track.appendChild(bear);
 
   const text = document.createElement('p');
@@ -749,8 +1097,7 @@ function renderHandoffStage(
 
 function renderDeliveryStage(
   parent: HTMLElement,
-  content: BearCafeContent,
-  tray: TrayState,
+  order: CafeOrderCompletion,
   options: KennedisOrdersOptions,
   onDeliver: () => void
 ): void {
@@ -762,8 +1109,8 @@ function renderDeliveryStage(
     </div>
   `;
 
-  // The pickup scene: the finished order sits on an illustrated serving tray
-  // at the counter while the customer waits at the service window across it.
+  // The pickup scene keeps the confirmed package intact while the customer
+  // waits at the service window across the counter.
   const deliveryScene = document.createElement('div');
   deliveryScene.className = 'bear-cafe-delivery__scene bear-cafe-delivery__scene--art-proof';
   deliveryScene.innerHTML = `
@@ -775,11 +1122,10 @@ function renderDeliveryStage(
       draggable="false"
     >
     <div class="bear-cafe-delivery__order" aria-hidden="true">
-      <span class="bear-cafe-delivery__order-food">${getPlatedFoodIcons(content, tray) || renderFoodArt('plate')}</span>
-      ${deliveryTraySvg()}
+      ${renderCafeOrderPackage(order)}
     </div>
     <div class="bear-cafe-delivery__window" aria-hidden="true">
-      ${renderBearArt(content.character.id, 'waiting')}
+      ${renderBearArt(order.caller_id, 'waiting')}
     </div>
   `;
   delivery.appendChild(deliveryScene);
@@ -787,7 +1133,7 @@ function renderDeliveryStage(
   const button = document.createElement('button');
   button.className = 'child-button bear-cafe-deliver-button';
   button.type = 'button';
-  button.innerHTML = deliveryTraySvg();
+  button.innerHTML = renderCafeOrderPackage(order);
   button.setAttribute('aria-label', 'Deliver order');
   button.addEventListener('click', () => {
     options.speech.speak('You delivered it.');
@@ -797,11 +1143,20 @@ function renderDeliveryStage(
   parent.appendChild(delivery);
 }
 
-function renderCompleteStage(parent: HTMLElement, content: BearCafeContent): void {
+function renderCompleteStage(
+  parent: HTMLElement,
+  content: BearCafeContent,
+  order: CafeOrderCompletion,
+  onOpenWall: () => void
+): void {
   const complete = document.createElement('section');
   complete.className = 'bear-cafe-complete';
+  complete.setAttribute('aria-label', `Delivered ${getCafeOrderAccessibleLabel(order)}`);
   complete.innerHTML = `
-    <div class="bear-cafe-complete__bear" aria-hidden="true">${renderBearArt(content.character.id, 'happy')}</div>
+    <div class="bear-cafe-complete__result" aria-hidden="true">
+      <div class="bear-cafe-complete__bear">${renderBearArt(order.caller_id, 'happy')}</div>
+      <div class="bear-cafe-complete__package">${renderCafeOrderPackage(order)}</div>
+    </div>
     <p class="bear-cafe-complete__text">${content.shift_restart_activity_id ? 'Orders delivered.' : 'Order delivered.'}</p>
   `;
 
@@ -835,6 +1190,14 @@ function renderCompleteStage(parent: HTMLElement, content: BearCafeContent): voi
 
   const actions = document.createElement('div');
   actions.className = 'activity-complete-actions bear-cafe-complete__actions';
+
+  const wallButton = document.createElement('button');
+  wallButton.className = 'child-button bear-cafe-complete__wall';
+  wallButton.type = 'button';
+  wallButton.textContent = BEAR_CAFE_CHILD_CONTROL_LABELS.wall;
+  wallButton.setAttribute('aria-label', 'Open order wall');
+  wallButton.addEventListener('click', onOpenWall);
+  actions.appendChild(wallButton);
 
   if (content.next_activity_id) {
     const nextButton = document.createElement('button');
@@ -1080,6 +1443,18 @@ function getSelectedFoodIds(tray: TrayState): string[] {
     .map(([foodId]) => foodId);
 }
 
+function getChildCafeOrderHistory(
+  options: KennedisOrdersOptions
+): CafeOrderCompletion[] {
+  return options.history
+    .list()
+    .filter((record) => record.child_id === options.childId)
+    .sort((first, second) => (
+      second.completed_at.localeCompare(first.completed_at) ||
+      second.completion_id.localeCompare(first.completion_id)
+    ));
+}
+
 // Illustrated plate art, expanded by quantity so a correct multi-count order
 // (e.g. { cookie: 2 }) shows two cookies, not one. The plating and handoff beats
 // must never contradict a correct quantity answer.
@@ -1290,6 +1665,8 @@ function createSkillOutcomesForEvent(params: {
   eventName: string;
   issue?: string;
 }): SkillAttemptOutcome[] | undefined {
+  if (params.content.mode === 'free_make') return [];
+
   if (
     params.eventName === 'food_selected' &&
     (params.outcome === 'correct' || params.outcome === 'incorrect')

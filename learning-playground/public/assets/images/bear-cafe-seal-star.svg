@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="103"
+   height="103"
+   viewBox="0 0 103 103"
+   version="1.1"
+   id="svg12"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs12" />
+  <g
+     id="g8"
+     transform="translate(-442.5,-78.5)">
+    <g
+       id="seal-star"
+       transform="translate(440,76)">
+      <circle
+         cx="54"
+         cy="54"
+         r="48"
+         fill="#fff7ed"
+         stroke="#3a2461"
+         stroke-width="7"
+         id="circle6" />
+      <circle
+         cx="54"
+         cy="54"
+         r="38"
+         fill="#74b9ff"
+         stroke="#f6c64e"
+         stroke-width="5"
+         stroke-dasharray="4, 7"
+         id="circle7" />
+      <path
+         d="M 54,23 63,43 85,46 69,61 73,83 54,72 35,83 39,61 23,46 45,43 Z"
+         fill="#f6c64e"
+         stroke="#3a2461"
+         stroke-width="5"
+         stroke-linejoin="round"
+         id="path7" />
+      <path
+         d="m 47,38 7,-7"
+         fill="none"
+         stroke="#fffdf7"
+         stroke-width="4"
+         stroke-linecap="round"
+         id="path8" />
+    </g>
+  </g>
+</svg>

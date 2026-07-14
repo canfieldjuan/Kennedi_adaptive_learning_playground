@@ -80,6 +80,19 @@ test('Cafe delivery and completion commands remain reachable at 568x320', async 
   await page.getByRole('button', { name: /^Choose banana/ }).click();
   await page.getByRole('button', { name: 'Check order' }).click();
 
+  const packageOrder = page.getByRole('button', { name: 'Package order' });
+  await expect(packageOrder).toBeVisible({ timeout: 3_000 });
+  await expectWithinViewport(packageOrder, page, '568x320 packaging');
+  await expectMinimumSize(packageOrder, 96, 56, '568x320 packaging');
+  for (const choice of [
+    page.getByRole('button', { name: 'Choose Pink bag' }),
+    page.getByRole('button', { name: 'Choose Heart seal' }),
+  ]) {
+    await expectWithinViewport(choice, page, '568x320 packaging choice');
+    await expectMinimumSize(choice, 64, 56, '568x320 packaging choice');
+  }
+  await packageOrder.click();
+
   const deliver = page.getByRole('button', { name: 'Deliver order' });
   await expect(deliver).toBeVisible({ timeout: 3_000 });
   await expectWithinViewport(deliver, page, '568x320 delivery');
@@ -89,6 +102,68 @@ test('Cafe delivery and completion commands remain reachable at 568x320', async 
   const nextOrder = page.getByRole('button', { name: 'Next order' });
   await expect(nextOrder).toBeVisible({ timeout: 3_000 });
   await expectWithinViewport(nextOrder, page, '568x320 completion');
+});
+
+test('Cafe preserves the exact package through payoff and permanent revisit', async ({ page }) => {
+  for (const viewport of [
+    { width: 1280, height: 800 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/#home');
+    await page.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem('lp_parent_settings', JSON.stringify({
+        speech_enabled: false,
+        sound_enabled: false,
+      }));
+    });
+    await page.goto('/#activity/kennedis-orders-free-make-001');
+    await page.getByRole('button', { name: 'Baby Polar Bear is calling' }).click();
+    await page.getByRole('button', { name: /^Choose cupcake/ }).click();
+    await page.getByRole('button', { name: 'Check order' }).click();
+
+    await page.getByRole('button', { name: 'Choose Blue bag' }).click();
+    await page.getByRole('button', { name: 'Choose Star seal' }).click();
+    const packageSelector = '.bear-cafe-package[data-bag-color="blue"][data-seal="star"]';
+    await expect(page.locator('.bear-cafe-packaging').locator(packageSelector)).toBeVisible();
+    await page.getByRole('button', { name: 'Package order' }).click();
+    await expect(page.locator('.bear-cafe-delivery').locator(packageSelector).first()).toBeVisible();
+    await page.getByRole('button', { name: 'Deliver order' }).click();
+    await expect(page.locator('.bear-cafe-complete').locator(packageSelector)).toBeVisible({
+      timeout: 3_000,
+    });
+
+    const saved = await page.evaluate(() => ({
+      orders: JSON.parse(localStorage.getItem('lp_cafe_order_history') ?? '[]'),
+      events: JSON.parse(localStorage.getItem('lp_activity_events') ?? '[]'),
+    }));
+    expect(saved.orders).toHaveLength(1);
+    expect(saved.orders[0]).toMatchObject({
+      caller_id: 'baby-polar-bear',
+      food_items: [{ food_id: 'cupcake', count: 1 }],
+      bag_color_id: 'blue',
+      seal_id: 'star',
+    });
+    expect(saved.events).toHaveLength(1);
+    expect(saved.events[0]).toMatchObject({
+      outcome: 'completed',
+      skill_outcomes: [],
+      metadata: { event_name: 'order_delivered' },
+    });
+
+    await page.reload();
+    await page.getByRole('button', { name: 'Open order wall' }).click();
+    await expect(page.locator('.bear-cafe-order-wall__card').locator(packageSelector)).toBeVisible();
+    await page.locator('.bear-cafe-order-wall__card').click();
+    await expect(page.locator('.bear-cafe-order-detail').locator(packageSelector)).toBeVisible();
+    await expect(page.getByRole('button', { name: /delete|remove/i })).toHaveCount(0);
+
+    const eventCountAfterRevisit = await page.evaluate(() => (
+      JSON.parse(localStorage.getItem('lp_activity_events') ?? '[]').length
+    ));
+    expect(eventCountAfterRevisit).toBe(1);
+  }
 });
 
 test('Word Builder and Coloring retain 80px play objects at 568x320', async ({ page }) => {

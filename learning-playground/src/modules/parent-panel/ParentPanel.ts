@@ -951,6 +951,7 @@ function createDataManagementSection(
       storage.clearParentMasterySnapshots();
       storage.clearParentReviewScheduleRecords();
       storage.clearStoryHistory();
+      storage.clearCafeOrderHistory();
       alert('Progress data cleared.');
       destroyParentPanel();
       renderParentPanel(parent, storage, context);

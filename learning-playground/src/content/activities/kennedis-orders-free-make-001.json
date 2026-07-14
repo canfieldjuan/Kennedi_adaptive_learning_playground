@@ -1,6 +1,6 @@
 {
   "id": "kennedis-orders-free-make-001",
-  "version": 3,
+  "version": 4,
   "title": "Bake Time",
   "domain": "language",
   "skill_ids": ["vocabulary"],
@@ -38,7 +38,7 @@
       { "id": "banana", "label": "banana", "icon": "🍌", "first_sound": "b" },
       { "id": "cookie", "label": "cookie", "icon": "🍪", "first_sound": "c" }
     ],
-    "parent_evidence_summary": "Bake time free make captures food vocabulary, choice making, and completed delivery as the creative finish after the cafe shift.",
+    "parent_evidence_summary": "Bake time is an unscored ownership finish. It records the completed cafe order without treating food, bag, or seal preferences as skill evidence.",
     "shift_restart_activity_id": "kennedis-orders-banana-001"
   },
   "success_rules": {
