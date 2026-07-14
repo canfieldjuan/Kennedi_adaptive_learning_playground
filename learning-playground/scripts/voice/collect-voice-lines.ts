@@ -155,7 +155,8 @@ export function collectVoiceLines(): VoiceLineEntry[] {
     }
   }
 
-  // — Number Train world packs: spoken labels + flavor lines —
+  // — Number Train world packs: selector prompt, spoken labels, flavor —
+  add('Which world today?');
   for (const world of NUMBER_TRAIN_WORLDS) {
     add(world.spokenLabel);
     add(world.flavor?.arrivalLine);

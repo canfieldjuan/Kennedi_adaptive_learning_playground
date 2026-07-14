@@ -27,7 +27,14 @@ import type {
   NumberTrainSessionConfig,
 } from './number-train.types';
 import { buildSessionPlan } from './round-plan';
-import { resolveNumberTrainWorld } from './world-registry';
+import {
+  NUMBER_TRAIN_WORLDS,
+  resolveNumberTrainWorld,
+} from './world-registry';
+import {
+  readWorldPreference,
+  saveWorldPreference,
+} from './world-preference';
 import { worldChromeBackground } from './world-pack.types';
 import type { NumberTrainWorldPack } from './world-pack.types';
 import {
@@ -89,7 +96,88 @@ export function renderNumberTrainActivity(
 
   let replayIndex = 0;
 
-  startSession(replayIndex);
+  // "Kennedi picks": with more than one world, the session opens on the
+  // world choice — two big picture cards, spoken labels, one Start. The
+  // choice is expression, never progression: nothing is locked, priced,
+  // starred, or earned. With a single world the selector is skipped.
+  if (NUMBER_TRAIN_WORLDS.length > 1) {
+    renderWorldChoice();
+  } else {
+    startSession(replayIndex);
+  }
+
+  function renderWorldChoice(): void {
+    if (!container) return;
+    runSessionCleanup();
+    container.innerHTML = '';
+
+    const preselected = resolveNumberTrainWorld(readWorldPreference());
+    let selectedId = preselected.id;
+    container.dataset.world = selectedId;
+
+    const topBar = document.createElement('div');
+    topBar.className = 'activity-topbar';
+    const homeButton = document.createElement('button');
+    homeButton.className = 'activity-icon-button';
+    homeButton.type = 'button';
+    homeButton.textContent = 'Home';
+    homeButton.setAttribute('aria-label', 'Return home');
+    homeButton.addEventListener('click', () => {
+      window.location.hash = '#home';
+    });
+    topBar.appendChild(homeButton);
+    container.appendChild(topBar);
+
+    const heading = document.createElement('h1');
+    heading.className = 'activity-title world-choice__title';
+    heading.textContent = 'Which world today?';
+    container.appendChild(heading);
+
+    const grid = document.createElement('div');
+    grid.className = 'world-choice';
+    grid.setAttribute('aria-label', 'World choices');
+
+    const cards = new Map<string, HTMLButtonElement>();
+    for (const world of NUMBER_TRAIN_WORLDS) {
+      const card = document.createElement('button');
+      card.className = 'world-choice__card';
+      card.type = 'button';
+      card.setAttribute('aria-label', world.label);
+      card.setAttribute('aria-pressed', String(world.id === selectedId));
+      card.innerHTML = `<span class="world-choice__preview" aria-hidden="true">${world.previewSvg()}</span>
+        <span class="world-choice__label">${world.label}</span>`;
+      const onPick = () => {
+        selectedId = world.id;
+        if (container) container.dataset.world = selectedId;
+        for (const [id, other] of cards) {
+          other.classList.toggle('is-selected', id === selectedId);
+          other.setAttribute('aria-pressed', String(id === selectedId));
+        }
+        options.speech.speak(world.spokenLabel);
+      };
+      card.addEventListener('click', onPick);
+      cleanupHandlers.push(() => card.removeEventListener('click', onPick));
+      if (world.id === selectedId) card.classList.add('is-selected');
+      cards.set(world.id, card);
+      grid.appendChild(card);
+    }
+    container.appendChild(grid);
+
+    const startButton = document.createElement('button');
+    startButton.className = 'child-button world-choice__start';
+    startButton.type = 'button';
+    startButton.textContent = 'Start';
+    startButton.setAttribute('aria-label', 'Start the trip');
+    const onStart = () => {
+      saveWorldPreference(selectedId);
+      startSession(replayIndex);
+    };
+    startButton.addEventListener('click', onStart);
+    cleanupHandlers.push(() => startButton.removeEventListener('click', onStart));
+    container.appendChild(startButton);
+
+    options.speech.speak('Which world today?');
+  }
 
   /**
    * (Re)build the whole trip for one seed offset. Play Again advances the
@@ -104,7 +192,7 @@ export function renderNumberTrainActivity(
     // nothing countable) remounted with each trip because Play Again rebuilds
     // the container. The world pack also scopes the palette: values the
     // runtime applies as CSS custom properties on the activity container.
-    activeWorld = resolveNumberTrainWorld();
+    activeWorld = resolveNumberTrainWorld(readWorldPreference());
     container.dataset.world = activeWorld.id;
     container.style.setProperty('--world-vehicle-body', activeWorld.palette.vehicleBody);
     container.style.setProperty('--world-seat-occupied', activeWorld.palette.seatOccupied);
