@@ -188,6 +188,7 @@ export function collectVoiceLines(): VoiceLineEntry[] {
 
   // — 3. Bear Cafe stage lines (static, from KennedisOrdersActivity) —
   add('Order ready.');
+  add('Order packed.');
   add('You delivered it.');
   add("Let's check the order.");
   add('Bear starts with b-b-b. Banana starts with b-b-b.', 'phonics');
