@@ -162,6 +162,47 @@ No app voice-selection code, voice pack, shared voice core, generation script,
 runtime asset, dependency, or Content Foundry implementation may change under
 this amendment.
 
+### Inkscape Art-Direction Proof Before Sequence Rollout
+
+The owner reviewed the provisional proof and identified the visual artwork as
+the remaining quality problem. The narration is not the cause: the exact
+English Tara clips are owner-approved candidates and must not be regenerated.
+The existing Castle SVG is a technically valid deterministic placeholder, but
+it did not follow the repository's established production-art workflow and its
+simple symbol composition is below the required story-illustration quality.
+Passing media probes did not establish art-direction quality.
+
+The correct fix is one representative Inkscape proof scene before any full
+sequence redraw. The tracked change surface expands only to:
+
+- `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg`;
+- review-only desktop, mobile, and existing-versus-proposed captures under
+  `docs/captures/video/colorless-castle/`;
+- a draft entry in `docs/art/asset-provenance.md`; and
+- this work contract.
+
+The proof must depict the find-yellow response beat because it tests the
+load-bearing visual hierarchy: Finn, the partially restored castle, and three
+clearly separated paint choices with yellow as the authored target. It must be
+original Category A vector artwork, contain no third-party or generated
+production element, use named Inkscape layers, preserve the approved project
+ink and palette language, contain no text or remote reference, and render
+locally through Inkscape 1.4.4. The source, headless render, desktop-scale
+capture, mobile-scale capture, and comparison sheet must all be reviewable.
+
+Only this one scene may be produced before owner look approval. The remaining
+five scenes, final story sequence, and all final video exports stay blocked.
+The placeholder sequence is rejected for visual quality and must not be
+presented as the accepted Castle direction. Spanish-model rendering is paused
+until the proof art is accepted; no existing English audio bytes change.
+
+This amendment does not permit a runtime asset, Video Vault integration,
+production manifest, new interaction, AI-generated production art, dependency,
+public asset, or broad component-library change. The owner must explicitly
+approve the proof's illustration style, scene density, character scale, line
+weight, palette, contrast, mobile readability, and environmental richness
+before the style can roll out to the other scenes.
+
 ## Production Evidence
 
 ### Live Authoring Preflight
@@ -188,10 +229,10 @@ review required, and no hash mismatch. No rejected output is in the Castle
 sequence. These are model-quality failures, so no Foundry code or workflow was
 changed.
 
-### Shared Visual Sequence
+### Rejected Placeholder Visual Sequence
 
-The accepted worker-review candidate uses deterministic, text-free vector art
-derived from the existing Finn and moon-castle visual language. It contains
+The owner rejected this deterministic, text-free vector candidate because its
+SVG artwork quality is below the project standard. It contains
 five 8-second scenes and one 10-second scene: faded castle, red door, blue
 windows, three-paint response scene, green garden/purple roofs, and
 restored-castle celebration. The fourth restoration beat received two extra
@@ -208,7 +249,8 @@ seconds so its English and Spanish cues do not overlap.
 
 The visual review file is 50.042 seconds, VP9, 960x544, 24 fps, 319,944
 bytes, and decodes without ffmpeg errors. It contains no audio and is not a
-final bilingual proof export. Owner visual disposition is pending.
+final bilingual proof export. The owner disposition is **rejected**; it remains
+local evidence only and cannot define the Castle art direction.
 
 ### Authorship Packet
 
