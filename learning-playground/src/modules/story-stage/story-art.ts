@@ -38,7 +38,42 @@ const CLOUD_SKY = '#d6ecfa';
 const CLOUD_PUFF = '#f4faff';
 const BOX_WOOD = '#d9a066';
 const WAGON_RED = '#e98080';
-const LOST_LOG_PROOF_ASSET = '/assets/images/story-stage-lost-log-proof.svg';
+
+interface ProductionSceneAsset {
+  id: string;
+  href: string;
+}
+
+const POPPY_FOREST_LOST_SCENE_ASSETS: Readonly<Record<string, ProductionSceneAsset>> = {
+  'lost-intro': {
+    id: 'story-stage-lost-intro-poppy-forest',
+    href: '/assets/images/story-stage-lost-intro-poppy-forest.svg',
+  },
+  'lost-problem': {
+    id: 'story-stage-lost-problem-poppy-forest',
+    href: '/assets/images/story-stage-lost-problem-poppy-forest.svg',
+  },
+  'lost-where': {
+    id: 'story-stage-lost-where-poppy-forest',
+    href: '/assets/images/story-stage-lost-where-poppy-forest.svg',
+  },
+  'lost-bush': {
+    id: 'story-stage-lost-bush-poppy-forest',
+    href: '/assets/images/story-stage-lost-bush-poppy-forest.svg',
+  },
+  'lost-log': {
+    id: 'story-stage-lost-log-proof',
+    href: '/assets/images/story-stage-lost-log-proof.svg',
+  },
+  'lost-help': {
+    id: 'story-stage-lost-help-poppy-forest',
+    href: '/assets/images/story-stage-lost-help-poppy-forest.svg',
+  },
+  'lost-ending': {
+    id: 'story-stage-lost-ending-poppy-forest',
+    href: '/assets/images/story-stage-lost-ending-poppy-forest.svg',
+  },
+};
 
 export type StoryMood = 'happy' | 'worried' | 'curious' | 'celebrating';
 
@@ -503,8 +538,12 @@ const SCENE_BUILDERS: Record<string, (ctx: SceneArtContext) => string> = {
 
 /** One illustrated story scene (viewBox 400x250), composed for the selection. */
 export function storySceneSvg(artKey: string, ctx: SceneArtContext): string {
-  if (artKey === 'lost-log' && ctx.characterArt === 'poppy' && ctx.settingArt === 'forest') {
-    return `<svg class="story-stage__scene-svg" viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><image data-production-art="story-stage-lost-log-proof" href="${LOST_LOG_PROOF_ASSET}" width="400" height="250" preserveAspectRatio="xMidYMid slice"/></svg>`;
+  const productionAsset =
+    ctx.characterArt === 'poppy' && ctx.settingArt === 'forest'
+      ? POPPY_FOREST_LOST_SCENE_ASSETS[artKey]
+      : undefined;
+  if (productionAsset) {
+    return `<svg class="story-stage__scene-svg" viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><image data-production-art="${productionAsset.id}" href="${productionAsset.href}" width="400" height="250" preserveAspectRatio="xMidYMid slice"/></svg>`;
   }
   const builder = SCENE_BUILDERS[artKey] ?? SCENE_BUILDERS['lost-intro'];
   return `<svg class="story-stage__scene-svg" viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">${builder(ctx)}</svg>`;

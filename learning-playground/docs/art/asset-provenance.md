@@ -162,6 +162,38 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Owner look approval:** APPROVED — the owner authorized PR #120 for merge on 2026-07-13 ("120 looks green lets merge and continue"); the proof's illustration style, scene density, character scale, line weight, palette, background contrast, mobile crop, and environmental richness are approved for a separately contracted rollout
 - **Restrictions and notes:** The representative export is eligible only for the exact `lost-log` + Poppy + enchanted-forest combination. Every other scene, character, and setting remains runtime-composed so the child's actual selection is never replaced by generic proof art. Runtime depends only on the local production SVG; Inkscape is an authoring/export tool and is not a dependency. The scene is decorative, `aria-hidden`, and contains no interaction. No `<text>`, font, remote reference, embedded data, Canva/Figma/Inkscape library content, stock media, community file, plugin resource, third-party asset, Content Foundry output, or generative image tool is present. The complete third-party resource list is None. No unlisted stock or library element remains. The approved visual direction may be extended only through separately contracted Story Stage rollout slices.
 
+## Story Stage Lost Friend Poppy-Forest Rollout Family
+
+- **Asset family:** Story Stage Lost Friend Princess Poppy in the Enchanted Forest scene family
+- **Game:** Story Stage
+- **Status:** `rights_verified`
+- **Production path(s):** `public/assets/images/story-stage-lost-intro-poppy-forest.svg`; `public/assets/images/story-stage-lost-problem-poppy-forest.svg`; `public/assets/images/story-stage-lost-where-poppy-forest.svg`; `public/assets/images/story-stage-lost-bush-poppy-forest.svg`; `public/assets/images/story-stage-lost-help-poppy-forest.svg`; `public/assets/images/story-stage-lost-ending-poppy-forest.svg`
+- **Editable source path(s):** `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-intro-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-problem-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-where-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-bush-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-help-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-ending-poppy-forest.svg`
+- **Creator:** Project developer, Codex Story Stage production-art rollout session
+- **Creation date:** 2026-07-14
+- **Creation tool and version:** Inkscape 1.4.4 Flatpak (`org.inkscape.Inkscape`), plain SVG exports produced with `--export-plain-svg`
+- **Origin category:** A original
+- **Original or third-party status:** Original project artwork
+- **Project-owned source material used:** The approved Story Stage Lost-Log proof's palette, Princess Poppy and Biscuit construction language, forest depth, line weight, path, and composition standard; the merged proof remains independently documented above and is not duplicated in this family
+- **Third-party elements:** None
+- **Source URL(s):** Not applicable
+- **License name and version/date:** Not applicable; original project artwork
+- **License file path:** Not applicable
+- **Commercial use permitted:** yes
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None
+- **AI assistance:** none
+- **AI approval/terms record:** Not applicable
+- **Contact sheet path:** `docs/captures/story-stage/lost-friend-poppy-forest-contact-sheet.webp`
+- **Existing/proposed comparison path:** The approved direction comparison remains `docs/captures/story-stage/lost-log-proof-contact-sheet.webp`; this rollout's complete-family review is `docs/captures/story-stage/lost-friend-poppy-forest-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/story-stage/lost-friend-poppy-forest-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/story-stage/lost-friend-poppy-forest-mobile.webp`
+- **Owner look approval:** The visual direction was approved through PR #120 on 2026-07-13. Owner review of these six new scene compositions is pending; do not promote this family beyond `rights_verified` before that review.
+- **Restrictions and notes:** These six exports join the separately documented approved Lost Log proof to cover the seven unique art keys for only Princess Poppy + Enchanted Forest + Lost Friend. Every other character, setting, story family, setup card, and choice card remains runtime-composed so the child's actual selection is preserved. Runtime depends only on local SVG exports; Inkscape is not a runtime dependency. Every scene is decorative, `aria-hidden`, and non-interactive. The sources and exports contain no `<text>`, font, remote reference, embedded image/data, Canva/Figma/Inkscape library content, stock media, community file, plugin resource, third-party asset, Content Foundry output, or generative image output. The complete third-party resource list is None. No unlisted stock or library element remains.
+
 ## Bear Bakes Bread Deterministic Mixing Video Proof
 
 - **Asset family:** Bear Bakes Bread deterministic mixing vector proof
