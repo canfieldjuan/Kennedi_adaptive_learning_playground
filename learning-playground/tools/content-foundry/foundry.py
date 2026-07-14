@@ -18,6 +18,8 @@ def main() -> int:
     validate.add_argument("draft_id")
     assemble = subparsers.add_parser("assemble")
     assemble.add_argument("storyboard_path")
+    assemble_proof = subparsers.add_parser("assemble-bilingual-proof")
+    assemble_proof.add_argument("storyboard_path")
     decide = subparsers.add_parser("record-decision")
     decide.add_argument("draft_id")
     decide.add_argument("decision", choices=("approved", "rejected"))
@@ -34,6 +36,8 @@ def main() -> int:
             result_value = service.status()
         elif args.command == "validate-draft":
             result_value = service.validate_draft(draft_id=args.draft_id)
+        elif args.command == "assemble-bilingual-proof":
+            result_value = service.assemble_bilingual_story_proof(storyboard_path=args.storyboard_path)
         else:
             result_value = service.assemble_narrated_clip(storyboard_path=args.storyboard_path)
     print(json.dumps(result_value, indent=2, sort_keys=True))
