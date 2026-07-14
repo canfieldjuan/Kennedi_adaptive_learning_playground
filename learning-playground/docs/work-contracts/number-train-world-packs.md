@@ -139,4 +139,11 @@ other game, persistence, voice manifests.
 
 ## Contract Amendments
 
-(none yet)
+- **Slice 2 — partial palette wiring is deliberate**: only the palette
+  keys whose current CSS values are plain hex (vehicleBody -> car
+  background, seatOccupied -> occupied-seat background) are wired as
+  world-scoped CSS variables now, with the exact current values as
+  fallbacks. The alpha-based styles (empty seat, ink borders) and the
+  sky/ground (owned by the scene SVG itself) wire up when the Space
+  Shuttle actually varies them — extracting them speculatively would
+  invite alpha/hex mismatches for zero present benefit.

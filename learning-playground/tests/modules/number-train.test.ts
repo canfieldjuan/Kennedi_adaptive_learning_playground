@@ -692,12 +692,22 @@ class MockClassList {
   }
 }
 
+class MockStyle {
+  private readonly values: Record<string, string> = {};
+  setProperty(name: string, value: string): void {
+    this.values[name] = value;
+  }
+  getPropertyValue(name: string): string {
+    return this.values[name] ?? '';
+  }
+}
+
 class MockElement {
   readonly tagName: string;
   readonly children: MockElement[] = [];
   readonly dataset: Record<string, string> = {};
   readonly attributes: Record<string, string> = {};
-  readonly style: Record<string, string> = {};
+  readonly style = new MockStyle();
   readonly classList = new MockClassList(this);
   baseClassName = '';
   id = '';
