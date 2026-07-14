@@ -32,6 +32,29 @@ automatic content publisher.
 - ComfyUI uploads use content-addressed names so identical source retries reuse
   the same local input instead of allocating UUID-named copies.
 
+## Media Profiles
+
+- `short_clip` preserves the original assembly contract: 500 ms to 30 seconds,
+  at most 6 scenes, at most 12 narration cues, a 300-second render timeout, a
+  64 MiB output ceiling, and an 8-frame 4-by-2 contact sheet.
+- `bilingual_story_proof` is a separate 45-to-90-second authoring profile: at
+  most 12 shared scenes, at most 24 narration cues per mode, a 900-second render
+  timeout, a 128 MiB ceiling for each mode export, and a 12-frame 4-by-3 contact
+  sheet.
+- The proof emits exactly three local exports from the same snapshotted scene
+  sequence: English, Story Bridge, and Spanish Replay. Each export receives
+  independent codec, duration, size, loudness, and peak QA.
+- English mode uses only `en`; Spanish Replay uses only `es-419`; Story Bridge
+  contains both. Cue ids are stable and globally unique across the proof.
+- Every Spanish cue must carry an approved `es-419` review record identifying
+  exact Spanish text, English intent, reviewer, timestamp, approval version,
+  and the SHA-256 hash of the exact snapshotted local audio.
+- One shared contact sheet is sufficient because all three exports use the same
+  scene snapshots. Source and output hashes, profile limits, mode provenance,
+  contact-sheet density, Spanish review results, and media QA live in the local
+  review-required draft.
+- Unknown profiles fail closed. `bilingual_story_episode` is not implemented.
+
 ## Draft and Approval Boundary
 
 - Every generated artifact starts with `status: draft` and
@@ -56,7 +79,8 @@ automatic content publisher.
 - Human narration is the v1 production default.
 - Source audio is local, finite, and parent supplied.
 - Final narration is 48kHz mono, near -18 LUFS, with true peak no higher than
-  -2 dBTP. Final clips are finite VP9/Opus WebM no longer than 30 seconds.
+  -2 dBTP. Final clips are finite VP9/Opus WebM within the selected profile's
+  duration and file-size bounds.
 - No child recording, microphone permission, generated voice, or remote audio
   service is part of v1.
 

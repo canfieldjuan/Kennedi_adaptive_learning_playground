@@ -59,7 +59,29 @@ the imports root before invoking a tool.
 - `edit_illustrated_scene`
 - `animate_scene_safe`
 - `assemble_narrated_clip`
+- `assemble_bilingual_story_proof`
 - `validate_draft`
+
+## Bilingual story proof
+
+`bilingual_story_proof` is an offline 45-to-90-second assembly profile. It uses
+one shared local scene sequence and emits separate English, Story Bridge, and
+Spanish Replay WebM files inside one review-required draft. The existing
+`short_clip` profile keeps its 30-second limits.
+
+The proof storyboard must declare exactly those three modes. Spanish narration
+cues require an approved neutral Latin American Spanish (`es-419`) review record,
+and its audio hash must match the exact local WAV bytes assembled by Foundry.
+See `examples/bilingual-story-proof.example.json` for the authored shape.
+
+Manual CLI assembly:
+
+```bash
+python3 foundry.py assemble-bilingual-proof bilingual-story-proof.json
+```
+
+Assembly records hashes, provenance, contact-sheet settings, and media QA. It
+does not approve, publish, or add media to the Video Vault.
 
 No MCP approval or publication tool exists. A parent may record a local decision
 manually:

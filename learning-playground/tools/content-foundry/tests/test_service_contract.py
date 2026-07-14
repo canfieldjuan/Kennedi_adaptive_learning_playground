@@ -62,6 +62,28 @@ class MutatingComfyClient(FakeComfyClient):
 
 
 class ServiceContractTests(unittest.TestCase):
+    def test_status_reports_only_the_bounded_short_and_proof_profiles(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_name:
+            local = Path(temp_name)
+            imports = local / "imports"
+            references = local / "references"
+            imports.mkdir()
+            references.mkdir()
+            config = FoundryConfig(
+                PROJECT_ROOT,
+                "http://127.0.0.1:8188",
+                local / "drafts",
+                imports,
+                references,
+                60,
+            )
+            profiles = ContentFoundryService(config, client=FakeComfyClient()).status()["limits"]["profiles"]
+
+            self.assertEqual(set(profiles), {"short_clip", "bilingual_story_proof"})
+            self.assertEqual(profiles["short_clip"]["max_duration_seconds"], 30.0)
+            self.assertEqual(profiles["bilingual_story_proof"]["max_duration_seconds"], 90.0)
+            self.assertNotIn("bilingual_story_episode", profiles)
+
     def test_generated_scene_remains_a_review_required_draft(self) -> None:
         with tempfile.TemporaryDirectory() as temp_name:
             local = Path(temp_name)
@@ -187,7 +209,15 @@ class ServiceContractTests(unittest.TestCase):
             node.name for node in tree.body if isinstance(node, ast.FunctionDef)
             and any(isinstance(decorator, ast.Call) and ast.unparse(decorator.func) == "mcp.tool" for decorator in node.decorator_list)
         }
-        self.assertEqual(tool_functions, {"content_foundry_status", "generate_illustrated_scene", "edit_illustrated_scene", "animate_scene_safe", "assemble_narrated_clip", "validate_draft"})
+        self.assertEqual(tool_functions, {
+            "content_foundry_status",
+            "generate_illustrated_scene",
+            "edit_illustrated_scene",
+            "animate_scene_safe",
+            "assemble_narrated_clip",
+            "assemble_bilingual_story_proof",
+            "validate_draft",
+        })
         self.assertNotIn("public/assets", source)
         self.assertFalse(any("approve" in name or "publish" in name for name in tool_functions))
 

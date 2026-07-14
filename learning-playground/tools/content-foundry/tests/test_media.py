@@ -93,22 +93,44 @@ class StoryboardValidationTests(unittest.TestCase):
             config = FoundryConfig(root, "http://127.0.0.1:8188", drafts, imports, references, 60)
             media = MediaTools(config, DraftStore(drafts))
 
-            def probe(path: Path) -> dict:
+            def probe(path: Path, *, timeout_seconds: int = 300) -> dict:
+                self.assertEqual(timeout_seconds, 300)
                 if path.suffix == ".png":
                     return {"streams": [{"codec_type": "video", "width": 960, "height": 544}]}
                 return {"streams": [{"codec_type": "audio"}]}
 
-            def assemble(scenes: list[tuple[Path, int]], narration: list[tuple[Path, int]], output: Path, _seconds: float) -> None:
+            def assemble(
+                scenes: list[tuple[Path, int]],
+                narration: list[tuple[Path, int]],
+                output: Path,
+                _seconds: float,
+                *,
+                timeout_seconds: int,
+            ) -> None:
+                self.assertEqual(timeout_seconds, 300)
                 scene.write_bytes(b"replacement scene")
                 voice.write_bytes(b"replacement voice")
                 self.assertEqual(scenes[0][0].read_bytes(), scene_bytes)
                 self.assertEqual(narration[0][0].read_bytes(), voice_bytes)
                 output.write_bytes(b"clip")
 
-            def contact(_video: Path, destination: Path) -> None:
+            def contact(
+                _video: Path,
+                destination: Path,
+                *,
+                sample_count: int,
+                columns: int,
+                timeout_seconds: int,
+            ) -> None:
+                self.assertEqual((sample_count, columns, timeout_seconds), (8, 4, 300))
                 destination.write_bytes(b"contact")
 
-            def command(args: list[str]) -> subprocess.CompletedProcess[str]:
+            def command(
+                args: list[str],
+                *,
+                timeout_seconds: int,
+            ) -> subprocess.CompletedProcess[str]:
+                self.assertEqual(timeout_seconds, 300)
                 Path(args[-1]).write_bytes(b"poster")
                 return subprocess.CompletedProcess(args, 0, "", "")
 
