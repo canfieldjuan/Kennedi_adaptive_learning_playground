@@ -40,6 +40,8 @@ function validPack(): NumberTrainWorldPack {
       seatOccupied: '#fdf3d0',
       ground: '#e8d3ae',
       sky: '#dcecf8',
+      textInk: '#3a2461',
+      textSoft: '#5c4a86',
     },
     completion: { destinationLabel: 'the fixture', destinationSceneSvg: null },
     customization: [],

@@ -66,6 +66,8 @@ export function validateWorldPack(pack: NumberTrainWorldPack): string[] {
     'seatOccupied',
     'ground',
     'sky',
+    'textInk',
+    'textSoft',
   ] as const) {
     const value = palette[key];
     if (!value || !HEX_COLOR.test(value)) {

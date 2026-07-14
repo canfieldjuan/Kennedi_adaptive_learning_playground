@@ -1062,21 +1062,24 @@
   z-index: 1;
 }
 
+/* World text ink: dark-sky worlds (proof finding) set --world-text-ink and
+   --world-chrome-bg so the header stays readable; fallbacks are the Train
+   Station values, so the default world is untouched. */
 .train-station .activity-icon-button {
-  background: rgba(58, 36, 97, 0.12);
-  color: #3a2461;
+  background: var(--world-chrome-bg, rgba(58, 36, 97, 0.12));
+  color: var(--world-text-ink, #3a2461);
 }
 
 .train-station .activity-title {
-  color: #3a2461;
+  color: var(--world-text-ink, #3a2461);
 }
 
 .train-station .activity-prompt {
-  color: rgba(58, 36, 97, 0.75);
+  color: var(--world-text-soft, rgba(58, 36, 97, 0.75));
 }
 
 .train-station .activity-feedback {
-  color: #3a2461;
+  color: var(--world-text-ink, #3a2461);
 }
 
 /* The journey strip becomes a route line with small station-sign markers —

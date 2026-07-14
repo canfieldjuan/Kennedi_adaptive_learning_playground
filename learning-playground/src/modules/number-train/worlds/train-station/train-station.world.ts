@@ -47,6 +47,8 @@ export const TRAIN_STATION_WORLD: NumberTrainWorldPack = {
     seatOccupied: '#fdf3d0',
     ground: '#e8d3ae',
     sky: '#dcecf8',
+    textInk: '#3a2461',
+    textSoft: '#5c4a86',
   },
 
   completion: {

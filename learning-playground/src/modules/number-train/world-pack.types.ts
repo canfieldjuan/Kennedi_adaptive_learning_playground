@@ -58,6 +58,11 @@ export interface WorldPalette {
   seatOccupied: string;
   ground: string;
   sky: string;
+  /** Header/title/feedback ink — dark-sky worlds need a light ink (proof
+   * finding: ink-on-space is unreadable). */
+  textInk: string;
+  /** Softer prompt ink (may equal textInk on dark worlds). */
+  textSoft: string;
 }
 
 /** Declared behavior for the compact/mobile presentation of the scene. */

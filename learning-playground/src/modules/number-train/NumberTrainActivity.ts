@@ -107,6 +107,9 @@ export function renderNumberTrainActivity(
     container.dataset.world = activeWorld.id;
     container.style.setProperty('--world-vehicle-body', activeWorld.palette.vehicleBody);
     container.style.setProperty('--world-seat-occupied', activeWorld.palette.seatOccupied);
+    container.style.setProperty('--world-text-ink', activeWorld.palette.textInk);
+    container.style.setProperty('--world-text-soft', activeWorld.palette.textSoft);
+    container.style.setProperty('--world-chrome-bg', `${activeWorld.palette.textInk}1f`);
     container.appendChild(activeWorld.mountEnvironment());
 
     let plan: NumberTrainPlan;
