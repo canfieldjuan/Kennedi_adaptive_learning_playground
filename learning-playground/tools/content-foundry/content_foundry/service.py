@@ -8,6 +8,7 @@ from .config import MAX_IMAGE_INPUT_BYTES, FoundryConfig
 from .drafts import DraftStore, sha256_file
 from .errors import ValidationError
 from .media import MediaTools, first_stream
+from .profiles import BILINGUAL_STORY_PROOF, SHORT_CLIP
 from .workflows import (
     SAFE_MOTION_NEGATIVE,
     PRESETS,
@@ -38,7 +39,16 @@ class ContentFoundryService:
             "drafts_root": str(self.config.drafts_root),
             "imports_root": str(self.config.imports_root),
             "workflows": sorted(("flux_illustrated_redux", "flux_inpaint", "flux_inpaint_canny", "wan_safe_motion")),
-            "limits": {"image_presets": ["video_scene", "square_asset"], "wan_frames": 81, "wan_fps": 24, "max_clip_seconds": 30},
+            "limits": {
+                "image_presets": ["video_scene", "square_asset"],
+                "wan_frames": 81,
+                "wan_fps": 24,
+                "max_clip_seconds": SHORT_CLIP.max_duration_seconds,
+                "profiles": {
+                    SHORT_CLIP.profile_id: SHORT_CLIP.as_record(),
+                    BILINGUAL_STORY_PROOF.profile_id: BILINGUAL_STORY_PROOF.as_record(),
+                },
+            },
             "comfyui": self.client.status(),
         }
 
@@ -153,6 +163,9 @@ class ContentFoundryService:
 
     def assemble_narrated_clip(self, *, storyboard_path: str) -> dict[str, Any]:
         return self.media.assemble_storyboard(storyboard_path)
+
+    def assemble_bilingual_story_proof(self, *, storyboard_path: str) -> dict[str, Any]:
+        return self.media.assemble_bilingual_story_proof(storyboard_path)
 
     def validate_draft(self, *, draft_id: str) -> dict[str, Any]:
         draft_dir, manifest = self.store.load(draft_id)

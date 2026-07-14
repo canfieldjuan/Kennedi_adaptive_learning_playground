@@ -44,6 +44,12 @@ def assemble_narrated_clip(storyboard_path: str) -> str:
 
 
 @mcp.tool()
+def assemble_bilingual_story_proof(storyboard_path: str) -> str:
+    """Assemble three bounded, reviewed bilingual proof exports as one local draft."""
+    return json.dumps(service.assemble_bilingual_story_proof(storyboard_path=storyboard_path))
+
+
+@mcp.tool()
 def validate_draft(draft_id: str) -> str:
     """Recompute draft output hashes without approving or publishing anything."""
     return json.dumps(service.validate_draft(draft_id=draft_id))

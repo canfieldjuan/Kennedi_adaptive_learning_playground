@@ -1,0 +1,75 @@
+{
+  "profile": "bilingual_story_proof",
+  "title": "The Castle Lost Its Colors - proof",
+  "source_brief_id": "issue-113-castle-proof",
+  "scenes": [
+    {"path": "castle-scene-01.png", "duration_ms": 7500},
+    {"path": "castle-scene-02.png", "duration_ms": 7500},
+    {"path": "castle-scene-03.png", "duration_ms": 7500},
+    {"path": "castle-scene-04.png", "duration_ms": 7500},
+    {"path": "castle-scene-05.png", "duration_ms": 7500},
+    {"path": "castle-scene-06.png", "duration_ms": 7500}
+  ],
+  "modes": {
+    "english": {
+      "narration": [
+        {
+          "cue_id": "english-castle-awakes",
+          "path": "english-castle-awakes.wav",
+          "start_ms": 0,
+          "language": "en",
+          "text": "The castle woke up without its colors."
+        }
+      ]
+    },
+    "story_bridge": {
+      "narration": [
+        {
+          "cue_id": "bridge-castle-awakes",
+          "path": "bridge-castle-awakes.wav",
+          "start_ms": 0,
+          "language": "en",
+          "text": "The castle woke up without its colors."
+        },
+        {
+          "cue_id": "bridge-red-door",
+          "path": "bridge-red-door.wav",
+          "start_ms": 7500,
+          "language": "es-419",
+          "text": "La puerta es roja.",
+          "spanish_approval": {
+            "spanish_text": "La puerta es roja.",
+            "english_intent": "The door is red.",
+            "register": "es-419",
+            "pronunciation_review_status": "approved",
+            "reviewer": "Fluent reviewer",
+            "approved_at": "2026-07-13T18:00:00Z",
+            "approval_version": "1",
+            "audio_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        }
+      ]
+    },
+    "spanish_replay": {
+      "narration": [
+        {
+          "cue_id": "spanish-castle-awakes",
+          "path": "spanish-castle-awakes.wav",
+          "start_ms": 0,
+          "language": "es-419",
+          "text": "El castillo despertó sin sus colores.",
+          "spanish_approval": {
+            "spanish_text": "El castillo despertó sin sus colores.",
+            "english_intent": "The castle woke up without its colors.",
+            "register": "es-419",
+            "pronunciation_review_status": "approved",
+            "reviewer": "Fluent reviewer",
+            "approved_at": "2026-07-13T18:00:00Z",
+            "approval_version": "1",
+            "audio_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        }
+      ]
+    }
+  }
+}
