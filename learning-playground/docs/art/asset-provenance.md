@@ -166,7 +166,7 @@ and must also document every legacy asset family it modifies or re-exports.
 
 - **Asset family:** Story Stage Lost Friend Princess Poppy in the Enchanted Forest scene family
 - **Game:** Story Stage
-- **Status:** `rights_verified`
+- **Status:** `look_approved`
 - **Production path(s):** `public/assets/images/story-stage-lost-intro-poppy-forest.svg`; `public/assets/images/story-stage-lost-problem-poppy-forest.svg`; `public/assets/images/story-stage-lost-where-poppy-forest.svg`; `public/assets/images/story-stage-lost-bush-poppy-forest.svg`; `public/assets/images/story-stage-lost-help-poppy-forest.svg`; `public/assets/images/story-stage-lost-ending-poppy-forest.svg`
 - **Editable source path(s):** `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-intro-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-problem-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-where-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-bush-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-help-poppy-forest.svg`; `design-source/story-stage/lost-friend-poppy-forest/story-stage-lost-ending-poppy-forest.svg`
 - **Creator:** Project developer, Codex Story Stage production-art rollout session
@@ -191,7 +191,7 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Existing/proposed comparison path:** The approved direction comparison remains `docs/captures/story-stage/lost-log-proof-contact-sheet.webp`; this rollout's complete-family review is `docs/captures/story-stage/lost-friend-poppy-forest-contact-sheet.webp`
 - **Desktop screenshot path(s):** `docs/captures/story-stage/lost-friend-poppy-forest-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/story-stage/lost-friend-poppy-forest-mobile.webp`
-- **Owner look approval:** The visual direction was approved through PR #120 on 2026-07-13. Owner review of these six new scene compositions is pending; do not promote this family beyond `rights_verified` before that review.
+- **Owner look approval:** APPROVED - after the PR #120 direction approval, the owner reviewed ready PR #123 and authorized merge and continuation on 2026-07-14 ("123 looks green lets merge and continue"). The six new scene compositions, continuity, clue readability, Poppy/Biscuit consistency, and responsive crop are approved for a separately contracted next Story Stage slice.
 - **Restrictions and notes:** These six exports join the separately documented approved Lost Log proof to cover the seven unique art keys for only Princess Poppy + Enchanted Forest + Lost Friend. Every other character, setting, story family, setup card, and choice card remains runtime-composed so the child's actual selection is preserved. Runtime depends only on local SVG exports; Inkscape is not a runtime dependency. Every scene is decorative, `aria-hidden`, and non-interactive. The sources and exports contain no `<text>`, font, remote reference, embedded image/data, Canva/Figma/Inkscape library content, stock media, community file, plugin resource, third-party asset, Content Foundry output, or generative image output. The complete third-party resource list is None. No unlisted stock or library element remains.
 
 ## Bear Bakes Bread Deterministic Mixing Video Proof
