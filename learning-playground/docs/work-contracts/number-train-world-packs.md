@@ -147,3 +147,16 @@ other game, persistence, voice manifests.
   sky/ground (owned by the scene SVG itself) wire up when the Space
   Shuttle actually varies them — extracting them speculatively would
   invite alpha/hex mismatches for zero present benefit.
+- **Slice 3 — dark-sky worlds need a text-ink capability (proof
+  finding)**: the first shuttle mock rendered the title/prompt/chrome in
+  ink-on-space (unreadable). The palette gained required textInk +
+  textSoft keys; the runtime applies them (plus a derived translucent
+  chrome background) as world-scoped variables on the title, prompt,
+  feedback, and icon-button rules with the Train Station values as
+  fallbacks — the default world is pixel-unchanged. Validator requires
+  both keys.
+- **Slice 3 — proof notes for the full world**: the moon needs to move
+  clear of the Repeat button zone; the scene should reserve the same
+  clear zones the station scene established. The prototype world was
+  probed via a TEMPORARY registry patch (never committed) — the shuttle
+  registers as a real world only in slice 4, after look approval.

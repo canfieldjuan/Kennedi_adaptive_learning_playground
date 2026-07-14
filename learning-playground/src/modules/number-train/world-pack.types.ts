@@ -19,6 +19,23 @@
 
 export const NUMBER_TRAIN_GAME_ID = 'number-train';
 
+/**
+ * The translucent chrome background derived from a world's text ink —
+ * expands 3-digit hex shorthand and emits exact rgba() so the derivation
+ * can never produce an invalid color token, and the Train Station value
+ * matches the game's previous rgba(58, 36, 97, 0.12) exactly.
+ */
+export function worldChromeBackground(textInk: string): string {
+  let hex = textInk.replace('#', '');
+  if (hex.length === 3) {
+    hex = hex.split('').map((c) => c + c).join('');
+  }
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, 0.12)`;
+}
+
 /** One choice inside an expressive customization slot (never scored). */
 export interface WorldCustomizationChoice {
   id: string;
@@ -58,6 +75,11 @@ export interface WorldPalette {
   seatOccupied: string;
   ground: string;
   sky: string;
+  /** Header/title/feedback ink — dark-sky worlds need a light ink (proof
+   * finding: ink-on-space is unreadable). */
+  textInk: string;
+  /** Softer prompt ink (may equal textInk on dark worlds). */
+  textSoft: string;
 }
 
 /** Declared behavior for the compact/mobile presentation of the scene. */
