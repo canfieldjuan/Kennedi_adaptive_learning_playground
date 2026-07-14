@@ -44,9 +44,9 @@
     <path d="M669 230l84-90 84 90Z" fill="#a39ca9" stroke="#3a2461" stroke-width="8" stroke-linejoin="round"/>
     <path d="M468 185l131-105 131 105Z" fill="#c5bdc9" stroke="#3a2461" stroke-width="9" stroke-linejoin="round"/>
     <path d="M524 185h150v223H524Z" fill="#fff8eb" stroke="#3a2461" stroke-width="6" stroke-linejoin="round"/>
-    <path d="M568 408V315c0-43 62-43 62 0v93Z" fill="#ef8fa5" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
-    <circle cx="617" cy="359" r="5" fill="#f6c64e" stroke="#3a2461" stroke-width="3"/>
-    <g fill="#8fb7e2" stroke="#3a2461" stroke-width="6">
+    <path d="M568 408V315c0-43 62-43 62 0v93Z" fill="#c5bdc9" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="617" cy="359" r="5" fill="#8e7aa3" stroke="#3a2461" stroke-width="3"/>
+    <g fill="#b3c0c4" stroke="#3a2461" stroke-width="6">
       <path d="M427 279c0-20 31-20 31 0v43h-31Z"/>
       <path d="M483 265c0-20 31-20 31 0v43h-31Z"/>
       <path d="M685 265c0-20 31-20 31 0v43h-31Z"/>
@@ -92,31 +92,15 @@
     <ellipse cx="209" cy="479" rx="31" ry="18" fill="#76bcb0" stroke="#3a2461" stroke-width="7"/>
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="Paint choice stage" id="layer-paint-choices">
-    <path d="M278 456c95-34 241-35 344-2l-17 87H292Z" fill="#fff8eb" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
-    <g id="paint-red" transform="translate(314 423)">
-      <rect x="0" y="19" width="78" height="92" rx="19" fill="#ef8fa5" stroke="#3a2461" stroke-width="7"/>
-      <rect x="-5" y="0" width="88" height="27" rx="12" fill="#fff8eb" stroke="#3a2461" stroke-width="7"/>
-      <path d="M15 57c15-13 33-13 48 0" fill="none" stroke="#f8cbd5" stroke-width="6" stroke-linecap="round"/>
-    </g>
-    <g id="paint-yellow" transform="translate(411 423)">
-      <rect x="0" y="19" width="78" height="92" rx="19" fill="#f6c64e" stroke="#3a2461" stroke-width="7"/>
-      <rect x="-5" y="0" width="88" height="27" rx="12" fill="#fff8eb" stroke="#3a2461" stroke-width="7"/>
-      <path d="M15 57c15-13 33-13 48 0" fill="none" stroke="#fff3c4" stroke-width="6" stroke-linecap="round"/>
-    </g>
-    <g id="paint-green" transform="translate(508 423)">
-      <rect x="0" y="19" width="78" height="92" rx="19" fill="#9fd0a8" stroke="#3a2461" stroke-width="7"/>
-      <rect x="-5" y="0" width="88" height="27" rx="12" fill="#fff8eb" stroke="#3a2461" stroke-width="7"/>
-      <path d="M15 57c15-13 33-13 48 0" fill="none" stroke="#d9f0e8" stroke-width="6" stroke-linecap="round"/>
-    </g>
+  <g inkscape:groupmode="layer" inkscape:label="Closed paint case" id="layer-paint-choices">
+    <path d="M294 472c91-31 222-32 313-1l-14 70H306Z" fill="#fff8eb" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
+    <rect x="367" y="446" width="168" height="84" rx="20" fill="#d9a06f" stroke="#3a2461" stroke-width="8"/>
+    <path d="M411 446v-18c0-18 80-18 80 0v18" fill="none" stroke="#3a2461" stroke-width="8" stroke-linecap="round"/>
+    <path d="M381 482h140" fill="none" stroke="#eac39b" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="451" cy="489" r="8" fill="#8e7aa3" stroke="#3a2461" stroke-width="4"/>
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="Magic and finishing highlights" id="layer-highlights">
-    <g fill="#fff8eb" stroke="#3a2461" stroke-width="4" stroke-linejoin="round">
-      <path d="m335 291 7 14 15 3-11 10 3 16-14-8-14 8 3-16-11-10 15-3Z"/>
-      <path d="m841 256 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/>
-      <path d="m864 363 4 8 9 2-7 6 2 9-8-4-8 4 2-9-7-6 9-2Z"/>
-    </g>
-    <path d="M344 351c22 3 36 15 44 36M832 318c-13 12-20 26-21 43" fill="none" stroke="#fff3c4" stroke-width="6" stroke-linecap="round" opacity="0.82"/>
+  <g inkscape:groupmode="layer" inkscape:label="Quiet invitation details" id="layer-highlights">
+    <path d="M344 351c22 3 36 15 44 36M832 318c-13 12-20 26-21 43" fill="none" stroke="#fff8eb" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
   </g>
 </svg>

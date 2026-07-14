@@ -227,11 +227,11 @@ and must also document every legacy asset family it modifies or re-exports.
 
 ## The Castle Lost Its Colors Inkscape Art-Direction Proof
 
-- **Asset family:** Colorless Castle find-yellow representative story scene
+- **Asset family:** Colorless Castle six-scene story proof
 - **Game:** Video Vault / Bilingual Story Vault proof
-- **Status:** `draft`
+- **Status:** `look_approved`
 - **Production path(s):** None; review-only captures at `docs/captures/video/colorless-castle/`
-- **Editable source path(s):** `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg`
+- **Editable source path(s):** `design-source/video-vault/colorless-castle/castle-scene-01-colorless.svg`; `design-source/video-vault/colorless-castle/castle-scene-02-red-door.svg`; `design-source/video-vault/colorless-castle/castle-scene-03-blue-windows.svg`; `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg`; `design-source/video-vault/colorless-castle/castle-scene-05-garden-roofs.svg`; `design-source/video-vault/colorless-castle/castle-scene-06-celebration.svg`
 - **Creator:** Project developer, Codex production-art session
 - **Creation date:** 2026-07-13
 - **Creation tool and version:** Standards-based SVG authored with named Inkscape layers; rendered and geometry-queried in Inkscape 1.4.4 Flatpak (`org.inkscape.Inkscape`); ImageMagick 6.9 for the review-only comparison sheet
@@ -250,11 +250,11 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Attribution requirement:** None
 - **AI assistance:** none in the proof source or render; three earlier ComfyUI trials were rejected and are not incorporated
 - **AI approval/terms record:** Not applicable to the proof artwork
-- **Contact sheet path:** `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-comparison.webp`
+- **Contact sheet path:** `docs/captures/video/colorless-castle/castle-story-sequence-contact-sheet.webp`; comparison proof at `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-comparison.webp`
 - **Desktop screenshot path(s):** `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-mobile.webp`
 - **Owner look approval:** APPROVED — the owner approved the representative desktop, mobile, and comparison proof on 2026-07-13 ("those work for me chief"); sequence rollout authorized
-- **Restrictions and notes:** Seven named Inkscape layers separate sky, grounds, castle, garden, Finn, equal-geometry paint targets, and finishing detail. The scene is text-free and local. Red, yellow, and green jars share the same dimensions and visual weight so the authored yellow answer is not pre-highlighted. Approval authorizes the remaining five editable story scenes in this visual language; it does not approve final video, runtime integration, or a public asset. The prior deterministic Castle sequence remains rejected for visual quality.
+- **Restrictions and notes:** Each of the six 960x544 sources has seven named Inkscape layers and is text-free and local. The sequence preserves one castle and Finn construction while showing the authored progression from muted invitation through red door, blue windows, the three-choice response, green garden and purple roofs, and celebration. Red, yellow, and green jars in the response scene share the same dimensions and visual weight so the authored yellow answer is not pre-highlighted. Contact-sheet review corrected state continuity by keeping garden and roof geometry muted through the response scene and revealing those colors only in the following restoration scene. Two foreground panels that read as open books were replaced by direct garden and ribbon scenery. Look approval does not approve final video, runtime integration, or a public asset. The prior deterministic Castle sequence remains rejected for visual quality.
 
 ## Cafe component library (shared)
 

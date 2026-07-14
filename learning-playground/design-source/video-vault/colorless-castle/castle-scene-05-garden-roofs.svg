@@ -29,10 +29,10 @@
   </g>
 
   <g inkscape:groupmode="layer" inkscape:label="Castle grounds" id="layer-grounds">
-    <path d="M0 402c165-34 314-26 445 10 170-38 343-37 515 2v130H0Z" fill="#b8c9c4" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M0 402c165-34 314-26 445 10 170-38 343-37 515 2v130H0Z" fill="#8fbf82" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
     <path d="M545 395c-20 48-29 97-29 149h231c-21-62-67-112-141-149Z" fill="url(#path)" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M7 445c38-13 71-11 99 8 25-20 59-21 88-4 32-21 74-17 101 12v47H7Z" fill="#aebbb8" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M777 444c25-19 59-20 87-3 24-14 57-8 79 17v50H777Z" fill="#aebbb8" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M7 445c38-13 71-11 99 8 25-20 59-21 88-4 32-21 74-17 101 12v47H7Z" fill="#76bcb0" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M777 444c25-19 59-20 87-3 24-14 57-8 79 17v50H777Z" fill="#76bcb0" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
     <path d="M62 474c9-25 22-35 38-31-2 16 2 29 12 39M126 480c2-25 14-39 31-42 3 18-1 34-12 47M845 479c6-24 19-37 36-37 0 17 6 31 17 40" fill="none" stroke="#3a2461" stroke-width="5" stroke-linecap="round"/>
   </g>
 
@@ -40,9 +40,9 @@
     <path d="M401 408V234l68-58 68 58v174Z" fill="#f8ead7" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
     <path d="M690 408V226l63-53 63 53v182Z" fill="#f8ead7" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
     <path d="M492 408V182l107-72 107 72v226Z" fill="#fff8eb" stroke="#3a2461" stroke-width="8" stroke-linejoin="round"/>
-    <path d="M381 238l88-96 87 96Z" fill="#a39ca9" stroke="#3a2461" stroke-width="8" stroke-linejoin="round"/>
-    <path d="M669 230l84-90 84 90Z" fill="#a39ca9" stroke="#3a2461" stroke-width="8" stroke-linejoin="round"/>
-    <path d="M468 185l131-105 131 105Z" fill="#c5bdc9" stroke="#3a2461" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M381 238l88-96 87 96Z" fill="#8e7aa3" stroke="#3a2461" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M669 230l84-90 84 90Z" fill="#8e7aa3" stroke="#3a2461" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M468 185l131-105 131 105Z" fill="#c3a3e0" stroke="#3a2461" stroke-width="9" stroke-linejoin="round"/>
     <path d="M524 185h150v223H524Z" fill="#fff8eb" stroke="#3a2461" stroke-width="6" stroke-linejoin="round"/>
     <path d="M568 408V315c0-43 62-43 62 0v93Z" fill="#ef8fa5" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
     <circle cx="617" cy="359" r="5" fill="#f6c64e" stroke="#3a2461" stroke-width="3"/>
@@ -56,17 +56,17 @@
       <path d="M442.5 259v64M427 299h31M498.5 245v64M483 285h31M700.5 245v64M685 285h31M759.5 259v64M744 299h31"/>
     </g>
     <circle cx="599" cy="224" r="31" fill="#d9c7b7" stroke="#3a2461" stroke-width="7"/>
-    <path d="m599 200 7 15 17 2-12 12 3 17-15-8-15 8 3-17-12-12 17-2Z" fill="#fff8eb" stroke="#3a2461" stroke-width="4" stroke-linejoin="round"/>
+    <path d="m599 200 7 15 17 2-12 12 3 17-15-8-15 8 3-17-12-12 17-2Z" fill="#f6c64e" stroke="#3a2461" stroke-width="4" stroke-linejoin="round"/>
     <path d="M423 350h50M708 350h50M548 278h25M647 278h25" fill="none" stroke="#d9c7b7" stroke-width="4" stroke-linecap="round"/>
-    <path d="M469 143V104l26 11-26 12M753 141V102l27 12-27 12M599 79V34l31 14-31 14" fill="#d9c7b7" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M469 143V104l26 11-26 12M753 141V102l27 12-27 12M599 79V34l31 14-31 14" fill="#f6c64e" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
   </g>
 
   <g inkscape:groupmode="layer" inkscape:label="Garden details" id="layer-garden">
-    <g fill="#aebbb8" stroke="#3a2461" stroke-width="5">
+    <g fill="#9fd0a8" stroke="#3a2461" stroke-width="5">
       <circle cx="424" cy="398" r="24"/><circle cx="455" cy="401" r="28"/><circle cx="485" cy="397" r="22"/>
       <circle cx="716" cy="400" r="24"/><circle cx="746" cy="398" r="28"/><circle cx="777" cy="402" r="22"/>
     </g>
-    <g fill="#d9c7b7" stroke="#3a2461" stroke-width="3">
+    <g fill="#f8cbd5" stroke="#3a2461" stroke-width="3">
       <circle cx="438" cy="389" r="7"/><circle cx="475" cy="394" r="7"/><circle cx="731" cy="392" r="7"/><circle cx="767" cy="390" r="7"/>
     </g>
     <path d="M396 418h409" fill="none" stroke="#3a2461" stroke-width="7" stroke-linecap="round"/>
@@ -84,39 +84,33 @@
     <path d="M158 327c11 11 25 11 36 0" fill="none" stroke="#3a2461" stroke-width="6" stroke-linecap="round"/>
     <circle cx="143" cy="323" r="9" fill="#f8cbd5" opacity="0.8"/>
     <circle cx="209" cy="323" r="9" fill="#f8cbd5" opacity="0.8"/>
-    <path d="M111 379c-35 10-42 43-19 56M240 376c30-2 48-20 54-44" fill="none" stroke="#3a2461" stroke-width="12" stroke-linecap="round"/>
-    <path d="M281 337l20-13" fill="none" stroke="#b97850" stroke-width="8" stroke-linecap="round"/>
-    <path d="m298 326 24-23 9 14-30 17Z" fill="#d9c7b7" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M116 376c-31-12-45-36-36-64M237 374c33-15 52-40 58-70" fill="none" stroke="#3a2461" stroke-width="12" stroke-linecap="round"/>
+    <path d="M284 309l19-18" fill="none" stroke="#b97850" stroke-width="8" stroke-linecap="round"/>
+    <path d="m300 294 20-27 12 12-28 22Z" fill="#c3a3e0" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
     <path d="M128 356c27 18 65 18 94 0l8 29c-33 18-75 18-109 0Z" fill="#ef8fa5" stroke="#3a2461" stroke-width="6" stroke-linejoin="round"/>
     <ellipse cx="143" cy="479" rx="31" ry="18" fill="#76bcb0" stroke="#3a2461" stroke-width="7"/>
     <ellipse cx="209" cy="479" rx="31" ry="18" fill="#76bcb0" stroke="#3a2461" stroke-width="7"/>
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="Paint choice stage" id="layer-paint-choices">
-    <path d="M278 456c95-34 241-35 344-2l-17 87H292Z" fill="#fff8eb" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
-    <g id="paint-red" transform="translate(314 423)">
-      <rect x="0" y="19" width="78" height="92" rx="19" fill="#ef8fa5" stroke="#3a2461" stroke-width="7"/>
-      <rect x="-5" y="0" width="88" height="27" rx="12" fill="#fff8eb" stroke="#3a2461" stroke-width="7"/>
-      <path d="M15 57c15-13 33-13 48 0" fill="none" stroke="#f8cbd5" stroke-width="6" stroke-linecap="round"/>
+  <g inkscape:groupmode="layer" inkscape:label="Restored garden foreground" id="layer-paint-choices">
+    <path d="M286 544c18-48 58-78 107-72 30-27 84-23 111 10 49-8 96 17 119 62Z" fill="#d9f0e8" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M340 535c-2-27 8-48 31-63M449 536c0-31 13-55 39-70M553 537c-2-25 8-44 29-58" fill="none" stroke="#3a2461" stroke-width="6" stroke-linecap="round"/>
+    <g fill="#c3a3e0" stroke="#3a2461" stroke-width="4">
+      <circle cx="371" cy="473" r="12"/><circle cx="488" cy="466" r="12"/><circle cx="582" cy="479" r="12"/>
     </g>
-    <g id="paint-yellow" transform="translate(411 423)">
-      <rect x="0" y="19" width="78" height="92" rx="19" fill="#f6c64e" stroke="#3a2461" stroke-width="7"/>
-      <rect x="-5" y="0" width="88" height="27" rx="12" fill="#fff8eb" stroke="#3a2461" stroke-width="7"/>
-      <path d="M15 57c15-13 33-13 48 0" fill="none" stroke="#fff3c4" stroke-width="6" stroke-linecap="round"/>
-    </g>
-    <g id="paint-green" transform="translate(508 423)">
-      <rect x="0" y="19" width="78" height="92" rx="19" fill="#9fd0a8" stroke="#3a2461" stroke-width="7"/>
-      <rect x="-5" y="0" width="88" height="27" rx="12" fill="#fff8eb" stroke="#3a2461" stroke-width="7"/>
-      <path d="M15 57c15-13 33-13 48 0" fill="none" stroke="#d9f0e8" stroke-width="6" stroke-linecap="round"/>
+    <g fill="#9fd0a8" stroke="#3a2461" stroke-width="4">
+      <path d="M345 510c-24-18-38-14-42 10 18 5 32 1 42-10Z"/>
+      <path d="M452 507c-23-18-38-14-43 9 18 6 33 3 43-9Z"/>
+      <path d="M556 511c-21-17-35-14-40 8 17 5 30 2 40-8Z"/>
     </g>
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="Magic and finishing highlights" id="layer-highlights">
-    <g fill="#fff8eb" stroke="#3a2461" stroke-width="4" stroke-linejoin="round">
+  <g inkscape:groupmode="layer" inkscape:label="Garden and roof magic" id="layer-highlights">
+    <g fill="#ffe27a" stroke="#3a2461" stroke-width="4" stroke-linejoin="round">
       <path d="m335 291 7 14 15 3-11 10 3 16-14-8-14 8 3-16-11-10 15-3Z"/>
       <path d="m841 256 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/>
       <path d="m864 363 4 8 9 2-7 6 2 9-8-4-8 4 2-9-7-6 9-2Z"/>
     </g>
-    <path d="M344 351c22 3 36 15 44 36M832 318c-13 12-20 26-21 43" fill="none" stroke="#fff3c4" stroke-width="6" stroke-linecap="round" opacity="0.82"/>
+    <path d="M344 351c22 3 36 15 44 36M832 318c-13 12-20 26-21 43" fill="none" stroke="#ffe27a" stroke-width="6" stroke-linecap="round" opacity="0.82"/>
   </g>
 </svg>

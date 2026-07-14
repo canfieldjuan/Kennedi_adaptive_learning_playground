@@ -46,7 +46,7 @@
     <path d="M524 185h150v223H524Z" fill="#fff8eb" stroke="#3a2461" stroke-width="6" stroke-linejoin="round"/>
     <path d="M568 408V315c0-43 62-43 62 0v93Z" fill="#ef8fa5" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
     <circle cx="617" cy="359" r="5" fill="#f6c64e" stroke="#3a2461" stroke-width="3"/>
-    <g fill="#8fb7e2" stroke="#3a2461" stroke-width="6">
+    <g fill="#b3c0c4" stroke="#3a2461" stroke-width="6">
       <path d="M427 279c0-20 31-20 31 0v43h-31Z"/>
       <path d="M483 265c0-20 31-20 31 0v43h-31Z"/>
       <path d="M685 265c0-20 31-20 31 0v43h-31Z"/>
@@ -86,37 +86,27 @@
     <circle cx="209" cy="323" r="9" fill="#f8cbd5" opacity="0.8"/>
     <path d="M111 379c-35 10-42 43-19 56M240 376c30-2 48-20 54-44" fill="none" stroke="#3a2461" stroke-width="12" stroke-linecap="round"/>
     <path d="M281 337l20-13" fill="none" stroke="#b97850" stroke-width="8" stroke-linecap="round"/>
-    <path d="m298 326 24-23 9 14-30 17Z" fill="#d9c7b7" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
+    <path d="m298 326 24-23 9 14-30 17Z" fill="#ef8fa5" stroke="#3a2461" stroke-width="5" stroke-linejoin="round"/>
     <path d="M128 356c27 18 65 18 94 0l8 29c-33 18-75 18-109 0Z" fill="#ef8fa5" stroke="#3a2461" stroke-width="6" stroke-linejoin="round"/>
     <ellipse cx="143" cy="479" rx="31" ry="18" fill="#76bcb0" stroke="#3a2461" stroke-width="7"/>
     <ellipse cx="209" cy="479" rx="31" ry="18" fill="#76bcb0" stroke="#3a2461" stroke-width="7"/>
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="Paint choice stage" id="layer-paint-choices">
-    <path d="M278 456c95-34 241-35 344-2l-17 87H292Z" fill="#fff8eb" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
-    <g id="paint-red" transform="translate(314 423)">
+  <g inkscape:groupmode="layer" inkscape:label="Red paint supplies" id="layer-paint-choices">
+    <path d="M326 469c74-26 179-27 253-1l-12 73H338Z" fill="#fff8eb" stroke="#3a2461" stroke-width="7" stroke-linejoin="round"/>
+    <g transform="translate(414 423)">
       <rect x="0" y="19" width="78" height="92" rx="19" fill="#ef8fa5" stroke="#3a2461" stroke-width="7"/>
       <rect x="-5" y="0" width="88" height="27" rx="12" fill="#fff8eb" stroke="#3a2461" stroke-width="7"/>
       <path d="M15 57c15-13 33-13 48 0" fill="none" stroke="#f8cbd5" stroke-width="6" stroke-linecap="round"/>
     </g>
-    <g id="paint-yellow" transform="translate(411 423)">
-      <rect x="0" y="19" width="78" height="92" rx="19" fill="#f6c64e" stroke="#3a2461" stroke-width="7"/>
-      <rect x="-5" y="0" width="88" height="27" rx="12" fill="#fff8eb" stroke="#3a2461" stroke-width="7"/>
-      <path d="M15 57c15-13 33-13 48 0" fill="none" stroke="#fff3c4" stroke-width="6" stroke-linecap="round"/>
-    </g>
-    <g id="paint-green" transform="translate(508 423)">
-      <rect x="0" y="19" width="78" height="92" rx="19" fill="#9fd0a8" stroke="#3a2461" stroke-width="7"/>
-      <rect x="-5" y="0" width="88" height="27" rx="12" fill="#fff8eb" stroke="#3a2461" stroke-width="7"/>
-      <path d="M15 57c15-13 33-13 48 0" fill="none" stroke="#d9f0e8" stroke-width="6" stroke-linecap="round"/>
-    </g>
   </g>
 
-  <g inkscape:groupmode="layer" inkscape:label="Magic and finishing highlights" id="layer-highlights">
-    <g fill="#fff8eb" stroke="#3a2461" stroke-width="4" stroke-linejoin="round">
+  <g inkscape:groupmode="layer" inkscape:label="Red restoration magic" id="layer-highlights">
+    <g fill="#f8cbd5" stroke="#3a2461" stroke-width="4" stroke-linejoin="round">
       <path d="m335 291 7 14 15 3-11 10 3 16-14-8-14 8 3-16-11-10 15-3Z"/>
       <path d="m841 256 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z"/>
       <path d="m864 363 4 8 9 2-7 6 2 9-8-4-8 4 2-9-7-6 9-2Z"/>
     </g>
-    <path d="M344 351c22 3 36 15 44 36M832 318c-13 12-20 26-21 43" fill="none" stroke="#fff3c4" stroke-width="6" stroke-linecap="round" opacity="0.82"/>
+    <path d="M344 351c64-6 118-8 161-1M642 354c43 3 92-8 143-36" fill="none" stroke="#f8cbd5" stroke-width="7" stroke-linecap="round" opacity="0.92"/>
   </g>
 </svg>
