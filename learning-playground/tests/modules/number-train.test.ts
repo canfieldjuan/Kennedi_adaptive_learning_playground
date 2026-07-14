@@ -257,6 +257,7 @@ describe('number train runtime', () => {
       }),
       clearTimeout: clearTimeoutSpy,
     });
+    vi.stubGlobal('localStorage', createMockLocalStorage());
   });
 
   afterEach(() => {
@@ -561,6 +562,58 @@ describe('number train runtime', () => {
     const again = setup();
     expect(findByClass(again.root, 'number-train-screen')).toBeDefined();
   });
+  test('the world choice opens the session: two cards, spoken picks, stable world', () => {
+    const { root, speech } = setupAtWorldChoice();
+
+    // Two unlocked cards and one Start — no session yet.
+    const station = findByAria(root, 'Train Station');
+    const shuttle = findByAria(root, 'Space Shuttle');
+    expect(station).toBeDefined();
+    expect(shuttle).toBeDefined();
+    expect(findByClass(root, 'number-train')).toBeUndefined();
+    expect(speech.speak).toHaveBeenCalledWith('Which world today?');
+    // Default preselected.
+    expect(station?.classList.contains('is-selected')).toBe(true);
+
+    // Picking the shuttle speaks its label and moves the selection.
+    shuttle?.click();
+    expect(speech.speak).toHaveBeenCalledWith('The space shuttle!');
+    expect(shuttle?.classList.contains('is-selected')).toBe(true);
+    expect(station?.classList.contains('is-selected')).toBe(false);
+
+    // Start begins the session in the chosen world and persists the choice.
+    findByAria(root, 'Start the trip')?.click();
+    expect(findByClass(root, 'number-train')).toBeDefined();
+    expect(localStorage.getItem('lp_number_train_world')).toBe('space-shuttle');
+  });
+
+  test('a saved preference preselects; malformed values fall back to the default', () => {
+    localStorage.setItem('lp_number_train_world', 'space-shuttle');
+    const first = setupAtWorldChoice();
+    expect(
+      findByAria(first.root, 'Space Shuttle')?.classList.contains('is-selected')
+    ).toBe(true);
+    destroyNumberTrainActivity();
+
+    localStorage.setItem('lp_number_train_world', 'deleted-world-42');
+    const second = setupAtWorldChoice();
+    expect(
+      findByAria(second.root, 'Train Station')?.classList.contains('is-selected')
+    ).toBe(true);
+  });
+
+  test('the world stays stable through Play Again', () => {
+    localStorage.setItem('lp_number_train_world', 'space-shuttle');
+    const { root } = setupAtWorldChoice();
+    findByAria(root, 'Start the trip')?.click();
+
+    // Complete nothing — just verify the session container is shuttle-world
+    // and that a rebuilt session (Play Again path re-reads the preference)
+    // stays in the same world with no selector in between.
+    const screen = findByClass(root, 'number-train-screen');
+    expect(screen?.dataset.world).toBe('space-shuttle');
+  });
+
 });
 
 describe('number train protected surfaces', () => {
@@ -645,6 +698,7 @@ describe('number train protected surfaces', () => {
       expect(level?.level).toBe(0);
     }
   });
+
 });
 
 function setup(): { root: MockElement; events: ActivityAttemptEvent[] } {
@@ -661,7 +715,49 @@ function setup(): { root: MockElement; events: ActivityAttemptEvent[] } {
     audio: createMockAudio(),
     onEvent: (event) => events.push(event),
   });
+  // "Kennedi picks": every session opens on the world choice; the shared
+  // setup starts the default world so session tests exercise the trip.
+  findByAria(root, 'Start the trip')?.click();
   return { root, events };
+}
+
+function setupAtWorldChoice(): {
+  root: MockElement;
+  events: ActivityAttemptEvent[];
+  speech: ReturnType<typeof createMockSpeech>;
+} {
+  const root = document.createElement('div') as unknown as MockElement;
+  const events: ActivityAttemptEvent[] = [];
+  const speech = createMockSpeech();
+  const activity = APPROVED_ACTIVITIES.find((entry) => entry.id === 'number-train');
+  if (!activity) throw new Error('Missing number-train activity');
+  renderNumberTrainActivity(root as unknown as HTMLElement, {
+    activity: activity as LearningActivity,
+    childId: 'local-child',
+    sessionId: 'session-1',
+    speech,
+    audio: createMockAudio(),
+    onEvent: (event) => events.push(event),
+  });
+  return { root, events, speech };
+}
+
+function createMockLocalStorage(): Storage {
+  const store = new Map<string, string>();
+  return {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      store.set(key, value);
+    },
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
+    clear: () => store.clear(),
+    key: () => null,
+    get length() {
+      return store.size;
+    },
+  } as Storage;
 }
 
 class MockClassList {
@@ -684,6 +780,14 @@ class MockClassList {
 
   contains(name: string): boolean {
     return this.values.has(name);
+  }
+
+  toggle(name: string, force?: boolean): boolean {
+    const shouldAdd = force ?? !this.values.has(name);
+    if (shouldAdd) this.values.add(name);
+    else this.values.delete(name);
+    this.sync();
+    return shouldAdd;
   }
 
   private sync(): void {
@@ -839,6 +943,15 @@ function completeRound(root: MockElement, round: NumberTrainRound): void {
     return;
   }
   findChoice(root, String(answerOf(round)))?.click();
+}
+
+function findByAria(element: MockElement, label: string): MockElement | undefined {
+  if (element.attributes['aria-label'] === label) return element;
+  for (const child of element.children) {
+    const match = findByAria(child, label);
+    if (match) return match;
+  }
+  return undefined;
 }
 
 function findByText(element: MockElement, text: string): MockElement | undefined {

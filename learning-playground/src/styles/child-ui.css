@@ -1082,6 +1082,76 @@
   color: var(--world-text-ink, #3a2461);
 }
 
+/* "Kennedi picks" — the pre-session world choice. Two big picture cards,
+   spoken labels on tap, one Start; nothing locked, priced, or earned. */
+.world-choice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.world-choice__card {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  width: min(300px, 44vw);
+  padding: var(--space-sm);
+  border: 4px solid rgba(58, 36, 97, 0.25);
+  border-radius: var(--radius-lg);
+  background: #fffdf7;
+  box-shadow: 0 8px 24px rgba(58, 36, 97, 0.16);
+  transition: transform var(--transition-bounce);
+}
+
+.world-choice__card:hover,
+.world-choice__card:focus-visible {
+  transform: scale(1.03);
+  outline: none;
+}
+
+.world-choice__card.is-selected {
+  border-color: rgba(58, 36, 97, 0.85);
+  box-shadow:
+    0 0 0 6px rgba(246, 195, 67, 0.45),
+    0 10px 26px rgba(58, 36, 97, 0.2);
+}
+
+.world-choice__preview {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  line-height: 0;
+}
+
+.world-choice__preview svg {
+  width: 100%;
+  height: auto;
+}
+
+.world-choice__label {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #3a2461;
+}
+
+.world-choice__start {
+  display: block;
+  margin: var(--space-md) auto 0;
+  min-width: 200px;
+}
+
+@media (max-width: 768px),
+  (max-width: 940px) and (max-height: 480px) and (orientation: landscape) {
+  .world-choice__card {
+    width: min(260px, 82vw);
+  }
+}
+
 /* The journey strip becomes a route line with small station-sign markers —
    same DOM and is-current/is-done semantics; the line is a background band. */
 .train-station .number-train__journey {
