@@ -273,11 +273,13 @@ Do not declare done while any gap stands.
 
 - `npm ci` - passed; 56 locked packages installed, 0 vulnerabilities.
 - Focused profile/media/service run - passed: 29 tests.
-- `npm test` - passed after dependency setup: change-contract gate; 57 Content
-  Foundry tests with 1 intentional live-Comfy skip; 62 Vitest files and 843/843
+- `npm test` - passed after rebasing onto `origin/main` at `ed8d56c`:
+  change-contract gate; 58 Content Foundry tests with 1 intentional live-Comfy
+  skip; 62 Vitest files and 848/848
   tests.
 - `npm run typecheck` - passed.
-- `npm run build` - passed; Vite transformed 131 modules. The existing
+- `npm run build` - passed; Vite transformed 132 modules on the rebased head.
+  The existing
   non-failing chunk-size warning remains; this offline authoring slice does not
   touch app bundling.
 - `npm run lint --if-present` - exited 0; no lint script is defined.
