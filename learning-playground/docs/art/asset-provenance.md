@@ -305,3 +305,41 @@ and must also document every legacy asset family it modifies or re-exports.
   enumeration; the lockstep contract test sweeps BOTH. Regeneration:
   `npx vite-node scripts/voice/build-voice-manifest.ts` then
   `python scripts/voice/generate_voice_pack.py --pack tara --only-missing`.
+
+## Dad voice pack (owner's cloned voice)
+
+- **Asset family:** Recorded prompt/narration voice pack ("Dad")
+- **Game:** All games; parent-picker option (Tara remains the default)
+- **Status:** `look_approved` (owner listen-approvals 2026-07-13: v2 sample
+  set signed off; story pacing tuned to calm + atempo 0.96 by the owner;
+  phonics respelling variant A picked by the owner)
+- **Production path(s):** `public/assets/audio/voice/dad/<id>.mp3`
+- **Editable source path(s):** `src/content/voice/dad-voice-manifest.json`
+  + `scripts/voice/generate_voice_pack.py` (--pack dad recipe incl. the
+  phonics respell map). The owner's reference recording
+  (~/Desktop/tts/juan-reference.wav) is deliberately NOT committed —
+  personal voice data stays out of the repository; only rendered game
+  lines ship.
+- **Creator:** The project owner (voice); project developer (pipeline)
+- **Creation date:** 2026-07-13
+- **Creation tool:** Chatterbox TTS (MIT, Resemble AI) zero-shot clone of
+  the owner's own 31s reference recording, run OFFLINE in a local venv;
+  ffmpeg encoding. Chatterbox embeds an inaudible Perth watermark in
+  generated audio by design.
+- **Origin:** Category A — the owner's own voice, cloned with the owner's
+  explicit consent, reading project-authored text
+- **Third-party elements:** Chatterbox model weights (MIT)
+- **AI assistance:** Yes — zero-shot voice cloning of the owner by the
+  owner's request. No cloud service, no account, no child data
+- **Commercial use / modification / distribution / public repository:**
+  PUBLIC SHIPPING EXPLICITLY APPROVED by the owner (2026-07-13, "Ship it
+  public") with the tradeoff surfaced: the rendered clips of the owner's
+  cloned voice are publicly downloadable from the repo and the site
+- **Owner look approval:** APPROVED (listen approvals across the
+  juan-clone / v2 / v3-phonics sample sets)
+- **Restrictions and notes:** Same runtime rules as the other packs: local
+  static clips, fail-open to device speech. The clone may ONLY be used to
+  render lines from the committed voice manifest — no other text without
+  the owner's say-so. Regeneration requires the owner's local reference
+  recording: `~/Desktop/tts/venv-chatterbox/bin/python
+  scripts/voice/generate_voice_pack.py --pack dad --only-missing`.
