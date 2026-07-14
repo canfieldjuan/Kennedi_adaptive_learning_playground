@@ -130,6 +130,38 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Owner look approval:** Pending owner review of the representative package, delivery continuity, and order-wall proof in this PR
 - **Restrictions and notes:** Runtime uses only the exported local SVG files; Inkscape is an authoring/export tool and is not a dependency. Bag color remains runtime-owned CSS state so one original frame supports every child-chosen color without duplicated art. No `<text>`, font, remote reference, stock/library content, Canva content, plugin resource, or generative image tool is present. The exact package component is reused across packaging, delivery, handoff, final admiration, and revisit rather than substituted by a generic asset.
 
+## Story Stage Lost-Log Production-Art Proof
+
+- **Asset family:** Story Stage Lost Friend owl-and-hollow-log representative scene
+- **Game:** Story Stage
+- **Status:** `rights_verified`
+- **Production path(s):** `public/assets/images/story-stage-lost-log-proof.svg`
+- **Editable source path(s):** `design-source/story-stage/story-stage-lost-log-proof.svg`
+- **Creator:** Project developer, Codex Story Stage production-art session
+- **Creation date:** 2026-07-13
+- **Creation tool and version:** Inkscape 1.4.4 Flatpak (`org.inkscape.Inkscape`), plain SVG export produced with `--export-plain-svg`
+- **Origin category:** A original
+- **Original or third-party status:** Original project artwork
+- **Project-owned source material used:** Established Story Stage palette, Princess Poppy identity, Biscuit identity, and friendly-owl story direction only; no prior asset geometry embedded
+- **Third-party elements:** None
+- **Source URL(s):** Not applicable
+- **License name and version/date:** Not applicable; original project artwork
+- **License file path:** Not applicable
+- **Commercial use permitted:** yes
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None
+- **AI assistance:** none
+- **AI approval/terms record:** Not applicable
+- **Contact sheet path:** `docs/captures/story-stage/lost-log-proof-contact-sheet.webp`
+- **Existing/proposed comparison path:** `docs/captures/story-stage/lost-log-proof-before-desktop.webp`; `docs/captures/story-stage/lost-log-proof-before-mobile.webp`; `docs/captures/story-stage/lost-log-proof-proposed-desktop.webp`; `docs/captures/story-stage/lost-log-proof-proposed-mobile.webp`
+- **Desktop screenshot path(s):** `docs/captures/story-stage/lost-log-proof-proposed-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/story-stage/lost-log-proof-proposed-mobile.webp`
+- **Owner look approval:** Pending owner review of illustration style, scene density, character scale, line weight, palette, background contrast, mobile crop, and environmental richness
+- **Restrictions and notes:** The representative export is eligible only for the exact `lost-log` + Poppy + enchanted-forest combination. Every other scene, character, and setting remains runtime-composed so the child's actual selection is never replaced by generic proof art. Runtime depends only on the local production SVG; Inkscape is an authoring/export tool and is not a dependency. The scene is decorative, `aria-hidden`, and contains no interaction. No `<text>`, font, remote reference, embedded data, Canva/Figma/Inkscape library content, stock media, community file, plugin resource, third-party asset, Content Foundry output, or generative image tool is present. The complete third-party resource list is None. No unlisted stock or library element remains. Broad Story Stage rollout remains blocked until owner look approval.
+
 ## Bear Bakes Bread Deterministic Mixing Video Proof
 
 - **Asset family:** Bear Bakes Bread deterministic mixing vector proof
