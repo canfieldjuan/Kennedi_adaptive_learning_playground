@@ -153,7 +153,12 @@ def render_dad(lines, out_dir, only_missing):
     if not os.path.exists(DAD_REF):
         raise SystemExit(f"reference recording missing: {DAD_REF}")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = ChatterboxTTS.from_pretrained(device=device)
+    try:
+        model = ChatterboxTTS.from_pretrained(device=device)
+    except torch.cuda.OutOfMemoryError:
+        print("GPU busy — falling back to CPU (slower)")
+        device = "cpu"
+        model = ChatterboxTTS.from_pretrained(device=device)
     print(f"chatterbox on {device}")
     todo = [l for l in lines if not (
         only_missing and os.path.exists(os.path.join(out_dir, f"{l['id']}.mp3")))]

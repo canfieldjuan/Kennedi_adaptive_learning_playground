@@ -94,7 +94,10 @@ export function validateWorldPack(pack: NumberTrainWorldPack): string[] {
     }
   }
 
-  if (pack.mobile?.mode !== 'bands-only-swap') {
+  if (
+    pack.mobile?.mode !== 'bands-only-swap' &&
+    pack.mobile?.mode !== 'inline-crop'
+  ) {
     errors.push(`${at}: mobile.mode must declare a supported behavior`);
   }
   if (pack.reducedMotion?.nonessentialAnimationDisabled !== true) {
