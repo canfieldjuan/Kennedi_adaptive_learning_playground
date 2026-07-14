@@ -260,6 +260,10 @@ function renderActivityRoute(activityId: string): void {
       sessionId,
       speech,
       audio,
+      tripHistory: {
+        list: () => storage.getTrainTripHistory(),
+        append: (record) => storage.appendTrainTripHistory(record),
+      },
       onEvent: handleActivityEvent,
     });
     return;

@@ -298,6 +298,11 @@
       "style": "story"
     },
     {
+      "id": "265c05cb",
+      "text": "A heart!",
+      "style": "prompt"
+    },
+    {
       "id": "27fb2035",
       "text": "How should Poppy help the music box find its song?",
       "style": "story"
@@ -315,6 +320,11 @@
     {
       "id": "28c9068f",
       "text": "You have 17. Put on 13 more.",
+      "style": "prompt"
+    },
+    {
+      "id": "29459f7c",
+      "text": "A moon!",
       "style": "prompt"
     },
     {
@@ -461,6 +471,11 @@
       "id": "3dd1c3ed",
       "text": "Luna the gentle unicorn tucks the basket into a little wagon and rolls it in, smooth and steady. Friends cheer — sunshine berries for everyone! The end.",
       "style": "story"
+    },
+    {
+      "id": "3deec9cc",
+      "text": "Pick your shuttle badge!",
+      "style": "prompt"
     },
     {
       "id": "3e367d38",
@@ -993,6 +1008,11 @@
       "style": "prompt"
     },
     {
+      "id": "70e0f2cc",
+      "text": "Decorate your ride!",
+      "style": "prompt"
+    },
+    {
       "id": "71e95e5e",
       "text": "h-a-t. Hat!",
       "style": "phonics"
@@ -1273,6 +1293,11 @@
       "style": "story"
     },
     {
+      "id": "8dcb2f9a",
+      "text": "Purple!",
+      "style": "prompt"
+    },
+    {
       "id": "8ecd3759",
       "text": "You have 20. Take off 7.",
       "style": "prompt"
@@ -1423,6 +1448,11 @@
       "style": "prompt"
     },
     {
+      "id": "9a7f43f7",
+      "text": "A star!",
+      "style": "prompt"
+    },
+    {
       "id": "9b279652",
       "text": "Yes. The roof is a triangle.",
       "style": "prompt"
@@ -1506,6 +1536,11 @@
       "id": "a241d6b6",
       "text": "Robo the robot loves to help!",
       "style": "story"
+    },
+    {
+      "id": "a27e2c80",
+      "text": "Pick your shuttle color!",
+      "style": "prompt"
     },
     {
       "id": "a2d7d0f0",
@@ -1733,6 +1768,11 @@
       "style": "story"
     },
     {
+      "id": "b991c240",
+      "text": "Pick your train flag!",
+      "style": "prompt"
+    },
+    {
       "id": "b9df0764",
       "text": "You have 5. Put on 8 more.",
       "style": "prompt"
@@ -1756,6 +1796,11 @@
       "id": "bdb3d35b",
       "text": "Robo the helpful robot visits the cozy town, where every window twinkles hello. On a little table sits a tiny music box.",
       "style": "story"
+    },
+    {
+      "id": "be135a67",
+      "text": "Red!",
+      "style": "prompt"
     },
     {
       "id": "bfbdfaea",
@@ -1840,6 +1885,11 @@
     {
       "id": "c9795014",
       "text": "Build the word dog. Tap the letters in order.",
+      "style": "prompt"
+    },
+    {
+      "id": "c98233bd",
+      "text": "Pick your train color!",
       "style": "prompt"
     },
     {
@@ -2230,6 +2280,11 @@
     {
       "id": "f1c4341c",
       "text": "You made the order.",
+      "style": "prompt"
+    },
+    {
+      "id": "f3190e24",
+      "text": "Blue!",
       "style": "prompt"
     },
     {

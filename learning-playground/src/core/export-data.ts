@@ -1,4 +1,5 @@
 import type { ActivityAttemptEvent } from '../types/events';
+import type { TrainTripCompletion } from '../modules/number-train/trip-history';
 import type { ParentObservation } from '../types/observations';
 import type {
   ParentDifficultyAction,
@@ -53,6 +54,7 @@ export interface ProgressExportPayload {
   parent_review_schedule_records: ParentReviewScheduleRecord[];
   story_history: StoryHistoryRecord[];
   cafe_order_history: CafeOrderCompletion[];
+  train_trip_history: TrainTripCompletion[];
 }
 
 export function buildProgressExportPayload(params: {
@@ -68,6 +70,7 @@ export function buildProgressExportPayload(params: {
   reviewScheduleRecords?: ParentReviewScheduleRecord[];
   storyHistory?: StoryHistoryRecord[];
   cafeOrderHistory?: CafeOrderCompletion[];
+  trainTripHistory?: TrainTripCompletion[];
   exportedAt?: string;
 }): ProgressExportPayload {
   const exportedAt = params.exportedAt ?? new Date().toISOString();
@@ -79,6 +82,7 @@ export function buildProgressExportPayload(params: {
   const reviewScheduleRecords = params.reviewScheduleRecords ?? [];
   const storyHistory = params.storyHistory ?? [];
   const cafeOrderHistory = params.cafeOrderHistory ?? [];
+  const trainTripHistory = params.trainTripHistory ?? [];
 
   return {
     exported_at: exportedAt,
@@ -99,6 +103,7 @@ export function buildProgressExportPayload(params: {
         'parent_review_schedule_records',
         'story_history',
         'cafe_order_history',
+        'train_trip_history',
       ],
     },
     data_health: buildLocalDataHealth(
@@ -122,6 +127,7 @@ export function buildProgressExportPayload(params: {
     parent_review_schedule_records: reviewScheduleRecords,
     story_history: storyHistory,
     cafe_order_history: cafeOrderHistory,
+    train_trip_history: trainTripHistory,
   };
 }
 
@@ -168,6 +174,7 @@ export function buildProgressExportJson(params: {
   reviewScheduleRecords?: ParentReviewScheduleRecord[];
   storyHistory?: StoryHistoryRecord[];
   cafeOrderHistory?: CafeOrderCompletion[];
+  trainTripHistory?: TrainTripCompletion[];
   exportedAt?: string;
 }): string {
   return JSON.stringify(buildProgressExportPayload(params), null, 2);

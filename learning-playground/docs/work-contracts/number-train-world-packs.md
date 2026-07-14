@@ -137,6 +137,23 @@ other game, persistence, voice manifests.
 - Existing Number Train tests unchanged and green (parity by
   construction — runtime untouched).
 
+## Slice 6 decisions (ownership customization)
+
+- The decorate beat runs AFTER the completed evidence fires: expressive
+  choices can never touch evidence by construction. No events are emitted
+  during decoration (test-pinned).
+- Trip records mirror the cafe order-history pattern exactly: capped (12),
+  deduped by completion_id, per-record malformed-safe reads, exported
+  under `train_trip_history`, cleared by the parent data-clear (which now
+  also clears the world preference).
+- Replay contract: Play Again keeps the world and re-runs the decorate
+  beat with defaults — a fresh trip is a fresh decoration; her PREVIOUS
+  trip is preserved in the history and greets her as the keepsake chip
+  on the world-choice screen (the revisit surface).
+- The badge overlays the vehicle-front element (tracked reference, no
+  DOM queries); the accent rides a --vehicle-accent CSS variable read by
+  accent regions inside the vehicle art of BOTH worlds.
+
 ## Contract Amendments
 
 - **Slice 2 — partial palette wiring is deliberate**: only the palette

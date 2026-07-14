@@ -22,11 +22,11 @@ export function shuttleFrontSvg(): string {
         fill="#eef3fb" stroke="${INK}" stroke-width="3"/>
       <path d="M62 42 q16 0 24 15" fill="none" stroke="#c9d6ea" stroke-width="4" stroke-linecap="round"/>
       <circle cx="40" cy="55" r="8.5" fill="#bfe3f2" stroke="${INK}" stroke-width="3"/>
-      <rect x="10" y="48" width="10" height="14" rx="4" fill="#e05d5d" stroke="${INK}" stroke-width="3"/>
+      <rect x="10" y="48" width="10" height="14" rx="4" fill="var(--vehicle-accent, #e05d5d)" stroke="${INK}" stroke-width="3"/>
       <path d="M10 50 q-8 5 -8 12 q6 -2 9 -5 Z" fill="#f0a848" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/>
       <path d="M4 62 q-4 4 -3 9 q5 -1 8 -5" fill="#ffe8a3" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round"/>
       <path d="M30 42 v-8 q0 -5 5 -5 h14 q5 0 5 5 v8" fill="#dfe9f7" stroke="${INK}" stroke-width="3"/>
-      <rect x="26" y="67" width="44" height="8" rx="4" fill="#6b5aa0" stroke="${INK}" stroke-width="3"/>
+      <rect x="26" y="67" width="44" height="8" rx="4" fill="var(--vehicle-accent, #6b5aa0)" stroke="${INK}" stroke-width="3"/>
       <circle cx="88" cy="60" r="4" fill="#ffe8a3" stroke="${INK}" stroke-width="2.4"/>
     </svg>`;
 }
