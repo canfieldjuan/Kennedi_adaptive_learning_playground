@@ -76,13 +76,18 @@ automatic content publisher.
 
 ## Narration Rules
 
-- Human narration is the v1 production default.
-- Source audio is local, finite, and parent supplied.
+- Human narration remains supported. A finite locally generated narration clip
+  may also be used when the owner has approved the offline voice recipe and
+  reviews the exact resulting audio artifact.
+- Source audio is local, finite, and parent supplied or parent approved.
+- Local TTS is build-side authoring only. The rendered audio is snapshotted,
+  hashed, normalized, and reviewed like any other source; voice-level approval
+  does not approve a newly rendered line.
 - Final narration is 48kHz mono, near -18 LUFS, with true peak no higher than
   -2 dBTP. Final clips are finite VP9/Opus WebM within the selected profile's
   duration and file-size bounds.
-- No child recording, microphone permission, generated voice, or remote audio
-  service is part of v1.
+- No child recording, microphone permission, runtime TTS, remote audio service,
+  automatic narration approval, or unreviewed generated voice is part of v1.
 
 ## Non-Scope
 
