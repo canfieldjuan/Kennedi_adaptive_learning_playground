@@ -137,6 +137,49 @@ other game, persistence, voice manifests.
 - Existing Number Train tests unchanged and green (parity by
   construction — runtime untouched).
 
+## Slice 6 decisions (ownership customization)
+
+- The decorate beat runs AFTER the completed evidence fires: expressive
+  choices can never touch evidence by construction. No events are emitted
+  during decoration (test-pinned).
+- Trip records mirror the cafe order-history pattern exactly: capped (12),
+  deduped by completion_id, per-record malformed-safe reads, exported
+  under `train_trip_history`, cleared by the parent data-clear (which now
+  also clears the world preference).
+- Replay contract: Play Again keeps the world and re-runs the decorate
+  beat with defaults — a fresh trip is a fresh decoration; her PREVIOUS
+  trip is preserved in the history and greets her as the keepsake chip
+  on the world-choice screen (the revisit surface).
+- The badge overlays the vehicle-front element (tracked reference, no
+  DOM queries); the accent rides a --vehicle-accent CSS variable read by
+  accent regions inside the vehicle art of BOTH worlds.
+
 ## Contract Amendments
 
-(none yet)
+- **Slice 2 — partial palette wiring is deliberate**: only the palette
+  keys whose current CSS values are plain hex (vehicleBody -> car
+  background, seatOccupied -> occupied-seat background) are wired as
+  world-scoped CSS variables now, with the exact current values as
+  fallbacks. The alpha-based styles (empty seat, ink borders) and the
+  sky/ground (owned by the scene SVG itself) wire up when the Space
+  Shuttle actually varies them — extracting them speculatively would
+  invite alpha/hex mismatches for zero present benefit.
+- **Slice 3 — dark-sky worlds need a text-ink capability (proof
+  finding)**: the first shuttle mock rendered the title/prompt/chrome in
+  ink-on-space (unreadable). The palette gained required textInk +
+  textSoft keys; the runtime applies them (plus a derived translucent
+  chrome background) as world-scoped variables on the title, prompt,
+  feedback, and icon-button rules with the Train Station values as
+  fallbacks — the default world is pixel-unchanged. Validator requires
+  both keys.
+- **Slice 4 — the `.train-station` container class is the legacy
+  screen-scope class** (like `.bear-cafe`), applied identically for every
+  world; the shuttle renders under it. Renaming it would churn pinned
+  selectors across the mobile contract tests for zero behavior — kept,
+  and the no-conditionals contract test pins it to exactly one
+  occurrence so a real world branch can never hide behind it.
+- **Slice 3 — proof notes for the full world**: the moon needs to move
+  clear of the Repeat button zone; the scene should reserve the same
+  clear zones the station scene established. The prototype world was
+  probed via a TEMPORARY registry patch (never committed) — the shuttle
+  registers as a real world only in slice 4, after look approval.

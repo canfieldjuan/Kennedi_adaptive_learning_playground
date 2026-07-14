@@ -66,6 +66,8 @@ export function validateWorldPack(pack: NumberTrainWorldPack): string[] {
     'seatOccupied',
     'ground',
     'sky',
+    'textInk',
+    'textSoft',
   ] as const) {
     const value = palette[key];
     if (!value || !HEX_COLOR.test(value)) {
@@ -92,7 +94,10 @@ export function validateWorldPack(pack: NumberTrainWorldPack): string[] {
     }
   }
 
-  if (pack.mobile?.mode !== 'bands-only-swap') {
+  if (
+    pack.mobile?.mode !== 'bands-only-swap' &&
+    pack.mobile?.mode !== 'inline-crop'
+  ) {
     errors.push(`${at}: mobile.mode must declare a supported behavior`);
   }
   if (pack.reducedMotion?.nonessentialAnimationDisabled !== true) {

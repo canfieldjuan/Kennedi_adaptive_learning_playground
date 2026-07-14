@@ -10,7 +10,7 @@ const INK = '#3a2461';
 
 export function trainEngineSvg(): string {
   return `<svg class="number-train__engine-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-      <rect x="10" y="42" width="52" height="34" rx="7" fill="#e05d5d" stroke="${INK}" stroke-width="3"/>
+      <rect x="10" y="42" width="52" height="34" rx="7" fill="var(--vehicle-accent, #e05d5d)" stroke="${INK}" stroke-width="3"/>
       <rect x="56" y="24" width="28" height="52" rx="7" fill="#f0a848" stroke="${INK}" stroke-width="3"/>
       <rect x="62" y="32" width="16" height="14" rx="4" fill="#fdf3d0" stroke="${INK}" stroke-width="2.6"/>
       <rect x="18" y="28" width="12" height="16" rx="3" fill="#7f8c9b" stroke="${INK}" stroke-width="3"/>
@@ -22,7 +22,7 @@ export function trainEngineSvg(): string {
       <circle cx="58" cy="82" r="9" fill="#6b5aa0" stroke="${INK}" stroke-width="3"/>
       <circle cx="28" cy="82" r="3" fill="#fdf3d0"/>
       <circle cx="58" cy="82" r="3" fill="#fdf3d0"/>
-      <rect x="84" y="56" width="10" height="10" rx="3" fill="#e05d5d" stroke="${INK}" stroke-width="2.6"/>
+      <rect x="84" y="56" width="10" height="10" rx="3" fill="var(--vehicle-accent, #e05d5d)" stroke="${INK}" stroke-width="2.6"/>
     </svg>`;
 }
 

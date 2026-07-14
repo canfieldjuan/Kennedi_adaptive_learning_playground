@@ -25,6 +25,7 @@ import { APPROVED_ACTIVITIES } from '../../src/content/activity-catalog';
 import { FIRST_STORY_PACK } from '../../src/modules/story-stage/first-tale';
 import { resolveStory } from '../../src/modules/story-stage/story-resolver';
 import { buildSessionPlan } from '../../src/modules/number-train/round-plan';
+import { NUMBER_TRAIN_WORLDS } from '../../src/modules/number-train/world-registry';
 import {
   DEFAULT_SUCCESS_TAIL,
   countSuccessLine,
@@ -150,6 +151,21 @@ export function collectVoiceLines(): VoiceLineEntry[] {
           add(sequenceSuccessLine(round.sequence, tail));
           add(buildSequenceHint(round));
         }
+      }
+    }
+  }
+
+  // — Number Train world packs: selector prompt, spoken labels, flavor,
+  // and every customization slot/choice spoken label (self-enumerating) —
+  add('Which world today?');
+  add('Decorate your ride!');
+  for (const world of NUMBER_TRAIN_WORLDS) {
+    add(world.spokenLabel);
+    add(world.flavor?.arrivalLine);
+    for (const slot of world.customization) {
+      add(slot.spokenLabel);
+      for (const choice of slot.choices) {
+        add(choice.spokenLabel);
       }
     }
   }

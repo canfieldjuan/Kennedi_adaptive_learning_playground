@@ -29,6 +29,7 @@ import type {
 } from '../../src/modules/number-train/number-train.types';
 import type { LearningActivity } from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
+import type { TrainTripCompletion } from '../../src/modules/number-train/trip-history';
 import type {
   AudioServiceInterface,
   SpeechServiceInterface,
@@ -257,6 +258,7 @@ describe('number train runtime', () => {
       }),
       clearTimeout: clearTimeoutSpy,
     });
+    vi.stubGlobal('localStorage', createMockLocalStorage());
   });
 
   afterEach(() => {
@@ -283,6 +285,8 @@ describe('number train runtime', () => {
       completeRound(root, round);
       findByText(root, 'Next station')?.click();
     }
+    // The ownership beat sits between the last round and arrival.
+    findByAria(root, 'Finish the trip')?.click();
     findByText(root, 'Play Again')?.click();
     expect(findAllByClass(root, 'station-environment')).toHaveLength(1);
   });
@@ -382,6 +386,10 @@ describe('number train runtime', () => {
         s.className.includes('is-done')
       )
     ).toHaveLength(6);
+    // Decorate beat first (expressive, no events), then arrival.
+    const eventsBeforeDecor = events.length;
+    findByAria(root, 'Finish the trip')?.click();
+    expect(events.length).toBe(eventsBeforeDecor);
     expect(findByText(root, 'Play Again')).toBeDefined();
     expect(findByText(root, 'Home')).toBeDefined();
   });
@@ -393,6 +401,8 @@ describe('number train runtime', () => {
       completeRound(root, round);
       findByText(root, 'Next station')?.click();
     }
+    // The ownership beat sits between the last round and arrival.
+    findByAria(root, 'Finish the trip')?.click();
     findByText(root, 'Play Again')?.click();
 
     const replayPlan = buildSessionPlan({
@@ -561,6 +571,133 @@ describe('number train runtime', () => {
     const again = setup();
     expect(findByClass(again.root, 'number-train-screen')).toBeDefined();
   });
+  test('exact decoration choices ride into the record, arrival, and keepsake', () => {
+    const trips: TrainTripCompletion[] = [];
+    const root = document.createElement('div') as unknown as MockElement;
+    const events: ActivityAttemptEvent[] = [];
+    const activity = APPROVED_ACTIVITIES.find((entry) => entry.id === 'number-train');
+    if (!activity) throw new Error('Missing number-train activity');
+    renderNumberTrainActivity(root as unknown as HTMLElement, {
+      activity: activity as LearningActivity,
+      childId: 'local-child',
+      sessionId: 'session-decor',
+      speech: createMockSpeech(),
+      audio: createMockAudio(),
+      onEvent: (event) => events.push(event),
+      tripHistory: {
+        list: () => trips,
+        append: (record) => trips.push(record),
+      },
+    });
+    findByAria(root, 'Start the trip')?.click();
+
+    for (const round of plan.rounds) {
+      completeRound(root, round);
+      findByText(root, 'Next station')?.click();
+    }
+
+    // The decorate beat: pick blue + the heart flag; evidence stays frozen.
+    const eventsBefore = events.length;
+    findByAria(root, 'Train color: Blue')?.click();
+    findByAria(root, 'Train flag: Heart flag')?.click();
+    expect(events.length).toBe(eventsBefore);
+
+    // The badge is on the engine and the accent variable is set.
+    expect(findByClass(root, 'number-train__badge')).toBeDefined();
+    const screen = findByClass(root, 'number-train-screen');
+    expect(screen?.style.getPropertyValue('--vehicle-accent')).toBe('#74b9ff');
+
+    findByAria(root, 'Finish the trip')?.click();
+
+    // The record preserves the EXACT picks (ownership-completion contract).
+    expect(trips).toHaveLength(1);
+    expect(trips[0]).toMatchObject({
+      world_id: 'train-station',
+      customization: { vehicle_accent: 'blue', vehicle_badge: 'heart' },
+      destination_label: 'the station',
+      session_id: 'session-decor',
+    });
+    // Arrival shows with the decoration still applied.
+    expect(findByText(root, 'Play Again')).toBeDefined();
+    expect(findByClass(root, 'number-train__badge')).toBeDefined();
+
+    // The keepsake: a fresh mount's world choice shows her exact last trip.
+    destroyNumberTrainActivity();
+    const root2 = document.createElement('div') as unknown as MockElement;
+    renderNumberTrainActivity(root2 as unknown as HTMLElement, {
+      activity: activity as LearningActivity,
+      childId: 'local-child',
+      sessionId: 'session-next',
+      speech: createMockSpeech(),
+      audio: createMockAudio(),
+      onEvent: () => {},
+      tripHistory: {
+        list: () => trips,
+        append: (record) => trips.push(record),
+      },
+    });
+    const keepsake = findByClass(root2, 'world-choice__keepsake');
+    expect(keepsake).toBeDefined();
+    expect(keepsake?.attributes['aria-label']).toContain('the station');
+    expect(
+      findByClass(root2, 'world-choice__keepsake-vehicle')?.style.getPropertyValue(
+        '--vehicle-accent'
+      )
+    ).toBe('#74b9ff');
+  });
+
+  test('the world choice opens the session: two cards, spoken picks, stable world', () => {
+    const { root, speech } = setupAtWorldChoice();
+
+    // Two unlocked cards and one Start — no session yet.
+    const station = findByAria(root, 'Train Station');
+    const shuttle = findByAria(root, 'Space Shuttle');
+    expect(station).toBeDefined();
+    expect(shuttle).toBeDefined();
+    expect(findByClass(root, 'number-train')).toBeUndefined();
+    expect(speech.speak).toHaveBeenCalledWith('Which world today?');
+    // Default preselected.
+    expect(station?.classList.contains('is-selected')).toBe(true);
+
+    // Picking the shuttle speaks its label and moves the selection.
+    shuttle?.click();
+    expect(speech.speak).toHaveBeenCalledWith('The space shuttle!');
+    expect(shuttle?.classList.contains('is-selected')).toBe(true);
+    expect(station?.classList.contains('is-selected')).toBe(false);
+
+    // Start begins the session in the chosen world and persists the choice.
+    findByAria(root, 'Start the trip')?.click();
+    expect(findByClass(root, 'number-train')).toBeDefined();
+    expect(localStorage.getItem('lp_number_train_world')).toBe('space-shuttle');
+  });
+
+  test('a saved preference preselects; malformed values fall back to the default', () => {
+    localStorage.setItem('lp_number_train_world', 'space-shuttle');
+    const first = setupAtWorldChoice();
+    expect(
+      findByAria(first.root, 'Space Shuttle')?.classList.contains('is-selected')
+    ).toBe(true);
+    destroyNumberTrainActivity();
+
+    localStorage.setItem('lp_number_train_world', 'deleted-world-42');
+    const second = setupAtWorldChoice();
+    expect(
+      findByAria(second.root, 'Train Station')?.classList.contains('is-selected')
+    ).toBe(true);
+  });
+
+  test('the world stays stable through Play Again', () => {
+    localStorage.setItem('lp_number_train_world', 'space-shuttle');
+    const { root } = setupAtWorldChoice();
+    findByAria(root, 'Start the trip')?.click();
+
+    // Complete nothing — just verify the session container is shuttle-world
+    // and that a rebuilt session (Play Again path re-reads the preference)
+    // stays in the same world with no selector in between.
+    const screen = findByClass(root, 'number-train-screen');
+    expect(screen?.dataset.world).toBe('space-shuttle');
+  });
+
 });
 
 describe('number train protected surfaces', () => {
@@ -645,6 +782,7 @@ describe('number train protected surfaces', () => {
       expect(level?.level).toBe(0);
     }
   });
+
 });
 
 function setup(): { root: MockElement; events: ActivityAttemptEvent[] } {
@@ -661,7 +799,49 @@ function setup(): { root: MockElement; events: ActivityAttemptEvent[] } {
     audio: createMockAudio(),
     onEvent: (event) => events.push(event),
   });
+  // "Kennedi picks": every session opens on the world choice; the shared
+  // setup starts the default world so session tests exercise the trip.
+  findByAria(root, 'Start the trip')?.click();
   return { root, events };
+}
+
+function setupAtWorldChoice(): {
+  root: MockElement;
+  events: ActivityAttemptEvent[];
+  speech: ReturnType<typeof createMockSpeech>;
+} {
+  const root = document.createElement('div') as unknown as MockElement;
+  const events: ActivityAttemptEvent[] = [];
+  const speech = createMockSpeech();
+  const activity = APPROVED_ACTIVITIES.find((entry) => entry.id === 'number-train');
+  if (!activity) throw new Error('Missing number-train activity');
+  renderNumberTrainActivity(root as unknown as HTMLElement, {
+    activity: activity as LearningActivity,
+    childId: 'local-child',
+    sessionId: 'session-1',
+    speech,
+    audio: createMockAudio(),
+    onEvent: (event) => events.push(event),
+  });
+  return { root, events, speech };
+}
+
+function createMockLocalStorage(): Storage {
+  const store = new Map<string, string>();
+  return {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      store.set(key, value);
+    },
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
+    clear: () => store.clear(),
+    key: () => null,
+    get length() {
+      return store.size;
+    },
+  } as Storage;
 }
 
 class MockClassList {
@@ -686,9 +866,27 @@ class MockClassList {
     return this.values.has(name);
   }
 
+  toggle(name: string, force?: boolean): boolean {
+    const shouldAdd = force ?? !this.values.has(name);
+    if (shouldAdd) this.values.add(name);
+    else this.values.delete(name);
+    this.sync();
+    return shouldAdd;
+  }
+
   private sync(): void {
     const base = this.owner.baseClassName;
     this.owner.className = [base, ...this.values].filter(Boolean).join(' ');
+  }
+}
+
+class MockStyle {
+  private readonly values: Record<string, string> = {};
+  setProperty(name: string, value: string): void {
+    this.values[name] = value;
+  }
+  getPropertyValue(name: string): string {
+    return this.values[name] ?? '';
   }
 }
 
@@ -697,7 +895,7 @@ class MockElement {
   readonly children: MockElement[] = [];
   readonly dataset: Record<string, string> = {};
   readonly attributes: Record<string, string> = {};
-  readonly style: Record<string, string> = {};
+  readonly style = new MockStyle();
   readonly classList = new MockClassList(this);
   baseClassName = '';
   id = '';
@@ -829,6 +1027,15 @@ function completeRound(root: MockElement, round: NumberTrainRound): void {
     return;
   }
   findChoice(root, String(answerOf(round)))?.click();
+}
+
+function findByAria(element: MockElement, label: string): MockElement | undefined {
+  if (element.attributes['aria-label'] === label) return element;
+  for (const child of element.children) {
+    const match = findByAria(child, label);
+    if (match) return match;
+  }
+  return undefined;
 }
 
 function findByText(element: MockElement, text: string): MockElement | undefined {

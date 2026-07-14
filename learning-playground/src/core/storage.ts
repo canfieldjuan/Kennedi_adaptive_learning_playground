@@ -3,6 +3,11 @@
  */
 
 import type { ParentSettings } from '../types/storage';
+import {
+  TRAIN_TRIP_HISTORY_LIMIT,
+  toTrainTripCompletion,
+  type TrainTripCompletion,
+} from '../modules/number-train/trip-history';
 import type { StorageServiceInterface } from '../types/runtime';
 import type { ActivityAttemptEvent } from '../types/events';
 import type { ParentObservation } from '../types/observations';
@@ -54,6 +59,7 @@ const MASTERY_SNAPSHOTS_KEY = 'lp_parent_mastery_snapshots';
 const REVIEW_SCHEDULE_RECORDS_KEY = 'lp_parent_review_schedule_records';
 const STORY_HISTORY_KEY = 'lp_story_history';
 const CAFE_ORDER_HISTORY_KEY = 'lp_cafe_order_history';
+const TRAIN_TRIP_HISTORY_KEY = 'lp_train_trip_history';
 const DEFAULT_CHILD_ID = 'local-child';
 
 export interface KeyValueStorage {
@@ -497,6 +503,40 @@ export class StorageService implements StorageServiceInterface {
     }
   }
 
+  getTrainTripHistory(): TrainTripCompletion[] {
+    try {
+      const raw = this.localStore.getItem(TRAIN_TRIP_HISTORY_KEY);
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map(toTrainTripCompletion)
+        .filter((record): record is TrainTripCompletion => record !== null)
+        .slice(-TRAIN_TRIP_HISTORY_LIMIT);
+    } catch {
+      return [];
+    }
+  }
+
+  appendTrainTripHistory(record: TrainTripCompletion): void {
+    try {
+      const safeRecord = toTrainTripCompletion(record);
+      if (!safeRecord) return;
+      const records = this.getTrainTripHistory();
+      if (records.some((stored) => stored.completion_id === safeRecord.completion_id)) {
+        return;
+      }
+      const nextRecords = [...records, safeRecord].slice(-TRAIN_TRIP_HISTORY_LIMIT);
+      this.localStore.setItem(TRAIN_TRIP_HISTORY_KEY, JSON.stringify(nextRecords));
+    } catch (err) {
+      console.error('[Storage] Failed to append train trip history:', err);
+    }
+  }
+
+  clearTrainTripHistory(): void {
+    this.localStore.removeItem(TRAIN_TRIP_HISTORY_KEY);
+  }
+
   clearCafeOrderHistory(): void {
     this.localStore.removeItem(CAFE_ORDER_HISTORY_KEY);
   }
@@ -515,6 +555,7 @@ export class StorageService implements StorageServiceInterface {
       reviewScheduleRecords: this.getParentReviewScheduleRecords(),
       storyHistory: this.getStoryHistory(),
       cafeOrderHistory: this.getCafeOrderHistory(),
+      trainTripHistory: this.getTrainTripHistory(),
     });
   }
 }

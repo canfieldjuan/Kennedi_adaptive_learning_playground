@@ -16,9 +16,10 @@ import {
   validateWorldRegistry,
 } from '../../src/modules/number-train/world-validator';
 import { TRAIN_STATION_WORLD } from '../../src/modules/number-train/worlds/train-station/train-station.world';
-import type {
-  NumberTrainWorldPack,
-  WorldCustomizationSlot,
+import {
+  worldChromeBackground,
+  type NumberTrainWorldPack,
+  type WorldCustomizationSlot,
 } from '../../src/modules/number-train/world-pack.types';
 
 function validPack(): NumberTrainWorldPack {
@@ -40,6 +41,8 @@ function validPack(): NumberTrainWorldPack {
       seatOccupied: '#fdf3d0',
       ground: '#e8d3ae',
       sky: '#dcecf8',
+      textInk: '#3a2461',
+      textSoft: '#5c4a86',
     },
     completion: { destinationLabel: 'the fixture', destinationSceneSvg: null },
     customization: [],
@@ -93,6 +96,34 @@ describe('number train world packs', () => {
 
   test('a valid preference resolves to its world', () => {
     expect(resolveNumberTrainWorld('train-station')).toBe(TRAIN_STATION_WORLD);
+    expect(resolveNumberTrainWorld('space-shuttle').id).toBe('space-shuttle');
+  });
+
+  test('the runtime holds zero world-specific conditionals', () => {
+    // The acceptance criterion of the whole arc: the second world is
+    // manifest + assets, not branches. The core runtime must never mention
+    // a concrete world id.
+    // @ts-expect-error Vitest runs in Node; the app does not ship Node typings.
+    // eslint-disable-next-line
+    const { readFileSync } = require('node:fs');
+    const runtime = readFileSync(
+      new URL(
+        '../../src/modules/number-train/NumberTrainActivity.ts',
+        import.meta.url
+      ),
+      'utf8'
+    );
+    expect(runtime).not.toContain('space-shuttle');
+    expect(runtime).not.toContain('SPACE_SHUTTLE');
+    expect(runtime).not.toContain('TRAIN_STATION');
+    // 'train-station' appears exactly once: the legacy screen-scope CSS
+    // class on the container (applied identically for every world — the
+    // shuttle renders under it too). Any second occurrence would be a
+    // world-specific branch sneaking in.
+    expect(runtime.split('train-station')).toHaveLength(2);
+    expect(runtime).toContain(
+      "className = 'child-container activity-screen number-train-screen train-station'"
+    );
   });
 
   test('duplicate world ids fail registry validation', () => {
@@ -185,6 +216,14 @@ describe('number train world packs', () => {
     expect(errors.some((e) => e.includes('duplicate choice id'))).toBe(true);
     expect(errors.some((e) => e.includes('exactly one of'))).toBe(true);
     expect(errors.some((e) => e.includes('duplicate slot id'))).toBe(true);
+  });
+
+  test('chrome background derivation handles shorthand hex and matches the previous value exactly', () => {
+    // Train Station: exactly the rgba the icon buttons used before packs.
+    expect(worldChromeBackground('#3a2461')).toBe('rgba(58, 36, 97, 0.12)');
+    // Shorthand hex must expand, never concatenate into an invalid token.
+    expect(worldChromeBackground('#fff')).toBe('rgba(255, 255, 255, 0.12)');
+    expect(worldChromeBackground('#fdf3d0')).toBe('rgba(253, 243, 208, 0.12)');
   });
 
   test('flavor lines must be plain spoken text', () => {
