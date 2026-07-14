@@ -27,6 +27,7 @@ import {
 import type { ResolvedScene, StoryPack } from '../../src/modules/story-stage/story-pack.types';
 import type { SpeechServiceInterface } from '../../src/types/runtime';
 import { parseRoute } from '../../src/app/router';
+import { storySceneSvg } from '../../src/modules/story-stage/story-art';
 
 const FIRST_TALE = resolveFirstTale();
 
@@ -380,6 +381,32 @@ describe('story stage runtime', () => {
     findByAria(root, 'What happens next?')?.click();
     findByAria(root, 'Ask the friendly owl')?.click();
     expect(currentCaption(root)).toBe(scene('log').narration);
+    const sceneMarkup = findByClass(root, 'story-stage__scene')?.innerHTML ?? '';
+    expect(sceneMarkup).toContain('data-production-art="story-stage-lost-log-proof"');
+    expect(sceneMarkup).toContain('href="/assets/images/story-stage-lost-log-proof.svg"');
+  });
+
+  test('the production-art proof is exact-choice scoped', () => {
+    const proof = storySceneSvg('lost-log', {
+      characterArt: 'poppy',
+      settingArt: 'forest',
+    });
+    expect(proof).toContain('href="/assets/images/story-stage-lost-log-proof.svg"');
+    expect(proof).toContain('aria-hidden="true"');
+
+    const alternateCharacter = storySceneSvg('lost-log', {
+      characterArt: 'finn',
+      settingArt: 'forest',
+    });
+    expect(alternateCharacter).not.toContain('story-stage-lost-log-proof.svg');
+    expect(alternateCharacter).toContain('#8fce9b');
+
+    const alternateSetting = storySceneSvg('lost-log', {
+      characterArt: 'poppy',
+      settingArt: 'cozy-town',
+    });
+    expect(alternateSetting).not.toContain('story-stage-lost-log-proof.svg');
+    expect(alternateSetting).toContain('#fdeed7');
   });
 
   test('scene changes stop speech before speaking (no overlap)', () => {
