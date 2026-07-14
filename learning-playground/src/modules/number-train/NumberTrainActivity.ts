@@ -27,7 +27,8 @@ import type {
   NumberTrainSessionConfig,
 } from './number-train.types';
 import { buildSessionPlan } from './round-plan';
-import { createStationEnvironment } from './station-environment';
+import { resolveNumberTrainWorld } from './world-registry';
+import type { NumberTrainWorldPack } from './world-pack.types';
 import {
   SEATS_PER_CAR,
   DEFAULT_SUCCESS_TAIL,
@@ -39,7 +40,6 @@ import {
   buildCountingHint,
   buildSequenceHint,
 } from './train-lines';
-import { trainEngineSvg, passengerSvg } from './train-art';
 
 interface NumberTrainOptions {
   activity: LearningActivity;
@@ -57,6 +57,10 @@ interface FeedbackRule {
 }
 
 
+
+// The active world pack: the game's fantasy provider. Resolved per mount;
+// the child's world selection slice will pass a saved preference here.
+let activeWorld: NumberTrainWorldPack = resolveNumberTrainWorld();
 
 let container: HTMLElement | null = null;
 let cleanupHandlers: Array<() => void> = [];
@@ -95,10 +99,15 @@ export function renderNumberTrainActivity(
     runSessionCleanup();
     container.innerHTML = '';
 
-    // The friendly station: a decorative scene (inert — aria-hidden, no
-    // pointer events, nothing countable) remounted with each trip because
-    // Play Again rebuilds the container.
-    container.appendChild(createStationEnvironment());
+    // The world's decorative scene (inert — aria-hidden, no pointer events,
+    // nothing countable) remounted with each trip because Play Again rebuilds
+    // the container. The world pack also scopes the palette: values the
+    // runtime applies as CSS custom properties on the activity container.
+    activeWorld = resolveNumberTrainWorld();
+    container.dataset.world = activeWorld.id;
+    container.style.setProperty('--world-vehicle-body', activeWorld.palette.vehicleBody);
+    container.style.setProperty('--world-seat-occupied', activeWorld.palette.seatOccupied);
+    container.appendChild(activeWorld.mountEnvironment());
 
     let plan: NumberTrainPlan;
     try {
@@ -366,7 +375,7 @@ export function renderNumberTrainActivity(
       const setSeat = (seat: HTMLElement, occupied: boolean): void => {
         if (occupied) {
           seat.classList.add('is-occupied');
-          seat.innerHTML = passengerSvg();
+          seat.innerHTML = activeWorld.passengerSvg();
           seat.setAttribute('aria-label', 'Seat with passenger. Tap to remove.');
         } else {
           seat.classList.remove('is-occupied');
@@ -548,7 +557,7 @@ export function renderNumberTrainActivity(
 
       const engine = document.createElement('div');
       engine.className = 'number-train__engine number-train__engine--path';
-      engine.innerHTML = trainEngineSvg();
+      engine.innerHTML = activeWorld.vehicleFrontSvg();
       path.appendChild(engine);
 
       const stops: HTMLElement[] = [];
@@ -811,7 +820,7 @@ function buildTrainVisual(
 
   const engine = document.createElement('div');
   engine.className = 'number-train__engine';
-  engine.innerHTML = trainEngineSvg();
+  engine.innerHTML = activeWorld.vehicleFrontSvg();
   train.appendChild(engine);
 
   const capacityBasis = Math.max(quantity, options?.capacityFor ?? 0);
@@ -837,7 +846,7 @@ function buildTrainVisual(
       }
       if (seatIndex < occupiedInCar) {
         seat.classList.add('is-occupied');
-        seat.innerHTML = passengerSvg();
+        seat.innerHTML = activeWorld.passengerSvg();
       }
       seats.appendChild(seat);
       allSeats.push(seat);

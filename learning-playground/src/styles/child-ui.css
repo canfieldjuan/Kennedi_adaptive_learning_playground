@@ -689,7 +689,10 @@
   padding: var(--space-sm);
   border: 3px solid rgba(58, 36, 97, 0.85);
   border-radius: var(--radius-lg);
-  background: #f6f0ff;
+  /* World-pack palette: the runtime sets --world-* on the activity container
+     from the active world's manifest; fallbacks are the Train Station values
+     so a missing variable can never change the default look. */
+  background: var(--world-vehicle-body, #f6f0ff);
   margin-bottom: 10px;
 }
 
@@ -733,7 +736,7 @@
 .number-train__seat.is-occupied {
   border-style: solid;
   border-color: rgba(58, 36, 97, 0.85);
-  background: #fdf3d0;
+  background: var(--world-seat-occupied, #fdf3d0);
 }
 
 .number-train__passenger-svg {
