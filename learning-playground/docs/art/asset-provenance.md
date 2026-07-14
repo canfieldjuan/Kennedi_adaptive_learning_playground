@@ -225,6 +225,37 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Owner look approval:** Pending; deterministic proof replaces the owner-rejected generated-video direction
 - **Restrictions and notes:** Review artifact only. Fourteen named Inkscape layers preserve exact Bear, hat, face, cafe, bowl, arm, grip, spoon, dough, and blink geometry. After owner feedback that the first deterministic spoon moved vertically outside the bowl, the spoon was redrawn handle-up and working-end-down between the dough and front rim; arm, grip, and spoon now share a bounded 14-pixel horizontal stir with at most two pixels of vertical travel. Chromium pauses and resets the SVG immediately after load, then seeks each of 77 frame times and rejects a frame if the spoon center leaves the dough, the full working end leaves the bowl, or the hand, grip, and shaft separate. Source validation, hashing, and the browser data URL use one exact byte buffer; every proof target ID must appear exactly once in source and browser DOM. The lab, frames, review output, and per-proof atomic lock must remain outside the full Git checkout. A lock owner holds shared paths from cleanup through frame/output hashing and run-record publication, and a concurrent contender is rejected without touching them. FFmpeg encodes single-threaded bit-exact VP9 with no audio and no inherited source metadata. Three consecutive clean corrected renders matched exactly: source SHA-256 `af4947db573ba04e7f6a32dfa370d8068751e04675930ee3dc3fc5efaea390df`, combined frame-set SHA-256 `5635b8874f137c35eae7ea3edcd0c986a5ff0e2f609c39cf4144300eaaf1a7d6`, and WebM SHA-256 `67e0e28b72cfbe6fd0922b6330724d44191b3a501d507ac05eebcd5c330b904b`. Generic deterministic FFmpeg encoder/duration fields remain; no prompt, authoring, source, or user metadata is present. No shipped video, narration, runtime, manifest, evidence, or approval behavior changed, and the game has no Inkscape, Chromium, FFmpeg, or renderer dependency at runtime.
 
+## The Castle Lost Its Colors Inkscape Art-Direction Proof
+
+- **Asset family:** Colorless Castle find-yellow representative story scene
+- **Game:** Video Vault / Bilingual Story Vault proof
+- **Status:** `draft`
+- **Production path(s):** None; review-only captures at `docs/captures/video/colorless-castle/`
+- **Editable source path(s):** `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg`
+- **Creator:** Project developer, Codex production-art session
+- **Creation date:** 2026-07-13
+- **Creation tool and version:** Standards-based SVG authored with named Inkscape layers; rendered and geometry-queried in Inkscape 1.4.4 Flatpak (`org.inkscape.Inkscape`); ImageMagick 6.9 for the review-only comparison sheet
+- **Origin category:** A original
+- **Original or third-party status:** Original project artwork
+- **Project-owned source material used:** Approved playground ink `#3a2461`, warm palette language, rounded construction, and the draft Finn/moon-castle story concept; no legacy geometry embedded
+- **Third-party elements:** None
+- **Source URL(s):** Not applicable
+- **License name and version/date:** Not applicable; original project artwork
+- **License file path:** Not applicable
+- **Commercial use permitted:** yes
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None
+- **AI assistance:** none in the proof source or render; three earlier ComfyUI trials were rejected and are not incorporated
+- **AI approval/terms record:** Not applicable to the proof artwork
+- **Contact sheet path:** `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-comparison.webp`
+- **Desktop screenshot path(s):** `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-mobile.webp`
+- **Owner look approval:** Pending; this is the single representative proof required before sequence rollout
+- **Restrictions and notes:** Seven named Inkscape layers separate sky, grounds, castle, garden, Finn, equal-geometry paint targets, and finishing detail. The scene is text-free and local. Red, yellow, and green jars share the same dimensions and visual weight so the authored yellow answer is not pre-highlighted. This source is not a runtime asset, approved story frame, or authorization to draw the remaining five scenes. The prior deterministic Castle sequence remains rejected for visual quality.
+
 ## Cafe component library (shared)
 
 - **Asset family:** Playground cafe component library (window, sill cat, plants, hanging Bear Cafe sign with lettering-free bear emblem, hanging lamp, counter block, cookie jar, cake stand, cocoa cup)

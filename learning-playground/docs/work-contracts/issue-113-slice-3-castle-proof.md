@@ -252,6 +252,37 @@ bytes, and decodes without ffmpeg errors. It contains no audio and is not a
 final bilingual proof export. The owner disposition is **rejected**; it remains
 local evidence only and cannot define the Castle art direction.
 
+### Inkscape Art-Direction Proof
+
+The replacement proof stops at one representative find-yellow scene, as
+required by the production-art look gate. It is original Category A vector art
+with seven named Inkscape layers separating sky, grounds, castle, garden, Finn,
+paint choices, and finishing detail. It reuses only the approved project ink and
+palette language; no legacy geometry, third-party element, font, generated
+production element, or remote resource is embedded.
+
+- editable source:
+  `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg`
+- source SHA-256:
+  `8b782d294b985cd42c757616e78c6c0147262732b99f61b58201a129a11e54d8`
+- desktop capture: 960x544, 28,186 bytes,
+  `7226f97243ca8e3d8cfec3b8713ebb1f794f0d82d61cb286f0c11df03916f036`
+- mobile capture: 390x221, 10,498 bytes,
+  `bd7e5799d6aa89efb4812834558994c41c41c711c153b48e82fd21fa9983b332`
+- existing-versus-proposed comparison: 1480x428, 31,582 bytes,
+  `fcd77539eb9b8f2361c1246905329cd052a6d39dc40c0a48fa8448b54cb99001`
+
+Inkscape 1.4.4 rendered the source at both review sizes. XML and source guards
+found no `<text>`, `<image>`, external URL, or base64 content. `paint-red`,
+`paint-yellow`, and `paint-green` each occur exactly once. Inkscape geometry
+queries report all three target groups as 95x118 with identical vertical
+alignment; the correct yellow jar differs by paint color only and is not
+pre-highlighted. The provenance ledger records the scene as `draft`, with no
+runtime production path and owner look approval pending.
+
+The source and captures are review evidence, not approved story frames. No
+other Castle scene, video export, public asset, or runtime surface changed.
+
 ### Authorship Packet
 
 `castle-proof-authorship.json` has hash
@@ -296,17 +327,29 @@ visual sequence and exact WAVs:
 Each review export is VP9 plus 48 kHz mono Opus and decodes without ffmpeg
 errors. These are local review aids, not Foundry outputs or approved runtime
 media. All exact Spanish text and pronunciation remains explicitly pending
-fluent review; no reviewer identity, approval, Foundry storyboard, Foundry
-draft, or owner disposition has been fabricated.
+fluent review; no line-level approval, Foundry storyboard, Foundry draft, or
+final owner disposition has been fabricated.
+
+The owner approved the existing English Tara clips as candidates on
+2026-07-13. Those exact English bytes are frozen. The owner also identified
+himself as the fluent Spanish reviewer and supplied the local
+`orpheus-3b-italian_spanish-ft.gguf` model for a future exact Spanish rerender.
+The multilingual model was inspected and briefly loaded, but Spanish generation
+was paused before producing a clip when the owner redirected the slice to the
+art-quality problem. The current Spanish candidate clips remain unapproved and
+must not be mistaken for multilingual-model output.
 
 ### Current Gaps
 
-- Fluent Spanish review of the 8 target words and 13 exact hashed line artifacts:
-  **pending**.
-- Owner review of the visual sequence and three provisional synchronized
-  exports: **pending**.
+- Owner look review of the single Inkscape find-yellow proof: **pending**. The
+  prior placeholder sequence is rejected.
+- Multilingual-model rendering and exact owner/fluent review of the 8 target
+  words and 13 Spanish line artifacts: **pending**. The reviewer identity is
+  established; no new Spanish artifact has been approved.
+- Owner English narration review: **approved candidate**. Final synchronized
+  export review remains pending.
 - Final `bilingual_story_proof` storyboard and three-export assembly: blocked by
-  the named fluent approval records.
+  art-direction approval and the exact Spanish approval records.
 - Owner review and manual decision on the final Foundry draft: blocked by final
   assembly.
 
@@ -317,17 +360,21 @@ but Slice 3 cannot be declared complete under its contract yet.
 
 ### Gaps
 
-- Contract requirements not delivered: fluent Spanish approval, final Foundry
-  assembly, owner review, and manual decision remain open in Current Gaps. This
-  is why the gap audit is **NOT DONE**.
-- Change without contract trace: none. The tracked diff contains this work
-  contract and the narrowly amended Content Foundry narration rule required by
-  the owner-approved offline Tara recipe. Generated inputs, rejected drafts,
-  exact narration, and review exports remain under the contractually ignored
-  `.content-foundry/` root.
-- Protected surface touched: none. `git status --short` reports no Video Vault,
-  app runtime, public asset, voice core, learning engine, storage, dependency,
-  other PR, or other worktree file.
+- Owner look approval of the Inkscape proof is not delivered at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:344`; the previous
+  placeholder is rejected, and the other five scenes correctly remain unbuilt.
+- Multilingual Spanish rendering and exact line approval are not delivered at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:346`. Reviewer identity
+  is known, but no approval is inferred from that identity.
+- Final Foundry assembly, synchronized export review, and manual decision remain
+  blocked at `docs/work-contracts/issue-113-slice-3-castle-proof.md:349`.
+  Therefore the full Slice 3 gap audit is **NOT DONE**.
+- Change without contract trace: none. The complete branch diff contains the
+  work contract, narrow narration-rule correction, one declared Inkscape source,
+  its three declared review captures, and its declared provenance entry.
+- Protected surface touched: none. No app runtime, Video Vault manifest,
+  `public/assets`, voice core, Foundry implementation, learning engine, storage,
+  dependency, other PR, or other worktree file moved.
 
 ### Change By Change Reconstruction
 
@@ -343,29 +390,47 @@ but Slice 3 cannot be declared complete under its contract yet.
 4. `docs/work-contracts/issue-113-slice-3-castle-proof.md:131` records the
    repository evidence for Tara, expands only the previously stale narration
    rule, and preserves exact Spanish and owner review gates.
-5. `docs/work-contracts/issue-113-slice-3-castle-proof.md:165` records the live
-   loopback preflight, three machine-valid but visually rejected model drafts,
-   accepted vector candidate, exact 22-cue narration result, review packet,
-   three synchronized review exports, and honest NOT DONE state.
-6. `docs/contracts/content-foundry.contract.md:79` permits finite
+5. `docs/contracts/content-foundry.contract.md:79` permits finite
    owner-approved local generated narration while continuing to forbid runtime
    TTS, remote audio, automatic approval, and unreviewed generated voice.
+6. `docs/work-contracts/issue-113-slice-3-castle-proof.md:165` records the actual
+   visual root cause and limits the correction to one representative Inkscape
+   proof plus review evidence and provenance before sequence rollout.
+7. `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg:1`
+   adds one 960x544 editable local source. Its seven named layers begin at lines
+   21, 31, 39, 64, 75, 95, and 114; the equal-geometry target groups are at
+   lines 97, 102, and 107.
+8. `docs/art/asset-provenance.md:164` records original Category A ownership,
+   exact source and capture paths, no third-party or generated production art,
+   pending owner look approval, and the explicit no-rollout boundary.
+9. The three review-only WebP captures named at
+   `docs/art/asset-provenance.md:189` provide desktop, mobile, and
+   existing-versus-proposed review evidence. They do not create a runtime asset.
+10. `docs/work-contracts/issue-113-slice-3-castle-proof.md:206` records rejected
+    model trials, rejected placeholder art, verified narration, the Inkscape
+    proof and hashes, reviewer status, and the honest remaining gaps.
 
 ### Contract Traceability
 
 - Root cause and real review gap ->
   `docs/work-contracts/issue-113-slice-3-castle-proof.md:9` and the evidence at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:165`.
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:206`.
 - Correct production and review surface ->
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:25` and the ignored
-  local packet recorded at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:191`.
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:25`, with the narrowed
+  art correction at `docs/work-contracts/issue-113-slice-3-castle-proof.md:175`.
 - Must-not-change boundary ->
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:61` and the
-  two-document tracked status.
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:61` and the seven-file
+  branch diff.
 - Owner-approved offline Tara source ->
   `docs/work-contracts/issue-113-slice-3-castle-proof.md:131` and the narrow
   narration-rule correction at `docs/contracts/content-foundry.contract.md:79`.
+- Owner-reported art-quality cause ->
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:165`; required source,
+  captures, and provenance appear at the exact paths declared on lines 178-182.
+- Equal, non-leading paint choices -> source groups at
+  `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg:97`
+  and the measured result recorded at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:275`.
 - Model quality failed, but the existing Foundry code and workflows behaved
   according to contract; no Foundry implementation change was needed.
 
@@ -387,15 +452,22 @@ but Slice 3 cannot be declared complete under its contract yet.
   `castle: exact fluent review is incomplete`.
 - Review-packet regeneration guard: approval preservation for unchanged hashes
   and invalidation for changed hashes both passed.
+- `xmllint --noout` passed for the Inkscape source.
+- Art source guard passed: seven named layers, no text/image/remote/base64
+  content, and exactly one red, yellow, and green target id.
+- Inkscape geometry queries passed: all three paint groups are 95x118 at the
+  same vertical coordinate.
+- Inkscape 1.4.4 desktop and mobile renders passed visual inspection; ImageMagick
+  reports 960x544, 390x221, and 1480x428 for the two captures and comparison.
 - `npm ci`: passed; 56 locked packages installed, zero vulnerabilities.
 - `npm test`: passed; change-contract check, 58 Content Foundry tests with one
-  intentional live skip, 62 Vitest files, and 848/848 app tests.
+  intentional live skip, 63 Vitest files, and 862/862 app tests.
 - `npm run typecheck`: passed.
-- `npm run build`: passed; Vite transformed 132 modules. The existing
+- `npm run build`: passed; Vite transformed 134 modules. The existing
   greater-than-500-kB chunk warning remains.
 - `npm run lint --if-present`: completed; no lint script exists.
 - `git diff --check`: passed.
 
 This is an interim cold reconstruction, not a completion declaration. It must
-be repeated after exact fluent audio review, final assembly, and the human
-decision are present.
+be repeated after art-direction approval, exact multilingual Spanish review,
+final assembly, and the human decision are present.
