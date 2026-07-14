@@ -1,5 +1,5 @@
 /**
- * Space Shuttle world art — STYLE PROOF (arc slice 3).
+ * Space Shuttle world art — owner look-approved (slice 3 proof, PR #124).
  *
  * Illustrated standard: purple ink (#3a2461), warm flat fills, rounded
  * friendly geometry, clear silhouettes. Counting guardrail (identical to the
@@ -8,8 +8,9 @@
  * the moon is one object, the launch tower is one silhouette. The countable
  * astronauts live ONLY in pods, high-contrast at the standard seat size.
  *
- * Registered as a world in the full-world slice AFTER owner look approval of
- * this proof.
+ * Editable design-source mirror: design-source/number-train/worlds/
+ * space-shuttle.svg (provenance: docs/art/asset-provenance.md, Space
+ * Shuttle world entry).
  */
 
 const INK = '#3a2461';
@@ -58,9 +59,9 @@ export function missionGuideSvg(): string {
       <circle cx="79" cy="34" r="8" fill="#f7f3ec" stroke="${INK}" stroke-width="3.4"/>
       <circle cx="52" cy="53" r="3.6" fill="${INK}"/>
       <circle cx="68" cy="53" r="3.6" fill="${INK}"/>
-      <ellipse cx="60" cy="64" rx="8" ry="6.4" fill="#fdf3d0" stroke="${INK}" stroke-width="3"/>
-      <path d="M56 62 q4 4 8 0" fill="none" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>
-      <circle cx="60" cy="60" r="1.6" fill="${INK}"/>
+      <ellipse cx="60" cy="65" rx="7.4" ry="5.6" fill="#fdf3d0"/>
+      <circle cx="60" cy="62.5" r="1.8" fill="${INK}"/>
+      <path d="M55 67.5 q5 4.4 10 0" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>
     </svg>`;
 }
 
@@ -76,9 +77,9 @@ export function spaceSceneSvg(): string {
       <path d="M 0 330 q 420 -60 800 -10 q 320 40 570 -14 v 604 h -1370 Z" fill="#38406f" opacity="0.9"/>
       <ellipse cx="1150" cy="130" rx="150" ry="60" fill="#4a5388" opacity="0.45"/>
       <ellipse cx="260" cy="90" rx="190" ry="48" fill="#4a5388" opacity="0.35"/>
-      <circle cx="1105" cy="170" r="78" fill="#fdf3d0" stroke="#e8dcae" stroke-width="6"/>
-      <ellipse cx="1082" cy="152" rx="16" ry="11" fill="#efe4bb"/>
-      <ellipse cx="1128" cy="192" rx="21" ry="14" fill="#efe4bb"/>
+      <circle cx="985" cy="235" r="78" fill="#fdf3d0" stroke="#e8dcae" stroke-width="6"/>
+      <ellipse cx="962" cy="217" rx="16" ry="11" fill="#efe4bb"/>
+      <ellipse cx="1008" cy="257" rx="21" ry="14" fill="#efe4bb"/>
       <path d="M 96 560 v -300 l 44 -38 v 338 M 96 330 h 44 M 96 420 h 44 M 96 510 h 44"
         fill="none" stroke="#141936" stroke-width="16" stroke-linecap="round" opacity="0.85"/>
       <rect x="0" y="560" width="1370" height="24" rx="10" fill="#565f92"/>

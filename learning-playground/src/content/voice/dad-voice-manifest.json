@@ -1043,6 +1043,11 @@
       "style": "prompt"
     },
     {
+      "id": "7662c554",
+      "text": "The moon base! What a landing!",
+      "style": "prompt"
+    },
+    {
       "id": "768ea79f",
       "text": "Buh, buh, banana starts with b.",
       "style": "phonics"
@@ -1105,6 +1110,11 @@
     {
       "id": "7e43069d",
       "text": "Mama Bear wants three stars on her card. Add three stars, then press Check.",
+      "style": "prompt"
+    },
+    {
+      "id": "7e940dc5",
+      "text": "The train station!",
       "style": "prompt"
     },
     {
@@ -1315,6 +1325,11 @@
     {
       "id": "918f5aad",
       "text": "16 more passengers needed.",
+      "style": "prompt"
+    },
+    {
+      "id": "91bba316",
+      "text": "The space shuttle!",
       "style": "prompt"
     },
     {

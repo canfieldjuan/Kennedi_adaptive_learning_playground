@@ -727,7 +727,8 @@ export function renderNumberTrainActivity(
 
       container?.classList.add('is-arrived');
       stage.classList.add('number-train__stage--arrived');
-      const arrivalText = getArrivalAudio(options.activity);
+      const arrivalText =
+        activeWorld.flavor?.arrivalLine ?? getArrivalAudio(options.activity);
       showFeedback(feedback, arrivalText, 'success');
       options.speech.speak(arrivalText);
 

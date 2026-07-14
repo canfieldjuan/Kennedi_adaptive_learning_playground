@@ -86,9 +86,12 @@ export interface WorldPalette {
 export interface WorldMobileBehavior {
   /**
    * 'bands-only-swap': the scene ships a bands-only mobile export swapped
-   * via <picture> at the compact query (the established station pattern).
+   * via <picture> at the compact query (the station pattern).
+   * 'inline-crop': the scene is one inline SVG whose xMidYMax slice crop
+   * naturally reduces to bands at compact widths (the shuttle pattern,
+   * verified in the slice-3 proof captures).
    */
-  mode: 'bands-only-swap';
+  mode: 'bands-only-swap' | 'inline-crop';
 }
 
 export interface NumberTrainWorldPack {

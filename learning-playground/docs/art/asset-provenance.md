@@ -407,3 +407,37 @@ and must also document every legacy asset family it modifies or re-exports.
   the owner's say-so. Regeneration requires the owner's local reference
   recording: `~/Desktop/tts/venv-chatterbox/bin/python
   scripts/voice/generate_voice_pack.py --pack dad --only-missing`.
+
+## Space Shuttle world (Number Train)
+
+- **Asset family:** Space Shuttle world pack (scene, shuttle cockpit,
+  astronaut token, mission-guide bear, selector preview, customization
+  preview)
+- **Game:** Number Train (world pack — same runtime and learning contract
+  as Train Station)
+- **Status:** `look_approved` (owner approved the slice-3 style proof by
+  merging PR #124 after review, 2026-07-14)
+- **Production path(s):** in-code renderers in
+  `src/modules/number-train/worlds/space-shuttle/space-shuttle-art.ts`
+  (inline SVG, no standalone runtime asset)
+- **Editable source path(s):**
+  `design-source/number-train/worlds/space-shuttle.svg` (layered mirror;
+  edits move together with the renderers)
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-14
+- **Creation tool:** Hand-authored vectors in the illustrated standard;
+  editable in Inkscape 1.4.4; headless-render verified
+- **Origin:** Category A original composition; the astronaut/guide reuse
+  the playground's project-owned figure language (round face, dot eyes)
+- **Third-party elements:** None
+- **AI assistance:** None (rule-based vector authoring)
+- **Commercial use / modification / distribution / public repository:**
+  Project-owned, permitted
+- **Owner look approval:** APPROVED — slice-3 proof merged by owner
+  authorization (PR #124) with side-by-side captures
+- **Restrictions and notes:** COUNTING GUARDRAIL is load-bearing: no
+  discrete stars (glows are continuous), one moon, the launch tower is a
+  single silhouette; countable astronauts appear only in pods at the
+  standard seat size. Dark-sky worlds drive the palette textInk/textSoft
+  capability. The scene is inline SVG cropped at compact widths
+  (mobile mode 'inline-crop').

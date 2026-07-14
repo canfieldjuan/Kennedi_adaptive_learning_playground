@@ -155,6 +155,12 @@ other game, persistence, voice manifests.
   feedback, and icon-button rules with the Train Station values as
   fallbacks — the default world is pixel-unchanged. Validator requires
   both keys.
+- **Slice 4 — the `.train-station` container class is the legacy
+  screen-scope class** (like `.bear-cafe`), applied identically for every
+  world; the shuttle renders under it. Renaming it would churn pinned
+  selectors across the mobile contract tests for zero behavior — kept,
+  and the no-conditionals contract test pins it to exactly one
+  occurrence so a real world branch can never hide behind it.
 - **Slice 3 — proof notes for the full world**: the moon needs to move
   clear of the Repeat button zone; the scene should reserve the same
   clear zones the station scene established. The prototype world was

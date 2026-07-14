@@ -7,10 +7,12 @@
  */
 
 import { TRAIN_STATION_WORLD } from './worlds/train-station/train-station.world';
+import { SPACE_SHUTTLE_WORLD } from './worlds/space-shuttle/space-shuttle.world';
 import type { NumberTrainWorldPack } from './world-pack.types';
 
 export const NUMBER_TRAIN_WORLDS: NumberTrainWorldPack[] = [
   TRAIN_STATION_WORLD,
+  SPACE_SHUTTLE_WORLD,
 ];
 
 export const DEFAULT_WORLD_ID = TRAIN_STATION_WORLD.id;
