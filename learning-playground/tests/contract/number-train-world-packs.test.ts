@@ -16,9 +16,10 @@ import {
   validateWorldRegistry,
 } from '../../src/modules/number-train/world-validator';
 import { TRAIN_STATION_WORLD } from '../../src/modules/number-train/worlds/train-station/train-station.world';
-import type {
-  NumberTrainWorldPack,
-  WorldCustomizationSlot,
+import {
+  worldChromeBackground,
+  type NumberTrainWorldPack,
+  type WorldCustomizationSlot,
 } from '../../src/modules/number-train/world-pack.types';
 
 function validPack(): NumberTrainWorldPack {
@@ -187,6 +188,14 @@ describe('number train world packs', () => {
     expect(errors.some((e) => e.includes('duplicate choice id'))).toBe(true);
     expect(errors.some((e) => e.includes('exactly one of'))).toBe(true);
     expect(errors.some((e) => e.includes('duplicate slot id'))).toBe(true);
+  });
+
+  test('chrome background derivation handles shorthand hex and matches the previous value exactly', () => {
+    // Train Station: exactly the rgba the icon buttons used before packs.
+    expect(worldChromeBackground('#3a2461')).toBe('rgba(58, 36, 97, 0.12)');
+    // Shorthand hex must expand, never concatenate into an invalid token.
+    expect(worldChromeBackground('#fff')).toBe('rgba(255, 255, 255, 0.12)');
+    expect(worldChromeBackground('#fdf3d0')).toBe('rgba(253, 243, 208, 0.12)');
   });
 
   test('flavor lines must be plain spoken text', () => {
