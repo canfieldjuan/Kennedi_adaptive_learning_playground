@@ -35,6 +35,7 @@ import {
   readWorldPreference,
   saveWorldPreference,
 } from './world-preference';
+import type { TrainTripCompletion } from './trip-history';
 import { worldChromeBackground } from './world-pack.types';
 import type { NumberTrainWorldPack } from './world-pack.types';
 import {
@@ -56,6 +57,12 @@ interface NumberTrainOptions {
   speech: SpeechServiceInterface;
   audio: AudioServiceInterface;
   onEvent: (event: ActivityAttemptEvent) => void;
+  /** Ownership records (ownership-completion contract): list feeds the
+   * last-trip revisit chip; append saves the child's exact decorated trip. */
+  tripHistory?: {
+    list: () => TrainTripCompletion[];
+    append: (record: TrainTripCompletion) => void;
+  };
 }
 
 interface FeedbackRule {
@@ -71,6 +78,9 @@ interface FeedbackRule {
 let activeWorld: NumberTrainWorldPack = resolveNumberTrainWorld();
 
 let container: HTMLElement | null = null;
+// The most recent vehicle-front element — the decorate beat badges it.
+let engineElement: HTMLElement | null = null;
+let decorBadge: HTMLElement | null = null;
 let cleanupHandlers: Array<() => void> = [];
 let timeoutHandles: number[] = [];
 
@@ -163,6 +173,45 @@ export function renderNumberTrainActivity(
     }
     container.appendChild(grid);
 
+    // The revisit surface (ownership-completion contract): her last trip,
+    // exactly as she decorated it, greets her on return — no re-earning.
+    const lastTrip = options.tripHistory?.list().slice(-1)[0];
+    if (lastTrip) {
+      const world = NUMBER_TRAIN_WORLDS.find((entry) => entry.id === lastTrip.world_id);
+      if (world) {
+        const keepsake = document.createElement('div');
+        keepsake.className = 'world-choice__keepsake';
+        keepsake.setAttribute(
+          'aria-label',
+          `Your last trip: a ${world.label} ride to ${lastTrip.destination_label}`
+        );
+        const mini = document.createElement('span');
+        mini.className = 'world-choice__keepsake-vehicle';
+        mini.setAttribute('aria-hidden', 'true');
+        mini.innerHTML = world.vehicleFrontSvg();
+        for (const slot of world.customization) {
+          const choice = slot.choices.find(
+            (entry) => entry.id === lastTrip.customization[slot.id]
+          );
+          if (!choice) continue;
+          if (choice.accentColor) {
+            mini.style.setProperty('--vehicle-accent', choice.accentColor);
+          } else if (choice.artSvg) {
+            const badge = document.createElement('span');
+            badge.className = 'world-choice__keepsake-badge';
+            badge.innerHTML = choice.artSvg;
+            mini.appendChild(badge);
+          }
+        }
+        keepsake.appendChild(mini);
+        const caption = document.createElement('span');
+        caption.className = 'world-choice__keepsake-label';
+        caption.textContent = 'Your last trip';
+        keepsake.appendChild(caption);
+        container.appendChild(keepsake);
+      }
+    }
+
     const startButton = document.createElement('button');
     startButton.className = 'child-button world-choice__start';
     startButton.type = 'button';
@@ -187,6 +236,8 @@ export function renderNumberTrainActivity(
     if (!container) return;
     runSessionCleanup();
     container.innerHTML = '';
+    engineElement = null;
+    decorBadge = null;
 
     // The world's decorative scene (inert — aria-hidden, no pointer events,
     // nothing countable) remounted with each trip because Play Again rebuilds
@@ -813,6 +864,121 @@ export function renderNumberTrainActivity(
         })
       );
 
+      if (activeWorld.customization.length > 0) {
+        renderDecorateBeat();
+      } else {
+        renderArrival();
+      }
+    }
+
+    /**
+     * The ownership beat (ownership-completion contract): after the learning
+     * is DONE and the completed evidence has fired, the child decorates her
+     * vehicle — expressive, unscored, chosen not randomized. Her exact picks
+     * ride into the arrival and the saved trip record.
+     */
+    function renderDecorateBeat(): void {
+      const picks: Record<string, string> = {};
+      for (const slot of activeWorld.customization) {
+        picks[slot.id] = slot.defaultChoiceId;
+      }
+      applyDecoration(picks);
+
+      const panel = document.createElement('div');
+      panel.className = 'trip-decor';
+      panel.setAttribute('aria-label', 'Decorate your ride');
+
+      const heading = document.createElement('h2');
+      heading.className = 'trip-decor__title';
+      heading.textContent = 'Decorate your ride!';
+      panel.appendChild(heading);
+
+      for (const slot of activeWorld.customization) {
+        const row = document.createElement('div');
+        row.className = 'trip-decor__row';
+        row.setAttribute('aria-label', slot.label);
+        const buttons = new Map<string, HTMLButtonElement>();
+        for (const choice of slot.choices) {
+          const chip = document.createElement('button');
+          chip.className = 'trip-decor__chip';
+          chip.type = 'button';
+          chip.setAttribute('aria-label', `${slot.label}: ${choice.label}`);
+          chip.setAttribute(
+            'aria-pressed',
+            String(choice.id === picks[slot.id])
+          );
+          if (choice.accentColor) {
+            chip.classList.add('trip-decor__chip--color');
+            chip.style.setProperty('--decor-color', choice.accentColor);
+          } else if (choice.artSvg) {
+            chip.innerHTML = choice.artSvg;
+          }
+          if (choice.id === picks[slot.id]) chip.classList.add('is-selected');
+          const onPick = () => {
+            picks[slot.id] = choice.id;
+            for (const [id, other] of buttons) {
+              other.classList.toggle('is-selected', id === choice.id);
+              other.setAttribute('aria-pressed', String(id === choice.id));
+            }
+            applyDecoration(picks);
+            options.speech.speak(choice.spokenLabel);
+          };
+          chip.addEventListener('click', onPick);
+          cleanupHandlers.push(() => chip.removeEventListener('click', onPick));
+          buttons.set(choice.id, chip);
+          row.appendChild(chip);
+        }
+        panel.appendChild(row);
+      }
+
+      const goButton = document.createElement('button');
+      goButton.className = 'child-button trip-decor__go';
+      goButton.type = 'button';
+      goButton.textContent = 'Go!';
+      goButton.setAttribute('aria-label', 'Finish the trip');
+      const onGo = () => {
+        options.tripHistory?.append({
+          completion_id: `${options.sessionId}-${options.activity.id}-${replayIndex}`,
+          session_id: options.sessionId,
+          world_id: activeWorld.id,
+          world_version: activeWorld.version,
+          customization: { ...picks },
+          destination_label: activeWorld.completion.destinationLabel,
+          created_at: new Date().toISOString(),
+        });
+        panel.remove();
+        renderArrival();
+      };
+      goButton.addEventListener('click', onGo);
+      cleanupHandlers.push(() => goButton.removeEventListener('click', onGo));
+      panel.appendChild(goButton);
+
+      container?.appendChild(panel);
+      options.speech.speak('Decorate your ride!');
+    }
+
+    /** Apply the child's picks to the live vehicle: the accent rides a CSS
+     * variable inside the vehicle art; badges overlay the engine. */
+    function applyDecoration(picks: Record<string, string>): void {
+      for (const slot of activeWorld.customization) {
+        const choice = slot.choices.find((entry) => entry.id === picks[slot.id]);
+        if (!choice) continue;
+        if (choice.accentColor) {
+          container?.style.setProperty('--vehicle-accent', choice.accentColor);
+        } else if (choice.artSvg) {
+          if (!engineElement) continue;
+          if (!decorBadge || decorBadge.parentElement !== engineElement) {
+            decorBadge = document.createElement('span');
+            decorBadge.className = 'number-train__badge';
+            decorBadge.setAttribute('aria-hidden', 'true');
+            engineElement.appendChild(decorBadge);
+          }
+          decorBadge.innerHTML = choice.artSvg;
+        }
+      }
+    }
+
+    function renderArrival(): void {
       container?.classList.add('is-arrived');
       stage.classList.add('number-train__stage--arrived');
       const arrivalText =
@@ -914,6 +1080,7 @@ function buildTrainVisual(
   const engine = document.createElement('div');
   engine.className = 'number-train__engine';
   engine.innerHTML = activeWorld.vehicleFrontSvg();
+  engineElement = engine;
   train.appendChild(engine);
 
   const capacityBasis = Math.max(quantity, options?.capacityFor ?? 0);

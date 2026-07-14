@@ -155,11 +155,19 @@ export function collectVoiceLines(): VoiceLineEntry[] {
     }
   }
 
-  // — Number Train world packs: selector prompt, spoken labels, flavor —
+  // — Number Train world packs: selector prompt, spoken labels, flavor,
+  // and every customization slot/choice spoken label (self-enumerating) —
   add('Which world today?');
+  add('Decorate your ride!');
   for (const world of NUMBER_TRAIN_WORLDS) {
     add(world.spokenLabel);
     add(world.flavor?.arrivalLine);
+    for (const slot of world.customization) {
+      add(slot.spokenLabel);
+      for (const choice of slot.choices) {
+        add(choice.spokenLabel);
+      }
+    }
   }
 
   // — Story Stage setup phase (Pick Three) —

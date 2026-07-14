@@ -72,9 +72,39 @@ export const SPACE_SHUTTLE_WORLD: NumberTrainWorldPack = {
     destinationSceneSvg: null,
   },
 
-  // Filled by the ownership-customization slice (mission helmet, shuttle
-  // badge, shuttle accent are the candidates from the approved preview).
-  customization: [],
+  customization: [
+    {
+      id: 'vehicle_accent',
+      label: 'Shuttle color',
+      spokenLabel: 'Pick your shuttle color!',
+      choices: [
+        { id: 'red', label: 'Red', spokenLabel: 'Red!', accentColor: '#e05d5d' },
+        { id: 'blue', label: 'Blue', spokenLabel: 'Blue!', accentColor: '#74b9ff' },
+        { id: 'purple', label: 'Purple', spokenLabel: 'Purple!', accentColor: '#a29bfe' },
+      ],
+      defaultChoiceId: 'red',
+    },
+    {
+      id: 'vehicle_badge',
+      label: 'Shuttle badge',
+      spokenLabel: 'Pick your shuttle badge!',
+      choices: [
+        {
+          id: 'star',
+          label: 'Star badge',
+          spokenLabel: 'A star!',
+          artSvg: `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="15" fill="#fdf3d0" stroke="${INK}" stroke-width="2.8"/><path d="M20 11 l2.4 4.9 5.4 .6 -4 3.7 1.1 5.3 -4.9 -2.7 -4.9 2.7 1.1 -5.3 -4 -3.7 5.4 -.6 Z" fill="#f6c343" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/></svg>`,
+        },
+        {
+          id: 'moon',
+          label: 'Moon badge',
+          spokenLabel: 'A moon!',
+          artSvg: `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="15" fill="#232a52" stroke="${INK}" stroke-width="2.8"/><circle cx="20" cy="20" r="9" fill="#fdf3d0" stroke="#e8dcae" stroke-width="1.8"/><ellipse cx="17" cy="17.6" rx="2.4" ry="1.7" fill="#efe4bb"/><ellipse cx="23" cy="23" rx="3" ry="2" fill="#efe4bb"/></svg>`,
+        },
+      ],
+      defaultChoiceId: 'star',
+    },
+  ],
 
   mobile: { mode: 'inline-crop' },
   reducedMotion: { nonessentialAnimationDisabled: true },

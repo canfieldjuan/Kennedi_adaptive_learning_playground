@@ -28,6 +28,7 @@ import type {
 } from '../../types/mastery-records';
 import type { SkillMasteryState } from '../../types/progress';
 import { SpeechService, listSpeechVoices } from '../../core/speech';
+import { clearWorldPreference } from '../../modules/number-train/world-preference';
 import {
   VoicePackSpeech,
   VOICE_PACK_URI_PREFIX,
@@ -952,6 +953,8 @@ function createDataManagementSection(
       storage.clearParentReviewScheduleRecords();
       storage.clearStoryHistory();
       storage.clearCafeOrderHistory();
+      storage.clearTrainTripHistory();
+      clearWorldPreference();
       alert('Progress data cleared.');
       destroyParentPanel();
       renderParentPanel(parent, storage, context);

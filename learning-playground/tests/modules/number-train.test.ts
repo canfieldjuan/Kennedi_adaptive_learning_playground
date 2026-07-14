@@ -29,6 +29,7 @@ import type {
 } from '../../src/modules/number-train/number-train.types';
 import type { LearningActivity } from '../../src/types/activity';
 import type { ActivityAttemptEvent } from '../../src/types/events';
+import type { TrainTripCompletion } from '../../src/modules/number-train/trip-history';
 import type {
   AudioServiceInterface,
   SpeechServiceInterface,
@@ -284,6 +285,8 @@ describe('number train runtime', () => {
       completeRound(root, round);
       findByText(root, 'Next station')?.click();
     }
+    // The ownership beat sits between the last round and arrival.
+    findByAria(root, 'Finish the trip')?.click();
     findByText(root, 'Play Again')?.click();
     expect(findAllByClass(root, 'station-environment')).toHaveLength(1);
   });
@@ -383,6 +386,10 @@ describe('number train runtime', () => {
         s.className.includes('is-done')
       )
     ).toHaveLength(6);
+    // Decorate beat first (expressive, no events), then arrival.
+    const eventsBeforeDecor = events.length;
+    findByAria(root, 'Finish the trip')?.click();
+    expect(events.length).toBe(eventsBeforeDecor);
     expect(findByText(root, 'Play Again')).toBeDefined();
     expect(findByText(root, 'Home')).toBeDefined();
   });
@@ -394,6 +401,8 @@ describe('number train runtime', () => {
       completeRound(root, round);
       findByText(root, 'Next station')?.click();
     }
+    // The ownership beat sits between the last round and arrival.
+    findByAria(root, 'Finish the trip')?.click();
     findByText(root, 'Play Again')?.click();
 
     const replayPlan = buildSessionPlan({
@@ -562,6 +571,81 @@ describe('number train runtime', () => {
     const again = setup();
     expect(findByClass(again.root, 'number-train-screen')).toBeDefined();
   });
+  test('exact decoration choices ride into the record, arrival, and keepsake', () => {
+    const trips: TrainTripCompletion[] = [];
+    const root = document.createElement('div') as unknown as MockElement;
+    const events: ActivityAttemptEvent[] = [];
+    const activity = APPROVED_ACTIVITIES.find((entry) => entry.id === 'number-train');
+    if (!activity) throw new Error('Missing number-train activity');
+    renderNumberTrainActivity(root as unknown as HTMLElement, {
+      activity: activity as LearningActivity,
+      childId: 'local-child',
+      sessionId: 'session-decor',
+      speech: createMockSpeech(),
+      audio: createMockAudio(),
+      onEvent: (event) => events.push(event),
+      tripHistory: {
+        list: () => trips,
+        append: (record) => trips.push(record),
+      },
+    });
+    findByAria(root, 'Start the trip')?.click();
+
+    for (const round of plan.rounds) {
+      completeRound(root, round);
+      findByText(root, 'Next station')?.click();
+    }
+
+    // The decorate beat: pick blue + the heart flag; evidence stays frozen.
+    const eventsBefore = events.length;
+    findByAria(root, 'Train color: Blue')?.click();
+    findByAria(root, 'Train flag: Heart flag')?.click();
+    expect(events.length).toBe(eventsBefore);
+
+    // The badge is on the engine and the accent variable is set.
+    expect(findByClass(root, 'number-train__badge')).toBeDefined();
+    const screen = findByClass(root, 'number-train-screen');
+    expect(screen?.style.getPropertyValue('--vehicle-accent')).toBe('#74b9ff');
+
+    findByAria(root, 'Finish the trip')?.click();
+
+    // The record preserves the EXACT picks (ownership-completion contract).
+    expect(trips).toHaveLength(1);
+    expect(trips[0]).toMatchObject({
+      world_id: 'train-station',
+      customization: { vehicle_accent: 'blue', vehicle_badge: 'heart' },
+      destination_label: 'the station',
+      session_id: 'session-decor',
+    });
+    // Arrival shows with the decoration still applied.
+    expect(findByText(root, 'Play Again')).toBeDefined();
+    expect(findByClass(root, 'number-train__badge')).toBeDefined();
+
+    // The keepsake: a fresh mount's world choice shows her exact last trip.
+    destroyNumberTrainActivity();
+    const root2 = document.createElement('div') as unknown as MockElement;
+    renderNumberTrainActivity(root2 as unknown as HTMLElement, {
+      activity: activity as LearningActivity,
+      childId: 'local-child',
+      sessionId: 'session-next',
+      speech: createMockSpeech(),
+      audio: createMockAudio(),
+      onEvent: () => {},
+      tripHistory: {
+        list: () => trips,
+        append: (record) => trips.push(record),
+      },
+    });
+    const keepsake = findByClass(root2, 'world-choice__keepsake');
+    expect(keepsake).toBeDefined();
+    expect(keepsake?.attributes['aria-label']).toContain('the station');
+    expect(
+      findByClass(root2, 'world-choice__keepsake-vehicle')?.style.getPropertyValue(
+        '--vehicle-accent'
+      )
+    ).toBe('#74b9ff');
+  });
+
   test('the world choice opens the session: two cards, spoken picks, stable world', () => {
     const { root, speech } = setupAtWorldChoice();
 

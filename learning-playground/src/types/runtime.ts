@@ -20,6 +20,7 @@ import type {
 } from './mastery-records';
 import type { ParentSettings } from './storage';
 import type { ChildProgressProfile, SkillMasteryState } from './progress';
+import type { TrainTripCompletion } from '../modules/number-train/trip-history';
 
 export interface SpeechServiceInterface {
   enabled: boolean;
@@ -79,6 +80,9 @@ export interface StorageServiceInterface {
   getCafeOrderHistory(): CafeOrderCompletion[];
   appendCafeOrderHistory(record: CafeOrderCompletion): void;
   clearCafeOrderHistory(): void;
+  getTrainTripHistory(): TrainTripCompletion[];
+  appendTrainTripHistory(record: TrainTripCompletion): void;
+  clearTrainTripHistory(): void;
   exportProgressData(events: ActivityAttemptEvent[]): string;
 }
 

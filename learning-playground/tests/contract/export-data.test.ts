@@ -97,6 +97,7 @@ describe('progress export contract', () => {
       'parent_review_schedule_records',
       'story_history',
       'cafe_order_history',
+      'train_trip_history',
     ]);
     expect(exported.data_health).toMatchObject({
       total_events: 2,
