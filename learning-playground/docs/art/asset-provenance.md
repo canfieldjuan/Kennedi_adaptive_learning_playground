@@ -198,7 +198,7 @@ and must also document every legacy asset family it modifies or re-exports.
 
 - **Asset family:** Bear Bakes Bread deterministic mixing vector proof
 - **Game:** Video Vault / Bear Bakes Bread
-- **Status:** `draft`
+- **Status:** `look_approved`
 - **Production path(s):** None; review-only WebM at `docs/captures/video/bear-mixes-dough-vector-proof.webm`
 - **Editable source path(s):** `design-source/video/bear-bakes-bread/mix-dough-vector-animation.svg`, `design-source/video/bear-bakes-bread/vector-render-manifest.json`
 - **Creator:** Project developer, Codex deterministic-vector animation session
@@ -253,8 +253,8 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Contact sheet path:** `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-comparison.webp`
 - **Desktop screenshot path(s):** `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-desktop.webp`
 - **Mobile screenshot path(s):** `docs/captures/video/colorless-castle/castle-find-yellow-art-proof-mobile.webp`
-- **Owner look approval:** Pending; this is the single representative proof required before sequence rollout
-- **Restrictions and notes:** Seven named Inkscape layers separate sky, grounds, castle, garden, Finn, equal-geometry paint targets, and finishing detail. The scene is text-free and local. Red, yellow, and green jars share the same dimensions and visual weight so the authored yellow answer is not pre-highlighted. This source is not a runtime asset, approved story frame, or authorization to draw the remaining five scenes. The prior deterministic Castle sequence remains rejected for visual quality.
+- **Owner look approval:** APPROVED — the owner approved the representative desktop, mobile, and comparison proof on 2026-07-13 ("those work for me chief"); sequence rollout authorized
+- **Restrictions and notes:** Seven named Inkscape layers separate sky, grounds, castle, garden, Finn, equal-geometry paint targets, and finishing detail. The scene is text-free and local. Red, yellow, and green jars share the same dimensions and visual weight so the authored yellow answer is not pre-highlighted. Approval authorizes the remaining five editable story scenes in this visual language; it does not approve final video, runtime integration, or a public asset. The prior deterministic Castle sequence remains rejected for visual quality.
 
 ## Cafe component library (shared)
 

@@ -203,6 +203,33 @@ approve the proof's illustration style, scene density, character scale, line
 weight, palette, contrast, mobile readability, and environmental richness
 before the style can roll out to the other scenes.
 
+### Owner Look Approval and Bounded Sequence Rollout
+
+The owner approved the representative Inkscape proof on 2026-07-13 ("those work
+for me chief"). This satisfies the look gate for illustration style, density,
+character scale, line weight, palette, contrast, mobile readability, and
+environmental richness. It does not approve final video or runtime use.
+
+The tracked art surface may now expand only to five additional editable SVGs
+beside the approved find-yellow source and one six-frame review contact sheet
+under `docs/captures/video/colorless-castle/`. Each scene must preserve the
+approved castle construction, Finn construction, ink, palette, 960x544 canvas,
+named Inkscape layers, no-text/no-remote boundary, and authored story order:
+
+1. colorless castle invitation;
+2. red door restoration;
+3. blue window restoration;
+4. approved find-yellow response scene, unchanged;
+5. green garden and purple roof restoration; and
+6. fully restored celebration.
+
+The five new scenes may change pose, framing emphasis, and visible restoration
+state only to carry those beats. They must not add narration, response targets,
+runtime interaction, evidence, or story duration. Every source must pass XML,
+Inkscape render, local-resource, layer, and visual continuity checks before the
+ignored local review videos are rebuilt. Final Foundry assembly remains blocked
+by multilingual Spanish approval and final owner audio/video review.
+
 ## Production Evidence
 
 ### Live Authoring Preflight
