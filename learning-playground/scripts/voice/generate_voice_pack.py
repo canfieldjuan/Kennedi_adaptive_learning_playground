@@ -19,6 +19,17 @@ Two packs, two recipes (both owner listen-approved):
       gentle ffmpeg atempo slow-down (Orpheus has no speed parameter);
       the factor is owner-tunable via --phonics-tempo.
 
+  dad   (Chatterbox zero-shot clone of the owner's reference recording;
+         approved 2026-07-13 — the owner signed off the v2/v3 sample sets)
+      ~/Desktop/tts/venv-chatterbox/bin/python scripts/voice/generate_voice_pack.py --pack dad [--only-missing]
+      Needs: chatterbox-tts (the venv above) + the reference recording at
+      ~/Desktop/tts/juan-reference.wav (NOT committed — personal voice data
+      stays out of the repo). Recipe: prompt exaggeration 0.55 / story 0.40
+      (+ atempo 0.96) / phonics 0.45, all cfg_weight 0.3. Dad phonics
+      respell map: "buh" renders as "buhh" and comma-chained sounds get
+      hard stops, so the /b/ sound stays a schwa instead of drifting to
+      "bah" (owner-picked variant A).
+
 The game only ever loads the produced static MP3s; none of this stack
 ships at runtime.
 """
@@ -113,9 +124,61 @@ def render_tara(lines, out_dir, only_missing, phonics_tempo):
             print(f"  {index}/{len(todo)}")
 
 
+DAD_REF = os.path.expanduser("~/Desktop/tts/juan-reference.wav")
+DAD_SETTINGS = {
+    "prompt": {"exaggeration": 0.55, "atempo": None},
+    "story": {"exaggeration": 0.40, "atempo": 0.96},
+    "phonics": {"exaggeration": 0.45, "atempo": None},
+}
+
+
+def dad_performance_text(text, style):
+    """Owner-picked phonics respelling (variant A): keep the canonical words,
+    respell the isolated sound so the clone says a schwa ("buh"), not "bah"."""
+    if style != "phonics" and "buh" not in text.lower() and "b-b-b" not in text:
+        return text
+    import re
+    rendered = re.sub(r"\bbuh\b", "buhh", text, flags=re.IGNORECASE)
+    rendered = rendered.replace("Buhh, buhh,", "Buhh. Buhh.")
+    rendered = rendered.replace("buhh, buhh,", "buhh. buhh.")
+    rendered = rendered.replace("b-b-b", "buh buh buh")
+    return rendered
+
+
+def render_dad(lines, out_dir, only_missing):
+    import torch
+    import torchaudio
+    from chatterbox.tts import ChatterboxTTS
+
+    if not os.path.exists(DAD_REF):
+        raise SystemExit(f"reference recording missing: {DAD_REF}")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = ChatterboxTTS.from_pretrained(device=device)
+    print(f"chatterbox on {device}")
+    todo = [l for l in lines if not (
+        only_missing and os.path.exists(os.path.join(out_dir, f"{l['id']}.mp3")))]
+    print(f"rendering {len(todo)}/{len(lines)} as dad")
+    for index, line in enumerate(todo, 1):
+        settings = DAD_SETTINGS[line["style"]]
+        wav = model.generate(
+            dad_performance_text(line["text"], line["style"]),
+            audio_prompt_path=DAD_REF,
+            exaggeration=settings["exaggeration"],
+            cfg_weight=0.3,
+        )
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            torchaudio.save(tmp.name, wav, model.sr)
+            tmp_path = tmp.name
+        encode_mp3(tmp_path, os.path.join(out_dir, f"{line['id']}.mp3"),
+                   settings["atempo"])
+        os.unlink(tmp_path)
+        if index % 25 == 0 or index == len(todo):
+            print(f"  {index}/{len(todo)}")
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pack", choices=["emma", "tara"], required=True)
+    parser.add_argument("--pack", choices=["emma", "tara", "dad"], required=True)
     parser.add_argument("--only-missing", action="store_true")
     parser.add_argument("--phonics-tempo", type=float, default=0.85,
                         help="tara only: atempo factor for phonics clips")
@@ -136,6 +199,8 @@ def main():
 
     if args.pack == "emma":
         render_emma(lines, out_dir, args.only_missing)
+    elif args.pack == "dad":
+        render_dad(lines, out_dir, args.only_missing)
     else:
         render_tara(lines, out_dir, args.only_missing, args.phonics_tempo)
     print("done")

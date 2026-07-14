@@ -36,6 +36,7 @@ import {
 import type { VoiceManifest } from '../../core/voice-lines';
 import emmaVoiceManifest from '../../content/voice/emma-voice-manifest.json';
 import taraVoiceManifest from '../../content/voice/tara-voice-manifest.json';
+import dadVoiceManifest from '../../content/voice/dad-voice-manifest.json';
 import {
   buildParentSessionReview,
   type ParentSessionReview,
@@ -793,6 +794,14 @@ function createVoiceSettingsSection(
   }
   select.appendChild(taraOption);
 
+  const dadOption = document.createElement('option');
+  dadOption.value = `${VOICE_PACK_URI_PREFIX}dad`;
+  dadOption.textContent = 'Dad — recorded at home';
+  if (settings.speech_voice_uri === `${VOICE_PACK_URI_PREFIX}dad`) {
+    dadOption.selected = true;
+  }
+  select.appendChild(dadOption);
+
   const emmaOption = document.createElement('option');
   emmaOption.value = `${VOICE_PACK_URI_PREFIX}emma`;
   emmaOption.textContent = 'Emma — storyteller (recorded)';
@@ -857,6 +866,7 @@ function createVoiceSettingsSection(
     const preview = new VoicePackSpeech(new SpeechService(settings.speech_enabled), [
       taraVoiceManifest as unknown as VoiceManifest,
       emmaVoiceManifest as unknown as VoiceManifest,
+      dadVoiceManifest as unknown as VoiceManifest,
     ]);
     preview.setVoiceURI(select.value || undefined);
     preview.speak('Hi! Let us play and learn.');

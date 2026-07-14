@@ -34,6 +34,7 @@ const lines = collectVoiceLines();
 const PACKS: Array<Pick<VoiceManifest, 'pack' | 'voice'>> = [
   { pack: 'tara', voice: 'orpheus/tara' },
   { pack: 'emma', voice: 'kokoro/bf_emma' },
+  { pack: 'dad', voice: 'chatterbox/owner-clone' },
 ];
 
 mkdirSync(dirname(outPath), { recursive: true });
