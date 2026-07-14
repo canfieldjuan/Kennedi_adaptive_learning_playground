@@ -19,10 +19,12 @@ import {
 } from '../../src/core/voice-lines';
 import emmaJson from '../../src/content/voice/emma-voice-manifest.json';
 import taraJson from '../../src/content/voice/tara-voice-manifest.json';
+import dadJson from '../../src/content/voice/dad-voice-manifest.json';
 
 const PACKS: Array<[string, VoiceManifest]> = [
   ['emma', emmaJson as unknown as VoiceManifest],
   ['tara', taraJson as unknown as VoiceManifest],
+  ['dad', dadJson as unknown as VoiceManifest],
 ];
 
 describe.each(PACKS)('%s voice pack contract', (packName, manifest) => {
