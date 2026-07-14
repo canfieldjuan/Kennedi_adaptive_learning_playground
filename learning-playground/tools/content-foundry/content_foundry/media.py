@@ -541,6 +541,8 @@ def validate_storyboard(
         raise ValidationError("single narrated storyboards require the short_clip profile")
     if not isinstance(value, dict):
         raise ValidationError("storyboard must be an object")
+    if "profile" in value and value["profile"] != SHORT_CLIP.profile_id:
+        raise ValidationError("single narrated storyboard profile must be short_clip")
     title = value.get("title")
     scenes = value.get("scenes")
     narration = value.get("narration")

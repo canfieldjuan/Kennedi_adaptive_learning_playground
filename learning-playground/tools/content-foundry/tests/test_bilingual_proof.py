@@ -132,6 +132,21 @@ class FoundryProfileTests(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, "short_clip limit"):
             validate_storyboard(too_long)
 
+    def test_short_clip_allows_legacy_absence_or_exact_profile_and_rejects_other_declarations(self) -> None:
+        storyboard = {
+            "title": "Short clip",
+            "scenes": [{"path": "scene.png", "duration_ms": 500}],
+            "narration": [{"path": "voice.wav", "start_ms": 0}],
+        }
+        validate_storyboard(storyboard)
+        validate_storyboard({**storyboard, "profile": "short_clip"})
+
+        for declared in ("bilingual_story_proof", "bilingual_story_episode", None, False, ""):
+            with self.subTest(declared=declared), self.assertRaisesRegex(
+                ValidationError, "profile must be short_clip"
+            ):
+                validate_storyboard({**storyboard, "profile": declared})
+
     def test_proof_duration_accepts_inclusive_edges_and_rejects_both_sides(self) -> None:
         for durations in ([9000] * 5, [10000] * 9):
             with self.subTest(durations=durations):

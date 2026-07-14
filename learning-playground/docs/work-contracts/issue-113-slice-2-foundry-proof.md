@@ -181,6 +181,15 @@ approval timestamps at `tools/content-foundry/content_foundry/media.py:316` and
 `tools/content-foundry/content_foundry/media.py:707`. All gaps were corrected
 before the complete verification suite was rerun.
 
+The current-head Codex review then found that the legacy short storyboard path
+ignored any authored `profile` field because it canonicalized only its function
+argument. A payload declaring `bilingual_story_episode`, `null`, or another
+unsupported profile could therefore be assembled silently as `short_clip`.
+Legacy absence and exact `short_clip` remain valid, while every other declared
+value now fails closed at `tools/content-foundry/content_foundry/media.py:543`.
+The focused probe at `tools/content-foundry/tests/test_bilingual_proof.py:135`
+covers exact, absent, future, wrong-profile, null, boolean, and empty values.
+
 Do not declare done while any gap stands.
 
 ### Change By Change Reconstruction
