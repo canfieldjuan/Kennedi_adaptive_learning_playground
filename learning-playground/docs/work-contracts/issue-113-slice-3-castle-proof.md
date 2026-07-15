@@ -242,6 +242,30 @@ sheet also showed scene-five and scene-six foreground panels reading like open
 books; those panels must be removed in favor of scenery and non-object ribbons.
 No other approved-proof geometry or story behavior may change.
 
+### Owner Sequence Approval and Spanish Voice Bakeoff
+
+The owner reviewed the corrected six-frame contact sheet on 2026-07-14 and
+approved the sequence as "good enough for now." This clears the bounded visual
+sequence gate for the ignored Castle proof. It does not approve a final video,
+runtime asset, public asset, or future episode artwork without another review.
+
+Spanish production may now begin with one isolated voice bakeoff. The same
+authored line, `¿Dónde está la pintura amarilla?`, must be rendered once with
+each voice exposed by the supplied multilingual Orpheus model: `javi`, `sergio`,
+and `maria`. The three finite local WAVs and their review metadata must remain
+under ignored `.content-foundry/imports/castle-content-proof/spanish-voice-bakeoff/`.
+They must not overwrite any existing cue, review packet, ledger, or English Tara
+artifact. All three samples must use the same text, model, render settings, and
+normalization target so the owner can compare the voices rather than different
+production recipes.
+
+No full Spanish cue render may begin until the owner explicitly selects one of
+the three samples. Voice selection alone does not approve pronunciation: every
+final target word and line remains subject to exact text, audio-hash, and fluent
+review before storyboard assembly. This amendment does not permit a runtime
+voice selector, model dependency, remote service, shared voice-core change, or
+automatic review decision.
+
 ## Production Evidence
 
 ### Live Authoring Preflight
@@ -336,9 +360,39 @@ remain unique to the response scene. Inkscape geometry queries report all three
 target groups as 95x118 at y=419.5; the correct yellow jar differs by paint
 color only and is not pre-highlighted.
 
-The sources and captures are look-approved review evidence, not approved video,
-runtime media, or public assets. Owner review of the corrected six-frame story
-sequence remains required before multilingual Spanish rendering resumes.
+The sources and captures are proof-sequence-approved review evidence, not
+approved video, runtime media, or public assets. The owner approved the corrected
+six-frame story sequence on 2026-07-14; final synchronized export review remains
+required.
+
+### Multilingual Spanish Voice Bakeoff
+
+After the owner approved the six-frame proof sequence, the supplied local
+`orpheus-3b-italian_spanish-ft.gguf` model rendered the same authored line,
+`¿Dónde está la pintura amarilla?`, once with each Spanish voice. Every sample
+was normalized with `loudnorm=I=-18:TP=-3:LRA=7` to 48 kHz mono PCM and remains
+inside ignored `spanish-voice-bakeoff/`:
+
+| Voice | Duration | Integrated loudness | True peak | SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| `javi` | 1.450667 s | -18.5 LUFS | -3.0 dBTP | `dcbd7df0918839f511dfa673048dbc83de829e79a04922d0b6eb86f28e34262d` |
+| `sergio` | 1.706667 s | -19.5 LUFS | -3.0 dBTP | `eb29d17067f5f4bd8be61e60071397286d8bff6329965d23606ff14a386096e6` |
+| `maria` | 2.133333 s | -19.1 LUFS | -3.0 dBTP | `4a7cc59c5f48fee92d71679780b5b7e7b23c2efc571218d24fadbecbc1d7e705` |
+
+`review-metadata.json` has SHA-256
+`2e1908ceca51d6bec2453406a00f53d4988a5463fdd9b045d36d378c1b8b194c`
+and binds the shared text, English intent, model source, render settings,
+normalization, raw/final hashes, durations, measured loudness, and pending
+review state. JSON parsing and exact final-file hash checks passed.
+
+The first LM Studio load replaced an idle unrelated Qwen model under local
+resource guardrails. No inference was interrupted. After the three samples,
+the Spanish checkpoint was unloaded and
+`qwen2.5-coder-32b-instruct-abliterated` was restored at context 8192 and
+parallel 4. The Orpheus `.env` is restored to `orpheus-3b-ft.gguf`, and its
+English-configured decoder is active on loopback port 5005. No cue audio,
+review packet, ledger, English Tara artifact, tracked media, or app file changed.
+The three candidates remain unselected and pronunciation-pending.
 
 ### Authorship Packet
 
@@ -391,44 +445,45 @@ The owner approved the existing English Tara clips as candidates on
 2026-07-13. Those exact English bytes are frozen. The owner also identified
 himself as the fluent Spanish reviewer and supplied the local
 `orpheus-3b-italian_spanish-ft.gguf` model for a future exact Spanish rerender.
-The multilingual model was inspected and briefly loaded, but Spanish generation
-was paused before producing a clip when the owner redirected the slice to the
-art-quality problem. The current Spanish candidate clips remain unapproved and
-must not be mistaken for multilingual-model output.
+The initial Tara-rendered Spanish cue candidates remain unapproved and must not
+be mistaken for multilingual-model output. After visual approval, the
+multilingual model produced only the isolated three-voice bakeoff recorded
+above; no final target-word or cue path has been rendered or replaced.
 
 ### Current Gaps
 
 - Representative Inkscape look review: **approved**. The prior placeholder
   sequence remains rejected.
-- Owner review of the corrected six-frame story sequence: **pending**. The
-  contact sheet is ready; no approval is inferred from the earlier single-frame
-  look decision.
-- Multilingual-model rendering and exact owner/fluent review of the 8 target
-  words and 13 Spanish line artifacts: **pending**. The reviewer identity is
-  established; no new Spanish artifact has been approved.
+- Owner review of the corrected six-frame story sequence: **approved for this
+  proof** on 2026-07-14. Final synchronized export review remains pending.
+- Multilingual Spanish voice bakeoff: **generated**. Owner voice selection and
+  pronunciation disposition are pending; no candidate is selected implicitly.
+- Full multilingual-model rendering and exact owner/fluent review of the 8
+  target words and 13 Spanish line artifacts: **pending**. The reviewer identity
+  is established; no final Spanish artifact has been approved.
 - Owner English narration review: **approved candidate**. Final synchronized
   export review remains pending.
 - Final `bilingual_story_proof` storyboard and three-export assembly: blocked by
-  corrected-sequence approval and the exact Spanish approval records.
+  Spanish voice selection and the exact Spanish approval records.
 - Owner review and manual decision on the final Foundry draft: blocked by final
   assembly.
 
-Gap audit: **NOT DONE**. The look-approved sequence is ready for owner review,
-but Slice 3 cannot be declared complete under its contract yet.
+Gap audit: **NOT DONE**. The proof sequence is approved, but Spanish voice
+selection, exact Spanish review, final assembly, and final owner review remain.
 
 ## Cold Diff Audit
 
 ### Gaps
 
-- Owner review of the corrected six-frame sequence is not delivered at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:403`. The contact sheet
-  exists, but the earlier representative-frame approval cannot approve later
-  story-state changes.
-- Multilingual Spanish rendering and exact line approval are not delivered at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:406`. Reviewer identity
-  is known, but no approval is inferred from that identity.
+- Owner selection and pronunciation disposition for the three Spanish bakeoff
+  samples are not delivered at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:459`. No candidate may
+  become the final voice by default.
+- Full multilingual Spanish rendering and exact line approval are not delivered
+  at `docs/work-contracts/issue-113-slice-3-castle-proof.md:461`. Reviewer
+  identity is known, but no approval is inferred from that identity.
 - Final Foundry assembly, synchronized export review, and manual decision remain
-  blocked at `docs/work-contracts/issue-113-slice-3-castle-proof.md:411`.
+  blocked at `docs/work-contracts/issue-113-slice-3-castle-proof.md:466`.
   Therefore the full Slice 3 gap audit is **NOT DONE**.
 - Change without contract trace: none. The branch diff contains the declared
   contract, narrow narration-rule correction, six bounded Inkscape sources,
@@ -461,31 +516,37 @@ but Slice 3 cannot be declared complete under its contract yet.
    owner's representative-look approval, authorizes exactly five more sources
    and one contact sheet, and declares the continuity correction found during
    cold visual review at line 233.
-8. `design-source/video-vault/colorless-castle/castle-scene-01-colorless.svg:31`
+8. `docs/work-contracts/issue-113-slice-3-castle-proof.md:245` records the
+   owner's bounded sequence approval and permits only an isolated, equal-recipe
+   three-voice Spanish bakeoff before explicit voice selection.
+9. `design-source/video-vault/colorless-castle/castle-scene-01-colorless.svg:31`
    creates the muted invitation state, with the closed paint case at line 95;
    `castle-scene-02-red-door.svg:43` preserves muted roofs while revealing the
    red door and its bounded paint supply at line 95; and
    `castle-scene-03-blue-windows.svg:43` keeps the same roof state while adding
    blue windows and the bounded blue supply at line 95.
-9. `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg:31`
+10. `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg:31`
    now keeps the garden and roofs muted through the response beat. Its equal
    red, yellow, and green target groups remain at lines 97, 102, and 107.
-10. `design-source/video-vault/colorless-castle/castle-scene-05-garden-roofs.svg:32`
+11. `design-source/video-vault/colorless-castle/castle-scene-05-garden-roofs.svg:32`
     reveals the green grounds and the purple roofs at line 43, then uses direct
     garden scenery rather than a book-like panel at line 95.
-11. `design-source/video-vault/colorless-castle/castle-scene-06-celebration.svg:75`
+12. `design-source/video-vault/colorless-castle/castle-scene-06-celebration.svg:75`
     changes Finn to the celebration pose and places ribbons and stars directly
     over the scene without a foreground panel at line 93.
-12. `docs/art/asset-provenance.md:164` records original Category A ownership,
+13. `docs/art/asset-provenance.md:164` records original Category A ownership,
     all six exact source paths, Inkscape/ImageMagick tools, look approval, review
     captures, and the explicit no-runtime boundary through line 193.
-13. The four review-only WebP captures named at
+14. The four review-only WebP captures named at
     `docs/art/asset-provenance.md:189` provide desktop, mobile,
     existing-versus-proposed, and six-frame sequence evidence. They do not
     create a runtime asset.
-14. `docs/work-contracts/issue-113-slice-3-castle-proof.md:294` records the exact
+15. `docs/work-contracts/issue-113-slice-3-castle-proof.md:318` records the exact
     six-source and capture hashes, structural validation, owner/reviewer status,
-    and the honest remaining gaps at line 399.
+    and final-review boundary.
+16. `docs/work-contracts/issue-113-slice-3-castle-proof.md:368` records the three
+    ignored bakeoff artifact hashes, media measurements, review metadata hash,
+    restored local services, and the honest remaining gaps at line 453.
 
 ### Contract Traceability
 
@@ -510,6 +571,9 @@ but Slice 3 cannot be declared complete under its contract yet.
   `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg:31`
   and restored scene-five grounds/roofs at
   `design-source/video-vault/colorless-castle/castle-scene-05-garden-roofs.svg:32`.
+- Equal-recipe Spanish voice comparison -> contract boundary at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:245` and exact artifact
+  evidence at line 368. No tracked or cue audio path changed.
 - Equal, non-leading paint choices -> source groups at
   `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg:97`
   and the measured result recorded at
@@ -546,11 +610,19 @@ but Slice 3 cannot be declared complete under its contract yet.
   both book-like foreground panels.
 - ImageMagick reports 960x544, 390x221, 1480x428, and 1476x568 for the desktop,
   mobile, comparison, and sequence contact-sheet captures.
+- Spanish bakeoff validation passed: all three samples use the same exact text
+  and multilingual model, parse as finite 48 kHz mono PCM, retain exact hashes,
+  peak at -3.0 dBTP, and match the ignored review metadata.
+- Local service restoration passed: the Spanish model was unloaded, the prior
+  Qwen identifier/context/parallel settings were restored, the Orpheus `.env`
+  again names `orpheus-3b-ft.gguf`, and the English decoder is active on port
+  5005. No long-running tool session remains open.
 - `npm ci`: passed; 56 locked packages installed, zero vulnerabilities.
-- `npm test`: passed; change-contract check, 58 Content Foundry tests with one
-  intentional live skip, 63 Vitest files, and 862/862 app tests.
+- `npm test`: passed after the clean rebase; change-contract check, 58 Content
+  Foundry tests with one intentional live skip, 64 Vitest files, and 883/883 app
+  tests.
 - `npm run typecheck`: passed.
-- `npm run build`: passed; Vite transformed 134 modules. The existing
+- `npm run build`: passed; Vite transformed 141 modules. The existing
   greater-than-500-kB chunk warning remains.
 - `npm run lint --if-present`: completed; no lint script exists.
 - `git diff --check`: passed.
@@ -558,5 +630,5 @@ but Slice 3 cannot be declared complete under its contract yet.
 This is an interim cold reconstruction, not a completion declaration. Every
 current tracked change traces to the written contract, every currently allowed
 sequence change is present, and no declared protected surface moved. The audit
-must be repeated after corrected-sequence approval, exact multilingual Spanish
-review, final assembly, and the human decision are present.
+must be repeated after voice selection, exact multilingual Spanish review, final
+assembly, and the human decision are present.
