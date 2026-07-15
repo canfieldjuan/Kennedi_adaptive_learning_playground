@@ -30,6 +30,15 @@ import { parseRoute } from '../../src/app/router';
 import { storySceneSvg } from '../../src/modules/story-stage/story-art';
 
 const FIRST_TALE = resolveFirstTale();
+const LOST_FRIEND_PRODUCTION_ASSETS: Record<string, string> = {
+  'lost-intro': 'story-stage-lost-intro-poppy-forest',
+  'lost-problem': 'story-stage-lost-problem-poppy-forest',
+  'lost-where': 'story-stage-lost-where-poppy-forest',
+  'lost-bush': 'story-stage-lost-bush-poppy-forest',
+  'lost-log': 'story-stage-lost-log-proof',
+  'lost-help': 'story-stage-lost-help-poppy-forest',
+  'lost-ending': 'story-stage-lost-ending-poppy-forest',
+};
 
 describe('the first tale (resolved story graph)', () => {
   const scenesById = new Map(FIRST_TALE.scenes.map((scene) => [scene.id, scene]));
@@ -280,6 +289,11 @@ describe('story stage runtime', () => {
     return findByClass(root, 'story-stage__caption')?.textContent ?? '';
   }
 
+  function expectProductionScene(root: MockElement, assetId: string): void {
+    const sceneMarkup = findByClass(root, 'story-stage__scene')?.innerHTML ?? '';
+    expect(sceneMarkup).toContain(`data-production-art="${assetId}"`);
+  }
+
   function stepTitle(root: MockElement): string {
     return findByClass(root, 'story-stage__step-title')?.textContent ?? '';
   }
@@ -352,22 +366,28 @@ describe('story stage runtime', () => {
       scene('intro').narration,
     ]);
     expect(currentCaption(root)).toBe(scene('intro').narration);
+    expectProductionScene(root, LOST_FRIEND_PRODUCTION_ASSETS['lost-intro']);
 
     findByAria(root, 'What happens next?')?.click();
     expect(currentCaption(root)).toBe(scene('problem').narration);
+    expectProductionScene(root, LOST_FRIEND_PRODUCTION_ASSETS['lost-problem']);
 
     findByAria(root, 'What happens next?')?.click();
     expect(currentCaption(root)).toBe(scene('where').narration);
+    expectProductionScene(root, LOST_FRIEND_PRODUCTION_ASSETS['lost-where']);
 
     // Decision: two illustrated choices.
     const choices = findAllByClass(root, 'story-stage__choice');
     expect(choices).toHaveLength(2);
     findByAria(root, 'Follow the sparkly path')?.click();
     expect(currentCaption(root)).toBe(scene('bush').narration);
+    expectProductionScene(root, LOST_FRIEND_PRODUCTION_ASSETS['lost-bush']);
 
     findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, LOST_FRIEND_PRODUCTION_ASSETS['lost-help']);
     findByAria(root, 'Sing a soft song')?.click();
     expect(currentCaption(root)).toBe(scene('ending-song').narration);
+    expectProductionScene(root, LOST_FRIEND_PRODUCTION_ASSETS['lost-ending']);
 
     // Ending controls, once.
     expect(findByAria(root, 'Tell it again')).toBeDefined();
@@ -386,27 +406,49 @@ describe('story stage runtime', () => {
     expect(sceneMarkup).toContain('href="/assets/images/story-stage-lost-log-proof.svg"');
   });
 
-  test('the production-art proof is exact-choice scoped', () => {
-    const proof = storySceneSvg('lost-log', {
+  test('all seven Lost Friend beats use exact Poppy-and-forest production art', () => {
+    for (const [artKey, assetId] of Object.entries(LOST_FRIEND_PRODUCTION_ASSETS)) {
+      const productionScene = storySceneSvg(artKey, {
+        characterArt: 'poppy',
+        settingArt: 'forest',
+      });
+      expect(productionScene).toContain(`data-production-art="${assetId}"`);
+      expect(productionScene).toContain(`href="/assets/images/${assetId}.svg"`);
+      expect(productionScene).toContain('aria-hidden="true"');
+      expect(productionScene).toContain('focusable="false"');
+    }
+  });
+
+  test('the Lost Friend production family stays exact-choice scoped', () => {
+    for (const artKey of Object.keys(LOST_FRIEND_PRODUCTION_ASSETS)) {
+      const alternateCharacter = storySceneSvg(artKey, {
+        characterArt: 'finn',
+        settingArt: 'forest',
+      });
+      expect(alternateCharacter).not.toContain('data-production-art');
+      expect(alternateCharacter).toContain('#8fce9b');
+
+      const alternateSetting = storySceneSvg(artKey, {
+        characterArt: 'poppy',
+        settingArt: 'cozy-town',
+      });
+      expect(alternateSetting).not.toContain('data-production-art');
+      expect(alternateSetting).toContain('#fdeed7');
+    }
+
+    const otherFamily = storySceneSvg('fix-intro', {
       characterArt: 'poppy',
       settingArt: 'forest',
     });
-    expect(proof).toContain('href="/assets/images/story-stage-lost-log-proof.svg"');
-    expect(proof).toContain('aria-hidden="true"');
+    expect(otherFamily).not.toContain('data-production-art');
+    expect(otherFamily).toContain('#d9a066');
 
-    const alternateCharacter = storySceneSvg('lost-log', {
-      characterArt: 'finn',
+    const unknownScene = storySceneSvg('not-a-story-scene', {
+      characterArt: 'poppy',
       settingArt: 'forest',
     });
-    expect(alternateCharacter).not.toContain('story-stage-lost-log-proof.svg');
-    expect(alternateCharacter).toContain('#8fce9b');
-
-    const alternateSetting = storySceneSvg('lost-log', {
-      characterArt: 'poppy',
-      settingArt: 'cozy-town',
-    });
-    expect(alternateSetting).not.toContain('story-stage-lost-log-proof.svg');
-    expect(alternateSetting).toContain('#fdeed7');
+    expect(unknownScene).not.toContain('data-production-art');
+    expect(unknownScene).toContain('#fd79a8');
   });
 
   test('scene changes stop speech before speaking (no overlap)', () => {
