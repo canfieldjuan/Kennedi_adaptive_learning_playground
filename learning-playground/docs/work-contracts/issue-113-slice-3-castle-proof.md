@@ -276,6 +276,28 @@ established child-facing Orpheus `atempo=0.85` rule followed by the same
 normalization target. No new model inference, new text, Maria variant, cue
 replacement, or final voice selection is permitted by this amendment.
 
+On 2026-07-15, the owner selected `sergio-slow.wav` as the recipe reference for
+the full Spanish review render. This authorizes rendering the 13 exact Spanish
+cue artifacts with the supplied multilingual checkpoint, `sergio` voice, the
+recorded generation settings, `atempo=0.85`, and the shared normalization target.
+The two cue ids containing the already-rendered find-yellow sentence must reuse
+the selected take's exact normalized bytes rather than introduce a stochastic
+second reading. The eight target-word reviews continue to cite the hash-bound cue
+artifacts that contain those words; this slice must not invent separate word
+clips. Selection authorizes review rendering only. It does not approve any new
+line, target-word record, synchronized export, storyboard, or runtime asset.
+Every exact artifact remains pending until the named fluent reviewer records its
+text and pronunciation disposition, and the pre-existing English Orpheus model
+and unrelated LM Studio workload must be restored after the bounded render.
+Generated review artifacts must use measured two-pass normalization against the
+shared `I=-18:TP=-3:LRA=7` target and must measure between -21 and -16 LUFS with
+a true peak no higher than -3 dBTP before owner review. The selected find-yellow
+sample remains byte-exact at its measured -19.4 LUFS. A line outside those
+bounds is a rejected review artifact, not evidence that may be approved. The
+generated lines may use one shared bounded speech-compression preconditioner
+before two-pass normalization so an isolated transient cannot suppress the
+whole narration line; the selected sample must remain unmodified.
+
 ## Production Evidence
 
 ### Live Authoring Preflight
@@ -403,11 +425,12 @@ No second model inference occurred. Both slower variants retain the exact
 original take and text while changing only playback tempo and normalization.
 
 `review-metadata.json` has SHA-256
-`a154a1f1f5bd9a4897e4a188fad570fbdb7b28c23bc352f7f1b7dee7f93b437d`
+`29e4c4a4d2a87229b94a7e0c21f81040f8f470f311a8fe540c5cd27185dfd111`
 and binds the shared text, English intent, model source, render settings,
-normalization, raw/final hashes, durations, measured loudness, and pending
-review state. It also records Maria's pronunciation approval and production
-rejection separately. JSON parsing and exact final-file hash checks passed.
+normalization, raw/final hashes, durations, measured loudness, Maria's separate
+pronunciation/rejection dispositions, and Sergio's owner-selected review-render
+recipe. Exact line approval remains separate. JSON parsing and exact final-file
+hash checks passed.
 
 The first LM Studio load replaced an idle unrelated Qwen model under local
 resource guardrails. No inference was interrupted. After the three samples,
@@ -416,8 +439,58 @@ the Spanish checkpoint was unloaded and
 parallel 4. The Orpheus `.env` is restored to `orpheus-3b-ft.gguf`, and its
 English-configured decoder is active on loopback port 5005. No cue audio,
 review packet, ledger, English Tara artifact, tracked media, or app file changed.
-Maria remains rejected. The slower Javi and Sergio candidates remain unselected
-and pronunciation-pending.
+Maria remains rejected, Javi remains unselected, and Sergio is selected only as
+the full-line review-render recipe. Exact Spanish artifact review remains pending.
+
+### Sergio Full-Line Spanish Review Render
+
+The owner selected `sergio-slow.wav` on 2026-07-15. The bounded renderer used
+the supplied multilingual checkpoint and existing raw model results to create 13
+separate ignored review WAVs under `spanish-sergio-review/`. The two
+find-yellow cue ids reuse the selected sample's exact bytes and SHA-256. The
+other 11 cues use `sergio`, `atempo=0.85`, one shared bounded speech compressor,
+and measured two-pass `loudnorm=I=-18:TP=-3:LRA=7` normalization:
+
+| Cue | Duration | Loudness | True peak | SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| `bridge-castle-name` | 1.587 s | -18.01 LUFS | -4.25 dBTP | `1eba6f09e900609fbe0c828dd351fdccedf454a3c624fd75eb9c52a806ef5df3` |
+| `bridge-door-red` | 2.195 s | -18.00 LUFS | -4.12 dBTP | `de83773f5755c868d01783d3afe57d763bb27878338f3208f287406b47b09cae` |
+| `bridge-blue-word` | 0.691 s | -19.50 LUFS | -3.00 dBTP | `3604b7acd644b681d52fdd2619ffecb35695c06e8436c0b0713c107d4a782a28` |
+| `bridge-find-yellow` | 1.992 s | -19.37 LUFS | -3.00 dBTP | `ee79165b1d28ee8c6fa30c73c013880ff743bc739f528c5d7fc54057a565fb65` |
+| `bridge-yellow-word` | 1.378 s | -18.69 LUFS | -3.00 dBTP | `95b04de7ba5eea742f8a9ae88eb3b1da44d31eae6fd45635d7609119792d4c9c` |
+| `bridge-green-purple-es` | 1.090 s | -18.01 LUFS | -5.89 dBTP | `f1f6a1c1b08b1877bfead3a8cead4f68c49cd565bc58b466865a3f7a7a5bb597` |
+| `bridge-castle-restored` | 3.498 s | -18.19 LUFS | -3.10 dBTP | `92d15a56b1e5fc49bb20db08cb1e615fccbc1e03c789c6664f9b9b9c750d9dd2` |
+| `spanish-castle-faded` | 6.908 s | -18.02 LUFS | -6.69 dBTP | `b9adccbe7f8545b78382d40cc5a0c266ecff09c8cd8dbf09962fde616e89dd91` |
+| `spanish-door-red` | 2.898 s | -18.71 LUFS | -3.00 dBTP | `f47b0460dbdc9307be0d3051be6d95ad6100406111cf0a3394e5dbd7fde7ef95` |
+| `spanish-windows-blue` | 2.803 s | -20.18 LUFS | -3.00 dBTP | `4330796559c1c37f8571631e66e80d8354ca040fbcc39985705b56af5c1e2f0a` |
+| `spanish-find-yellow` | 1.992 s | -19.37 LUFS | -3.00 dBTP | `ee79165b1d28ee8c6fa30c73c013880ff743bc739f528c5d7fc54057a565fb65` |
+| `spanish-green-purple` | 4.797 s | -17.99 LUFS | -3.00 dBTP | `022dbdb5a2180eaa4eff72955cd56e1f07ee92ea3c5e16e68a6dd1aad6aaa7cd` |
+| `spanish-castle-restored` | 4.106 s | -18.14 LUFS | -3.00 dBTP | `e46aac0c194c9e13fe314c6e38a2b39f5df6b35e6a438a1a7d9a43c2ba37996d` |
+
+The first post-render measurement rejected `spanish-windows-blue` at -23.29
+LUFS. Reprocessing the already-rendered raw files with the contract's shared
+compressor and two-pass normalization fixed the set without another model call.
+All final artifacts decode as finite 48 kHz mono PCM, remain inside their next
+cue and scene boundaries, measure from -20.18 to -17.99 LUFS, and peak at or
+below -3 dBTP.
+
+`render-sergio-spanish-review.py` has SHA-256
+`6e5bfae195735d98b0d81dda1e26d1901468e71775915ab7ddb1d182818b9934`.
+It reuses hash-bound raw outputs, refuses a changed selected sample, validates
+the 13-cue and 8-word cardinalities, and rejects format, timing, loudness, peak,
+or missing-word-evidence failures. `review-manifest.json` has SHA-256
+`e2683c6f7ddc3f7a06585a0d0d5378e00d46b3063bcf8d3891523f488cd29061`
+and binds every final artifact to its raw source hash, exact Spanish text,
+English intent, `es-419` register, media measurements, target-word evidence,
+and pending review fields. `REVIEW.md` has SHA-256
+`87611fc6354229c979b549be5e4fe152e11f9bf832ea7c955093afcf8b49a5f0`
+and provides a no-autoplay human review index.
+
+No pre-existing cue WAV, review packet, production ledger, synchronized export,
+tracked media, public asset, or app file changed. After rendering, the Spanish
+checkpoint was unloaded, Qwen remained at context 8192 and parallel 4, the
+unchanged `.env` still names `orpheus-3b-ft.gguf`, and the detached
+English-configured Orpheus service was restored on loopback port 5005.
 
 ### Authorship Packet
 
@@ -469,11 +542,11 @@ final owner disposition has been fabricated.
 The owner approved the existing English Tara clips as candidates on
 2026-07-13. Those exact English bytes are frozen. The owner also identified
 himself as the fluent Spanish reviewer and supplied the local
-`orpheus-3b-italian_spanish-ft.gguf` model for a future exact Spanish rerender.
+`orpheus-3b-italian_spanish-ft.gguf` model for the exact Spanish review render.
 The initial Tara-rendered Spanish cue candidates remain unapproved and must not
 be mistaken for multilingual-model output. After visual approval, the
-multilingual model produced only the isolated three-voice bakeoff recorded
-above; no final target-word or cue path has been rendered or replaced.
+multilingual model produced the isolated bakeoff and selected Sergio review set
+recorded above; no pre-existing target-word or cue path has been replaced.
 
 ### Current Gaps
 
@@ -481,40 +554,36 @@ above; no final target-word or cue path has been rendered or replaced.
   sequence remains rejected.
 - Owner review of the corrected six-frame story sequence: **approved for this
   proof** on 2026-07-14. Final synchronized export review remains pending.
-- Multilingual Spanish voice bakeoff: **generated**. Maria is rejected for
-  production voice identity and pacing despite accepted pronunciation. Slower
-  Javi and Sergio review copies await owner voice/pronunciation disposition; no
-  candidate is selected implicitly.
-- Full multilingual-model rendering and exact owner/fluent review of the 8
-  target words and 13 Spanish line artifacts: **pending**. The reviewer identity
-  is established; no final Spanish artifact has been approved.
+- Multilingual Spanish voice bakeoff: **selected**. Maria is rejected, Javi is
+  unselected, and Sergio at 85% tempo is the explicit review-render recipe.
+- Full multilingual-model rendering of the 13 Spanish cue artifacts and their 8
+  target-word evidence mappings: **generated**. Exact owner/fluent text and
+  pronunciation review remains pending; no final Spanish artifact is approved.
 - Owner English narration review: **approved candidate**. Final synchronized
   export review remains pending.
 - Final `bilingual_story_proof` storyboard and three-export assembly: blocked by
-  Spanish voice selection and the exact Spanish approval records.
+  the exact Spanish approval records.
 - Owner review and manual decision on the final Foundry draft: blocked by final
   assembly.
 
-Gap audit: **NOT DONE**. The proof sequence is approved, but Spanish voice
-selection, exact Spanish review, final assembly, and final owner review remain.
+Gap audit: **NOT DONE**. The proof sequence and Spanish recipe are selected, but
+exact Spanish review, final assembly, and final owner review remain.
 
 ## Cold Diff Audit
 
 ### Gaps
 
-- Owner voice and pronunciation disposition for the slower Javi and Sergio
-  samples are not delivered at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:484`. Maria is rejected,
-  and neither remaining candidate may become the final voice by default.
-- Full multilingual Spanish rendering and exact line approval are not delivered
-  at `docs/work-contracts/issue-113-slice-3-castle-proof.md:488`. Reviewer
-  identity is known, but no approval is inferred from that identity.
+- Exact fluent text and pronunciation review of the 13 Sergio artifacts and 8
+  target-word evidence mappings is not delivered at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:559`. Rendering and
+  recipe selection do not approve any artifact.
 - Final Foundry assembly, synchronized export review, and manual decision remain
-  blocked at `docs/work-contracts/issue-113-slice-3-castle-proof.md:493`.
+  blocked at `docs/work-contracts/issue-113-slice-3-castle-proof.md:564`.
   Therefore the full Slice 3 gap audit is **NOT DONE**.
 - Change without contract trace: none. The branch diff contains the declared
   contract, narrow narration-rule correction, six bounded Inkscape sources,
-  four review captures, and their provenance entry.
+  four review captures, and their provenance entry. The new Spanish WAVs,
+  renderer, manifests, and review index remain ignored local execution evidence.
 - Protected surface touched: none. No app runtime, Video Vault manifest,
   `public/assets`, voice core, Foundry implementation, learning engine, storage,
   dependency, other branch, or other worktree file moved.
@@ -547,7 +616,8 @@ selection, exact Spanish review, final assembly, and final owner review remain.
    owner's bounded sequence approval and permits only an isolated, equal-recipe
    three-voice Spanish bakeoff before explicit voice selection. The review
    amendment at line 268 rejects Maria and permits only deterministic slower
-   review copies of the two remaining existing takes.
+   review copies of the two remaining existing takes. The amendment at line 279
+   selects Sergio for a review render while preserving exact artifact approval.
 9. `design-source/video-vault/colorless-castle/castle-scene-01-colorless.svg:31`
    creates the muted invitation state, with the closed paint case at line 95;
    `castle-scene-02-red-door.svg:43` preserves muted roofs while revealing the
@@ -570,13 +640,16 @@ selection, exact Spanish review, final assembly, and final owner review remain.
     `docs/art/asset-provenance.md:189` provide desktop, mobile,
     existing-versus-proposed, and six-frame sequence evidence. They do not
     create a runtime asset.
-15. `docs/work-contracts/issue-113-slice-3-castle-proof.md:318` records the exact
+15. `docs/work-contracts/issue-113-slice-3-castle-proof.md:350` records the exact
     six-source and capture hashes, structural validation, owner/reviewer status,
     and final-review boundary.
-16. `docs/work-contracts/issue-113-slice-3-castle-proof.md:378` records the three
+16. `docs/work-contracts/issue-113-slice-3-castle-proof.md:400` records the three
     original bakeoff artifacts, two slower review copies, media measurements,
-    review metadata hash, restored local services, and the honest remaining gaps
-    at line 478.
+    review metadata hash, and bounded recipe selection.
+17. `docs/work-contracts/issue-113-slice-3-castle-proof.md:445` records the 13
+    exact Sergio review artifacts, selected-sample byte reuse, loudness defect
+    and correction, review manifest, source hashes, restored local services, and
+    honest remaining approval gap at line 551.
 
 ### Contract Traceability
 
@@ -603,11 +676,14 @@ selection, exact Spanish review, final assembly, and final owner review remain.
   `design-source/video-vault/colorless-castle/castle-scene-05-garden-roofs.svg:32`.
 - Equal-recipe Spanish voice comparison -> contract boundary at
   `docs/work-contracts/issue-113-slice-3-castle-proof.md:245` and exact artifact
-  evidence at line 378. No tracked or cue audio path changed.
+  evidence at line 400. No tracked or cue audio path changed.
+- Owner-selected full Spanish review render -> bounded contract at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:279` and exact execution
+  evidence at line 445. All line and word review fields remain pending.
 - Equal, non-leading paint choices -> source groups at
   `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg:97`
   and the measured result recorded at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:370`.
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:388`.
 - Model quality failed, but the existing Foundry code and workflows behaved
   according to contract; no Foundry implementation change was needed.
 
@@ -646,13 +722,20 @@ selection, exact Spanish review, final assembly, and final owner review remain.
 - Slower-candidate validation passed: Javi and Sergio derive from their original
   raw samples with only `atempo=0.85` plus the shared normalization, remain
   finite 48 kHz mono PCM, retain exact hashes, and match the review metadata.
+- Sergio review-render validation passed: exactly 13 artifacts and 8 target-word
+  mappings are hash-bound to exact text, intent, register, raw sources, media
+  measurements, and pending review fields. Both find-yellow cues retain the
+  selected sample's exact SHA-256.
+- Every Sergio review artifact decodes as 48 kHz mono PCM, ends before its next
+  cue and scene boundary, measures between -20.18 and -17.99 LUFS, and peaks at
+  or below -3 dBTP. The rejected -23.29 LUFS intermediate is not in the packet.
 - Local service restoration passed: the Spanish model was unloaded, the prior
   Qwen identifier/context/parallel settings were restored, the Orpheus `.env`
   again names `orpheus-3b-ft.gguf`, and the English decoder is active on port
   5005. No long-running tool session remains open.
 - `npm ci`: passed; 56 locked packages installed, zero vulnerabilities.
 - `npm test`: passed after the clean rebase; change-contract check, 58 Content
-  Foundry tests with one intentional live skip, 64 Vitest files, and 883/883 app
+  Foundry tests with one intentional live skip, 64 Vitest files, and 884/884 app
   tests.
 - `npm run typecheck`: passed.
 - `npm run build`: passed; Vite transformed 141 modules. The existing
@@ -663,5 +746,5 @@ selection, exact Spanish review, final assembly, and final owner review remain.
 This is an interim cold reconstruction, not a completion declaration. Every
 current tracked change traces to the written contract, every currently allowed
 sequence change is present, and no declared protected surface moved. The audit
-must be repeated after voice selection, exact multilingual Spanish review, final
-assembly, and the human decision are present.
+must be repeated after exact multilingual Spanish review, final assembly, and
+the human decision are present.
