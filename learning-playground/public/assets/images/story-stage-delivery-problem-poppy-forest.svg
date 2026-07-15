@@ -1,0 +1,447 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="400"
+   height="250"
+   viewBox="0 0 400 250"
+   version="1.1"
+   id="svg46"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="dp-sky"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#d9eef8"
+         id="stop1" />
+      <stop
+         offset="1"
+         stop-color="#f9e5cf"
+         id="stop2" />
+    </linearGradient>
+    <filter
+       id="dp-shadow"
+       x="-0.076666665"
+       y="-0.39428571"
+       width="1.1533333"
+       height="1.7885714">
+      <feGaussianBlur
+         stdDeviation="2.3"
+         id="feGaussianBlur2" />
+    </filter>
+  </defs>
+  <g
+     id="dp-sky-layer">
+    <rect
+       width="400"
+       height="250"
+       fill="url(#dp-sky)"
+       id="rect2" />
+    <circle
+       cx="72"
+       cy="43"
+       r="25"
+       fill="#ffe39a"
+       opacity="0.54"
+       id="circle2" />
+    <circle
+       cx="72"
+       cy="43"
+       r="14"
+       fill="#fff5ca"
+       id="circle3" />
+    <path
+       d="M274 48 C289 37 309 40 317 52 C328 42 347 44 353 58 C368 57 378 66 374 75 H266 C263 63 268 54 274 48Z"
+       fill="#fff"
+       opacity="0.44"
+       id="path3" />
+  </g>
+  <g
+     id="dp-depth-layer">
+    <path
+       d="M0 118 C47 92 94 99 138 113 C185 88 233 95 273 112 C317 89 361 95 400 115 V191 H0Z"
+       fill="#bad99b"
+       id="path4" />
+    <path
+       d="M0 144 C47 121 90 128 128 142 C174 117 223 124 261 145 C309 120 358 126 400 145 V202 H0Z"
+       fill="#91c486"
+       id="path5" />
+    <g
+       fill="#67a478"
+       stroke="#3a2461"
+       stroke-width="2"
+       opacity="0.7"
+       id="g9">
+      <path
+         d="M15 134 L36 78 L57 134Z"
+         id="path6" />
+      <path
+         d="M54 135 L77 72 L100 135Z"
+         id="path7" />
+      <path
+         d="M292 136 L315 73 L338 136Z"
+         id="path8" />
+      <path
+         d="M342 137 L366 80 L390 137Z"
+         id="path9" />
+    </g>
+  </g>
+  <g
+     id="dp-ground-layer">
+    <path
+       d="M0 166 C64 149 123 157 176 172 C230 150 303 150 400 167 V250 H0Z"
+       fill="#78b78b"
+       id="path10" />
+    <path
+       d="M0 208 C84 183 159 198 223 210 C292 186 348 191 400 206 V250 H0Z"
+       fill="#529970"
+       id="path11" />
+    <path
+       d="M166 250 C184 226 214 207 252 194 C291 181 331 184 368 194 C329 200 299 212 278 226 C263 237 255 246 251 250Z"
+       fill="#f1d7a7"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       id="path12" />
+  </g>
+  <g
+     id="dp-tree-layer">
+    <path
+       d="M31 211 C36 171 35 132 44 98"
+       fill="none"
+       stroke="#8b5a3c"
+       stroke-width="12"
+       stroke-linecap="round"
+       id="path13" />
+    <g
+       fill="#76b681"
+       stroke="#3a2461"
+       stroke-width="2.7"
+       id="g15">
+      <circle
+         cx="45"
+         cy="87"
+         r="29"
+         id="circle13" />
+      <circle
+         cx="23"
+         cy="112"
+         r="21"
+         id="circle14" />
+      <circle
+         cx="70"
+         cy="111"
+         r="25"
+         id="circle15" />
+    </g>
+    <path
+       d="M370 210 C367 176 367 145 361 112"
+       fill="none"
+       stroke="#8b5a3c"
+       stroke-width="10"
+       stroke-linecap="round"
+       id="path15" />
+    <g
+       fill="#6eaa7d"
+       stroke="#3a2461"
+       stroke-width="2.5"
+       id="g18">
+      <circle
+         cx="360"
+         cy="95"
+         r="27"
+         id="circle16" />
+      <circle
+         cx="337"
+         cy="117"
+         r="21"
+         id="circle17" />
+      <circle
+         cx="383"
+         cy="121"
+         r="24"
+         id="circle18" />
+    </g>
+  </g>
+  <g
+     id="dp-party-layer">
+    <path
+       d="M117 64 C170 43 232 43 287 64"
+       fill="none"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       id="path18" />
+    <path
+       d="M129 60 l9 16 9-16Z"
+       fill="#f36fa3"
+       stroke="#3a2461"
+       stroke-width="1.8"
+       id="path19" />
+    <path
+       d="M175 49 l9 16 9-16Z"
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="1.8"
+       id="path20" />
+    <path
+       d="M221 49 l9 16 9-16Z"
+       fill="#9fc7e8"
+       stroke="#3a2461"
+       stroke-width="1.8"
+       id="path21" />
+    <path
+       d="M265 58 l9 16 9-16Z"
+       fill="#a777bb"
+       stroke="#3a2461"
+       stroke-width="1.8"
+       id="path22" />
+    <path
+       d="M307 142 C320 126 341 124 353 139 V177 H307Z"
+       fill="#fbf3e4"
+       stroke="#3a2461"
+       stroke-width="2.7"
+       id="path23" />
+    <path
+       d="M302 142 H358 L348 129 H312Z"
+       fill="#f36fa3"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       id="path24" />
+    <g
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="1.4"
+       id="g26">
+      <path
+         d="M319 112 l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"
+         id="path25" />
+      <path
+         d="M286 95 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"
+         id="path26" />
+    </g>
+  </g>
+  <g
+     id="dp-basket-layer">
+    <ellipse
+       cx="266"
+       cy="231"
+       rx="50"
+       ry="8"
+       fill="#3a2461"
+       opacity="0.14"
+       filter="url(#dp-shadow)"
+       id="ellipse26" />
+    <path
+       d="M231 193 Q266 156 301 193"
+       fill="none"
+       stroke="#8b5a3c"
+       stroke-width="8"
+       stroke-linecap="round"
+       id="path27" />
+    <path
+       d="M226 193 H306 L297 228 Q266 238 235 228Z"
+       fill="#dba95e"
+       stroke="#3a2461"
+       stroke-width="3.2"
+       id="path28" />
+    <path
+       d="M233 204 H300 M237 216 H296 M246 193 L248 231 M266 192 V233 M287 193 L284 231"
+       fill="none"
+       stroke="#9f6d3f"
+       stroke-width="2"
+       opacity="0.72"
+       id="path29" />
+    <g
+       fill="#f26f6f"
+       stroke="#3a2461"
+       stroke-width="1.8"
+       id="g32">
+      <circle
+         cx="245"
+         cy="189"
+         r="8"
+         id="circle29" />
+      <circle
+         cx="261"
+         cy="184"
+         r="8"
+         id="circle30" />
+      <circle
+         cx="278"
+         cy="189"
+         r="8"
+         id="circle31" />
+      <circle
+         cx="293"
+         cy="184"
+         r="7"
+         id="circle32" />
+    </g>
+  </g>
+  <g
+     id="dp-poppy-layer">
+    <ellipse
+       cx="128"
+       cy="232"
+       rx="36"
+       ry="7"
+       fill="#3a2461"
+       opacity="0.15"
+       filter="url(#dp-shadow)"
+       id="ellipse32" />
+    <path
+       d="M105 181 C94 187 93 199 99 205 M151 181 C163 176 173 170 178 160"
+       fill="none"
+       stroke="#f6d3b3"
+       stroke-width="6.5"
+       stroke-linecap="round"
+       id="path32" />
+    <circle
+       cx="179"
+       cy="158"
+       r="4"
+       fill="#f6d3b3"
+       stroke="#3a2461"
+       stroke-width="1.7"
+       id="circle33" />
+    <path
+       d="M104 172 C107 160 115 154 128 154 C141 154 149 161 152 174 L156 218 C139 223 116 223 99 217Z"
+       fill="#f36fa3"
+       stroke="#3a2461"
+       stroke-width="3.4"
+       id="path33" />
+    <path
+       d="M118 219 v10 M140 219 v10"
+       stroke="#5b4677"
+       stroke-width="7"
+       stroke-linecap="round"
+       id="path34" />
+    <path
+       d="M111 231 h15 M133 231 h15"
+       stroke="#3a2461"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="path35" />
+    <circle
+       cx="128"
+       cy="136"
+       r="20"
+       fill="#f6d3b3"
+       stroke="#3a2461"
+       stroke-width="3.3"
+       id="circle35" />
+    <path
+       d="M109 135 C105 118 116 109 130 109 C143 109 151 119 148 135 C142 126 135 122 125 122 C119 122 114 127 109 135Z"
+       fill="#8a5a34"
+       stroke="#3a2461"
+       stroke-width="3"
+       id="path36" />
+    <path
+       d="M111 129 q-8 8-2 18 M147 129 q8 8 2 18"
+       fill="none"
+       stroke="#8a5a34"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="path37" />
+    <circle
+       cx="121"
+       cy="137"
+       r="2.2"
+       fill="#3a2461"
+       id="circle37" />
+    <circle
+       cx="135"
+       cy="137"
+       r="2.2"
+       fill="#3a2461"
+       id="circle38" />
+    <ellipse
+       cx="128"
+       cy="146"
+       rx="2.7"
+       ry="3.2"
+       fill="#3a2461"
+       id="ellipse38" />
+    <path
+       d="M107 117 H150 L145 109 H112Z"
+       fill="#e8c07a"
+       stroke="#3a2461"
+       stroke-width="2.7"
+       id="path38" />
+    <path
+       d="M115 109 L120 98 L128 107 L135 97 L142 109Z"
+       fill="#f6c343"
+       stroke="#3a2461"
+       stroke-width="2.4"
+       id="path39" />
+  </g>
+  <g
+     id="dp-connection-layer">
+    <path
+       d="M157 176 C178 161 200 161 222 178"
+       fill="none"
+       stroke="#fff3d4"
+       stroke-width="4"
+       stroke-linecap="round"
+       opacity="0.86"
+       id="path40" />
+    <g
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="1.4"
+       id="g41">
+      <path
+         d="M193 144 l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z"
+         id="path41" />
+    </g>
+  </g>
+  <g
+     id="dp-foreground-layer">
+    <path
+       d="M0 234 C19 224 36 227 53 240 V250 H0Z"
+       fill="#38795d"
+       id="path42" />
+    <path
+       d="M400 232 C382 223 364 228 348 243 V250 H400Z"
+       fill="#38795d"
+       id="path43" />
+    <g
+       fill="#75b68a"
+       stroke="#3a2461"
+       stroke-width="1.7"
+       id="g46">
+      <ellipse
+         cx="14"
+         cy="230"
+         rx="8"
+         ry="15"
+         transform="rotate(-28 14 230)"
+         id="ellipse43" />
+      <ellipse
+         cx="33"
+         cy="233"
+         rx="8"
+         ry="16"
+         transform="rotate(22 33 233)"
+         id="ellipse44" />
+      <ellipse
+         cx="373"
+         cy="233"
+         rx="8"
+         ry="16"
+         transform="rotate(-20 373 233)"
+         id="ellipse45" />
+      <ellipse
+         cx="391"
+         cy="228"
+         rx="8"
+         ry="15"
+         transform="rotate(28 391 228)"
+         id="ellipse46" />
+    </g>
+  </g>
+</svg>

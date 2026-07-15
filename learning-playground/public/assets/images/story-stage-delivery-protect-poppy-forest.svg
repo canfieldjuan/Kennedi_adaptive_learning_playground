@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="400"
+   height="250"
+   viewBox="0 0 400 250"
+   version="1.1"
+   id="svg46"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="dpt-sky"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#d9eef8"
+         id="stop1" />
+      <stop
+         offset="1"
+         stop-color="#f9e5cf"
+         id="stop2" />
+    </linearGradient>
+    <filter
+       id="dpt-shadow"
+       x="-0.074594593"
+       y="-0.39428571"
+       width="1.1491892"
+       height="1.7885714">
+      <feGaussianBlur
+         stdDeviation="2.3"
+         id="feGaussianBlur2" />
+    </filter>
+  </defs>
+  <g
+     id="dpt-sky-layer">
+    <rect
+       width="400"
+       height="250"
+       fill="url(#dpt-sky)"
+       id="rect2" />
+    <circle
+       cx="72"
+       cy="43"
+       r="25"
+       fill="#ffe39a"
+       opacity="0.54"
+       id="circle2" />
+    <circle
+       cx="72"
+       cy="43"
+       r="14"
+       fill="#fff5ca"
+       id="circle3" />
+    <path
+       d="M275 48 C290 37 309 40 317 52 C328 42 347 44 353 58 C368 57 377 66 373 75 H266 C263 63 268 54 275 48Z"
+       fill="#fff"
+       opacity="0.44"
+       id="path3" />
+  </g>
+  <g
+     id="dpt-depth-layer">
+    <path
+       d="M0 118 C47 92 94 99 138 113 C185 88 233 95 273 112 C317 89 361 95 400 115 V191 H0Z"
+       fill="#bad99b"
+       id="path4" />
+    <path
+       d="M0 144 C47 121 90 128 128 142 C174 117 223 124 261 145 C309 120 358 126 400 145 V202 H0Z"
+       fill="#91c486"
+       id="path5" />
+    <g
+       fill="#67a478"
+       stroke="#3a2461"
+       stroke-width="2"
+       opacity="0.7"
+       id="g9">
+      <path
+         d="M15 134 L36 78 L57 134Z"
+         id="path6" />
+      <path
+         d="M54 135 L77 72 L100 135Z"
+         id="path7" />
+      <path
+         d="M292 136 L315 73 L338 136Z"
+         id="path8" />
+      <path
+         d="M342 137 L366 80 L390 137Z"
+         id="path9" />
+    </g>
+  </g>
+  <g
+     id="dpt-ground-layer">
+    <path
+       d="M0 166 C64 149 123 157 176 172 C230 150 303 150 400 167 V250 H0Z"
+       fill="#78b78b"
+       id="path10" />
+    <path
+       d="M0 208 C84 183 159 198 223 210 C292 186 348 191 400 206 V250 H0Z"
+       fill="#529970"
+       id="path11" />
+    <path
+       d="M153 250 C176 224 210 207 252 194 C289 183 328 184 364 194 C328 199 298 211 275 226 C260 237 251 245 247 250Z"
+       fill="#f1d7a7"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       id="path12" />
+  </g>
+  <g
+     id="dpt-party-layer">
+    <path
+       d="M103 64 C163 41 236 42 299 66"
+       fill="none"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       id="path13" />
+    <path
+       d="M116 59 l9 17 9-17Z"
+       fill="#f36fa3"
+       stroke="#3a2461"
+       stroke-width="1.8"
+       id="path14" />
+    <path
+       d="M165 49 l9 17 9-17Z"
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="1.8"
+       id="path15" />
+    <path
+       d="M215 49 l9 17 9-17Z"
+       fill="#9fc7e8"
+       stroke="#3a2461"
+       stroke-width="1.8"
+       id="path16" />
+    <path
+       d="M263 58 l9 17 9-17Z"
+       fill="#a777bb"
+       stroke="#3a2461"
+       stroke-width="1.8"
+       id="path17" />
+    <path
+       d="M311 141 C324 126 344 126 356 140 V182 H311Z"
+       fill="#fbf3e4"
+       stroke="#3a2461"
+       stroke-width="2.7"
+       id="path18" />
+    <path
+       d="M305 142 H362 L351 128 H316Z"
+       fill="#f36fa3"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       id="path19" />
+  </g>
+  <g
+     id="dpt-high-layer">
+    <path
+       d="M100 143 Q124 115 148 143"
+       fill="none"
+       stroke="#8b5a3c"
+       stroke-width="6"
+       stroke-linecap="round"
+       id="path20" />
+    <path
+       d="M96 143 H152 L146 171 Q124 178 102 171Z"
+       fill="#dba95e"
+       stroke="#3a2461"
+       stroke-width="2.7"
+       id="path21" />
+    <path
+       d="M102 152 H146 M109 143 L110 173 M124 142 V176 M139 143 L138 173"
+       fill="none"
+       stroke="#9f6d3f"
+       stroke-width="1.6"
+       id="path22" />
+    <g
+       fill="#f26f6f"
+       stroke="#3a2461"
+       stroke-width="1.4"
+       id="g24">
+      <circle
+         cx="109"
+         cy="140"
+         r="5.5"
+         id="circle22" />
+      <circle
+         cx="123"
+         cy="136"
+         r="5.5"
+         id="circle23" />
+      <circle
+         cx="137"
+         cy="140"
+         r="5.5"
+         id="circle24" />
+    </g>
+    <path
+       d="M124 127 V93 M116 103 L124 91 L132 103"
+       fill="none"
+       stroke="#f7c54a"
+       stroke-width="4"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       id="path24" />
+    <g
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="1.4"
+       id="g26">
+      <path
+         d="M91 120 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"
+         id="path25" />
+      <path
+         d="M153 111 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"
+         id="path26" />
+    </g>
+  </g>
+  <g
+     id="dpt-wagon-layer">
+    <path
+       d="M255 165 H310 L302 194 H264Z"
+       fill="#e98080"
+       stroke="#3a2461"
+       stroke-width="3"
+       id="path27" />
+    <path
+       d="M259 166 l-18-18"
+       stroke="#3a2461"
+       stroke-width="4"
+       stroke-linecap="round"
+       id="path28" />
+    <circle
+       cx="270"
+       cy="199"
+       r="8"
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="2.5"
+       id="circle28" />
+    <circle
+       cx="296"
+       cy="199"
+       r="8"
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="2.5"
+       id="circle29" />
+    <path
+       d="M265 161 Q282 139 299 161"
+       fill="none"
+       stroke="#8b5a3c"
+       stroke-width="5"
+       id="path29" />
+    <path
+       d="M264 161 H302 L298 179 Q283 184 268 179Z"
+       fill="#dba95e"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       id="path30" />
+    <g
+       fill="#f26f6f"
+       stroke="#3a2461"
+       stroke-width="1.2"
+       id="g32">
+      <circle
+         cx="273"
+         cy="158"
+         r="4.5"
+         id="circle30" />
+      <circle
+         cx="283"
+         cy="154"
+         r="4.5"
+         id="circle31" />
+      <circle
+         cx="293"
+         cy="158"
+         r="4.5"
+         id="circle32" />
+    </g>
+  </g>
+  <g
+     id="dpt-poppy-layer">
+    <ellipse
+       cx="196"
+       cy="232"
+       rx="37"
+       ry="7"
+       fill="#3a2461"
+       opacity="0.15"
+       filter="url(#dpt-shadow)"
+       id="ellipse32" />
+    <path
+       d="M173 181 C164 175 158 168 155 160 M219 181 C228 175 234 168 237 160"
+       fill="none"
+       stroke="#f6d3b3"
+       stroke-width="6.5"
+       stroke-linecap="round"
+       id="path32" />
+    <path
+       d="M172 172 C175 160 183 154 196 154 C209 154 217 161 220 174 L224 218 C207 223 184 223 167 217Z"
+       fill="#f36fa3"
+       stroke="#3a2461"
+       stroke-width="3.4"
+       id="path33" />
+    <path
+       d="M186 219 v10 M208 219 v10"
+       stroke="#5b4677"
+       stroke-width="7"
+       stroke-linecap="round"
+       id="path34" />
+    <path
+       d="M179 231 h15 M201 231 h15"
+       stroke="#3a2461"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="path35" />
+    <circle
+       cx="196"
+       cy="136"
+       r="20"
+       fill="#f6d3b3"
+       stroke="#3a2461"
+       stroke-width="3.3"
+       id="circle35" />
+    <path
+       d="M177 135 C173 118 184 109 198 109 C211 109 219 119 216 135 C210 126 203 122 193 122 C187 122 182 127 177 135Z"
+       fill="#8a5a34"
+       stroke="#3a2461"
+       stroke-width="3"
+       id="path36" />
+    <path
+       d="M179 129 q-8 8-2 18 M215 129 q8 8 2 18"
+       fill="none"
+       stroke="#8a5a34"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="path37" />
+    <circle
+       cx="189"
+       cy="137"
+       r="2.2"
+       fill="#3a2461"
+       id="circle37" />
+    <circle
+       cx="203"
+       cy="137"
+       r="2.2"
+       fill="#3a2461"
+       id="circle38" />
+    <ellipse
+       cx="196"
+       cy="146"
+       rx="2.7"
+       ry="3.2"
+       fill="#3a2461"
+       id="ellipse38" />
+    <path
+       d="M175 117 H218 L213 109 H180Z"
+       fill="#e8c07a"
+       stroke="#3a2461"
+       stroke-width="2.7"
+       id="path38" />
+    <path
+       d="M183 109 L188 98 L196 107 L203 97 L210 109Z"
+       fill="#f6c343"
+       stroke="#3a2461"
+       stroke-width="2.4"
+       id="path39" />
+  </g>
+  <g
+     id="dpt-sparkle-layer">
+    <g
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="1.4"
+       id="g41">
+      <path
+         d="M92 153 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"
+         id="path40" />
+      <path
+         d="M319 153 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"
+         id="path41" />
+    </g>
+  </g>
+  <g
+     id="dpt-foreground-layer">
+    <path
+       d="M0 234 C19 224 36 227 53 240 V250 H0Z"
+       fill="#38795d"
+       id="path42" />
+    <path
+       d="M400 232 C382 223 364 228 348 243 V250 H400Z"
+       fill="#38795d"
+       id="path43" />
+    <g
+       fill="#75b68a"
+       stroke="#3a2461"
+       stroke-width="1.7"
+       id="g46">
+      <ellipse
+         cx="14"
+         cy="230"
+         rx="8"
+         ry="15"
+         transform="rotate(-28 14 230)"
+         id="ellipse43" />
+      <ellipse
+         cx="33"
+         cy="233"
+         rx="8"
+         ry="16"
+         transform="rotate(22 33 233)"
+         id="ellipse44" />
+      <ellipse
+         cx="373"
+         cy="233"
+         rx="8"
+         ry="16"
+         transform="rotate(-20 373 233)"
+         id="ellipse45" />
+      <ellipse
+         cx="391"
+         cy="228"
+         rx="8"
+         ry="15"
+         transform="rotate(28 391 228)"
+         id="ellipse46" />
+    </g>
+  </g>
+</svg>

@@ -39,6 +39,16 @@ const LOST_FRIEND_PRODUCTION_ASSETS: Record<string, string> = {
   'lost-help': 'story-stage-lost-help-poppy-forest',
   'lost-ending': 'story-stage-lost-ending-poppy-forest',
 };
+const SPECIAL_DELIVERY_PRODUCTION_ASSETS: Record<string, string> = {
+  'delivery-intro': 'story-stage-delivery-intro-poppy-forest',
+  'delivery-problem': 'story-stage-delivery-problem-poppy-forest',
+  'delivery-route': 'story-stage-delivery-route-poppy-forest',
+  'delivery-bridge': 'story-stage-delivery-bridge-poppy-forest',
+  'delivery-meadow': 'story-stage-delivery-meadow-poppy-forest',
+  'delivery-protect': 'story-stage-delivery-protect-poppy-forest',
+  'delivery-ending-high': 'story-stage-delivery-ending-high-poppy-forest',
+  'delivery-ending-wagon': 'story-stage-delivery-ending-wagon-poppy-forest',
+};
 
 describe('the first tale (resolved story graph)', () => {
   const scenesById = new Map(FIRST_TALE.scenes.map((scene) => [scene.id, scene]));
@@ -285,6 +295,16 @@ describe('story stage runtime', () => {
     findByAria(root, 'Start the story')?.click();
   }
 
+  function startDeliveryStory(root: MockElement): void {
+    findByAria(root, 'Princess Poppy')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'The Enchanted Forest')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'A Special Delivery')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'Start the story')?.click();
+  }
+
   function currentCaption(root: MockElement): string {
     return findByClass(root, 'story-stage__caption')?.textContent ?? '';
   }
@@ -442,6 +462,89 @@ describe('story stage runtime', () => {
     });
     expect(otherFamily).not.toContain('data-production-art');
     expect(otherFamily).toContain('#d9a066');
+
+    const unknownScene = storySceneSvg('not-a-story-scene', {
+      characterArt: 'poppy',
+      settingArt: 'forest',
+    });
+    expect(unknownScene).not.toContain('data-production-art');
+    expect(unknownScene).toContain('#fd79a8');
+  });
+
+  test('the bridge and carry-high delivery path preserves every exact production beat', () => {
+    const root = setup();
+    startDeliveryStory(root);
+    expectProductionScene(root, SPECIAL_DELIVERY_PRODUCTION_ASSETS['delivery-intro']);
+
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, SPECIAL_DELIVERY_PRODUCTION_ASSETS['delivery-problem']);
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, SPECIAL_DELIVERY_PRODUCTION_ASSETS['delivery-route']);
+    findByAria(root, 'Over the little bridge')?.click();
+    expectProductionScene(root, SPECIAL_DELIVERY_PRODUCTION_ASSETS['delivery-bridge']);
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, SPECIAL_DELIVERY_PRODUCTION_ASSETS['delivery-protect']);
+    findByAria(root, 'Carry it up high')?.click();
+    expectProductionScene(root, SPECIAL_DELIVERY_PRODUCTION_ASSETS['delivery-ending-high']);
+    expect(findByAria(root, 'New story')).toBeDefined();
+  });
+
+  test('the meadow and wagon delivery path preserves its distinct consequence and ending', () => {
+    const root = setup();
+    startDeliveryStory(root);
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Through the flower meadow')?.click();
+    expectProductionScene(root, SPECIAL_DELIVERY_PRODUCTION_ASSETS['delivery-meadow']);
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, SPECIAL_DELIVERY_PRODUCTION_ASSETS['delivery-protect']);
+    findByAria(root, 'Roll it in the little wagon')?.click();
+    expectProductionScene(root, SPECIAL_DELIVERY_PRODUCTION_ASSETS['delivery-ending-wagon']);
+    expect(findByAria(root, 'New story')).toBeDefined();
+  });
+
+  test('all eight Special Delivery beats use exact Poppy-and-forest production art', () => {
+    for (const [artKey, assetId] of Object.entries(SPECIAL_DELIVERY_PRODUCTION_ASSETS)) {
+      const productionScene = storySceneSvg(artKey, {
+        characterArt: 'poppy',
+        settingArt: 'forest',
+      });
+      expect(productionScene).toContain(`data-production-art="${assetId}"`);
+      expect(productionScene).toContain(`href="/assets/images/${assetId}.svg"`);
+      expect(productionScene).toContain('aria-hidden="true"');
+      expect(productionScene).toContain('focusable="false"');
+    }
+  });
+
+  test('the Special Delivery family stays exact-choice scoped without displacing Lost Friend', () => {
+    for (const artKey of Object.keys(SPECIAL_DELIVERY_PRODUCTION_ASSETS)) {
+      const alternateCharacter = storySceneSvg(artKey, {
+        characterArt: 'finn',
+        settingArt: 'forest',
+      });
+      expect(alternateCharacter).not.toContain('data-production-art');
+      expect(alternateCharacter).toContain('#8fce9b');
+
+      const alternateSetting = storySceneSvg(artKey, {
+        characterArt: 'poppy',
+        settingArt: 'cloud-village',
+      });
+      expect(alternateSetting).not.toContain('data-production-art');
+      expect(alternateSetting).toContain('#d6ecfa');
+    }
+
+    const lostFriend = storySceneSvg('lost-intro', {
+      characterArt: 'poppy',
+      settingArt: 'forest',
+    });
+    expect(lostFriend).toContain('data-production-art="story-stage-lost-intro-poppy-forest"');
+
+    const brokenThing = storySceneSvg('fix-intro', {
+      characterArt: 'poppy',
+      settingArt: 'forest',
+    });
+    expect(brokenThing).not.toContain('data-production-art');
+    expect(brokenThing).toContain('#d9a066');
 
     const unknownScene = storySceneSvg('not-a-story-scene', {
       characterArt: 'poppy',
