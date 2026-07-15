@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="400"
+   height="250"
+   viewBox="0 0 400 250"
+   version="1.1"
+   id="svg51"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="dm-sky"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#d9eef8"
+         id="stop1" />
+      <stop
+         offset="1"
+         stop-color="#f9e5cf"
+         id="stop2" />
+    </linearGradient>
+    <filter
+       id="dm-shadow"
+       x="-0.068999999"
+       y="-0.39428571"
+       width="1.138"
+       height="1.7885714">
+      <feGaussianBlur
+         stdDeviation="2.3"
+         id="feGaussianBlur2" />
+    </filter>
+  </defs>
+  <g
+     id="dm-sky-layer">
+    <rect
+       width="400"
+       height="250"
+       fill="url(#dm-sky)"
+       id="rect2" />
+    <circle
+       cx="72"
+       cy="43"
+       r="25"
+       fill="#ffe39a"
+       opacity="0.5"
+       id="circle2" />
+    <circle
+       cx="72"
+       cy="43"
+       r="14"
+       fill="#fff5ca"
+       id="circle3" />
+    <path
+       d="M275 48 C290 37 309 40 317 52 C328 42 347 44 353 58 C368 57 377 66 373 75 H266 C263 63 268 54 275 48Z"
+       fill="#fff"
+       opacity="0.46"
+       id="path3" />
+  </g>
+  <g
+     id="dm-depth-layer">
+    <path
+       d="M0 118 C47 92 94 99 138 113 C185 88 233 95 273 112 C317 89 361 95 400 115 V191 H0Z"
+       fill="#bad99b"
+       id="path4" />
+    <path
+       d="M0 144 C47 121 90 128 128 142 C174 117 223 124 261 145 C309 120 358 126 400 145 V202 H0Z"
+       fill="#91c486"
+       id="path5" />
+    <g
+       fill="#67a478"
+       stroke="#3a2461"
+       stroke-width="2"
+       opacity="0.7"
+       id="g9">
+      <path
+         d="M15 134 L36 78 L57 134Z"
+         id="path6" />
+      <path
+         d="M54 135 L77 72 L100 135Z"
+         id="path7" />
+      <path
+         d="M292 136 L315 73 L338 136Z"
+         id="path8" />
+      <path
+         d="M342 137 L366 80 L390 137Z"
+         id="path9" />
+    </g>
+  </g>
+  <g
+     id="dm-ground-layer">
+    <path
+       d="M0 163 C64 145 123 154 176 168 C230 146 303 146 400 164 V250 H0Z"
+       fill="#84c78e"
+       id="path10" />
+    <path
+       d="M0 208 C84 181 159 196 223 209 C292 183 348 188 400 204 V250 H0Z"
+       fill="#58a577"
+       id="path11" />
+    <path
+       d="M155 250 C177 224 210 207 249 195 C287 184 326 186 363 196 C327 201 297 212 276 226 C260 237 252 246 248 250Z"
+       fill="#f1d7a7"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       id="path12" />
+  </g>
+  <g
+     id="dm-flower-layer">
+    <g
+       stroke="#3a2461"
+       stroke-width="1.5"
+       stroke-linecap="round"
+       id="g14">
+      <path
+         d="M54 225 v-26 M88 232 v-33 M118 218 v-25 M300 225 v-29 M337 230 v-36 M370 218 v-26"
+         id="path13" />
+      <path
+         d="M54 213 q-8-9-13 1 M88 216 q8-10 15 0 M118 206 q-8-8-13 0 M300 212 q8-9 14 0 M337 213 q-8-11-14 0 M370 205 q8-8 14 0"
+         fill="none"
+         id="path14" />
+    </g>
+    <g
+       stroke="#3a2461"
+       stroke-width="1.5"
+       id="g25">
+      <g
+         fill="#f39ab7"
+         id="g16">
+        <circle
+           cx="54"
+           cy="197"
+           r="7"
+           id="circle14" />
+        <circle
+           cx="118"
+           cy="191"
+           r="6"
+           id="circle15" />
+        <circle
+           cx="337"
+           cy="191"
+           r="7"
+           id="circle16" />
+      </g>
+      <g
+         fill="#f7c54a"
+         id="g19">
+        <circle
+           cx="88"
+           cy="197"
+           r="7"
+           id="circle17" />
+        <circle
+           cx="300"
+           cy="194"
+           r="6"
+           id="circle18" />
+        <circle
+           cx="370"
+           cy="190"
+           r="6"
+           id="circle19" />
+      </g>
+      <circle
+         cx="54"
+         cy="197"
+         r="2.5"
+         fill="#fff3d4"
+         id="circle20" />
+      <circle
+         cx="88"
+         cy="197"
+         r="2.5"
+         fill="#fff3d4"
+         id="circle21" />
+      <circle
+         cx="118"
+         cy="191"
+         r="2.2"
+         fill="#fff3d4"
+         id="circle22" />
+      <circle
+         cx="300"
+         cy="194"
+         r="2.2"
+         fill="#fff3d4"
+         id="circle23" />
+      <circle
+         cx="337"
+         cy="191"
+         r="2.5"
+         fill="#fff3d4"
+         id="circle24" />
+      <circle
+         cx="370"
+         cy="190"
+         r="2.2"
+         fill="#fff3d4"
+         id="circle25" />
+    </g>
+  </g>
+  <g
+     id="dm-butterfly-layer">
+    <g
+       fill="#bfe8f6"
+       stroke="#3a2461"
+       stroke-width="1.7"
+       id="g26">
+      <path
+         d="M110 124 q-12-12-19 1 q9 12 19 2 q10 10 19-2 q-7-13-19-1Z"
+         id="path25" />
+      <path
+         d="M303 132 q-11-11-18 1 q8 11 18 2 q9 9 18-2 q-7-12-18-1Z"
+         id="path26" />
+    </g>
+    <g
+       fill="#f4b5cc"
+       stroke="#3a2461"
+       stroke-width="1.7"
+       id="g27">
+      <path
+         d="M230 96 q-10-10-16 1 q7 10 16 2 q8 8 16-2 q-6-11-16-1Z"
+         id="path27" />
+    </g>
+    <path
+       d="M110 120 v12 M303 128 v11 M230 92 v12"
+       stroke="#3a2461"
+       stroke-width="1.5"
+       id="path28" />
+    <path
+       d="M104 113 q3-6 6 0 M110 113 q3-6 6 0 M297 121 q3-6 6 0 M303 121 q3-6 6 0"
+       fill="none"
+       stroke="#3a2461"
+       stroke-width="1.2"
+       stroke-linecap="round"
+       id="path29" />
+  </g>
+  <g
+     id="dm-basket-layer">
+    <path
+       d="M216 159 Q239 135 262 159"
+       fill="none"
+       stroke="#8b5a3c"
+       stroke-width="6"
+       stroke-linecap="round"
+       id="path30" />
+    <path
+       d="M212 159 H266 L261 186 Q239 193 217 186Z"
+       fill="#dba95e"
+       stroke="#3a2461"
+       stroke-width="2.7"
+       id="path31" />
+    <path
+       d="M217 168 H261 M224 159 L225 188 M239 158 V191 M254 159 L252 188"
+       fill="none"
+       stroke="#9f6d3f"
+       stroke-width="1.7"
+       id="path32" />
+    <g
+       fill="#f26f6f"
+       stroke="#3a2461"
+       stroke-width="1.5"
+       id="g35">
+      <circle
+         cx="225"
+         cy="156"
+         r="6"
+         id="circle32" />
+      <circle
+         cx="238"
+         cy="152"
+         r="6"
+         id="circle33" />
+      <circle
+         cx="251"
+         cy="156"
+         r="6"
+         id="circle34" />
+      <circle
+         cx="260"
+         cy="153"
+         r="5"
+         id="circle35" />
+    </g>
+  </g>
+  <g
+     id="dm-poppy-layer">
+    <ellipse
+       cx="181"
+       cy="232"
+       rx="40"
+       ry="7"
+       fill="#3a2461"
+       opacity="0.15"
+       filter="url(#dm-shadow)"
+       id="ellipse35" />
+    <path
+       d="M162 181 C173 173 187 173 198 181 M198 181 C208 173 218 169 226 170"
+       fill="none"
+       stroke="#f6d3b3"
+       stroke-width="6"
+       stroke-linecap="round"
+       id="path35" />
+    <path
+       d="M157 172 C160 160 168 154 181 154 C194 154 202 161 205 174 L209 218 C192 223 169 223 152 217Z"
+       fill="#f36fa3"
+       stroke="#3a2461"
+       stroke-width="3.4"
+       id="path36" />
+    <path
+       d="M171 219 q-2 8-8 12 M193 219 q6 5 14 8"
+       fill="none"
+       stroke="#5b4677"
+       stroke-width="7"
+       stroke-linecap="round"
+       id="path37" />
+    <path
+       d="M154 232 h15 M200 229 h15"
+       stroke="#3a2461"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="path38" />
+    <circle
+       cx="181"
+       cy="136"
+       r="20"
+       fill="#f6d3b3"
+       stroke="#3a2461"
+       stroke-width="3.3"
+       id="circle38" />
+    <path
+       d="M162 135 C158 118 169 109 183 109 C196 109 204 119 201 135 C195 126 188 122 178 122 C172 122 167 127 162 135Z"
+       fill="#8a5a34"
+       stroke="#3a2461"
+       stroke-width="3"
+       id="path39" />
+    <path
+       d="M164 129 q-8 8-2 18 M200 129 q8 8 2 18"
+       fill="none"
+       stroke="#8a5a34"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="path40" />
+    <path
+       d="M171 137 q4 4 8 0 M185 137 q4 4 8 0"
+       fill="none"
+       stroke="#3a2461"
+       stroke-width="2"
+       stroke-linecap="round"
+       id="path41" />
+    <path
+       d="M175 146 q6 4 12 0"
+       fill="none"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       stroke-linecap="round"
+       id="path42" />
+    <path
+       d="M160 117 H203 L198 109 H165Z"
+       fill="#e8c07a"
+       stroke="#3a2461"
+       stroke-width="2.7"
+       id="path43" />
+    <path
+       d="M168 109 L173 98 L181 107 L188 97 L195 109Z"
+       fill="#f6c343"
+       stroke="#3a2461"
+       stroke-width="2.4"
+       id="path44" />
+  </g>
+  <g
+     id="dm-motion-layer">
+    <path
+       d="M140 221 q-7 4-14 2 M220 220 q8 3 15 0"
+       fill="none"
+       stroke="#fff3d4"
+       stroke-width="3"
+       stroke-linecap="round"
+       opacity="0.85"
+       id="path45" />
+    <g
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="1.4"
+       id="g46">
+      <path
+         d="M269 124 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"
+         id="path46" />
+    </g>
+  </g>
+  <g
+     id="dm-foreground-layer">
+    <path
+       d="M0 234 C19 224 36 227 53 240 V250 H0Z"
+       fill="#38795d"
+       id="path47" />
+    <path
+       d="M400 232 C382 223 364 228 348 243 V250 H400Z"
+       fill="#38795d"
+       id="path48" />
+    <g
+       fill="#75b68a"
+       stroke="#3a2461"
+       stroke-width="1.7"
+       id="g51">
+      <ellipse
+         cx="14"
+         cy="230"
+         rx="8"
+         ry="15"
+         transform="rotate(-28 14 230)"
+         id="ellipse48" />
+      <ellipse
+         cx="33"
+         cy="233"
+         rx="8"
+         ry="16"
+         transform="rotate(22 33 233)"
+         id="ellipse49" />
+      <ellipse
+         cx="373"
+         cy="233"
+         rx="8"
+         ry="16"
+         transform="rotate(-20 373 233)"
+         id="ellipse50" />
+      <ellipse
+         cx="391"
+         cy="228"
+         rx="8"
+         ry="15"
+         transform="rotate(28 391 228)"
+         id="ellipse51" />
+    </g>
+  </g>
+</svg>
