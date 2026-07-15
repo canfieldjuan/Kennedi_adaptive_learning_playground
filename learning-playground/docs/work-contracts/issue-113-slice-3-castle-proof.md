@@ -259,12 +259,22 @@ artifact. All three samples must use the same text, model, render settings, and
 normalization target so the owner can compare the voices rather than different
 production recipes.
 
-No full Spanish cue render may begin until the owner explicitly selects one of
-the three samples. Voice selection alone does not approve pronunciation: every
+No full Spanish cue render may begin until the owner explicitly selects an
+eligible sample. Voice selection alone does not approve pronunciation: every
 final target word and line remains subject to exact text, audio-hash, and fluent
 review before storyboard assembly. This amendment does not permit a runtime
 voice selector, model dependency, remote service, shared voice-core change, or
 automatic review decision.
+
+The first owner listening pass rejected `maria` for production voice identity
+and pacing: pronunciation was good, but the sample sounded masculine and too
+fast. That partial pronunciation approval does not select the voice. Maria must
+not be rerendered or promoted in this bakeoff. Because the Javi and Sergio takes
+are shorter than the rejected Maria take, the allowed review surface expands
+only to deterministic slower copies of their existing raw WAVs using the repo's
+established child-facing Orpheus `atempo=0.85` rule followed by the same
+normalization target. No new model inference, new text, Maria variant, cue
+replacement, or final voice selection is permitted by this amendment.
 
 ## Production Evidence
 
@@ -379,11 +389,25 @@ inside ignored `spanish-voice-bakeoff/`:
 | `sergio` | 1.706667 s | -19.5 LUFS | -3.0 dBTP | `eb29d17067f5f4bd8be61e60071397286d8bff6329965d23606ff14a386096e6` |
 | `maria` | 2.133333 s | -19.1 LUFS | -3.0 dBTP | `4a7cc59c5f48fee92d71679780b5b7e7b23c2efc571218d24fadbecbc1d7e705` |
 
+The owner's first listening pass accepted Maria's pronunciation but rejected
+the sample's masculine voice identity and fast pacing. Maria is not a production
+candidate. Deterministic `atempo=0.85` review copies were derived from the
+existing Javi and Sergio raw WAVs, then normalized with the same target:
+
+| Voice | Duration | Integrated loudness | True peak | SHA-256 |
+| --- | ---: | ---: | ---: | --- |
+| `javi-slow` | 1.682125 s | -18.2 LUFS | -3.0 dBTP | `371f730a97430f13eb37bfe02d9bb2f62b459171cbb3537e2a4d5c47d5e641c7` |
+| `sergio-slow` | 1.992500 s | -19.4 LUFS | -3.0 dBTP | `ee79165b1d28ee8c6fa30c73c013880ff743bc739f528c5d7fc54057a565fb65` |
+
+No second model inference occurred. Both slower variants retain the exact
+original take and text while changing only playback tempo and normalization.
+
 `review-metadata.json` has SHA-256
-`2e1908ceca51d6bec2453406a00f53d4988a5463fdd9b045d36d378c1b8b194c`
+`a154a1f1f5bd9a4897e4a188fad570fbdb7b28c23bc352f7f1b7dee7f93b437d`
 and binds the shared text, English intent, model source, render settings,
 normalization, raw/final hashes, durations, measured loudness, and pending
-review state. JSON parsing and exact final-file hash checks passed.
+review state. It also records Maria's pronunciation approval and production
+rejection separately. JSON parsing and exact final-file hash checks passed.
 
 The first LM Studio load replaced an idle unrelated Qwen model under local
 resource guardrails. No inference was interrupted. After the three samples,
@@ -392,7 +416,8 @@ the Spanish checkpoint was unloaded and
 parallel 4. The Orpheus `.env` is restored to `orpheus-3b-ft.gguf`, and its
 English-configured decoder is active on loopback port 5005. No cue audio,
 review packet, ledger, English Tara artifact, tracked media, or app file changed.
-The three candidates remain unselected and pronunciation-pending.
+Maria remains rejected. The slower Javi and Sergio candidates remain unselected
+and pronunciation-pending.
 
 ### Authorship Packet
 
@@ -456,8 +481,10 @@ above; no final target-word or cue path has been rendered or replaced.
   sequence remains rejected.
 - Owner review of the corrected six-frame story sequence: **approved for this
   proof** on 2026-07-14. Final synchronized export review remains pending.
-- Multilingual Spanish voice bakeoff: **generated**. Owner voice selection and
-  pronunciation disposition are pending; no candidate is selected implicitly.
+- Multilingual Spanish voice bakeoff: **generated**. Maria is rejected for
+  production voice identity and pacing despite accepted pronunciation. Slower
+  Javi and Sergio review copies await owner voice/pronunciation disposition; no
+  candidate is selected implicitly.
 - Full multilingual-model rendering and exact owner/fluent review of the 8
   target words and 13 Spanish line artifacts: **pending**. The reviewer identity
   is established; no final Spanish artifact has been approved.
@@ -475,15 +502,15 @@ selection, exact Spanish review, final assembly, and final owner review remain.
 
 ### Gaps
 
-- Owner selection and pronunciation disposition for the three Spanish bakeoff
+- Owner voice and pronunciation disposition for the slower Javi and Sergio
   samples are not delivered at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:459`. No candidate may
-  become the final voice by default.
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:484`. Maria is rejected,
+  and neither remaining candidate may become the final voice by default.
 - Full multilingual Spanish rendering and exact line approval are not delivered
-  at `docs/work-contracts/issue-113-slice-3-castle-proof.md:461`. Reviewer
+  at `docs/work-contracts/issue-113-slice-3-castle-proof.md:488`. Reviewer
   identity is known, but no approval is inferred from that identity.
 - Final Foundry assembly, synchronized export review, and manual decision remain
-  blocked at `docs/work-contracts/issue-113-slice-3-castle-proof.md:466`.
+  blocked at `docs/work-contracts/issue-113-slice-3-castle-proof.md:493`.
   Therefore the full Slice 3 gap audit is **NOT DONE**.
 - Change without contract trace: none. The branch diff contains the declared
   contract, narrow narration-rule correction, six bounded Inkscape sources,
@@ -518,7 +545,9 @@ selection, exact Spanish review, final assembly, and final owner review remain.
    cold visual review at line 233.
 8. `docs/work-contracts/issue-113-slice-3-castle-proof.md:245` records the
    owner's bounded sequence approval and permits only an isolated, equal-recipe
-   three-voice Spanish bakeoff before explicit voice selection.
+   three-voice Spanish bakeoff before explicit voice selection. The review
+   amendment at line 268 rejects Maria and permits only deterministic slower
+   review copies of the two remaining existing takes.
 9. `design-source/video-vault/colorless-castle/castle-scene-01-colorless.svg:31`
    creates the muted invitation state, with the closed paint case at line 95;
    `castle-scene-02-red-door.svg:43` preserves muted roofs while revealing the
@@ -544,9 +573,10 @@ selection, exact Spanish review, final assembly, and final owner review remain.
 15. `docs/work-contracts/issue-113-slice-3-castle-proof.md:318` records the exact
     six-source and capture hashes, structural validation, owner/reviewer status,
     and final-review boundary.
-16. `docs/work-contracts/issue-113-slice-3-castle-proof.md:368` records the three
-    ignored bakeoff artifact hashes, media measurements, review metadata hash,
-    restored local services, and the honest remaining gaps at line 453.
+16. `docs/work-contracts/issue-113-slice-3-castle-proof.md:378` records the three
+    original bakeoff artifacts, two slower review copies, media measurements,
+    review metadata hash, restored local services, and the honest remaining gaps
+    at line 478.
 
 ### Contract Traceability
 
@@ -573,11 +603,11 @@ selection, exact Spanish review, final assembly, and final owner review remain.
   `design-source/video-vault/colorless-castle/castle-scene-05-garden-roofs.svg:32`.
 - Equal-recipe Spanish voice comparison -> contract boundary at
   `docs/work-contracts/issue-113-slice-3-castle-proof.md:245` and exact artifact
-  evidence at line 368. No tracked or cue audio path changed.
+  evidence at line 378. No tracked or cue audio path changed.
 - Equal, non-leading paint choices -> source groups at
   `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg:97`
   and the measured result recorded at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:337`.
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:370`.
 - Model quality failed, but the existing Foundry code and workflows behaved
   according to contract; no Foundry implementation change was needed.
 
@@ -613,6 +643,9 @@ selection, exact Spanish review, final assembly, and final owner review remain.
 - Spanish bakeoff validation passed: all three samples use the same exact text
   and multilingual model, parse as finite 48 kHz mono PCM, retain exact hashes,
   peak at -3.0 dBTP, and match the ignored review metadata.
+- Slower-candidate validation passed: Javi and Sergio derive from their original
+  raw samples with only `atempo=0.85` plus the shared normalization, remain
+  finite 48 kHz mono PCM, retain exact hashes, and match the review metadata.
 - Local service restoration passed: the Spanish model was unloaded, the prior
   Qwen identifier/context/parallel settings were restored, the Orpheus `.env`
   again names `orpheus-3b-ft.gguf`, and the English decoder is active on port
