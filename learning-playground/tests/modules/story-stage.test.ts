@@ -39,6 +39,15 @@ const LOST_FRIEND_PRODUCTION_ASSETS: Record<string, string> = {
   'lost-help': 'story-stage-lost-help-poppy-forest',
   'lost-ending': 'story-stage-lost-ending-poppy-forest',
 };
+const COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS: Record<string, string> = {
+  'lost-intro': 'story-stage-lost-intro-poppy-cozy-town',
+  'lost-problem': 'story-stage-lost-problem-poppy-cozy-town',
+  'lost-where': 'story-stage-lost-where-poppy-cozy-town',
+  'lost-bush': 'story-stage-lost-bush-poppy-cozy-town',
+  'lost-log': 'story-stage-lost-log-poppy-cozy-town',
+  'lost-help': 'story-stage-lost-help-poppy-cozy-town',
+  'lost-ending': 'story-stage-lost-ending-poppy-cozy-town',
+};
 const SPECIAL_DELIVERY_PRODUCTION_ASSETS: Record<string, string> = {
   'delivery-intro': 'story-stage-delivery-intro-poppy-forest',
   'delivery-problem': 'story-stage-delivery-problem-poppy-forest',
@@ -305,6 +314,16 @@ describe('story stage runtime', () => {
     findByAria(root, 'Start the story')?.click();
   }
 
+  function startCozyTownLostFriendStory(root: MockElement): void {
+    findByAria(root, 'Princess Poppy')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'The Cozy Town')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'A Missing Friend')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'Start the story')?.click();
+  }
+
   function currentCaption(root: MockElement): string {
     return findByClass(root, 'story-stage__caption')?.textContent ?? '';
   }
@@ -450,10 +469,10 @@ describe('story stage runtime', () => {
 
       const alternateSetting = storySceneSvg(artKey, {
         characterArt: 'poppy',
-        settingArt: 'cozy-town',
+        settingArt: 'cloud-village',
       });
       expect(alternateSetting).not.toContain('data-production-art');
-      expect(alternateSetting).toContain('#fdeed7');
+      expect(alternateSetting).toContain('#d6ecfa');
     }
 
     const otherFamily = storySceneSvg('fix-intro', {
@@ -466,6 +485,91 @@ describe('story stage runtime', () => {
     const unknownScene = storySceneSvg('not-a-story-scene', {
       characterArt: 'poppy',
       settingArt: 'forest',
+    });
+    expect(unknownScene).not.toContain('data-production-art');
+    expect(unknownScene).toContain('#fd79a8');
+  });
+
+  test('the sparkly-lane Cozy Town path preserves every production beat through reunion', () => {
+    const root = setup();
+    startCozyTownLostFriendStory(root);
+    expectProductionScene(root, COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS['lost-intro']);
+
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS['lost-problem']);
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS['lost-where']);
+    findByAria(root, 'Follow the sparkly path')?.click();
+    expectProductionScene(root, COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS['lost-bush']);
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS['lost-help']);
+    findByAria(root, 'Sing a soft song')?.click();
+    expectProductionScene(root, COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS['lost-ending']);
+    expect(findByAria(root, 'New story')).toBeDefined();
+  });
+
+  test('the friendly-owl Cozy Town path reaches its distinct log consequence and bubble ending', () => {
+    const root = setup();
+    startCozyTownLostFriendStory(root);
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Ask the friendly owl')?.click();
+    expectProductionScene(root, COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS['lost-log']);
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS['lost-help']);
+    findByAria(root, 'Blow gentle bubbles')?.click();
+    expectProductionScene(root, COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS['lost-ending']);
+    expect(findByAria(root, 'New story')).toBeDefined();
+  });
+
+  test('all seven Cozy Town Lost Friend beats use exact local decorative production art', () => {
+    for (const [artKey, assetId] of Object.entries(COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS)) {
+      const productionScene = storySceneSvg(artKey, {
+        characterArt: 'poppy',
+        settingArt: 'cozy-town',
+      });
+      expect(productionScene).toContain(`data-production-art="${assetId}"`);
+      expect(productionScene).toContain(`href="/assets/images/${assetId}.svg"`);
+      expect(productionScene).toContain('aria-hidden="true"');
+      expect(productionScene).toContain('focusable="false"');
+    }
+  });
+
+  test('the Cozy Town family remains exact without displacing merged or dynamic contexts', () => {
+    for (const artKey of Object.keys(COZY_TOWN_LOST_FRIEND_PRODUCTION_ASSETS)) {
+      const alternateCharacter = storySceneSvg(artKey, {
+        characterArt: 'finn',
+        settingArt: 'cozy-town',
+      });
+      expect(alternateCharacter).not.toContain('data-production-art');
+      expect(alternateCharacter).toContain('#8fce9b');
+
+      const approvedForest = storySceneSvg(artKey, {
+        characterArt: 'poppy',
+        settingArt: 'forest',
+      });
+      expect(approvedForest).toContain(
+        `data-production-art="${LOST_FRIEND_PRODUCTION_ASSETS[artKey]}"`
+      );
+    }
+
+    const brokenThing = storySceneSvg('fix-intro', {
+      characterArt: 'poppy',
+      settingArt: 'cozy-town',
+    });
+    expect(brokenThing).not.toContain('data-production-art');
+    expect(brokenThing).toContain('#d9a066');
+
+    const delivery = storySceneSvg('delivery-intro', {
+      characterArt: 'poppy',
+      settingArt: 'cozy-town',
+    });
+    expect(delivery).not.toContain('data-production-art');
+    expect(delivery).toContain('#fd79a8');
+
+    const unknownScene = storySceneSvg('not-a-story-scene', {
+      characterArt: 'poppy',
+      settingArt: 'cozy-town',
     });
     expect(unknownScene).not.toContain('data-production-art');
     expect(unknownScene).toContain('#fd79a8');
