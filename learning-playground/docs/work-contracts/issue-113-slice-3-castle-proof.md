@@ -298,6 +298,31 @@ generated lines may use one shared bounded speech-compression preconditioner
 before two-pass normalization so an isolated transient cannot suppress the
 whole narration line; the selected sample must remain unmodified.
 
+On 2026-07-15, after receiving the no-autoplay review index for manifest
+`e2683c6f7ddc3f7a06585a0d0d5378e00d46b3063bcf8d3891523f488cd29061`,
+the owner and named fluent reviewer responded **Approved**. That disposition
+approves the exact text, pronunciation, pacing, and voice quality of all 13
+hash-bound Sergio WAVs and the eight target-word mappings in that manifest. It
+does not approve a future rerender or any synchronized video. The approved
+manifest must record reviewer `Juan Canfield`, an approval timestamp, and one
+approval version while retaining the reviewed audio and source hashes.
+
+This approval authorizes copying only those exact 13 WAV bytes into their
+authored cue paths, rebuilding the review packet and production ledger, passing
+the existing exact-hash storyboard guard, and assembling the three local proof
+exports. The packet builder must import approval only when text, intent,
+register, cue bindings, and hashes still match; any mismatch must remain pending
+or fail. Final synchronized exports and the Foundry draft still require a
+separate owner audio/visual disposition before Slice 3 can be complete.
+
+The first approved-storyboard assembly attempt proved a local packet-builder
+path defect: it stripped the `castle-content-proof/` namespace from scene and
+narration paths that Foundry resolves relative to the imports root. Foundry
+correctly rejected the missing `rsvg-scene-00.png` before draft creation. The
+fix surface expands only to the ignored Castle storyboard builder, which must
+preserve the already-authored import-root-relative paths. Shared Foundry path
+resolution, validation, and assembly code must remain unchanged.
+
 ## Production Evidence
 
 ### Live Authoring Preflight
@@ -492,6 +517,70 @@ checkpoint was unloaded, Qwen remained at context 8192 and parallel 4, the
 unchanged `.env` still names `orpheus-3b-ft.gguf`, and the detached
 English-configured Orpheus service was restored on loopback port 5005.
 
+### Exact Spanish Approval and Foundry Draft
+
+The owner's **Approved** disposition was applied only to pre-approval manifest
+`e2683c6f7ddc3f7a06585a0d0d5378e00d46b3063bcf8d3891523f488cd29061`.
+The approved manifest has SHA-256
+`e9afbb3b1422ef4f57be51f1856cb60815d37f1502fa5045f0ccb97c66edd295`
+and records `Juan Canfield`, `2026-07-15T19:26:26Z`, approval version
+`castle-sergio-review-v1`, 13 approved pronunciation records, and eight approved
+target-word records while retaining every reviewed audio and source hash.
+
+`approve-and-promote-sergio-review.py` has SHA-256
+`d7aef165c8b7c3fc5ae28ae9fb5a366ffd1ff70c8a8bdcf467d167f63c9e5ff2`.
+It verifies the exact pending-manifest hash, cardinalities, artifact bytes,
+target-word cue bindings, and evidence hashes before writing approval and
+copying the same 13 bytes into authored cue paths. A second run preserved the
+approved-manifest hash and promoted hashes. A changed Spanish sentence caused
+the packet import to fail with `approved review mismatch in spanish_text`; the
+exact approved manifest was restored before subsequent work.
+
+The rebuilt `castle-review-packet.json` has SHA-256
+`e1db64327c94a8e53d9708c78cd3b736c891d559fc66a7555c324cc6c16665cf`.
+It contains 13 approved Spanish line records, eight approved target-word
+records, separate Tara and Sergio recipes, and the exact approved manifest hash.
+The local packet builder has SHA-256
+`9d90b3ccdb60029b4dd277d597b2beef7975891a1fb5742f5ca54e4e8a7af434`.
+
+The first assembly validation rejected the semantically UTC but contract-invalid
+`+00:00` timestamp form. The approval recorder normalized every record to the
+required `Z` form. The next attempt proved the ignored Castle storyboard builder
+had stripped the required `castle-content-proof/` import namespace. Foundry
+rejected the first missing scene before creating a draft. The local builder was
+corrected without changing shared Foundry code; its SHA-256 is
+`21dc1476d336c7ef87e94f71b98ee4e764201e8a6fd1a5dd8e749c31dabf058d`.
+The approved storyboard has SHA-256
+`17e2f8f488b6fd023299715f35718a1c84eddf408e0cf6ad35fffde982f4bc8a`
+and preserves all authored import-root-relative paths.
+
+Foundry then created ignored draft
+`draft-0cd7d01b-dae1-4802-a2bf-571dd0b2dfbb`. Its `draft.json` has SHA-256
+`d542577f7f25811054e9f59390fdce3f958bf11885c44726f79339cb55863f59`:
+
+| Output | Bytes | SHA-256 |
+| --- | ---: | --- |
+| English | 594,810 | `d792e69c66e6df961e68ba491cbb1bab4247cc18435d3bdad0a9ad125b8b167d` |
+| Story Bridge | 628,350 | `39a18efdc1c64a915399f784465abb0461530b751abe9c8ca4c241cbd9499113` |
+| Spanish Replay | 642,531 | `63f8437c4f60578c5238eb06101dc47a46297a0e8ce79b8716a3dd6c10592fe4` |
+| Poster | 170,929 | `6741bef88a12307cd7d153cef4ef6ca0a8d0a6d5f53783863e47406303da4767` |
+| Contact sheet | 122,814 | `3f9725072b32d459605342c9ed701b1c479b1b29d1414cd4588b9d6067956f4e` |
+
+Draft validation passed with no hash mismatch. All three 50.008-second exports
+decode as 960x544 VP9 plus 48 kHz mono Opus. English measures -17.98 LUFS and
+-2.83 dBTP; Story Bridge measures -17.98 LUFS and -2.81 dBTP; Spanish Replay
+measures -17.99 LUFS and -2.79 dBTP. The bilingual-proof QA, 13-cue Spanish
+approval check, poster, and 12-sample contact sheet all pass. Cold visual review
+of the 1000x440 contact sheet preserved the approved six-beat sequence.
+
+The bound production ledger has SHA-256
+`1d4406021b5fc738bd0234833507eaddf9bf20e1c4182be6c98b20326a410f65`.
+It records the draft and five exact outputs while leaving owner audio/visual
+review pending. `FINAL_REVIEW.md` has SHA-256
+`74b1c5e64cc1d9dbd18a996ea71fde91eb6c136a79c91caee5397d65cd735563`
+and provides a no-autoplay index. The draft remains local, ignored, unpublished,
+unintegrated, and `approval: null`.
+
 ### Authorship Packet
 
 `castle-proof-authorship.json` has hash
@@ -511,11 +600,11 @@ and its scene boundary. One first render of `spanish-find-yellow` ran for
 already successful Story Bridge prompt, and the matching reviewed bytes are
 used for both cue ids. No pathological output is part of the proof.
 
-`castle-review-packet.json` has hash
+At that provisional stage, `castle-review-packet.json` had hash
 `c00eb9511889790ea288b250afedbec25d34896cc1ff36f8204ed21f767c963a`.
 It binds 8 target-word records and 13 Spanish line records to their exact audio
-hashes, English intent, `es-419` register, and currently pending named-reviewer
-fields. `castle-production-ledger.json` has hash
+hashes, English intent, `es-419` register, and then-pending named-reviewer
+fields. At that stage, `castle-production-ledger.json` had hash
 `3cf53cdb6e584327e543e27cd9321dc9e3e7b44aceaaa707f0f0e7604e99754a`
 and records the local Tara recipe, source hashes, cue hashes, and review-export
 hashes. A guard script refuses to create the Foundry storyboard while any word
@@ -534,10 +623,12 @@ visual sequence and exact WAVs:
 | Spanish Replay | 50.008 s | 747,047 | `a70c1fb3fe92e9b0a43154168618953935b5e5eff67357241d1c292d59c0436e` |
 
 Each review export is VP9 plus 48 kHz mono Opus and decodes without ffmpeg
-errors. These are local review aids, not Foundry outputs or approved runtime
-media. All exact Spanish text and pronunciation remains explicitly pending
+errors. These were local review aids, not Foundry outputs or approved runtime
+media. At that stage, all exact Spanish text and pronunciation remained pending
 fluent review; no line-level approval, Foundry storyboard, Foundry draft, or
-final owner disposition has been fabricated.
+final owner disposition was fabricated. The later exact approval and resulting
+Foundry draft are recorded above without retroactively treating these
+provisional exports as final outputs.
 
 The owner approved the existing English Tara clips as candidates on
 2026-07-13. Those exact English bytes are frozen. The owner also identified
@@ -546,7 +637,8 @@ himself as the fluent Spanish reviewer and supplied the local
 The initial Tara-rendered Spanish cue candidates remain unapproved and must not
 be mistaken for multilingual-model output. After visual approval, the
 multilingual model produced the isolated bakeoff and selected Sergio review set
-recorded above; no pre-existing target-word or cue path has been replaced.
+recorded above. At that staging checkpoint, no pre-existing target-word or cue
+path had been replaced; the later exact-byte promotion is recorded at line 530.
 
 ### Current Gaps
 
@@ -557,33 +649,31 @@ recorded above; no pre-existing target-word or cue path has been replaced.
 - Multilingual Spanish voice bakeoff: **selected**. Maria is rejected, Javi is
   unselected, and Sergio at 85% tempo is the explicit review-render recipe.
 - Full multilingual-model rendering of the 13 Spanish cue artifacts and their 8
-  target-word evidence mappings: **generated**. Exact owner/fluent text and
-  pronunciation review remains pending; no final Spanish artifact is approved.
+  target-word evidence mappings: **approved** at exact text and audio hashes by
+  the named fluent reviewer.
 - Owner English narration review: **approved candidate**. Final synchronized
   export review remains pending.
-- Final `bilingual_story_proof` storyboard and three-export assembly: blocked by
-  the exact Spanish approval records.
-- Owner review and manual decision on the final Foundry draft: blocked by final
-  assembly.
+- Final `bilingual_story_proof` storyboard and three-export assembly:
+  **generated and machine-validated** as a local review-required draft.
+- Owner review and manual decision on the exact final Foundry draft: **pending**.
 
-Gap audit: **NOT DONE**. The proof sequence and Spanish recipe are selected, but
-exact Spanish review, final assembly, and final owner review remain.
+Gap audit: **NOT DONE**. Content, exact Spanish review, and final assembly are
+delivered. Owner audio/visual review and the manual draft decision remain.
 
 ## Cold Diff Audit
 
 ### Gaps
 
-- Exact fluent text and pronunciation review of the 13 Sergio artifacts and 8
-  target-word evidence mappings is not delivered at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:559`. Rendering and
-  recipe selection do not approve any artifact.
-- Final Foundry assembly, synchronized export review, and manual decision remain
-  blocked at `docs/work-contracts/issue-113-slice-3-castle-proof.md:564`.
-  Therefore the full Slice 3 gap audit is **NOT DONE**.
+- Owner audio/visual review and the manual decision for exact draft
+  `draft-0cd7d01b-dae1-4802-a2bf-571dd0b2dfbb` remain pending at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:658`. The approved
+  Spanish artifacts and machine-validated assembly do not approve the
+  synchronized result. Therefore the full Slice 3 gap audit is **NOT DONE**.
 - Change without contract trace: none. The branch diff contains the declared
   contract, narrow narration-rule correction, six bounded Inkscape sources,
-  four review captures, and their provenance entry. The new Spanish WAVs,
-  renderer, manifests, and review index remain ignored local execution evidence.
+  four review captures, and their provenance entry. The Spanish WAVs, local
+  approval and packet builders, manifests, final draft, and review indices remain
+  ignored local execution evidence as required by the draft-only boundary.
 - Protected surface touched: none. No app runtime, Video Vault manifest,
   `public/assets`, voice core, Foundry implementation, learning engine, storage,
   dependency, other branch, or other worktree file moved.
@@ -615,9 +705,11 @@ exact Spanish review, final assembly, and final owner review remain.
 8. `docs/work-contracts/issue-113-slice-3-castle-proof.md:245` records the
    owner's bounded sequence approval and permits only an isolated, equal-recipe
    three-voice Spanish bakeoff before explicit voice selection. The review
-   amendment at line 268 rejects Maria and permits only deterministic slower
+   amendment at line 269 rejects Maria and permits only deterministic slower
    review copies of the two remaining existing takes. The amendment at line 279
-   selects Sergio for a review render while preserving exact artifact approval.
+   selects Sergio for a review render while preserving exact artifact approval;
+   lines 301-316 bind the owner's approval to one exact manifest and preserve a
+   separate synchronized-export review gate.
 9. `design-source/video-vault/colorless-castle/castle-scene-01-colorless.svg:31`
    creates the muted invitation state, with the closed paint case at line 95;
    `castle-scene-02-red-door.svg:43` preserves muted roofs while revealing the
@@ -640,22 +732,26 @@ exact Spanish review, final assembly, and final owner review remain.
     `docs/art/asset-provenance.md:189` provide desktop, mobile,
     existing-versus-proposed, and six-frame sequence evidence. They do not
     create a runtime asset.
-15. `docs/work-contracts/issue-113-slice-3-castle-proof.md:350` records the exact
+15. `docs/work-contracts/issue-113-slice-3-castle-proof.md:375` records the exact
     six-source and capture hashes, structural validation, owner/reviewer status,
     and final-review boundary.
-16. `docs/work-contracts/issue-113-slice-3-castle-proof.md:400` records the three
+16. `docs/work-contracts/issue-113-slice-3-castle-proof.md:425` records the three
     original bakeoff artifacts, two slower review copies, media measurements,
     review metadata hash, and bounded recipe selection.
-17. `docs/work-contracts/issue-113-slice-3-castle-proof.md:445` records the 13
+17. `docs/work-contracts/issue-113-slice-3-castle-proof.md:470` records the 13
     exact Sergio review artifacts, selected-sample byte reuse, loudness defect
-    and correction, review manifest, source hashes, restored local services, and
-    honest remaining approval gap at line 551.
+    and correction, pre-approval review manifest, source hashes, and restored
+    local services.
+18. `docs/work-contracts/issue-113-slice-3-castle-proof.md:520` records the exact
+    Spanish approval manifest, idempotent promotion guard, mismatch rejection,
+    timestamp and path validation failures, corrected local storyboard, final
+    draft id, five output hashes, media QA, and the still-pending owner decision.
 
 ### Contract Traceability
 
 - Root cause and real review gap ->
   `docs/work-contracts/issue-113-slice-3-castle-proof.md:9` and the evidence at
-  `docs/work-contracts/issue-113-slice-3-castle-proof.md:206`.
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:520`.
 - Correct production and review surface ->
   `docs/work-contracts/issue-113-slice-3-castle-proof.md:25`, with the narrowed
   proof at line 175 and approved sequence boundary at line 206.
@@ -676,10 +772,17 @@ exact Spanish review, final assembly, and final owner review remain.
   `design-source/video-vault/colorless-castle/castle-scene-05-garden-roofs.svg:32`.
 - Equal-recipe Spanish voice comparison -> contract boundary at
   `docs/work-contracts/issue-113-slice-3-castle-proof.md:245` and exact artifact
-  evidence at line 400. No tracked or cue audio path changed.
+  evidence at line 425. No tracked audio path changed.
 - Owner-selected full Spanish review render -> bounded contract at
   `docs/work-contracts/issue-113-slice-3-castle-proof.md:279` and exact execution
-  evidence at line 445. All line and word review fields remain pending.
+  evidence at line 470.
+- Exact Spanish approval -> hash-bound contract at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:301` and approved packet
+  evidence at line 520. A changed sentence fails import, and approval does not
+  extend to rerenders or synchronized video.
+- Final local three-mode assembly -> output and QA evidence at
+  `docs/work-contracts/issue-113-slice-3-castle-proof.md:557`; the draft remains
+  local, ignored, unintegrated, and unapproved at line 581.
 - Equal, non-leading paint choices -> source groups at
   `design-source/video-vault/colorless-castle/castle-find-yellow-art-proof.svg:97`
   and the measured result recorded at
@@ -723,9 +826,9 @@ exact Spanish review, final assembly, and final owner review remain.
   raw samples with only `atempo=0.85` plus the shared normalization, remain
   finite 48 kHz mono PCM, retain exact hashes, and match the review metadata.
 - Sergio review-render validation passed: exactly 13 artifacts and 8 target-word
-  mappings are hash-bound to exact text, intent, register, raw sources, media
-  measurements, and pending review fields. Both find-yellow cues retain the
-  selected sample's exact SHA-256.
+  mappings are hash-bound to exact text, intent, register, raw sources, and media
+  measurements. Both find-yellow cues retain the selected sample's exact
+  SHA-256.
 - Every Sergio review artifact decodes as 48 kHz mono PCM, ends before its next
   cue and scene boundary, measures between -20.18 and -17.99 LUFS, and peaks at
   or below -3 dBTP. The rejected -23.29 LUFS intermediate is not in the packet.
@@ -733,8 +836,25 @@ exact Spanish review, final assembly, and final owner review remain.
   Qwen identifier/context/parallel settings were restored, the Orpheus `.env`
   again names `orpheus-3b-ft.gguf`, and the English decoder is active on port
   5005. No long-running tool session remains open.
+- Exact approval promotion passed: 13 line records and 8 target-word mappings
+  retain their reviewed hashes, reviewer, `Z` timestamp, and approval version.
+  A second run preserved the approved manifest and promoted output hashes.
+- Approval mismatch guard passed: changing one approved Spanish sentence caused
+  packet import to fail; restoring the exact manifest restored the valid packet.
+- Timestamp and path guards passed by rejection: Foundry refused the invalid
+  `+00:00` approval timestamp and then the missing import-root scene path before
+  creating any draft. The corrected local inputs use `Z` and preserve the
+  `castle-content-proof/` namespace; shared Foundry code did not change.
+- Final Foundry assembly and `validate-draft` passed for
+  `draft-0cd7d01b-dae1-4802-a2bf-571dd0b2dfbb` with zero hash mismatches and the
+  parent visual-review requirement intact.
+- All three final 50.008-second WebM outputs fully decode as 960x544 VP9 plus
+  48 kHz mono Opus. Their measured loudness is -17.99 to -17.98 LUFS and their
+  true peaks are no higher than -2.79 dBTP.
+- Final poster and 12-sample contact-sheet generation passed. Cold visual review
+  of the 1000x440 contact sheet preserves the approved six-beat sequence.
 - `npm ci`: passed; 56 locked packages installed, zero vulnerabilities.
-- `npm test`: passed after the clean rebase; change-contract check, 58 Content
+- `npm test`: passed on the current owned checkout; change-contract check, 58 Content
   Foundry tests with one intentional live skip, 64 Vitest files, and 884/884 app
   tests.
 - `npm run typecheck`: passed.
@@ -745,6 +865,6 @@ exact Spanish review, final assembly, and final owner review remain.
 
 This is an interim cold reconstruction, not a completion declaration. Every
 current tracked change traces to the written contract, every currently allowed
-sequence change is present, and no declared protected surface moved. The audit
-must be repeated after exact multilingual Spanish review, final assembly, and
-the human decision are present.
+content and assembly change is present, and no declared protected surface
+moved. The audit must be repeated only after the owner reviews the three exact
+synchronized exports and records the manual draft decision.
