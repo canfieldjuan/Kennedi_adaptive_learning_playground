@@ -110,6 +110,37 @@ const POPPY_FOREST_DELIVERY_SCENE_ASSETS: Readonly<Record<string, ProductionScen
   },
 };
 
+const POPPY_COZY_TOWN_LOST_SCENE_ASSETS: Readonly<Record<string, ProductionSceneAsset>> = {
+  'lost-intro': {
+    id: 'story-stage-lost-intro-poppy-cozy-town',
+    href: '/assets/images/story-stage-lost-intro-poppy-cozy-town.svg',
+  },
+  'lost-problem': {
+    id: 'story-stage-lost-problem-poppy-cozy-town',
+    href: '/assets/images/story-stage-lost-problem-poppy-cozy-town.svg',
+  },
+  'lost-where': {
+    id: 'story-stage-lost-where-poppy-cozy-town',
+    href: '/assets/images/story-stage-lost-where-poppy-cozy-town.svg',
+  },
+  'lost-bush': {
+    id: 'story-stage-lost-bush-poppy-cozy-town',
+    href: '/assets/images/story-stage-lost-bush-poppy-cozy-town.svg',
+  },
+  'lost-log': {
+    id: 'story-stage-lost-log-poppy-cozy-town',
+    href: '/assets/images/story-stage-lost-log-poppy-cozy-town.svg',
+  },
+  'lost-help': {
+    id: 'story-stage-lost-help-poppy-cozy-town',
+    href: '/assets/images/story-stage-lost-help-poppy-cozy-town.svg',
+  },
+  'lost-ending': {
+    id: 'story-stage-lost-ending-poppy-cozy-town',
+    href: '/assets/images/story-stage-lost-ending-poppy-cozy-town.svg',
+  },
+};
+
 export type StoryMood = 'happy' | 'worried' | 'curious' | 'celebrating';
 
 /** Shared face marks so every character emotes in the same language. */
@@ -574,9 +605,13 @@ const SCENE_BUILDERS: Record<string, (ctx: SceneArtContext) => string> = {
 /** One illustrated story scene (viewBox 400x250), composed for the selection. */
 export function storySceneSvg(artKey: string, ctx: SceneArtContext): string {
   const productionAsset =
-    ctx.characterArt === 'poppy' && ctx.settingArt === 'forest'
-      ? POPPY_FOREST_LOST_SCENE_ASSETS[artKey] ??
-        POPPY_FOREST_DELIVERY_SCENE_ASSETS[artKey]
+    ctx.characterArt === 'poppy'
+      ? ctx.settingArt === 'forest'
+        ? POPPY_FOREST_LOST_SCENE_ASSETS[artKey] ??
+          POPPY_FOREST_DELIVERY_SCENE_ASSETS[artKey]
+        : ctx.settingArt === 'cozy-town'
+          ? POPPY_COZY_TOWN_LOST_SCENE_ASSETS[artKey]
+          : undefined
       : undefined;
   if (productionAsset) {
     return `<svg class="story-stage__scene-svg" viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><image data-production-art="${productionAsset.id}" href="${productionAsset.href}" width="400" height="250" preserveAspectRatio="xMidYMid slice"/></svg>`;

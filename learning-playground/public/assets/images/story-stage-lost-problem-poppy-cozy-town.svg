@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="400"
+   height="250"
+   viewBox="0 0 400 250"
+   version="1.1"
+   id="svg52"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs4">
+    <linearGradient
+       id="problem-sky"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#d9eef8"
+         id="stop1" />
+      <stop
+         offset="1"
+         stop-color="#f7ead7"
+         id="stop2" />
+    </linearGradient>
+    <linearGradient
+       id="problem-path"
+       x1="0"
+       y1="0"
+       x2="1"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#fff2d2"
+         id="stop3" />
+      <stop
+         offset="1"
+         stop-color="#e4c28c"
+         id="stop4" />
+    </linearGradient>
+    <filter
+       id="problem-shadow"
+       x="-0.080000003"
+       y="-0.41142859"
+       width="1.16"
+       height="1.8228572">
+      <feGaussianBlur
+         stdDeviation="2.4"
+         id="feGaussianBlur4" />
+    </filter>
+  </defs>
+  <g
+     id="problem-sky-layer">
+    <rect
+       width="400"
+       height="250"
+       fill="url(#problem-sky)"
+       id="rect4" />
+    <circle
+       cx="72"
+       cy="43"
+       r="22"
+       fill="#ffe39a"
+       opacity="0.48"
+       id="circle4" />
+    <circle
+       cx="72"
+       cy="43"
+       r="13"
+       fill="#fff5ca"
+       opacity="0.88"
+       id="circle5" />
+    <path
+       d="M278 48 C293 37 312 40 319 52 C329 42 348 44 354 58 C369 57 378 66 374 75 H268 C264 63 269 54 278 48Z"
+       fill="#fff"
+       opacity="0.42"
+       id="path5" />
+  </g>
+  <g
+     id="problem-depth-layer">
+    <path
+       d="M0 137 C74 126 132 133 197 139 C264 128 329 126 400 138 V181 H0Z"
+       fill="#a9c99b"
+       id="path6" />
+    <g
+       stroke="#3a2461"
+       stroke-width="2.6"
+       stroke-linejoin="round"
+       id="g14">
+      <rect
+         x="-8"
+         y="101"
+         width="106"
+         height="76"
+         rx="5"
+         fill="#f4c3a1"
+         id="rect6" />
+      <path
+         d="M-14 104 L45 59 L105 104Z"
+         fill="#d96f7f"
+         id="path7" />
+      <rect
+         x="17"
+         y="121"
+         width="20"
+         height="24"
+         rx="4"
+         fill="#ffe9a6"
+         id="rect7" />
+      <rect
+         x="59"
+         y="121"
+         width="20"
+         height="24"
+         rx="4"
+         fill="#bfe3ef"
+         id="rect8" />
+      <rect
+         x="126"
+         y="88"
+         width="96"
+         height="89"
+         rx="6"
+         fill="#f4dda2"
+         id="rect9" />
+      <path
+         d="M116 91 L174 50 L233 91Z"
+         fill="#9477bb"
+         id="path9" />
+      <rect
+         x="145"
+         y="111"
+         width="20"
+         height="25"
+         rx="4"
+         fill="#bfe3ef"
+         id="rect10" />
+      <rect
+         x="183"
+         y="111"
+         width="20"
+         height="25"
+         rx="4"
+         fill="#ffe9a6"
+         id="rect11" />
+      <rect
+         x="286"
+         y="99"
+         width="121"
+         height="78"
+         rx="5"
+         fill="#efb4bd"
+         id="rect12" />
+      <path
+         d="M278 102 L343 62 L411 102Z"
+         fill="#6e9fb0"
+         id="path12" />
+      <rect
+         x="307"
+         y="120"
+         width="20"
+         height="24"
+         rx="4"
+         fill="#ffe9a6"
+         id="rect13" />
+      <rect
+         x="351"
+         y="120"
+         width="20"
+         height="24"
+         rx="4"
+         fill="#c9e7f1"
+         id="rect14" />
+    </g>
+  </g>
+  <g
+     id="problem-ground-layer">
+    <path
+       d="M0 166 H400 V250 H0Z"
+       fill="#93bd91"
+       id="path14" />
+    <path
+       d="M105 250 C148 222 205 201 269 185 C304 176 335 175 370 182 C336 190 305 204 282 222 C266 235 257 244 252 250Z"
+       fill="url(#problem-path)"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       id="path15" />
+    <g
+       fill="none"
+       stroke="#c9a978"
+       stroke-width="1.4"
+       opacity="0.72"
+       id="g17">
+      <path
+         d="M145 232 q16-9 34 0 M190 214 q18-9 38 0 M239 198 q19-8 41 0 M290 185 q18-7 39 0"
+         id="path16" />
+      <path
+         d="M169 226 l8 13 M216 207 l7 13 M265 191 l7 11"
+         id="path17" />
+    </g>
+  </g>
+  <g
+     id="problem-tree-layer">
+    <path
+       d="M41 210 V111"
+       fill="none"
+       stroke="#3a2461"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="path18" />
+    <path
+       d="M29 111 Q41 92 53 111Z"
+       fill="#f6c343"
+       stroke="#3a2461"
+       stroke-width="2.5"
+       id="path19" />
+    <circle
+       cx="41"
+       cy="110"
+       r="16"
+       fill="#fff0b7"
+       opacity="0.45"
+       id="circle19" />
+    <rect
+       x="324"
+       y="151"
+       width="65"
+       height="22"
+       rx="5"
+       fill="#c47758"
+       stroke="#3a2461"
+       stroke-width="2.4"
+       id="rect19" />
+    <g
+       fill="#f39ab7"
+       stroke="#3a2461"
+       stroke-width="1.4"
+       id="g22">
+      <circle
+         cx="337"
+         cy="151"
+         r="7"
+         id="circle20" />
+      <circle
+         cx="355"
+         cy="147"
+         r="8"
+         id="circle21" />
+      <circle
+         cx="374"
+         cy="151"
+         r="7"
+         id="circle22" />
+    </g>
+  </g>
+  <g
+     id="problem-paw-layer"
+     fill="#9c613d"
+     stroke="#3a2461"
+     stroke-width="1.2">
+    <g
+       transform="translate(214 219) rotate(-14)"
+       id="g25">
+      <ellipse
+         cy="3"
+         rx="5.5"
+         ry="4.4"
+         id="ellipse22" />
+      <circle
+         cx="-5"
+         cy="-3"
+         r="2"
+         id="circle23" />
+      <circle
+         cy="-5"
+         r="2"
+         id="circle24" />
+      <circle
+         cx="5"
+         cy="-3"
+         r="2"
+         id="circle25" />
+    </g>
+    <g
+       transform="translate(250 205) rotate(8)"
+       id="g28">
+      <ellipse
+         cy="3"
+         rx="5"
+         ry="4"
+         id="ellipse25" />
+      <circle
+         cx="-4.5"
+         cy="-3"
+         r="1.9"
+         id="circle26" />
+      <circle
+         cy="-4.5"
+         r="1.9"
+         id="circle27" />
+      <circle
+         cx="4.5"
+         cy="-3"
+         r="1.9"
+         id="circle28" />
+    </g>
+    <g
+       transform="translate(286 212) rotate(-10)"
+       id="g31">
+      <ellipse
+         cy="3"
+         rx="4.6"
+         ry="3.8"
+         id="ellipse28" />
+      <circle
+         cx="-4"
+         cy="-2.6"
+         r="1.8"
+         id="circle29" />
+      <circle
+         cy="-4.2"
+         r="1.8"
+         id="circle30" />
+      <circle
+         cx="4"
+         cy="-2.6"
+         r="1.8"
+         id="circle31" />
+    </g>
+    <g
+       transform="translate(320 196) rotate(12)"
+       id="g34">
+      <ellipse
+         cy="3"
+         rx="4.2"
+         ry="3.5"
+         id="ellipse31" />
+      <circle
+         cx="-3.8"
+         cy="-2.4"
+         r="1.6"
+         id="circle32" />
+      <circle
+         cy="-3.8"
+         r="1.6"
+         id="circle33" />
+      <circle
+         cx="3.8"
+         cy="-2.4"
+         r="1.6"
+         id="circle34" />
+    </g>
+  </g>
+  <g
+     id="problem-clue-layer">
+    <path
+       d="M336 172 q14-15 13-31"
+       fill="none"
+       stroke="#e8b04b"
+       stroke-width="7"
+       stroke-linecap="round"
+       id="path34" />
+    <path
+       d="M346 142 q8-6 12-1"
+       fill="none"
+       stroke="#3a2461"
+       stroke-width="2"
+       stroke-linecap="round"
+       id="path35" />
+    <g
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="1.5"
+       id="g36">
+      <path
+         d="M343 121 l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z"
+         id="path36" />
+    </g>
+  </g>
+  <g
+     id="problem-poppy-layer">
+    <ellipse
+       cx="139"
+       cy="232"
+       rx="36"
+       ry="7"
+       fill="#3a2461"
+       opacity="0.15"
+       filter="url(#problem-shadow)"
+       id="ellipse36" />
+    <path
+       d="M116 182 C105 187 102 197 107 204 M160 181 C172 178 179 170 182 160"
+       fill="none"
+       stroke="#f6d3b3"
+       stroke-width="6.5"
+       stroke-linecap="round"
+       id="path37" />
+    <circle
+       cx="182"
+       cy="158"
+       r="4"
+       fill="#f6d3b3"
+       stroke="#3a2461"
+       stroke-width="1.7"
+       id="circle37" />
+    <path
+       d="M115 172 C118 160 126 154 138 154 C151 154 159 161 162 174 L166 218 C149 223 126 223 109 217Z"
+       fill="#f36fa3"
+       stroke="#3a2461"
+       stroke-width="3.4"
+       stroke-linejoin="round"
+       id="path38" />
+    <path
+       d="M120 174 C129 182 148 182 157 174 L160 204 C145 210 126 210 113 204Z"
+       fill="#fb8eb6"
+       opacity="0.72"
+       id="path39" />
+    <path
+       d="M128 219 v10 M150 219 v10"
+       stroke="#5b4677"
+       stroke-width="7"
+       stroke-linecap="round"
+       id="path40" />
+    <path
+       d="M121 231 h15 M143 231 h15"
+       stroke="#3a2461"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="path41" />
+    <circle
+       cx="138"
+       cy="136"
+       r="20"
+       fill="#f6d3b3"
+       stroke="#3a2461"
+       stroke-width="3.3"
+       id="circle41" />
+    <path
+       d="M119 135 C115 118 126 109 140 109 C153 109 161 119 158 135 C152 126 145 122 135 122 C129 122 124 127 119 135Z"
+       fill="#8a5a34"
+       stroke="#3a2461"
+       stroke-width="3"
+       stroke-linejoin="round"
+       id="path42" />
+    <path
+       d="M121 129 q-8 8-2 18 M157 129 q8 8 2 18"
+       fill="none"
+       stroke="#8a5a34"
+       stroke-width="5"
+       stroke-linecap="round"
+       id="path43" />
+    <circle
+       cx="131"
+       cy="137"
+       r="2.2"
+       fill="#3a2461"
+       id="circle43" />
+    <circle
+       cx="145"
+       cy="137"
+       r="2.2"
+       fill="#3a2461"
+       id="circle44" />
+    <path
+       d="M129 147 q9-5 18 0"
+       fill="none"
+       stroke="#3a2461"
+       stroke-width="2.2"
+       stroke-linecap="round"
+       id="path44" />
+    <path
+       d="M124 130 q5-4 10-1 M142 129 q5-3 10 1"
+       fill="none"
+       stroke="#3a2461"
+       stroke-width="1.7"
+       stroke-linecap="round"
+       id="path45" />
+    <path
+       d="M117 117 H160 L155 109 H122Z"
+       fill="#e8c07a"
+       stroke="#3a2461"
+       stroke-width="2.7"
+       stroke-linejoin="round"
+       id="path46" />
+    <path
+       d="M125 109 L130 98 L138 107 L145 97 L152 109Z"
+       fill="#f6c343"
+       stroke="#3a2461"
+       stroke-width="2.4"
+       stroke-linejoin="round"
+       id="path47" />
+  </g>
+  <g
+     id="problem-foreground-layer">
+    <path
+       d="M0 238 H58 L52 250 H0Z M348 239 H400 V250 H354Z"
+       fill="#b7654c"
+       stroke="#3a2461"
+       stroke-width="2"
+       id="path48" />
+    <g
+       fill="#f7c54a"
+       stroke="#3a2461"
+       stroke-width="1.5"
+       id="g52">
+      <circle
+         cx="13"
+         cy="236"
+         r="6"
+         id="circle48" />
+      <circle
+         cx="31"
+         cy="233"
+         r="7"
+         id="circle49" />
+      <circle
+         cx="48"
+         cy="237"
+         r="6"
+         id="circle50" />
+      <circle
+         cx="363"
+         cy="236"
+         r="6"
+         id="circle51" />
+      <circle
+         cx="382"
+         cy="233"
+         r="7"
+         id="circle52" />
+    </g>
+  </g>
+</svg>

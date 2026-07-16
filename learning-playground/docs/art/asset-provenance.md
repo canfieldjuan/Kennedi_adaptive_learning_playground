@@ -226,6 +226,38 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Owner look approval:** APPROVED - the owner reviewed ready PR #129 and authorized merge and continuation on 2026-07-14 ("looks green lets mrge and continue"). The eight Special Delivery compositions, route clarity, exact high/wagon payoff continuity, Poppy/Biscuit consistency, and responsive crop are approved for a separately contracted next Story Stage art slice.
 - **Restrictions and notes:** These eight exports cover only Princess Poppy + Enchanted Forest + Special Delivery. The bridge/meadow consequences and carry-high/wagon endings remain distinct and preserve the child's exact route and entrance choices. The approved Lost Friend assets remain independently documented and unchanged. Every other character, setting, family, setup card, and choice card remains runtime-composed. Runtime depends only on local SVG exports; Inkscape is not a runtime dependency. Every scene is decorative, `aria-hidden`, and non-interactive. The sources and exports contain no `<text>`, font, remote reference, embedded image/data, Canva/Figma/Inkscape library content, stock media, community file, plugin resource, third-party asset, Content Foundry output, or generative image output. The complete third-party resource list is None. No unlisted stock or library element remains.
 
+## Story Stage Lost Friend Poppy-Cozy-Town Rollout Family
+
+- **Asset family:** Story Stage Lost Friend Princess Poppy in the Cozy Town scene family
+- **Game:** Story Stage
+- **Status:** `rights_verified`
+- **Production path(s):** `public/assets/images/story-stage-lost-intro-poppy-cozy-town.svg`; `public/assets/images/story-stage-lost-problem-poppy-cozy-town.svg`; `public/assets/images/story-stage-lost-where-poppy-cozy-town.svg`; `public/assets/images/story-stage-lost-bush-poppy-cozy-town.svg`; `public/assets/images/story-stage-lost-log-poppy-cozy-town.svg`; `public/assets/images/story-stage-lost-help-poppy-cozy-town.svg`; `public/assets/images/story-stage-lost-ending-poppy-cozy-town.svg`
+- **Editable source path(s):** `design-source/story-stage/lost-friend-poppy-cozy-town/story-stage-lost-intro-poppy-cozy-town.svg`; `design-source/story-stage/lost-friend-poppy-cozy-town/story-stage-lost-problem-poppy-cozy-town.svg`; `design-source/story-stage/lost-friend-poppy-cozy-town/story-stage-lost-where-poppy-cozy-town.svg`; `design-source/story-stage/lost-friend-poppy-cozy-town/story-stage-lost-bush-poppy-cozy-town.svg`; `design-source/story-stage/lost-friend-poppy-cozy-town/story-stage-lost-log-poppy-cozy-town.svg`; `design-source/story-stage/lost-friend-poppy-cozy-town/story-stage-lost-help-poppy-cozy-town.svg`; `design-source/story-stage/lost-friend-poppy-cozy-town/story-stage-lost-ending-poppy-cozy-town.svg`
+- **Creator:** Project developer, Codex Story Stage production-art rollout session
+- **Creation date:** 2026-07-15
+- **Creation tool and version:** Inkscape 1.4.4 Flatpak (`org.inkscape.Inkscape`), plain SVG exports produced with `--export-plain-svg`
+- **Origin category:** A original
+- **Original or third-party status:** Original project artwork
+- **Project-owned source material used:** The approved Story Stage Lost Log proof and Poppy/Enchanted-Forest Lost Friend family supply the Poppy, Biscuit, owl, clue, palette, line-weight, and composition language. Their project-owned constructions were adapted into seven new original Cozy Town compositions with new rounded homes, rooflines, lamps, flower boxes, cobbled lanes, market awning, and town gate.
+- **Third-party elements:** None
+- **Source URL(s):** Not applicable
+- **License name and version/date:** Not applicable; original project artwork
+- **License file path:** Not applicable
+- **Commercial use permitted:** yes
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None
+- **AI assistance:** none
+- **AI approval/terms record:** Not applicable
+- **Contact sheet path:** `docs/captures/story-stage/lost-friend-poppy-cozy-town-contact-sheet.webp`
+- **Existing/proposed comparison path:** The approved Story Stage direction remains documented at `docs/captures/story-stage/lost-log-proof-contact-sheet.webp` and `docs/captures/story-stage/lost-friend-poppy-forest-contact-sheet.webp`; this family review is `docs/captures/story-stage/lost-friend-poppy-cozy-town-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/story-stage/lost-friend-poppy-cozy-town-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/story-stage/lost-friend-poppy-cozy-town-mobile.webp`
+- **Owner look approval:** Pending owner review of the seven new Cozy Town compositions, setting readability, clue continuity, Poppy/Biscuit consistency, and responsive crop in this PR
+- **Restrictions and notes:** These seven exports cover only Princess Poppy + Cozy Town + Lost Friend. Both clue routes and both gentle-help endings preserve the child's exact story choices; the two ending ids intentionally share one authored reunion art key. Existing Poppy/forest Lost Friend and Special Delivery families remain independently documented and unchanged. Every other character, setting, family, setup card, and choice card remains runtime-composed. Runtime depends only on local SVG exports; Inkscape is not a runtime dependency. Every scene is decorative, `aria-hidden`, and non-interactive. The sources and exports contain no `<text>`, font, remote reference, embedded image/data, Canva/Figma/Inkscape library content, stock media, community file, plugin resource, third-party asset, Content Foundry output, or generative image output. The complete third-party resource list is None. No unlisted stock or library element remains.
+
 ## Bear Bakes Bread Deterministic Mixing Video Proof
 
 - **Asset family:** Bear Bakes Bread deterministic mixing vector proof
