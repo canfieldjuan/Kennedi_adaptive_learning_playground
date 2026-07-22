@@ -31,6 +31,7 @@ The important shift is that Phase 2 is complete: the app has a parent-approved f
 - Video Vault with one validated repo-bundled, parent-approved local clip using
   level-matched parent-recorded narration, a Parent Panel observation launch,
   and a manual handoff to a separate three-picture vocabulary response.
+- Kennedi's Dress-Up Studio is a parent-launched creative-play game (`#dress-up`, hidden from the four-slot home grid): the child dresses the original doll Luna (skin tones, hair, glasses, a free-play wardrobe, four scenes) and finishes a look into a saved, non-evaluative fashion card. Like Story Stage it has no event sink, so nothing is scored; fashion cards are bounded, exported as `fashion_card_history`, and cleared by Clear Progress Data. Art is original inline SVG (look-approval pending); a child-home Art picker is a documented follow-up.
 - Approved transfer variants for Words, Math, Art, and the registered shape/spatial activity, using existing local runtimes only.
 - A phonics reverse-mapping transfer variant asks from a word back to its starting letter, using the dedicated phonics-match runtime.
 - A math different-prompt-mode transfer variant asks from a visual dot card to the matching numeral, using the existing tap-choice runtime.

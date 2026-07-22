@@ -125,6 +125,7 @@ const BEAR_CAFE_ROUTE = `#activity/${BEAR_CAFE_FIRST_ACTIVITY_ID}`;
 const VIDEO_VAULT_ACTIVITY_ID = 'video-vault';
 const VIDEO_VAULT_ROUTE = `#activity/${VIDEO_VAULT_ACTIVITY_ID}`;
 const STORY_STAGE_ROUTE = '#story-stage';
+const DRESS_UP_ROUTE = '#dress-up';
 const CURRICULUM_GRAPH = loadCurriculumGraph();
 
 interface SettingRow {
@@ -413,6 +414,18 @@ function createParentGameLaunchSection(settings: ParentSettings): HTMLElement {
     buttonLabel: 'Start Story Stage',
     activityId: 'story-stage',
     route: STORY_STAGE_ROUTE,
+  }));
+  section.appendChild(createParentGameLaunchCard({
+    title: 'Dress-Up Studio',
+    status: "Luna's Dress-Up Studio - free creative play",
+    metrics: [
+      { label: 'Entry', value: 'Dress Luna + save a card' },
+      { label: 'Evidence', value: 'None (creative play)' },
+      { label: 'Home Grid', value: 'Hidden' },
+    ],
+    buttonLabel: 'Start Dress-Up Studio',
+    activityId: 'dress-up',
+    route: DRESS_UP_ROUTE,
   }));
 
   return section;
@@ -954,6 +967,7 @@ function createDataManagementSection(
       storage.clearStoryHistory();
       storage.clearCafeOrderHistory();
       storage.clearTrainTripHistory();
+      storage.clearFashionCardHistory();
       clearWorldPreference();
       alert('Progress data cleared.');
       destroyParentPanel();
