@@ -130,6 +130,56 @@ describe('dress-up studio runtime', () => {
     destroyDressUpStudio();
     expect(root.children.length).toBe(0);
   });
+
+  test('a saved card with unknown ids still renders on the shelf (fail-safe)', () => {
+    const stale: FashionCardCompletion = {
+      completion_id: 'stale-1',
+      session_id: 's',
+      doll_id: 'luna',
+      tone_id: 'tone-does-not-exist',
+      hair_id: 'hair-x',
+      hair_color_id: 'hc-x',
+      glasses: false,
+      outfit: { top: 'unknown-top', dress: 'unknown-dress' },
+      accessory_ids: ['acc-x'],
+      scene_id: 'scene-x',
+      frame_id: 'frame-x',
+      created_at: '2026-07-20T00:00:00.000Z',
+    };
+    const { root } = setup([stale]);
+
+    const minis = findAllByClass(root, 'dress-up-studio__mini');
+    expect(minis).toHaveLength(1);
+    // It renders a card SVG rather than throwing on the unknown ids.
+    expect(minis[0].innerHTML).toContain('du-card-svg');
+  });
+
+  test('a fully undressed doll still renders and finishes with an empty outfit', () => {
+    const { root, history } = setup();
+
+    // Remove each default garment by tapping its selected chip again.
+    findByAria(root, 'Tops')?.click();
+    findByAria(root, 'Star Tee')?.click();
+    findByAria(root, 'Bottoms')?.click();
+    findByAria(root, 'Denim Skirt')?.click();
+    findByAria(root, 'Shoes')?.click();
+    findByAria(root, 'Sneakers')?.click();
+
+    expect(findByClass(root, 'dress-up-studio__doll')?.innerHTML).toContain('du-stage-svg');
+
+    findByAria(root, 'Finish the look')?.click();
+    expect(history.items[0].outfit).toEqual({});
+  });
+
+  test('the reveal is a one-shot class and decorative art is aria-hidden', () => {
+    const { root } = setup();
+    expect(findByClass(root, 'dress-up-studio__doll')?.attributes['aria-hidden']).toBe('true');
+
+    findByAria(root, 'Finish the look')?.click();
+    const cardHolder = findByClass(root, 'dress-up-studio__card');
+    expect(cardHolder?.classList.contains('is-revealing')).toBe(true);
+    expect(cardHolder?.attributes['aria-hidden']).toBe('true');
+  });
 });
 
 // — Harness (mock DOM, matching the repo's other module tests) —
@@ -140,9 +190,9 @@ interface FashionHistory {
   append(card: FashionCardCompletion): void;
 }
 
-function setup(): { root: MockElement; history: FashionHistory } {
+function setup(seed: FashionCardCompletion[] = []): { root: MockElement; history: FashionHistory } {
   const root = document.createElement('div') as unknown as MockElement;
-  const items: FashionCardCompletion[] = [];
+  const items: FashionCardCompletion[] = [...seed];
   const history: FashionHistory = {
     items,
     list: () => items,

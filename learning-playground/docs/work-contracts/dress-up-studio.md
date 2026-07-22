@@ -78,7 +78,33 @@ Docs:
   extended to cover the new record, never weakened).
 
 ## Contract Amendments
-(none yet)
+
+### Amendment 1 — hardening pass (follow-up slice on the same PR)
+Why required: a skeptical re-read of the shipped slice found one real robustness
+defect and coverage gaps that the ownership-completion / game-environment
+contracts expect a mature game to close. Bounded to the same game surface.
+
+- **Fix (correctness/resource):** `DressUpStudioActivity` tracked every chip/tab
+  listener in a module-level `cleanupHandlers` array that grew on every tray
+  re-render (a tap rebuilds the tray) and was never trimmed. Because those
+  closures reference the chip nodes, the array itself kept detached nodes alive
+  until navigation. The nodes are rebuilt fresh and detached by `clear()` /
+  `container.remove()`, so per-node cleanup is unnecessary; teardown is
+  simplified to removing the container. Allowed touch:
+  `src/modules/dress-up-studio/DressUpStudioActivity.ts`.
+- **Fix (cosmetic, previously named):** the `frame-rainbow` card frame renders
+  multi-color corner motifs instead of a single hue. Allowed touch:
+  `src/modules/dress-up-studio/wardrobe-art.ts`.
+- **Coverage (tests only):** storage-seam integration test for fashion cards
+  (`tests/contract/fashion-card-history.test.ts`), the `#dress-up` route
+  (`tests/contract/dress-up-route.test.ts`), and runtime edge cases
+  (fail-safe render of a stale/unknown-id card, a fully-undressed doll, the
+  reduced-motion reveal class, decorative `aria-hidden`) added to
+  `tests/modules/dress-up-studio.test.ts`.
+
+Still protected: no change to the evidence system, the child home, the activity
+schema, other games, or the completion-object shape. No new features (the
+child-home Art picker remains deferred).
 
 ## Cold Diff Audit
 
@@ -150,9 +176,10 @@ Docs:
 
 ### Verification
 - `npm run typecheck` -> clean.
-- `npx vitest run` -> 66 files, 914 tests pass (includes the new
-  `fashion-cards` + `dress-up-studio` suites and the updated export /
-  parent-game-launch contract tests).
+- `npx vitest run` -> 68 files, 925 tests pass after the hardening pass
+  (Amendment 1): the new `fashion-cards`, `fashion-card-history`,
+  `dress-up-route`, and `dress-up-studio` suites plus the updated export /
+  parent-game-launch contract tests. (Original slice: 66 files, 914 tests.)
 - `npm run build` (tsc && vite build) -> success.
 - `npm run check:work-contract` -> passed.
 - Visual proof: rendered the real art (all tones, hairstyles, sample outfits,

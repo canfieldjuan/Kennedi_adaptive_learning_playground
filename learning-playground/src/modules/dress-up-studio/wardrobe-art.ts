@@ -188,9 +188,24 @@ export function frameSvg(frame: StudioFrame): string {
   for (const [x, y] of spots) {
     if (frame.id === 'frame-gold-stars') corners.push(starPath(x, y, 10, frame.value));
     else if (frame.id === 'frame-pink-hearts') corners.push(heartPath(x, y - 4, 8, frame.value));
-    else corners.push(flowerPath(x, y, 9, frame.value));
+    else corners.push(rainbowCorner(x, y));
   }
   return `<g class="du-frame">${border}${corners.join('')}</g>`;
+}
+
+/** A small multi-color rainbow arc — the frame-rainbow corner motif. */
+function rainbowCorner(cx: number, cy: number): string {
+  const bands: Array<[string, number]> = [
+    ['#f28fb3', 12],
+    ['#f6c85f', 9],
+    ['#7cbf6a', 6],
+  ];
+  return bands
+    .map(
+      ([color, r]) =>
+        `<path d="M${cx - r},${cy} a${r},${r} 0 0 1 ${2 * r},0" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round"/>`
+    )
+    .join('');
 }
 
 // — Optional card sticker (a single motif in the lower-right of the card) —

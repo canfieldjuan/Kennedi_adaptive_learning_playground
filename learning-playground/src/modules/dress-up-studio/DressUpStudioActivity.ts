@@ -81,7 +81,6 @@ const TAB_ORDER: TabKey[] = [
 ];
 
 let container: HTMLElement | null = null;
-let cleanupHandlers: Array<() => void> = [];
 
 export function renderDressUpStudio(
   parent: HTMLElement,
@@ -465,8 +464,10 @@ export function renderDressUpStudio(
 }
 
 export function destroyDressUpStudio(): void {
-  for (const cleanup of cleanupHandlers) cleanup();
-  cleanupHandlers = [];
+  // Removing the container detaches the whole subtree; the tray/tabs/shelf are
+  // rebuilt fresh on every render and never referenced from module scope, so
+  // their listeners are collected with the detached nodes. No handler registry
+  // is kept (an accumulating one would itself pin every past chip in memory).
   if (container) {
     container.remove();
     container = null;
@@ -518,9 +519,9 @@ function clear(node: HTMLElement): void {
 }
 
 function onClick(node: HTMLElement, handler: () => void): void {
-  const listener = () => handler();
-  node.addEventListener('click', listener);
-  cleanupHandlers.push(() => node.removeEventListener('click', listener));
+  // Nodes are discarded via clear() / container.remove(); their listeners go
+  // with them, so no manual removeEventListener bookkeeping is tracked.
+  node.addEventListener('click', () => handler());
 }
 
 function iconButton(label: string, aria: string, handler: () => void): HTMLElement {
