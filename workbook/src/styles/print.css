@@ -1,0 +1,32 @@
+@page {
+  size: 8.5in 11in;
+  margin: 0;
+}
+
+@media screen {
+  body {
+    background: #d9d9d9;
+    padding: 32px 0 64px;
+  }
+
+  .sheet {
+    margin: 0 auto 32px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  }
+
+  .preview-label {
+    max-width: var(--page-width);
+    margin: 0 auto 8px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12pt;
+    color: #333;
+    text-align: center;
+  }
+}
+
+@media print {
+  body { background: var(--paper); padding: 0; }
+  .sheet { box-shadow: none; margin: 0; }
+  .preview-label { display: none; }
+}

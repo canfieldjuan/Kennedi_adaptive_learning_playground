@@ -1,0 +1,19 @@
+{
+  "name": "kennedi-is-the-boss-workbook",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Printable workbook builder for Kennedi Is the Boss - Learning Book 1",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "pdf": "node scripts/export-pdf.mjs",
+    "screenshots": "node scripts/screenshot.mjs",
+    "rasterize": "node scripts/rasterize-pdf.mjs",
+    "verify": "node scripts/verify.mjs",
+    "preview": "npm run build && node -e \"console.log('Preview built. Open dist/preview.html in your browser (double-click or: xdg-open dist/preview.html).')\"",
+    "all": "npm run build && npm run pdf && npm run screenshots && npm run rasterize && npm run verify"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

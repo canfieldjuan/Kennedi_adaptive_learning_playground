@@ -1,0 +1,48 @@
+[
+  {
+    "pageNumber": 1,
+    "title": "Kennedi Is The Boss",
+    "primarySkill": "cover (no activity)",
+    "correctAnswers": {}
+  },
+  {
+    "pageNumber": 2,
+    "title": "This Book Belongs To",
+    "primarySkill": "name recognition & writing: Kennedi",
+    "correctAnswers": {
+      "bossBadge": "item 1 (boss badge star)"
+    }
+  },
+  {
+    "pageNumber": 3,
+    "title": "I AM THE BOSS!",
+    "primarySkill": "letter/word recognition: BOSS",
+    "correctAnswers": {
+      "bossMission": "item 1 (Boss Kennedi with clipboard)"
+    }
+  },
+  {
+    "pageNumber": 4,
+    "title": "BOSS PENCIL TRAINING",
+    "primarySkill": "pencil control / pre-writing strokes",
+    "correctAnswers": {}
+  },
+  {
+    "pageNumber": 5,
+    "title": "MY BOSS WORD",
+    "primarySkill": "word recognition/fluency: BOSS",
+    "correctAnswers": {
+      "findIt": "item 1 (boss badge)",
+      "bossMission": "item 1 (clipboard)"
+    }
+  },
+  {
+    "pageNumber": 6,
+    "title": "MY BOSS WORD",
+    "primarySkill": "word recognition/fluency: HELP",
+    "correctAnswers": {
+      "whoNeedsHelp": "item 1 (puppy reaching for a ball it cannot reach)",
+      "bossMission": "item 1 (Boss Kennedi helping the puppy)"
+    }
+  }
+]
