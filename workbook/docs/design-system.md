@@ -149,3 +149,116 @@ npm run verify  # pdfinfo + console-error + overflow checks (build+pdf must have
 overflow per page) work off `dist/pages/*.html` alone, so `npm run build`
 is enough to exercise them -- you do not need to regenerate the PDF while
 iterating. Fix every `FAIL` line before considering the page done.
+
+---
+
+## Art Direction v2 (DRAFT -- owner visual approval required, 2026-08-19)
+
+**This section proposes a replacement for the illustration approach above.
+It is NOT yet approved and NOT wired into `book-1.mjs` / the real 6 pages.**
+Everything below exists only as `design-source/*/concepts/` comparison
+material and a `dist-proof/` integration proof (2 pages). Until an owner
+picks a direction, page authors should keep following the hand-authored SVG
+component/illustration system described earlier in this file. See
+`docs/art/asset-provenance.md` for the full asset table, tooling notes, and
+known issues (character-consistency-across-poses is NOT solved yet, a badge
+artifact needs a fix, small-icon legibility needs a second tier -- read it
+before building on this).
+
+### Why v1 needs replacing
+
+The programmatic SVG in `src/illustrations/` (circles + rectangles + basic
+bezier paths, uniform 6-7px stroke) reads as assembled-from-primitives:
+simplistic faces, stiff poses, flat silhouettes, no depth. Reference: PR
+#133's original Boss Kennedi/animal/icon set.
+
+### Two modes (unchanged concept, now with a concrete asset source)
+
+- **Mode A (color hero art)** -- cover, certificates, any large/promotional
+  use. Full color, gentle shading/soft shadows OK. Source: FLUX.1-dev raster
+  PNG, used as-is (no vectorization needed -- richness is the point).
+- **Mode B (print interior art)** -- everything on a learning page. Must
+  stay home-printer-safe: bold black outlines, white background, no color,
+  selective mid-gray/hatching only where it earns its ink. Source:
+  FLUX.1-dev generated as B&W line art, then vectorized via
+  `workbook/tools/vectorize-line-art.sh` (potrace) into a real scalable SVG
+  -- confirmed print-faithful via PDF rasterization in the page-6 proof.
+
+### Generation pipeline (see asset-provenance.md for full detail)
+
+1. `workbook/tools/comfy-generate.py "<prompt>" --out <file.png>` -- talks
+   to a locally running ComfyUI (FLUX.1-dev) at `http://127.0.0.1:8188`.
+   Start it with `~/Desktop/ComfyUI-master/start_comfyui.sh` if not running.
+2. For Mode B assets: `workbook/tools/vectorize-line-art.sh in.png out.svg`
+   to get a clean traced SVG (single compound path, prints crisply at any
+   size -- verified, not assumed).
+3. Inkscape 1.2.2 is installed and available as the canonical
+   cleanup/export tool for hand-editing a trace afterward (node
+   simplification, manual fixes like the badge-artifact issue below) --
+   available but not yet used in this slice.
+4. Recraft was NOT available (no MCP connection, no API key) -- this
+   pipeline is the documented fallback, not the originally-requested one.
+   See asset-provenance.md's "Tooling note."
+
+### Canonical character: Boss Kennedi
+
+Four concept directions were generated and compared (contact sheet:
+`docs/art/concept-contact-sheet.png`):
+
+- **A -- Soft Modern**: soft wavy loose pigtails, big expressive eyes, open
+  smile, pinafore dress, varied line weight.
+- **B -- Bold Graphic**: uniform bold outline, short ponytail, overalls,
+  hands-on-hips confident stance, minimal interior detail -- most legible at
+  small print size, but no visible badge in this draft and least distinctive.
+- **C -- Textured Detailed** (recommended, see below): pigtails with visible
+  hair ties, round badge on the chest, holding a clipboard, fine hair/fabric
+  hatching, rosy cheeks. Most storybook-polished, most faithful to the
+  original "confident boss holding a clipboard" character brief.
+- **D -- Dynamic Athletic**: curly/coily pigtails with organic spiral
+  linework, mid-stride running pose, star badge, most kinetic/energetic --
+  but a running pose is the least reusable base for the many static
+  educational poses the series actually needs (holding a pencil, pointing,
+  sitting to write, etc).
+
+**Recommendation: Concept C ("Textured Detailed") as the primary/canonical
+direction.** It's the most polished, most emotionally expressive, and the
+only one that already matches the original character brief (clipboard in
+hand). Runner-up: **Concept B ("Bold Graphic")** -- not as the canonical
+full-detail character, but as the basis for a *simplified icon-scale tier*
+of the same character (same hairstyle/outfit language, reduced interior
+linework) for anything printed under ~1in, where C's fine hatching risks
+clogging into gray mush on a cheap inkjet. This two-tier approach (C for
+hero-scale, B-style-simplified for icon-scale) is a proposal, not yet built
+or tested -- the page-6 proof reused full-detail C at small scale as an
+expedient, and it holds up fine at 150dpi PDF rasterization, but a real
+production pass should still build the simplified tier rather than relying
+on shrinking the detailed one indefinitely.
+
+Two puppy directions were also generated: **A "Floppy-Ear Classic"**
+(sitting, calm-happy, recommended as the versatile base pose) and **B
+"Perky Energetic"** (mid-jump, better reserved for specific
+playing/excited narrative beats than as a general-purpose base).
+
+### Print test finding (from the page-6 integration proof)
+
+Fitting Concept C's hero illustration into page 6 -- already the most
+content-dense page in the book -- required shrinking it to ~0.5in before
+the page stopped overflowing (`npm run verify`'s overflow check caught this
+exactly the way it's supposed to). At that size the illustration's extra
+detail barely reads; the practical benefit on a dense page is mostly in the
+picture-choice icons, not the small hero portrait. Pages with more
+whitespace budget (the cover, or lighter pages like 2-4) will show off the
+richer art much better. This is the concrete case for the two-tier
+(detailed/simplified) proposal above, not just a hypothetical concern.
+
+### What's still unapproved / not done
+
+- No pose has gone through Inkscape cleanup.
+- Character consistency across poses is unverified beyond two same-prompt
+  generations (standing + helping) -- no ControlNet/IP-Adapter/LoRA lock.
+- The helping-pose badge has a stray "6" glyph artifact (FLUX hallucination)
+  that needs fixing before that specific asset is production-eligible.
+- The B-style "simplified icon tier" of Concept C is a proposal only, not
+  built.
+- Pages 2-5 have not been touched and still use v1 art -- this whole
+  section is pending an owner decision before ANY page is converted.

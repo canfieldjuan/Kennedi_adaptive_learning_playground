@@ -1,0 +1,19 @@
+[
+  {
+    "pageNumber": 1,
+    "title": "Kennedi Is The Boss (ART PROOF)",
+    "primarySkill": "cover (no activity) -- art-direction integration proof, Mode A (color)",
+    "correctAnswers": {},
+    "artNote": "Hero illustration is FLUX.1-dev generated (Concept C direction) + hand-picked, NOT the PR #133 programmatic SVG. Owner-approval-required draft."
+  },
+  {
+    "pageNumber": 6,
+    "title": "MY BOSS WORD",
+    "primarySkill": "word recognition/fluency: HELP -- art-direction integration proof, Mode B (print interior)",
+    "correctAnswers": {
+      "whoNeedsHelp": "item 1 (puppy)",
+      "bossMission": "item 1 (Boss Kennedi helping the puppy)"
+    },
+    "artNote": "Kennedi + puppy illustrations are FLUX.1-dev generated (Concept C direction) then potrace-vectorized, NOT the PR #133 programmatic SVG. All other components (tracing, handwriting, mission box, choice-row chrome) are UNCHANGED from the approved page 6. Owner-approval-required draft."
+  }
+]
