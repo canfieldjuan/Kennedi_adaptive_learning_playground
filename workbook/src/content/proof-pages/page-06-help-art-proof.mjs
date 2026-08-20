@@ -10,11 +10,14 @@ import { inlineSvgFile } from './asset-inline.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKBOOK = path.resolve(__dirname, '../../..');
-const KENNEDI_DIR = path.join(WORKBOOK, 'design-source/boss-kennedi/concepts');
-const PUPPY_DIR = path.join(WORKBOOK, 'design-source/animals/puppy-concepts');
+const KENNEDI_LOCKED = path.join(WORKBOOK, 'design-source/boss-kennedi/locked-poses');
+const PUPPY_LOCKED = path.join(WORKBOOK, 'design-source/animals/locked-poses');
 
-const kennediHelp = inlineSvgFile(path.join(KENNEDI_DIR, 'kennedi-c-help-pose.svg'));
-const puppyFloppy = inlineSvgFile(path.join(PUPPY_DIR, 'concept-a-floppy-classic.svg'));
+// Character-lock slice assets (consistency-verified, badge-artifact-free) --
+// replaces the single previous-slice help-pose image, which had a stray
+// hallucinated "6" glyph in the badge.
+const kennediHelp = inlineSvgFile(path.join(KENNEDI_LOCKED, '04-helping.svg'));
+const puppySitting = inlineSvgFile(path.join(PUPPY_LOCKED, '01-sitting.svg'));
 
 export const meta = {
   pageNumber: 6,
@@ -24,7 +27,7 @@ export const meta = {
     whoNeedsHelp: 'item 1 (puppy)',
     bossMission: 'item 1 (Boss Kennedi helping the puppy)',
   },
-  artNote: 'Kennedi + puppy illustrations are FLUX.1-dev generated (Concept C direction) then potrace-vectorized, NOT the PR #133 programmatic SVG. All other components (tracing, handwriting, mission box, choice-row chrome) are UNCHANGED from the approved page 6. Owner-approval-required draft.',
+  artNote: 'Kennedi + puppy illustrations are the character-lock slice assets (design-source/*/locked-poses/), FLUX.1-dev + Redux generated for identity consistency, then potrace-vectorized. The previous-slice help-pose image (stray "6" badge artifact) has been replaced. All other components (tracing, handwriting, mission box, choice-row chrome) are UNCHANGED from the approved page 6. Owner-approval-required draft.',
 };
 
 function ballBehindBoxIcon(label = 'a ball hidden behind a box') {
@@ -70,7 +73,7 @@ export function render() {
           compact: 'xs',
           columns: 3,
           items: [
-            { svg: puppyFloppy },
+            { svg: puppySitting },
             { svg: cat('sleep', { label: 'cat sleeping comfortably' }) },
             { svg: bird('eat', { label: 'happy bird eating' }) },
           ],

@@ -152,18 +152,24 @@ iterating. Fix every `FAIL` line before considering the page done.
 
 ---
 
-## Art Direction v2 (DRAFT -- owner visual approval required, 2026-08-19)
+## Art Direction v2 (DRAFT -- owner visual approval required, updated 2026-08-19)
 
 **This section proposes a replacement for the illustration approach above.
 It is NOT yet approved and NOT wired into `book-1.mjs` / the real 6 pages.**
-Everything below exists only as `design-source/*/concepts/` comparison
-material and a `dist-proof/` integration proof (2 pages). Until an owner
-picks a direction, page authors should keep following the hand-authored SVG
-component/illustration system described earlier in this file. See
-`docs/art/asset-provenance.md` for the full asset table, tooling notes, and
-known issues (character-consistency-across-poses is NOT solved yet, a badge
-artifact needs a fix, small-icon legibility needs a second tier -- read it
-before building on this).
+Everything below exists only as `design-source/*/concepts/` +
+`design-source/*/locked-poses/` + `design-source/*/simplified-tier/`
+comparison material and a `dist-proof/` integration proof (2 pages + a
+print-size test sheet). Until an owner approves this and Pages 1-6 are
+actually converted, page authors should keep following the hand-authored
+SVG component/illustration system described earlier in this file.
+
+**Status: Concept C is owner-approved as the direction. Character-lock
+slice (multi-pose consistency, badge-artifact fix, simplified tier, puppy
+canon, print-size validation) is complete and believed ready for the next
+gate: replacing the art on Pages 1-6 and preparing PR #133 for merge.**
+See `docs/art/asset-provenance.md` for the full asset table, the exact
+mechanism that made cross-pose consistency work, and remaining minor risks
+-- read it before generating any further poses.
 
 ### Why v1 needs replacing
 
@@ -234,31 +240,93 @@ expedient, and it holds up fine at 150dpi PDF rasterization, but a real
 production pass should still build the simplified tier rather than relying
 on shrinking the detailed one indefinitely.
 
-Two puppy directions were also generated: **A "Floppy-Ear Classic"**
-(sitting, calm-happy, recommended as the versatile base pose) and **B
-"Perky Energetic"** (mid-jump, better reserved for specific
-playing/excited narrative beats than as a general-purpose base).
+Two puppy directions were compared; **A "Floppy-Ear Classic"** (sitting,
+calm-happy) is the **owner-approved canonical puppy base** -- not B.
 
-### Print test finding (from the page-6 integration proof)
+### Character lock (2026-08-19 slice) -- Concept C, multi-pose
 
-Fitting Concept C's hero illustration into page 6 -- already the most
-content-dense page in the book -- required shrinking it to ~0.5in before
-the page stopped overflowing (`npm run verify`'s overflow check caught this
-exactly the way it's supposed to). At that size the illustration's extra
-detail barely reads; the practical benefit on a dense page is mostly in the
-picture-choice icons, not the small hero portrait. Pages with more
-whitespace budget (the cover, or lighter pages like 2-4) will show off the
-richer art much better. This is the concrete case for the two-tier
-(detailed/simplified) proposal above, not just a hypothetical concern.
+Concept C is approved as the direction. This slice turned it into an actual
+8-pose consistency proof + a simplified small-print tier + a 4-pose puppy
+canon. Full mechanism writeup, per-pose generation notes, and a "what didn't
+work" list (so it isn't relitigated) are in `docs/art/asset-provenance.md`
+-- read that before generating any new pose. Summary:
 
-### What's still unapproved / not done
+- **Mechanism**: plain repeated text prompts do NOT lock identity across
+  FLUX generations (confirmed by direct comparison of the previous slice's
+  two Concept C images -- different bangs, different skirt cut on close
+  inspection). The fix is **FLUX.1 Redux** (style/subject transfer from a
+  reference image, already installed in this ComfyUI setup), from a single
+  **clean neutral reference** (`design-source/boss-kennedi/locked-poses/01-neutral.png`
+  -- plain standing pose, empty hands, no held props), at a tuned strength:
+  **0.08** for anything changing body posture or held objects (sitting,
+  kneeling, clipboard), **0.15-0.2** for arm-gesture-only changes on a
+  standing body (waving, pointing, celebrating).
+- **Locked identity traits** (preserved across all 8 poses): face shape,
+  pigtail hairstyle with two small hair ties, big eyes with eyelashes, a
+  round badge with a plain star (explicitly re-described in every prompt --
+  Redux alone doesn't reliably carry small details), collared shirt +
+  knee-length pleated skirt + socks + sneakers, consistent short/round
+  preschooler proportions, consistent bold-outline print-line-art style.
+  Sheet: `docs/art/kennedi-consistency-sheet.png`.
+- **Simplified small-scale tier**: NOT a distinct generated art style
+  (prompting FLUX to "simplify" didn't reliably work -- see
+  asset-provenance.md). Instead, the already-correct locked hero/helping/
+  pointing poses are re-vectorized with looser potrace parameters
+  (`-t 20 -O 1.0 -a 1.2`), which measurably reduces path complexity
+  (~25% smaller SVGs) while keeping the same identity and pose. Files:
+  `design-source/boss-kennedi/simplified-tier/`.
+- **Canonical puppy**: 4 poses (sitting/reaching/happy-alert/playing) off
+  the Concept A "Floppy-Ear Classic" base, same Redux mechanism. Sheet:
+  `docs/art/puppy-consistency-sheet.png`.
+- **Badge artifact -- fixed**: the previous-slice help-pose's stray "6" is
+  gone (asset superseded, not referenced anywhere). A second,
+  previously-unreported artifact was also found and fixed this slice: the
+  cover image's badge had a stray "Y"-like glyph; regenerating with
+  explicit "plain round badge, simple star only, no letters/numbers"
+  language fixed it. Both fixes came from being explicit about the badge
+  contents in every prompt, not from post-hoc raster editing.
 
-- No pose has gone through Inkscape cleanup.
-- Character consistency across poses is unverified beyond two same-prompt
-  generations (standing + helping) -- no ControlNet/IP-Adapter/LoRA lock.
-- The helping-pose badge has a stray "6" glyph artifact (FLUX hallucination)
-  that needs fixing before that specific asset is production-eligible.
-- The B-style "simplified icon tier" of Concept C is a proposal only, not
-  built.
-- Pages 2-5 have not been touched and still use v1 art -- this whole
-  section is pending an owner decision before ANY page is converted.
+### Print test findings
+
+**Page-6 integration** (previous slice, still true): fitting a full-detail
+hero illustration into page 6 -- the most content-dense page in the book --
+required shrinking it to ~0.5in before the page stopped overflowing
+(`npm run verify`'s overflow check caught this correctly). At that size a
+full-detail illustration's extra hatching barely reads.
+
+**Real print-size test** (this slice, `dist-proof/print-size-test.pdf`,
+rasterized at 300dpi -- a realistic home-inkjet resolution, not just the
+150dpi used for the page proofs): the simplified-tier Kennedi assets and
+the canonical puppy were rendered at 0.75in / 1.0in / 1.5in in actual
+dashed-border boxes and inspected at true print resolution.
+- **1.5in and 1.0in**: clean at both. Face, hair, badge, and pose all read
+  clearly; no muddiness.
+- **0.75in**: borderline but survives -- silhouette and facial expression
+  stay legible, but fine detail (the badge's star, individual hair
+  strands) compresses to "a small decoration" rather than a crisply
+  resolved shape. Usable for a small supporting icon, not ideal for
+  anything the child needs to visually distinguish in detail.
+- The puppy (full detail, NOT simplified-tier) held up cleanly even at
+  0.75in -- floppy ears and expression stayed clear, no muddiness. Not
+  every asset needs the simplified tier; it matters most for Kennedi's
+  denser hair/clothing detail.
+
+### What's still open (minor, not blocking)
+
+- The "thinking" pose (#7) ended up arms-crossed rather than the literal
+  hand-on-chin gesture originally specified -- a hand-on-chin version was
+  generated successfully but had a stray badge glyph; the clean
+  arms-crossed version was kept instead of spending further generation
+  budget chasing the exact gesture. Still reads clearly as "thinking."
+- No LoRA/ControlNet training was done. Redux is a strong practical fix but
+  is probabilistic, not a hard guarantee -- expect to occasionally need a
+  regeneration (with the strength/reference guidance above) when producing
+  further new poses for Pages 7+.
+- The page-6 integration proof's "walk away" choice-card icon is still the
+  OLD programmatic `bossKennedi('walkAway')` SVG -- intentional (that pose
+  wasn't one of the 8 required this slice), not an oversight, but it means
+  that one proof page still mixes old and new styles in one spot.
+- Pages 1-6 have not actually been converted yet -- everything above is
+  proof/comparison material in `dist-proof/` and `design-source/`. Owner
+  approval of this character-lock slice is the last gate before that
+  conversion work happens.

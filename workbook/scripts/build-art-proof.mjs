@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { renderDocument } from '../src/render.mjs';
 import * as page01proof from '../src/content/proof-pages/page-01-cover-art-proof.mjs';
 import * as page06proof from '../src/content/proof-pages/page-06-help-art-proof.mjs';
+import * as sizeTestProof from '../src/content/proof-pages/print-size-test.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -37,4 +38,8 @@ for (const pageModule of pages) {
 writeFileSync(path.join(distDir, 'preview.html'), renderDocument({ title: 'ART PROOF - Preview', bodyHtml: combinedBody }), 'utf8');
 writeFileSync(path.join(distDir, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
 
-console.log(`Built ${pages.length} art-proof pages -> dist-proof/`);
+// Size-test proof: standalone doc, not part of the page-shell preview (free-flowing height).
+const sizeTestDoc = renderDocument({ title: 'ART PROOF - Real Print-Size Test', bodyHtml: sizeTestProof.render() });
+writeFileSync(path.join(distDir, 'print-size-test.html'), sizeTestDoc, 'utf8');
+
+console.log(`Built ${pages.length} art-proof pages + print-size-test.html -> dist-proof/`);
