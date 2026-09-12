@@ -152,24 +152,28 @@ iterating. Fix every `FAIL` line before considering the page done.
 
 ---
 
-## Art Direction v2 (DRAFT -- owner visual approval required, updated 2026-08-19)
+## Art Direction v2 (APPLIED to Pages 1-6, 2026-09-12)
 
-**This section proposes a replacement for the illustration approach above.
-It is NOT yet approved and NOT wired into `book-1.mjs` / the real 6 pages.**
-Everything below exists only as `design-source/*/concepts/` +
-`design-source/*/locked-poses/` + `design-source/*/simplified-tier/`
-comparison material and a `dist-proof/` integration proof (2 pages + a
-print-size test sheet). Until an owner approves this and Pages 1-6 are
-actually converted, page authors should keep following the hand-authored
-SVG component/illustration system described earlier in this file.
+**Status: applied.** Concept C is the canonical Boss Kennedi direction, and
+Pages 1-6 (`src/content/pages/`) are built on it -- the old hand-authored
+`bossKennedi()` programmatic figure (`src/illustrations/boss-kennedi.mjs`)
+no longer appears on any real page; every Kennedi illustration in the real
+book is a locked-pose or simplified-tier asset from `design-source/`,
+embedded via `inlineSvgFile()`/`inlineImageFile()`
+(`src/content/asset-inline.mjs`). The old `boss-kennedi.mjs` module is left
+in place only because `src/content/proof-pages/page-06-help-art-proof.mjs`
+still references it for an intentional old/new comparison; it is not
+imported by anything under `src/content/pages/`.
 
-**Status: Concept C is owner-approved as the direction. Character-lock
-slice (multi-pose consistency, badge-artifact fix, simplified tier, puppy
-canon, print-size validation) is complete and believed ready for the next
-gate: replacing the art on Pages 1-6 and preparing PR #133 for merge.**
-See `docs/art/asset-provenance.md` for the full asset table, the exact
-mechanism that made cross-pose consistency work, and remaining minor risks
--- read it before generating any further poses.
+Everything below this line is the historical record of how the asset set
+was produced and approved (concept comparison, character-lock mechanism,
+print-size findings) -- read it before generating any further pose for a
+future page (7+), but treat the "DRAFT" / "owner approval required" /
+"NOT yet wired into book-1.mjs" language throughout as describing the state
+as of 2026-08-19, superseded by the paragraph above. See
+`docs/art/asset-provenance.md` for the full asset table and mechanism
+writeup, and `docs/pages-1-6-redesign-plan.md` for exactly how each of
+Pages 1-6 uses this asset set.
 
 ### Why v1 needs replacing
 
@@ -322,11 +326,15 @@ dashed-border boxes and inspected at true print resolution.
   is probabilistic, not a hard guarantee -- expect to occasionally need a
   regeneration (with the strength/reference guidance above) when producing
   further new poses for Pages 7+.
-- The page-6 integration proof's "walk away" choice-card icon is still the
-  OLD programmatic `bossKennedi('walkAway')` SVG -- intentional (that pose
-  wasn't one of the 8 required this slice), not an oversight, but it means
-  that one proof page still mixes old and new styles in one spot.
-- Pages 1-6 have not actually been converted yet -- everything above is
-  proof/comparison material in `dist-proof/` and `design-source/`. Owner
-  approval of this character-lock slice is the last gate before that
-  conversion work happens.
+- The page-6 integration PROOF's (`dist-proof/`, `src/content/proof-pages/`)
+  "walk away" choice-card icon is still the OLD programmatic
+  `bossKennedi('walkAway')` SVG -- intentional (that pose wasn't one of the
+  8 required this slice), not an oversight, and it's historical proof
+  material, not the real page. The REAL Page 6
+  (`src/content/pages/page-06-helping-mission.mjs`) does not have this
+  problem: it doesn't use a Kennedi pose for "walk away" at all (no locked
+  pose fits a back-turned/walking figure), it uses a small hand-drawn
+  open-door-and-arrow icon instead -- see that file and
+  `docs/pages-1-6-redesign-plan.md`.
+- ~~Pages 1-6 have not actually been converted yet~~ -- done, 2026-09-12.
+  See the "APPLIED" status note at the top of this section.

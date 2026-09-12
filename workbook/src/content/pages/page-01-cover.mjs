@@ -1,7 +1,18 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { coverShell } from '../../components/layout.mjs';
-import { bossKennedi } from '../../illustrations/boss-kennedi.mjs';
-import { puppy, bird, cat } from '../../illustrations/animals.mjs';
 import { paintbrushIcon, magnifyingGlassIcon } from '../../illustrations/icons.mjs';
+import { inlineImageFile } from '../asset-inline.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const WORKBOOK = path.resolve(__dirname, '../../..');
+
+// Art Direction v2, Mode A (color hero art) -- see docs/art/asset-provenance.md.
+// Single approved full-color hero scene (Kennedi + puppy + bird already
+// composed together), replacing the old 3-SVG bossKennedi/puppy/bird/cat
+// composition. Embedded as a base64 data: URI (not a raw filesystem path)
+// so the generated HTML still opens standalone via file:// on any machine.
+const heroScene = inlineImageFile(path.join(WORKBOOK, 'design-source/scenes/cover-concept-c-final.png'));
 
 export const meta = {
   pageNumber: 1,
@@ -19,12 +30,7 @@ export function render() {
       <p class="cover-tagline">Read &bull; Write &bull; Count &bull; Think &bull; Create</p>
     </div>
     <div class="cover-art">
-      <div class="cover-helper" style="align-self:flex-start;">${bird('branch')}</div>
-      <div class="cover-hero">${bossKennedi('hero', { crown: true, label: 'Boss Kennedi holding a clipboard and pencil' })}</div>
-      <div class="col" style="gap:0.3in;">
-        <div class="cover-helper">${puppy('happy')}</div>
-        <div class="cover-helper" style="width:0.85in;">${cat('sleep')}</div>
-      </div>
+      <img src="${heroScene}" alt="Boss Kennedi holding a clipboard and a raised pencil, with a puppy and a bird" style="max-width:100%; max-height:100%; object-fit:contain;" />
     </div>
     <div class="cover-bottom row" style="justify-content:space-between;">
       <span>My Preschool Adventure Book</span>

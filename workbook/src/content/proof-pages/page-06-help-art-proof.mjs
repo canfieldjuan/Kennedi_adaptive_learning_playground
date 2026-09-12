@@ -6,7 +6,7 @@ import { bossMissionBox, pictureChoiceRow, rewardStar } from '../../components/a
 import { bird, cat } from '../../illustrations/animals.mjs';
 import { bossKennedi } from '../../illustrations/boss-kennedi.mjs';
 import { svgWrap } from '../../illustrations/svg-utils.mjs';
-import { inlineSvgFile } from './asset-inline.mjs';
+import { inlineSvgFile } from '../asset-inline.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKBOOK = path.resolve(__dirname, '../../..');
