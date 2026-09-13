@@ -1,0 +1,225 @@
+/* ---- Cover page ------------------------------------------------------ */
+.cover-sheet {
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+}
+.cover-top { flex: 0 0 auto; padding-top: var(--space-3); }
+.cover-eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.cover-title {
+  margin: var(--space-2) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05in;
+}
+.cover-title-line {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-title);
+  line-height: normal;
+  letter-spacing: 0.01em;
+  display: block;
+}
+.cover-subtitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26pt;
+  margin: var(--space-2) 0 0;
+}
+.cover-tagline {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15pt;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: var(--space-2) 0 0;
+}
+.cover-art {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  gap: var(--space-4);
+  width: 100%;
+}
+.cover-hero { width: 3.1in; }
+.cover-helper { width: 1.15in; align-self: flex-end; }
+.cover-bottom {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16pt;
+  padding-bottom: var(--space-2);
+  border-top: var(--line-thick) solid var(--ink);
+  padding-top: var(--space-2);
+  width: 100%;
+}
+
+/* ---- Solid large-word display (not tracing -- a plain big headline word,
+   e.g. the "BOSS" reveal at the top of a vocabulary page) ------------------ */
+.word-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-word-lg);
+  line-height: normal;
+  text-align: center;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+.word-display.word-display-sm {
+  font-size: var(--text-heading);
+}
+
+/* ---- Boss Mission box -------------------------------------------------- */
+.mission-box {
+  border: var(--line-thick) solid var(--ink);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.mission-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.mission-badge { width: 0.55in; height: 0.55in; display: inline-block; }
+.mission-kicker {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16pt;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ---- Picture-choice cards ---------------------------------------------- */
+.choice-block { display: flex; flex-direction: column; gap: var(--space-2); }
+.choice-row {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), 1fr);
+  gap: var(--space-3);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.choice-card {
+  border: var(--line-thick) solid var(--ink);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  min-height: 1.3in;
+}
+.choice-card > svg { width: 68%; height: 68%; }
+
+/* ---- Tracing & handwriting ---------------------------------------------- */
+.tracing-word { width: 100%; max-width: 100%; }
+.tracing-word svg { width: auto; height: 100%; max-width: 100%; display: block; margin: 0 auto; }
+
+.handwriting-block { display: flex; flex-direction: column; gap: var(--space-3); }
+.hw-row { position: relative; height: 0.95in; }
+.hw-top, .hw-mid, .hw-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: var(--line-thin) solid var(--ink);
+}
+.hw-top { top: 0; }
+.hw-mid { top: 50%; border-top: var(--line-thin) dashed var(--ink); }
+/* bottom: 0 (not top: 100%) so the heavy baseline's border-top draws
+   upward into the row's own box instead of past it -- top: 100% plus a
+   border-top made the row report a 7px self-overflow (line-xthick) on
+   every handwritingLine row, since a border always extends inward from
+   its box's positioned edge, never past it. */
+.hw-base { bottom: 0; border-top: var(--line-xthick) solid var(--ink); }
+
+/* ---- Reward star ---------------------------------------------------- */
+.reward-block {
+  align-self: flex-end;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+.reward-caption {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14pt;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+.reward-star { width: 1.3in; height: 1.3in; }
+
+/* ---- Illustration frame / drawing box --------------------------------- */
+.illo-frame {
+  border: var(--line-regular) solid var(--ink);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+}
+.drawing-box {
+  border: var(--line-thick) dashed var(--ink);
+  border-radius: var(--radius-md);
+  flex: 1 1 auto;
+  min-height: 1.6in;
+}
+
+/* ---- Generic row/column helpers used by page authors -------------------- */
+.row { display: flex; flex-direction: row; gap: var(--space-3); align-items: center; }
+.row.top { align-items: flex-start; }
+.col { display: flex; flex-direction: column; gap: var(--space-2); }
+.grow { flex: 1 1 auto; min-width: 0; min-height: 0; }
+.icon-inline { display: inline-block; vertical-align: middle; }
+
+/* ---- Compact variants for content-dense pages ---------------------------
+   Additive modifiers -- the base .choice-card / .drawing-box sizing above is
+   unchanged for existing callers. These rules must stay below the base rules
+   (equal specificity, cascade order decides) so pages opting in via the
+   compact class/flag actually get the smaller floor. */
+.choice-card-compact { min-height: 0.55in; padding: var(--space-1); }
+.choice-card-compact-sm { min-height: 0.3in; padding: 0.05in; }
+/* Card height is actually driven by the icon's rendered size (the base
+   `.choice-card > svg { width: 68%; height: 68% }` computes height against
+   an indefinite parent height, so it falls back to the icon's intrinsic
+   square aspect, matching the 68%-of-width figure) -- so on a page with two
+   picture-choice rows, shrinking the icon itself is what shrinks the row,
+   not min-height/padding alone. */
+.choice-card-compact-sm > svg { width: 56%; height: 56%; }
+/* `xs` tier: on top of `sm`, for pages with more than one picture-choice row
+   that also include a portrait-aspect illustration (e.g. full-body Boss
+   Kennedi, taller than wide) -- a fixed % width still yields a tall card
+   because the auto height is width/aspect-ratio, so this tier needs a
+   smaller width % than `sm` to keep those rows from dominating the page. */
+/* `xs` cards stop stretching to fill the grid column (which, at any small
+   icon %, produced a wide flat bar with a tiny icon stranded in the middle)
+   -- see `.choice-row-xs` below, which switches the row to flex/fixed-width
+   cards so the icon stays a legible, proportionate fraction of its own
+   (smaller) card. */
+.choice-card-compact-xs { min-height: 0; padding: 0.03in; }
+.choice-row-xs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.choice-row-xs > .choice-card {
+  flex: 0 0 auto;
+  width: 0.85in;
+}
+.choice-row-xs > .choice-card > svg { width: 66%; height: 66%; }
+.drawing-box-compact { min-height: 1in; }
+.mission-box-compact { padding: var(--space-1); gap: 0.06in; }
+.mission-badge-compact { width: 0.4in; height: 0.4in; }
+.hw-row-compact { height: 0.6in; }
+.hw-row-compact-xs { height: 0.32in; }

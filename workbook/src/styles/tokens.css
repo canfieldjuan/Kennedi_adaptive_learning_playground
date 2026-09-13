@@ -1,0 +1,44 @@
+/*
+ * Design tokens for the "Kennedi Is the Boss" workbook system.
+ * Grayscale-first: only pure black (--ink) is used for anything a cheap
+ * home printer must reproduce reliably. --ink-soft exists for screen-only
+ * chrome (the preview scaffold), never for printed content.
+ */
+:root {
+  --ink: #000000;
+  --ink-soft: #4a4a4a;
+  --paper: #ffffff;
+
+  --font-display: 'Baloo 2', 'DejaVu Sans', sans-serif;
+  --font-body: 'Nunito', 'DejaVu Sans', sans-serif;
+
+  /* Line weights: thin gray hairlines disappear on cheap printers, so every
+     line that matters is thick and pure black. */
+  --line-hairline: 1.5px;
+  --line-thin: 2px;
+  --line-regular: 3px;
+  --line-thick: 5px;
+  --line-xthick: 7px;
+
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 32px;
+
+  --space-1: 0.08in;
+  --space-2: 0.14in;
+  --space-3: 0.22in;
+  --space-4: 0.32in;
+  --space-5: 0.45in;
+
+  /* US Letter sheet, 0.5in safe margin on all sides. */
+  --page-width: 8.5in;
+  --page-height: 11in;
+  --page-margin: 0.5in;
+
+  --text-instruction: 20pt;
+  --text-body: 16pt;
+  --text-heading: 34pt;
+  --text-title: 60pt;
+  --text-word-lg: 90pt;
+  --text-word-trace: 110pt;
+}

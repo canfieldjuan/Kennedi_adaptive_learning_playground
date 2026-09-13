@@ -1,0 +1,46 @@
+[
+  {
+    "pageNumber": 1,
+    "title": "Kennedi Is The Boss",
+    "primarySkill": "cover (no activity)",
+    "correctAnswers": {}
+  },
+  {
+    "pageNumber": 2,
+    "title": "MY NAME IS KENNEDI",
+    "primarySkill": "name recognition + early name writing: Kennedi",
+    "correctAnswers": {
+      "circleYourName": "item 1 (Kennedi)"
+    }
+  },
+  {
+    "pageNumber": 3,
+    "title": "MEET BOSS KENNEDI",
+    "primarySkill": "listening comprehension + identity language",
+    "correctAnswers": {
+      "bossMission": "item 1 (Kennedi sitting and writing -- making a plan)"
+    }
+  },
+  {
+    "pageNumber": 4,
+    "title": "PENCIL ADVENTURE",
+    "primarySkill": "pencil control",
+    "correctAnswers": {}
+  },
+  {
+    "pageNumber": 5,
+    "title": "BOSS BEGINS WITH B",
+    "primarySkill": "uppercase/lowercase letter recognition: B",
+    "correctAnswers": {
+      "bWords": "items 1, 2, 3 (badge, ball, bird) -- NOT item 4 (apple)"
+    }
+  },
+  {
+    "pageNumber": 6,
+    "title": "HELPING MISSION",
+    "primarySkill": "understanding/expressing \"help\"",
+    "correctAnswers": {
+      "bossMission": "item 1 (Kennedi kneeling down to help the puppy)"
+    }
+  }
+]
