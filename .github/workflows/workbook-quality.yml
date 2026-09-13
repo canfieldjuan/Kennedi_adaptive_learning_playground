@@ -1,0 +1,57 @@
+name: Workbook Quality
+
+on:
+  pull_request:
+    paths:
+      - "workbook/**"
+      - ".github/workflows/workbook-quality.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "workbook/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workbook-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workbook-quality-gate:
+    name: workbook-quality-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: workbook
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: workbook/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      # The workbook's own scripts launch Playwright with channel: 'chrome'
+      # (real Google Chrome), not Playwright's bundled Chromium -- installing
+      # only "chromium" here (as the learning-playground workflow does for
+      # its own, different use case) would leave that channel missing.
+      - name: Install Google Chrome
+        run: npx playwright install --with-deps chrome
+
+      # pdfinfo/pdftoppm, used by verify.mjs and rasterize-pdf.mjs.
+      - name: Install poppler-utils
+        run: sudo apt-get update && sudo apt-get install --yes poppler-utils
+
+      - name: Run the full build -> pdf -> screenshots -> rasterize -> verify pipeline
+        run: npm run all

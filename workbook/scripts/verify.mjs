@@ -49,6 +49,28 @@ if (!existsSync(pdfPath)) {
   } else {
     fail('could not parse page size from pdfinfo output');
   }
+
+  // --- PDF content freshness (poppler pdftotext) ---------------------------
+  // Page count and page size can both stay unchanged while the PDF itself
+  // goes stale -- editing an existing page's content or shared CSS and
+  // running only `npm run build` (which rewrites dist/pages/*.html, not the
+  // PDF) leaves the OLD PDF in place, and the two checks above have nothing
+  // to catch that: same count, same US Letter size, silently wrong content.
+  // Extract each PDF page's own text and confirm it still contains that
+  // page's current title, the same correspondence the <h1> check above
+  // enforces for the HTML -- if page N's title changed (or the PDF is from
+  // before page N existed in the current manifest order), this fails where
+  // the count/size checks would have silently passed.
+  console.log('\nPDF content freshness (pdftotext):');
+  for (const meta of manifest) {
+    const pageText = execFileSync('pdftotext', ['-f', String(meta.pageNumber), '-l', String(meta.pageNumber), pdfPath, '-'], { encoding: 'utf8' });
+    const normalize = (s) => s.replace(/\s+/g, '').toLowerCase();
+    if (normalize(pageText).includes(normalize(meta.title))) {
+      ok(`page ${meta.pageNumber}: PDF page text contains title "${meta.title}"`);
+    } else {
+      fail(`page ${meta.pageNumber}: PDF page text does not contain title "${meta.title}" -- PDF looks stale, run "npm run pdf" again`);
+    }
+  }
 }
 
 // --- Manifest / title checks -----------------------------------------------

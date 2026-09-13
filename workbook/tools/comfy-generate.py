@@ -24,6 +24,16 @@ def api(path, payload=None, timeout=30):
         return json.loads(body) if body else {}
 
 
+def download(url, out_path, timeout=30):
+    """Like urllib.request.urlretrieve(url, out_path), but with a timeout --
+    urlretrieve accepts none, so if Comfy's /view endpoint accepts the
+    connection and then stalls returning the image, this call hung
+    indefinitely regardless of --timeout (which only bounds the polling
+    loop above, not this final download)."""
+    with urllib.request.urlopen(url, timeout=timeout) as r, open(out_path, "wb") as f:
+        f.write(r.read())
+
+
 def flux_clip():
     return {"class_type": "DualCLIPLoader", "inputs": {
         "clip_name1": "t5xxl_fp8_e4m3fn.safetensors",
@@ -89,7 +99,7 @@ def main():
                 view_url = f"{COMFY}/view?" + urllib.parse.urlencode(
                     {"filename": item["filename"], "subfolder": item.get("subfolder", ""), "type": "output"}
                 )
-                urllib.request.urlretrieve(view_url, args.out)
+                download(view_url, args.out)
                 print(f"saved: {args.out}", file=sys.stderr)
                 print(args.out)
                 return

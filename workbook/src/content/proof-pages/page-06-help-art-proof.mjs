@@ -17,7 +17,12 @@ const PUPPY_LOCKED = path.join(WORKBOOK, 'design-source/animals/locked-poses');
 // replaces the single previous-slice help-pose image, which had a stray
 // hallucinated "6" glyph in the badge.
 const kennediHelp = inlineSvgFile(path.join(KENNEDI_LOCKED, '04-helping.svg'));
-const puppySitting = inlineSvgFile(path.join(PUPPY_LOCKED, '01-sitting.svg'));
+// 02-reaching (reaching for a ball it can't reach), not 01-sitting (content,
+// neutral) -- the "who needs help" choice needs the puppy to visibly need
+// help, and nothing distinguishes a content, sitting puppy from the sleeping
+// cat / eating bird options beside it. 02-reaching already existed in the
+// same locked-pose set; no new asset generated.
+const puppyReaching = inlineSvgFile(path.join(PUPPY_LOCKED, '02-reaching.svg'));
 
 export const meta = {
   pageNumber: 6,
@@ -73,7 +78,7 @@ export function render() {
           compact: 'xs',
           columns: 3,
           items: [
-            { svg: puppySitting },
+            { svg: puppyReaching },
             { svg: cat('sleep', { label: 'cat sleeping comfortably' }) },
             { svg: bird('eat', { label: 'happy bird eating' }) },
           ],

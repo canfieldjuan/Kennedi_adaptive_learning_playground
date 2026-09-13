@@ -33,6 +33,16 @@ def api(path, payload=None, timeout=30):
         return json.loads(body) if body else {}
 
 
+def download(url, out_path, timeout=30):
+    """Like urllib.request.urlretrieve(url, out_path), but with a timeout --
+    urlretrieve accepts none, so if Comfy's /view endpoint accepts the
+    connection and then stalls returning the image, this call hung
+    indefinitely regardless of --timeout (which only bounds the polling
+    loop above, not this final download)."""
+    with urllib.request.urlopen(url, timeout=timeout) as r, open(out_path, "wb") as f:
+        f.write(r.read())
+
+
 def flux_clip():
     return {"class_type": "DualCLIPLoader", "inputs": {
         "clip_name1": "t5xxl_fp8_e4m3fn.safetensors",
@@ -72,7 +82,20 @@ def main():
     ap.add_argument("--height", type=int, default=1024)
     ap.add_argument("--steps", type=int, default=30)
     ap.add_argument("--seed", type=int, default=-1)
-    ap.add_argument("--redux-strength", type=float, default=0.65)
+    # No default: the character-lock slice's own findings (see
+    # docs/art/asset-provenance.md "What actually worked") measured two
+    # different proven values for two different kinds of change -- 0.08 for
+    # anything changing body posture or held objects, 0.15-0.2 for
+    # arm-gesture-only changes on a standing body -- and neither is a safe
+    # default for the other case. The previous default (0.65) was outside
+    # both proven ranges: strength that high reliably reproduces the
+    # reference's standing pose/empty-hands almost unchanged regardless of
+    # the prompt, so a normal invocation that omitted this flag could
+    # silently generate the wrong pose. Forcing an explicit choice is safer
+    # than guessing a single number that's wrong for whichever case doesn't
+    # match it.
+    ap.add_argument("--redux-strength", type=float, required=True,
+                     help="0.08 for posture/held-object changes, 0.15-0.2 for arm-gesture-only changes on a standing body -- see docs/art/asset-provenance.md")
     ap.add_argument("--out", required=True)
     ap.add_argument("--timeout", type=int, default=300)
     args = ap.parse_args()
@@ -105,7 +128,7 @@ def main():
                 view_url = f"{COMFY}/view?" + urllib.parse.urlencode(
                     {"filename": item["filename"], "subfolder": item.get("subfolder", ""), "type": "output"}
                 )
-                urllib.request.urlretrieve(view_url, args.out)
+                download(view_url, args.out)
                 print(f"saved: {args.out}", file=sys.stderr)
                 print(args.out)
                 return
