@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -17,7 +17,26 @@ mkdirSync(pdfDir, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome' });
 try {
   const page = await browser.newPage();
-  await page.goto(pathToFileURL(previewPath).href, { waitUntil: 'load' });
+
+  // Read the source once into a buffer, hash THAT buffer, and render THAT
+  // same buffer via setContent() -- goto()'ing the file path and separately
+  // re-reading it after page.pdf() resolves (the first version of this)
+  // left a window, spanning the whole PDF-render duration, where a
+  // concurrent `npm run build` could rewrite dist/preview.html on disk: the
+  // PDF would bake in whatever Chrome read at goto-time, but the recorded
+  // hash would capture the newer content written after that, so
+  // verify.mjs's later comparison against a fresh read matches and reports
+  // an (actually stale) PDF as fresh. Reading once and rendering that exact
+  // buffer makes "what got hashed" and "what got rendered" the same bytes
+  // by construction, not by timing. Safe to swap goto -> setContent here
+  // specifically because preview.html is fully self-contained (fonts/CSS
+  // inlined as data URIs by render.mjs) with no relative-path, fetch(), or
+  // location/baseURI dependence anywhere in render.mjs, build.mjs, or the
+  // page components (checked) -- so setContent renders it identically to a
+  // file:// goto.
+  const previewBuffer = readFileSync(previewPath);
+  const sourceHash = createHash('sha256').update(previewBuffer).digest('hex');
+  await page.setContent(previewBuffer.toString('utf8'), { waitUntil: 'load' });
   await page.evaluate(() => document.fonts.ready);
   await page.pdf({
     path: outPath,
@@ -42,11 +61,10 @@ try {
   // count/size/title -- a body-only edit (wording, a swapped illustration,
   // shared CSS) changes preview.html without changing any page's title, so
   // a title-only freshness check (the first version of this) can't catch
-  // it. preview.html is what export-pdf.mjs actually renders (see
-  // page.goto above), and it's fully self-contained (fonts/CSS inlined by
+  // it. previewBuffer above is exactly what got rendered (see setContent
+  // above), and it's fully self-contained (fonts/CSS inlined by
   // render.mjs), so its hash captures every page's complete rendered
   // content and every shared style in one value.
-  const sourceHash = createHash('sha256').update(readFileSync(previewPath)).digest('hex');
   writeFileSync(hashPath, sourceHash, 'utf8');
 
   console.log(`Wrote ${path.relative(root, outPath)}`);

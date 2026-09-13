@@ -46,8 +46,15 @@ def download(url, out_path, timeout=30):
     directory), not just the success case. Any exception during the
     download or the replace removes the partial tmp_path and re-raises
     unchanged, so a failed run leaves exactly the same directory state as
-    before it started -- either fully replaced, or untouched."""
-    tmp_path = f"{out_path}.part"
+    before it started -- either fully replaced, or untouched.
+
+    tmp_path includes the current pid so two invocations sharing the same
+    --out (e.g. one run started before a prior one on the same target
+    finished) don't open the identical temp path -- without that, one
+    process's write/replace could interleave with the other's, leaving the
+    "loser" writing into an inode the "winner" already renamed away, or
+    deleting the "winner"'s freshly-recreated temp file out from under it."""
+    tmp_path = f"{out_path}.{os.getpid()}.part"
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r, open(tmp_path, "wb") as f:
             f.write(r.read())
