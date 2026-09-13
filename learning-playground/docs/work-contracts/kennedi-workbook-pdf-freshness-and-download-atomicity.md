@@ -1,0 +1,172 @@
+# Kennedi Workbook: PDF Freshness and Download Atomicity
+
+Post-merge follow-up to PR #133 (Pages 1-6 rebuild): two Codex findings on
+that PR (comment ids 3998987174, 3998987181), plus findings Codex raised on
+this fix's own diff across two further review passes.
+
+## Before Code
+
+### Root Cause
+
+Two independent bugs, both in `workbook/tools/*.py` and
+`workbook/scripts/*.mjs` (outside the six page files PR #133 touched):
+
+1. `download()` in `comfy-generate.py`/`comfy-generate-redux.py` opened
+   `out_path` directly (`open(out_path, "wb")`), which truncates it
+   immediately. A dropped connection or timeout partway through the read
+   destroyed a pre-existing (possibly already-approved) generated asset
+   instead of just failing to produce a new one.
+2. `verify.mjs`'s PDF-freshness check compared only each page's title
+   (`pdftotext` extraction vs. `meta.title`). A body-only edit -- wording,
+   `tracingWord()` tuning, a swapped illustration, shared CSS -- changes
+   what's rendered without changing any title, so a stale committed PDF
+   could pass verification undetected.
+
+### Correct Fix Must Touch
+
+- `workbook/tools/comfy-generate.py`, `workbook/tools/comfy-generate-redux.py`
+  -- `download()`: atomic temp-file write, symlink-safe temp creation.
+- `workbook/scripts/export-pdf.mjs` -- write a content hash of the exact
+  source rendered, computed from a single buffer shared with the render
+  call (not a separate re-read after rendering).
+- `workbook/scripts/verify.mjs` -- compare that hash against a fresh
+  recomputation, alongside (not replacing) the existing pdftotext title
+  check.
+- `.github/workflows/workbook-quality.yml` -- catch the case where a PR's
+  committed `dist/` output doesn't match what the PR's own source would
+  produce (CI's own full-pipeline run otherwise regenerates everything
+  fresh and can't observe that gap).
+- `learning-playground/docs/work-contracts/` -- this contract.
+
+### Must Not Change
+
+- The six rebuilt page files, `src/content/**`, `docs/design-system.md`,
+  `docs/art/asset-provenance.md` -- PR #133's actual content/art work is
+  out of scope here; this PR touches only the tooling/verification layer.
+- The `pdftotext` title check in `verify.mjs` -- kept alongside the new
+  hash check, not replaced: it independently proves Chrome's PDF
+  *rendering* itself didn't corrupt the text, a failure class a source-hash
+  match can't rule out.
+- `--redux-strength`'s `required=True` (no default) -- already fixed and
+  merged in PR #133 (d1710a5); unrelated to this work.
+
+## Contract Amendments
+
+- **Round 2** (after the first push, PR #134): Codex found the hash-write
+  in `export-pdf.mjs` re-read `preview.html` from disk *after* `page.pdf()`
+  resolved, separately from the `page.goto()` that loaded it at the start --
+  a window, spanning the whole render duration, where a concurrent
+  `npm run build` could desync "what got hashed" from "what got rendered."
+  Amended `Correct Fix Must Touch` to read the source once into a buffer,
+  hash that buffer, and render that exact buffer via `page.setContent()`
+  instead of `goto()`. Also found `download()`'s temp-sibling name had no
+  per-process component; amended to suffix it with `os.getpid()`.
+- **Round 3** (after the second push): Codex found (a) the pid-suffixed
+  temp name from round 2 was still predictable, and `open(tmp_path, "wb")`
+  follows a pre-existing symlink at that path rather than refusing it --
+  amended to `tempfile.mkstemp()` (O_CREAT|O_EXCL, unguessable name),
+  which also subsumes the round-2 pid fix; (b) no CI check catches a PR
+  whose committed `dist/` doesn't match its own source, since the existing
+  workflow always regenerates `dist/` fresh before verifying it -- amended
+  `Correct Fix Must Touch` to add a `git status`-based drift check to
+  `workbook-quality.yml`, scoped to exclude `dist/pdf/*.pdf` specifically
+  (Chrome's PDF printer embeds a `CreationDate`/`ModDate` timestamp, so the
+  PDF's raw bytes differ on every regeneration even when every rendered
+  page is byte-identical -- confirmed directly by diffing two consecutive
+  exports of unchanged source; a blanket diff would make the gate
+  permanently red regardless of correctness). The `.sourcehash` sidecar
+  (content-derived, confirmed byte-deterministic) stays in the check and
+  carries the real freshness signal.
+- **Waived, not fixed** (round 3, two findings): Codex additionally raised
+  (i) a race between two concurrent `npm run pdf` invocations racing to
+  publish the PDF/hash pair, and (ii) a race between `npm run verify` and a
+  concurrent `npm run build` rewriting `preview.html` mid-run. Both require
+  a genuinely concurrent multi-process invocation of this tool against the
+  same repo checkout; the tool has exactly one documented, supported
+  invocation shape (`npm run all`, fully sequential, single developer,
+  single machine) and no evidence anywhere of a concurrent-invocation
+  workflow. (i) additionally wouldn't be closed by fixing hash-pairing
+  alone: Playwright's own `page.pdf({ path })` already writes the PDF
+  non-atomically, a pre-existing property outside this diff's surface, so
+  the scenario Codex describes isn't actually preventable within this
+  fix's scope. Recorded here rather than silently dropped, per this
+  contract's own review-guideline bar (`AGENTS.md`: only a *plausible*
+  failure path blocks).
+
+## Cold Diff Audit
+
+### Gaps
+
+- change without contract trace: none.
+- contract requirement not delivered: none.
+- protected surface touched: none -- confirmed via `git diff` against
+  `main` before this contract was written: only `workbook/tools/*.py`,
+  `workbook/scripts/export-pdf.mjs`, `workbook/scripts/verify.mjs`,
+  `workbook/dist/pdf/*`, `.github/workflows/workbook-quality.yml`, and this
+  contract are touched.
+
+### Change By Change Reconstruction
+
+- `comfy-generate.py`, `comfy-generate-redux.py` -- `download()` rewritten:
+  `tempfile.mkstemp()` creates the temp sibling exclusively (random name,
+  `O_CREAT|O_EXCL`, so no predictable path exists to pre-place a symlink
+  at); the download writes through the returned fd; `os.replace()` renames
+  it onto `out_path` only after the full response is read; any exception
+  during either step removes the partial temp file (if it still exists)
+  and re-raises unchanged.
+- `export-pdf.mjs` -- reads `preview.html` once into a buffer; hashes that
+  buffer (SHA-256); renders that same buffer via `page.setContent()`
+  (replacing the earlier `page.goto(file://...)` + later separate
+  `readFileSync`); writes the hash to `<pdf>.sourcehash` after `page.pdf()`
+  completes.
+- `verify.mjs` -- new block after the existing pdftotext loop: reads
+  `<pdf>.sourcehash`, recomputes SHA-256 of the current `preview.html`,
+  fails with a clear message on mismatch or a missing hash file.
+- `workbook-quality.yml` -- new step after `npm run all`: fails if
+  `git status --porcelain -- dist/ ':!dist/pdf/*.pdf'` is non-empty.
+- `dist/pdf/kennedi-is-the-boss-book-1.pdf` -- regenerated (content
+  unchanged; only the Chrome-embedded timestamp differs from the PR
+  #133 version, an expected non-deterministic byproduct, not a real edit).
+
+### Contract Traceability
+
+- `download()` atomicity + symlink-safety -> Root Cause 1, amended round 3.
+- `export-pdf.mjs` / `verify.mjs` hash check + TOCTOU fix -> Root Cause 2,
+  amended round 2.
+- `workbook-quality.yml` drift check -> amended round 3.
+- Waived concurrent-process findings -> recorded above, not implemented.
+
+### Verification
+
+- `npm run all` (build -> pdf -> screenshots -> rasterize -> verify):
+  green, each round.
+- Genuine negative test (round 1 and re-run round 2, same method): edit a
+  page's body text, `npm run build` only (not `pdf`), confirm `verify`
+  fails on the new hash check while the pdftotext title check still
+  passes; revert; rebuild clean.
+- Genuine negative test (round 3, `workbook-quality.yml` check): edit a
+  page's body text, run the full `npm run all` (simulating CI's own
+  regeneration), confirm `git status --porcelain -- dist/ ':!dist/pdf/*.pdf'`
+  correctly flags `preview.html`, the changed page, its screenshot, its
+  raster, and the `.sourcehash` sidecar as drifted; confirm the PDF binary
+  itself is correctly excluded; revert; rebuild clean.
+- Positive-case re-check: same command against the true clean/committed
+  state reports no drift (confirms the PDF-exclude doesn't mask real
+  drift and doesn't itself produce a false failure).
+- `download()`: tested against a simulated dropped connection (local
+  `http.server` handler that sends a `Content-Length` larger than the
+  bytes actually written, then closes) and a normal success case --
+  original file untouched and no `.part` debris on failure in either the
+  pid-suffixed (round 2) or `mkstemp` (round 3) version; new content
+  correctly replaces old content on success.
+- `mkstemp` symlink-safety (round 3): directly verified that
+  `os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)` -- the exact
+  primitive `mkstemp` relies on -- raises `FileExistsError` rather than
+  following a pre-existing symlink at that path, on the actual target
+  filesystem (not assumed from documentation alone).
+- Tagged-PDF structure re-checked after the `goto` -> `setContent` swap via
+  `pdfinfo -struct` and a grep for `/Alt` strings: 37 Figure elements, 37
+  matching real (non-empty) Alt descriptions.
+- Visual inspection of the two highest-risk rasterized pages after the
+  `setContent` swap (B/b tracing on page 5, "help" tracing on page 6):
+  both still render as clean hollow letters, no bridging or tangling.

@@ -6,6 +6,7 @@ this session)."""
 import json
 import os
 import sys
+import tempfile
 import time
 import urllib.parse
 import urllib.request
@@ -48,15 +49,21 @@ def download(url, out_path, timeout=30):
     unchanged, so a failed run leaves exactly the same directory state as
     before it started -- either fully replaced, or untouched.
 
-    tmp_path includes the current pid so two invocations sharing the same
-    --out (e.g. one run started before a prior one on the same target
-    finished) don't open the identical temp path -- without that, one
-    process's write/replace could interleave with the other's, leaving the
-    "loser" writing into an inode the "winner" already renamed away, or
-    deleting the "winner"'s freshly-recreated temp file out from under it."""
-    tmp_path = f"{out_path}.{os.getpid()}.part"
+    tmp_path is created via tempfile.mkstemp() (O_CREAT|O_EXCL), not a
+    predictable name -- a prior version derived it from out_path plus the
+    running pid, which is guessable: in a shared-writable directory another
+    local user could pre-create that exact path as a symlink to any file
+    they can't otherwise write, and plain open(tmp_path, "wb") follows a
+    symlink and truncates whatever it points to before os.replace() ever
+    runs. mkstemp's O_EXCL create fails outright if the path already exists
+    in any form (symlink included), so there's no path for an attacker to
+    pre-place. It also makes tmp_path unique per call (not just per
+    process), which subsumes the earlier pid-based fix for two invocations
+    sharing the same --out."""
+    tmp_dir = os.path.dirname(os.path.abspath(out_path))
+    fd, tmp_path = tempfile.mkstemp(dir=tmp_dir, prefix=os.path.basename(out_path) + ".", suffix=".part")
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r, open(tmp_path, "wb") as f:
+        with urllib.request.urlopen(url, timeout=timeout) as r, os.fdopen(fd, "wb") as f:
             f.write(r.read())
         os.replace(tmp_path, out_path)
     except BaseException:

@@ -55,3 +55,37 @@ jobs:
 
       - name: Run the full build -> pdf -> screenshots -> rasterize -> verify pipeline
         run: npm run all
+
+      # verify.mjs proves the pipeline produces a self-consistent result
+      # (title/hash/size/overflow all agree with each other) but that alone
+      # doesn't prove the COMMITTED dist/ artifacts a reader might open
+      # directly (the PDF, its sourcehash, screenshots, rasters) are what
+      # this source would actually produce -- a PR that edits workbook
+      # source but forgets to re-run and commit the regenerated dist/
+      # output would still pass verify.mjs here, because this job always
+      # regenerates dist/ fresh before verifying it. Comparing the
+      # just-regenerated working tree against the committed tree closes
+      # that gap: any uncommitted or stale dist/ file fails the build.
+      #
+      # The PDF itself (dist/pdf/*.pdf, not its .sourcehash sidecar) is
+      # excluded -- Chrome's PDF printer embeds a CreationDate/ModDate
+      # timestamp of the moment it ran, so the PDF's raw bytes differ on
+      # every regeneration even when every rendered page is byte-identical
+      # (confirmed directly: two consecutive exports of unchanged source
+      # differed only in those two pdfinfo fields; the rasterized PNGs
+      # pdftoppm produces from them were identical). Diffing the PDF's raw
+      # bytes here would make this check permanently fail on every PR
+      # regardless of correctness. The .sourcehash sidecar -- a hash of
+      # preview.html, which IS byte-deterministic -- stays in the check and
+      # carries the real freshness signal: if a PR's committed dist/ was
+      # built from older source than the PR's own diff, the freshly
+      # regenerated preview.html (and thus its hash) differs from what's
+      # committed, and this still catches it.
+      - name: Fail if the committed dist/ artifacts are stale
+        run: |
+          if [ -n "$(git status --porcelain -- dist/ ':!dist/pdf/*.pdf')" ]; then
+            echo "::error::Committed workbook/dist/ artifacts do not match a fresh 'npm run all' regeneration. Run 'npm run all' locally and commit the result."
+            git status --porcelain -- dist/ ':!dist/pdf/*.pdf'
+            git diff -- dist/ ':!dist/pdf/*.pdf' | head -200
+            exit 1
+          fi
