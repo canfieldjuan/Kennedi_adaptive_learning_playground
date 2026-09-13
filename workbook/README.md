@@ -43,7 +43,9 @@ cd workbook
 npm install
 ```
 
-Requires Node 18+, Google Chrome installed (Playwright drives it directly via
+Requires Node 20+ (Playwright and playwright-core both declare `"node": ">=20"`;
+an npm install on Node 18 pulls in an explicitly-unsupported runtime for the
+PDF/screenshot/verify commands), Google Chrome installed (Playwright drives it directly via
 `channel: 'chrome'` — no browser download), and `poppler-utils` on PATH
 (`pdfinfo`/`pdftoppm`, used only by `npm run verify` / `npm run rasterize`).
 On Debian/Ubuntu: `sudo apt install poppler-utils`.
@@ -125,7 +127,7 @@ of each standalone page, print-media-emulated, for visual inspection.)
 ## Add a new workbook page
 
 1. Read `docs/design-system.md` and skim an existing page, e.g.
-   `src/content/pages/page-03-i-am-the-boss.mjs`, for the pattern.
+   `src/content/pages/page-06-helping-mission.mjs`, for the pattern.
 2. Create `src/content/pages/page-07-<slug>.mjs` exporting `meta` and
    `render()`, built from `pageShell` + the shared components/illustrations.
    Reuse existing illustration poses/icons before adding new ones; if you do
@@ -139,9 +141,13 @@ of each standalone page, print-media-emulated, for visual inspection.)
    `dist/screenshots/page-0N.png` and check it against the checklist in
    `docs/design-system.md` (text size, clutter, tracing/writing/choice size,
    obviousness of the task, no clipping).
-5. `npm run verify` — fix anything that shows `FAIL`.
-6. `npm run pdf && npm run rasterize` once the page is final, and spot-check
-   `dist/pdf-raster/page-0N.png`.
+5. `npm run pdf` — regenerate the PDF so it reflects the new page. Do this
+   *before* step 6: `npm run verify` checks the PDF's page count against the
+   current manifest, so running it against a stale (or missing) PDF fails or
+   gives a false pass either way.
+6. `npm run verify` — fix anything that shows `FAIL`.
+7. `npm run rasterize` and spot-check `dist/pdf-raster/page-0N.png` — proof
+   of exactly what a printer would receive, not just the HTML source.
 
 ## Project structure
 

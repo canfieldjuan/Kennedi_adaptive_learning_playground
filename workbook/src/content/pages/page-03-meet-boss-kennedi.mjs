@@ -51,14 +51,33 @@ const puppySitting = inlineSvgFile(path.join(PUPPY_LOCKED, '01-sitting.svg'));
 function withViewBox(svgMarkup, viewBox) {
   return svgMarkup.replace(/viewBox="[^"]*"/, `viewBox="${viewBox}"`);
 }
-const kennediSittingWritingCard = withViewBox(kennediSittingWriting, '134.0 183.5 740.0 740.0');
-const kennediCelebratingCard = withViewBox(
-  inlineSvgFile(path.join(KENNEDI_LOCKED, '08-celebrating.svg')),
-  '-13.9 -0.5 1052.9 1052.9'
+
+/**
+ * inlineSvgFile() returns the potrace SVG root exactly as traced -- no
+ * role/title/aria-label of its own (unlike svgWrap()'s own output, which
+ * adds one whenever a label is given). Dropped straight into a
+ * pictureChoiceRow card (which just wraps whatever `{svg}` it's given in an
+ * unlabeled div), a screen-reader user reached this page's primary question
+ * but got no name for any of the three possible answers. Inject the label
+ * onto the SVG root the same way svgWrap does, so each card is independently
+ * identifiable -- naming WHAT the picture shows, same as every hand-drawn
+ * icon's label elsewhere in this book, not whether it's the correct answer.
+ */
+function withLabel(svgMarkup, label) {
+  return svgMarkup.replace(/^<svg /, `<svg role="img" aria-label="${label}" `);
+}
+
+const kennediSittingWritingCard = withLabel(
+  withViewBox(kennediSittingWriting, '134.0 183.5 740.0 740.0'),
+  'Kennedi sitting and writing on a clipboard'
 );
-const kennediWavingCard = withViewBox(
-  inlineSvgFile(path.join(KENNEDI_LOCKED, '03-waving.svg')),
-  '1.7 27.0 1012.8 1012.8'
+const kennediCelebratingCard = withLabel(
+  withViewBox(inlineSvgFile(path.join(KENNEDI_LOCKED, '08-celebrating.svg')), '-13.9 -0.5 1052.9 1052.9'),
+  'Kennedi celebrating with both arms raised'
+);
+const kennediWavingCard = withLabel(
+  withViewBox(inlineSvgFile(path.join(KENNEDI_LOCKED, '03-waving.svg')), '1.7 27.0 1012.8 1012.8'),
+  'Kennedi waving hello'
 );
 
 export const meta = {

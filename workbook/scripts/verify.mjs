@@ -69,8 +69,24 @@ for (const meta of manifest) {
     continue;
   }
   const html = readFileSync(filePath, 'utf8');
-  if (html.includes(meta.title)) ok(`page ${meta.pageNumber}: title "${meta.title}" present in rendered HTML`);
-  else fail(`page ${meta.pageNumber}: title "${meta.title}" NOT found in dist/pages/page-${num}.html`);
+  // Check the visible <h1> (page-01's cover-title or every other page's
+  // sheet-title), not just html.includes(meta.title) -- that trivially
+  // passes via the <title> tag build.mjs injects into every document
+  // regardless of what the h1 actually says, silently defeating the page
+  // contract in docs/design-system.md ("title ... must exactly match the
+  // <h1> text you render"). Normalize (strip tags/whitespace, lowercase)
+  // before comparing: page 1's h1 is two <span>s ("KENNEDI" / "IS THE
+  // BOSS") that only equal meta.title ("Kennedi Is The Boss") once
+  // whitespace and case are ignored -- that's expected, not a bug.
+  const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
+  const normalize = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, '').toLowerCase();
+  if (!h1Match) {
+    fail(`page ${meta.pageNumber}: no <h1> found in dist/pages/page-${num}.html`);
+  } else if (normalize(h1Match[1]) === normalize(meta.title)) {
+    ok(`page ${meta.pageNumber}: visible <h1> matches title "${meta.title}"`);
+  } else {
+    fail(`page ${meta.pageNumber}: <h1> text "${h1Match[1].replace(/<[^>]+>/g, '')}" does not match meta.title "${meta.title}"`);
+  }
 }
 for (let n = 1; n <= expectedPageCount; n++) {
   if (!seenNumbers.has(n)) fail(`no manifest entry for expected page ${n}`);

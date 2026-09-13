@@ -3,7 +3,7 @@
  * poppler's pdftoppm, so we can visually inspect exactly what a printer
  * would receive. Requires poppler-utils (pdftoppm) on PATH.
  */
-import { mkdirSync, existsSync } from 'node:fs';
+import { mkdirSync, existsSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +19,11 @@ if (!existsSync(pdfPath)) {
   process.exit(1);
 }
 
+// Clean before writing so a page count shrinking (a page removed from the
+// book) doesn't leave a stale page-N.png behind alongside the current,
+// smaller set -- pdftoppm only overwrites the page numbers it renders this
+// run, it never removes extras from a previous, longer run.
+rmSync(rasterDir, { recursive: true, force: true });
 mkdirSync(rasterDir, { recursive: true });
 
 try {

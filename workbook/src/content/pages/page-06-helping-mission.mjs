@@ -50,7 +50,17 @@ const kennediHelping = inlineSvgFile(path.join(KENNEDI_LOCKED, '04-helping.svg')
 function withViewBox(svgMarkup, viewBox) {
   return svgMarkup.replace(/viewBox="[^"]*"/, `viewBox="${viewBox}"`);
 }
-const kennediHelpingCard = withViewBox(kennediHelping, '141 156 749 749');
+
+// inlineSvgFile() returns the potrace SVG root exactly as traced -- no
+// role/title/aria-label of its own (unlike svgWrap()'s output, which adds
+// one whenever a label is given), so dropped straight into a
+// pictureChoiceRow card a screen-reader user reaches "What should Kennedi
+// do?" but gets no name for this choice. Same gap page 3 has for the same
+// reason; see that file's withLabel() for the full writeup.
+function withLabel(svgMarkup, label) {
+  return svgMarkup.replace(/^<svg /, `<svg role="img" aria-label="${label}" `);
+}
+const kennediHelpingCard = withLabel(withViewBox(kennediHelping, '141 156 749 749'), 'Kennedi kneeling down to help the puppy');
 
 export const meta = {
   pageNumber: 6,

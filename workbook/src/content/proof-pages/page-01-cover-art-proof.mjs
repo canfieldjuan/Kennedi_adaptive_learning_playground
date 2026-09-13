@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { coverShell } from '../../components/layout.mjs';
 import { paintbrushIcon, magnifyingGlassIcon } from '../../illustrations/icons.mjs';
+import { inlineImageFile } from '../asset-inline.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKBOOK = path.resolve(__dirname, '../../..');
@@ -28,7 +29,7 @@ export function render() {
       <p class="cover-tagline">Read &bull; Write &bull; Count &bull; Think &bull; Create</p>
     </div>
     <div class="cover-art">
-      <img src="${imgPath}" alt="Boss Kennedi holding a clipboard and a raised pencil, with a puppy and a bird" style="max-height:100%; max-width:100%; object-fit:contain;" />
+      <img src="${inlineImageFile(imgPath)}" alt="Boss Kennedi holding a clipboard and a raised pencil, with a puppy and a bird" style="max-height:100%; max-width:100%; object-fit:contain;" />
     </div>
     <div class="cover-bottom row" style="justify-content:space-between;">
       <span>My Preschool Adventure Book</span>

@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
@@ -9,6 +9,11 @@ const distDir = path.join(root, 'dist');
 const pagesDir = path.join(distDir, 'pages');
 const shotsDir = path.join(distDir, 'screenshots');
 
+// Clean before writing (same pattern build.mjs already uses for dist/pages/)
+// so a page removed from the manifest doesn't leave its old screenshot
+// behind alongside the current set -- this only writes one file per
+// manifest entry, it never removes a stale extra on its own.
+rmSync(shotsDir, { recursive: true, force: true });
 mkdirSync(shotsDir, { recursive: true });
 
 const manifest = JSON.parse(readFileSync(path.join(distDir, 'manifest.json'), 'utf8'));
