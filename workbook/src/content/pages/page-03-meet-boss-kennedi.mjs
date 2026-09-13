@@ -14,8 +14,21 @@ const PUPPY_LOCKED = path.join(WORKBOOK, 'design-source/animals/locked-poses');
 // scale -- no crop needed (see page-06-helping-mission.mjs's "hero-scene
 // sizing" note: a square-canvas locked pose falls back to its own square
 // intrinsic aspect at any width and reads clearly above ~1.5in uncropped).
-const kennediSittingWriting = inlineSvgFile(path.join(KENNEDI_LOCKED, '06-sitting-writing.svg'));
-const puppySitting = inlineSvgFile(path.join(PUPPY_LOCKED, '01-sitting.svg'));
+//
+// kennediSittingWritingRaw stays unlabeled -- it's reused below to build the
+// separately-labeled, separately-cropped choice-card version, and
+// withSvgLabel() just inserts an attribute (it doesn't replace one), so
+// calling it twice on the same string would emit two role/aria-label pairs
+// on one <svg>. The hero and card each get their own single label, applied
+// once, on their own copy.
+const kennediSittingWritingRaw = inlineSvgFile(path.join(KENNEDI_LOCKED, '06-sitting-writing.svg'));
+// Labeled on the SVG root, not the wrapping <div> -- a div's role/aria-label
+// works for on-screen assistive tech but does not survive into the tagged
+// PDF's structure tree (confirmed against the committed PDF's /Alt entries),
+// so this hero illustration was silently losing its description in the one
+// deliverable this book is actually printed from.
+const kennediSittingWriting = withSvgLabel(kennediSittingWritingRaw, 'Kennedi sitting cross-legged, writing on a clipboard to make a plan');
+const puppySitting = withSvgLabel(inlineSvgFile(path.join(PUPPY_LOCKED, '01-sitting.svg')), 'puppy sitting beside Kennedi');
 
 /**
  * Same measure-then-crop technique documented in page-06-helping-mission.mjs
@@ -60,7 +73,7 @@ function withViewBox(svgMarkup, viewBox) {
 // shows, same as every hand-drawn icon's label elsewhere in this book, not
 // whether it's the correct answer.
 const kennediSittingWritingCard = withSvgLabel(
-  withViewBox(kennediSittingWriting, '134.0 183.5 740.0 740.0'),
+  withViewBox(kennediSittingWritingRaw, '134.0 183.5 740.0 740.0'),
   'Kennedi sitting and writing on a clipboard'
 );
 const kennediCelebratingCard = withSvgLabel(
@@ -89,8 +102,8 @@ export function render() {
       <p class="read-line">I can make a plan.</p>
     </div>
     <div class="row" style="justify-content:center; align-items:flex-end; gap:var(--space-4);">
-      <div role="img" aria-label="Kennedi sitting cross-legged, writing on a clipboard to make a plan" style="width:2.2in;">${kennediSittingWriting}</div>
-      <div role="img" aria-label="puppy sitting beside Kennedi" style="width:1.4in;">${puppySitting}</div>
+      <div style="width:2.2in;">${kennediSittingWriting}</div>
+      <div style="width:1.4in;">${puppySitting}</div>
     </div>
     ${pictureChoiceRow({
       instruction: 'Circle the picture showing Kennedi making a plan.',

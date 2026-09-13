@@ -5,7 +5,7 @@ import { practiceRow } from '../../illustrations/pencil-practice.mjs';
 import { pencilIcon, ballIcon, clipboardIcon } from '../../illustrations/icons.mjs';
 import { bird, puppy, cat } from '../../illustrations/animals.mjs';
 import { svgWrap } from '../../illustrations/svg-utils.mjs';
-import { inlineSvgFile } from '../asset-inline.mjs';
+import { inlineSvgFile, withSvgLabel } from '../asset-inline.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKBOOK = path.resolve(__dirname, '../../..');
@@ -17,7 +17,15 @@ const KENNEDI_SIMPLIFIED = path.join(WORKBOOK, 'design-source/boss-kennedi/simpl
 // print-size test validated the simplified tier for ("1.0in: clean";
 // "0.75in: borderline but survives") -- the full-detail locked pose is only
 // specified for hero-scale (~1.5in+) use elsewhere, not here.
-const kennediPointing = inlineSvgFile(path.join(KENNEDI_SIMPLIFIED, '05-pointing-simplified.svg'));
+//
+// Labeled here, on the SVG root -- unlike every other icon on this page
+// (pencilIcon(), bird(), puppy(), ballIcon(), clipboardIcon(), cat(),
+// nestIcon()/bedIcon()/paperIcon() all self-label via svgWrap()'s own
+// label param), a raw inlineSvgFile() result has no label of its own.
+const kennediPointing = withSvgLabel(
+  inlineSvgFile(path.join(KENNEDI_SIMPLIFIED, '05-pointing-simplified.svg')),
+  'Boss Kennedi pointing the way'
+);
 
 export const meta = {
   pageNumber: 4,
@@ -77,8 +85,18 @@ const ICON_W = '0.9in';
  * One journey row: a small start icon, the pencil-control practice path
  * (flex-grow, so it fills all the width the two icons don't need), and a
  * small destination icon. Same layout for all five rows.
+ *
+ * The wrapping divs are plain layout/sizing boxes, not role="img" -- every
+ * `start`/`end` value passed in is already self-labeled on its own SVG root
+ * (either via svgWrap()'s own label param, which every icon/animal helper
+ * here uses, or via withSvgLabel() for the one locked-pose exception,
+ * kennediPointing). Wrapping an already-labeled SVG in a second
+ * role="img"/aria-label here duplicated every announcement -- a screen
+ * reader traversing this page's primary exercise heard "pencil" / "a
+ * pencil", "a bird nest" / "a nest", and so on for every one of the 10
+ * icons, confirmed against the committed tagged PDF's actual structure.
  */
-function journeyRow({ kind, start, startLabel, end, endLabel }) {
+function journeyRow({ kind, start, end }) {
   // margin-top (on top of .sheet-body's own default gap) spaces the five
   // rows generously down the page's real available height instead of
   // leaving them packed at the top with dead space below -- measured via
@@ -87,55 +105,25 @@ function journeyRow({ kind, start, startLabel, end, endLabel }) {
   // used ~73% of .sheet-body's height.
   return `
 <div class="row" style="justify-content:center; margin-top:0.34in;">
-  <div role="img" aria-label="${startLabel}" style="width:${ICON_W}; flex:0 0 auto;">${start}</div>
+  <div style="width:${ICON_W}; flex:0 0 auto;">${start}</div>
   ${practiceRow(kind, { startMark: true, className: 'illo grow' })}
-  <div role="img" aria-label="${endLabel}" style="width:${ICON_W}; flex:0 0 auto;">${end}</div>
+  <div style="width:${ICON_W}; flex:0 0 auto;">${end}</div>
 </div>`;
 }
 
 export function render() {
   const rows = [
     // pencil -> paper: the literal real-world horizontal writing motion.
-    journeyRow({
-      kind: 'horizontal',
-      start: pencilIcon(),
-      startLabel: 'a pencil',
-      end: paperIcon(),
-      endLabel: 'a piece of paper',
-    }),
+    journeyRow({ kind: 'horizontal', start: pencilIcon(), end: paperIcon() }),
     // bird -> nest: flying up.
-    journeyRow({
-      kind: 'vertical',
-      start: bird('branch'),
-      startLabel: 'a bird',
-      end: nestIcon(),
-      endLabel: 'a nest',
-    }),
+    journeyRow({ kind: 'vertical', start: bird('branch'), end: nestIcon() }),
     // puppy -> ball: bouncy, playful motion.
-    journeyRow({
-      kind: 'wave',
-      start: puppy('reach'),
-      startLabel: 'a puppy',
-      end: ballIcon(),
-      endLabel: 'a ball',
-    }),
+    journeyRow({ kind: 'wave', start: puppy('reach'), end: ballIcon() }),
     // Kennedi -> clipboard: the brief's named "Kennedi to clipboard" pair,
     // an energetic "boss" dash.
-    journeyRow({
-      kind: 'zigzag',
-      start: kennediPointing,
-      startLabel: 'Boss Kennedi pointing the way',
-      end: clipboardIcon(),
-      endLabel: 'a clipboard',
-    }),
+    journeyRow({ kind: 'zigzag', start: kennediPointing, end: clipboardIcon() }),
     // cat -> cozy bed: a curled sleeping cat visually rhymes with a loop.
-    journeyRow({
-      kind: 'loop',
-      start: cat('sleep'),
-      startLabel: 'a sleepy cat',
-      end: bedIcon(),
-      endLabel: 'a cozy bed',
-    }),
+    journeyRow({ kind: 'loop', start: cat('sleep'), end: bedIcon() }),
   ].join('');
 
   const body = `

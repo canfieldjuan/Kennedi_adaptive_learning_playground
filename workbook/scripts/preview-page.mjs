@@ -67,11 +67,20 @@ try {
     failures.push(`console/page errors: ${consoleErrors.join(' | ')}`);
   }
 
-  if (!meta.title || !doc.includes(meta.title)) {
-    failures.push(`title "${meta.title}" not found in rendered HTML`);
-  }
-  if (meta.title && !bodyHtml.includes(meta.title)) {
-    console.log(`  note: meta.title is not literally present in the page body/<h1> (only in <title>) -- design-system.md says it "must exactly match the <h1> text you render"`);
+  // Same check as scripts/verify.mjs's title check (fixed there first) --
+  // this tool had the identical weak spot: checking whether meta.title
+  // appears anywhere in the document trivially passes via the <title> tag
+  // renderDocument() always injects, regardless of whether the actual
+  // visible <h1> is missing or says something else. Compare the extracted,
+  // normalized <h1> text instead.
+  const h1Match = doc.match(/<h1[^>]*>([\s\S]*?)<\/h1>/);
+  const normalize = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, '').toLowerCase();
+  if (!meta.title) {
+    failures.push('meta.title is missing');
+  } else if (!h1Match) {
+    failures.push('no <h1> found in rendered HTML');
+  } else if (normalize(h1Match[1]) !== normalize(meta.title)) {
+    failures.push(`<h1> text "${h1Match[1].replace(/<[^>]+>/g, '')}" does not match meta.title "${meta.title}"`);
   }
 
   const overflow = await page.evaluate(() => {

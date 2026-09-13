@@ -25,7 +25,17 @@ const KENNEDI_LOCKED = path.join(WORKBOOK, 'design-source/boss-kennedi/locked-po
 // render, not assumed -- confusing for a page whose whole job is a single
 // clear "puppy needs help -> Kennedi helps" read. One asset, one puppy,
 // one clear story.
-const kennediHelping = inlineSvgFile(path.join(KENNEDI_LOCKED, '04-helping.svg'));
+// Unlabeled -- reused below to build the separately-labeled, separately
+// cropped choice-card version; withSvgLabel() inserts an attribute rather
+// than replacing one, so labeling this raw copy would leave the card
+// version with two role/aria-label pairs on one <svg>.
+const kennediHelpingRaw = inlineSvgFile(path.join(KENNEDI_LOCKED, '04-helping.svg'));
+// Labeled on the SVG root, not the wrapping <div> -- a div's role/aria-label
+// works for on-screen assistive tech but does not survive into the tagged
+// PDF's structure tree (confirmed against the committed PDF's /Alt entries),
+// so this hero illustration was silently losing its description in the one
+// deliverable this book is actually printed from.
+const kennediHelping = withSvgLabel(kennediHelpingRaw, 'Kennedi kneeling down to help a puppy');
 
 /**
  * The locked-pose SVGs are potrace traces of a 1024x1024 canvas, but the
@@ -56,7 +66,7 @@ function withViewBox(svgMarkup, viewBox) {
 // accessible name, so a screen-reader user reaches "What should Kennedi
 // do?" with no name for this choice. Same gap page 3 has for the same
 // reason.
-const kennediHelpingCard = withSvgLabel(withViewBox(kennediHelping, '141 156 749 749'), 'Kennedi kneeling down to help the puppy');
+const kennediHelpingCard = withSvgLabel(withViewBox(kennediHelpingRaw, '141 156 749 749'), 'Kennedi kneeling down to help the puppy');
 
 export const meta = {
   pageNumber: 6,
@@ -121,7 +131,7 @@ export function render() {
       <p class="read-line">Kennedi can help.</p>
     </div>
     <div class="row" style="justify-content:center;">
-      <div role="img" aria-label="Kennedi kneeling down to help a puppy" style="width:2.2in;">${kennediHelping}</div>
+      <div style="width:2.2in;">${kennediHelping}</div>
     </div>
     ${pictureChoiceRow({
       instruction: 'What should Kennedi do?',
