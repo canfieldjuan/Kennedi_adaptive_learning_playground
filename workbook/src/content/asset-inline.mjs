@@ -25,3 +25,22 @@ export function inlineImageFile(path) {
   const data = readFileSync(path).toString('base64');
   return `data:${mime};base64,${data}`;
 }
+
+/**
+ * inlineSvgFile()'s output is the potrace SVG root exactly as traced -- no
+ * role/title/aria-label of its own (unlike illustrations/svg-utils.mjs's
+ * svgWrap(), which adds one whenever a label is given). Dropped straight
+ * into a pictureChoiceRow card (which just wraps whatever `{svg}` it's
+ * given in an otherwise-unlabeled div), a screen-reader user reaches the
+ * page's primary question but gets no name for that choice.
+ *
+ * First shipped as a page-local `withLabel()` duplicated near-identically
+ * in page-03-meet-boss-kennedi.mjs and page-06-helping-mission.mjs -- two
+ * copies of the same fix is exactly the "a later page reuses it, promote
+ * it" case design-system.md already names for illustrations, so it
+ * belongs here instead, next to the other inlineSvgFile()/inlineImageFile()
+ * self-containment helpers. Both call sites now import this one function.
+ */
+export function withSvgLabel(svgMarkup, label) {
+  return svgMarkup.replace(/^<svg /, `<svg role="img" aria-label="${label}" `);
+}

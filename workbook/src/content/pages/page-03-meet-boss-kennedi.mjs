@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { pageShell } from '../../components/layout.mjs';
 import { pictureChoiceRow, drawingBox } from '../../components/activities.mjs';
-import { inlineSvgFile } from '../asset-inline.mjs';
+import { inlineSvgFile, withSvgLabel } from '../asset-inline.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKBOOK = path.resolve(__dirname, '../../..');
@@ -52,30 +52,22 @@ function withViewBox(svgMarkup, viewBox) {
   return svgMarkup.replace(/viewBox="[^"]*"/, `viewBox="${viewBox}"`);
 }
 
-/**
- * inlineSvgFile() returns the potrace SVG root exactly as traced -- no
- * role/title/aria-label of its own (unlike svgWrap()'s own output, which
- * adds one whenever a label is given). Dropped straight into a
- * pictureChoiceRow card (which just wraps whatever `{svg}` it's given in an
- * unlabeled div), a screen-reader user reached this page's primary question
- * but got no name for any of the three possible answers. Inject the label
- * onto the SVG root the same way svgWrap does, so each card is independently
- * identifiable -- naming WHAT the picture shows, same as every hand-drawn
- * icon's label elsewhere in this book, not whether it's the correct answer.
- */
-function withLabel(svgMarkup, label) {
-  return svgMarkup.replace(/^<svg /, `<svg role="img" aria-label="${label}" `);
-}
-
-const kennediSittingWritingCard = withLabel(
+// withSvgLabel() (src/content/asset-inline.mjs) closes the same
+// accessible-name gap page-06-helping-mission.mjs's choice card has --
+// pictureChoiceRow wraps a raw inlineSvgFile() result in an unlabeled div,
+// so a screen-reader user reached this page's primary question with no
+// name for any of the three possible answers. Naming WHAT each picture
+// shows, same as every hand-drawn icon's label elsewhere in this book, not
+// whether it's the correct answer.
+const kennediSittingWritingCard = withSvgLabel(
   withViewBox(kennediSittingWriting, '134.0 183.5 740.0 740.0'),
   'Kennedi sitting and writing on a clipboard'
 );
-const kennediCelebratingCard = withLabel(
+const kennediCelebratingCard = withSvgLabel(
   withViewBox(inlineSvgFile(path.join(KENNEDI_LOCKED, '08-celebrating.svg')), '-13.9 -0.5 1052.9 1052.9'),
   'Kennedi celebrating with both arms raised'
 );
-const kennediWavingCard = withLabel(
+const kennediWavingCard = withSvgLabel(
   withViewBox(inlineSvgFile(path.join(KENNEDI_LOCKED, '03-waving.svg')), '1.7 27.0 1012.8 1012.8'),
   'Kennedi waving hello'
 );

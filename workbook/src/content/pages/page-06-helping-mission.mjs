@@ -4,7 +4,7 @@ import { pageShell } from '../../components/layout.mjs';
 import { tracingWord } from '../../components/tracing.mjs';
 import { pictureChoiceRow, rewardStar } from '../../components/activities.mjs';
 import { svgWrap } from '../../illustrations/svg-utils.mjs';
-import { inlineSvgFile } from '../asset-inline.mjs';
+import { inlineSvgFile, withSvgLabel } from '../asset-inline.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKBOOK = path.resolve(__dirname, '../../..');
@@ -51,16 +51,12 @@ function withViewBox(svgMarkup, viewBox) {
   return svgMarkup.replace(/viewBox="[^"]*"/, `viewBox="${viewBox}"`);
 }
 
-// inlineSvgFile() returns the potrace SVG root exactly as traced -- no
-// role/title/aria-label of its own (unlike svgWrap()'s output, which adds
-// one whenever a label is given), so dropped straight into a
-// pictureChoiceRow card a screen-reader user reaches "What should Kennedi
-// do?" but gets no name for this choice. Same gap page 3 has for the same
-// reason; see that file's withLabel() for the full writeup.
-function withLabel(svgMarkup, label) {
-  return svgMarkup.replace(/^<svg /, `<svg role="img" aria-label="${label}" `);
-}
-const kennediHelpingCard = withLabel(withViewBox(kennediHelping, '141 156 749 749'), 'Kennedi kneeling down to help the puppy');
+// withSvgLabel() (src/content/asset-inline.mjs): without it, a raw
+// inlineSvgFile() result dropped into a pictureChoiceRow card has no
+// accessible name, so a screen-reader user reaches "What should Kennedi
+// do?" with no name for this choice. Same gap page 3 has for the same
+// reason.
+const kennediHelpingCard = withSvgLabel(withViewBox(kennediHelping, '141 156 749 749'), 'Kennedi kneeling down to help the puppy');
 
 export const meta = {
   pageNumber: 6,
