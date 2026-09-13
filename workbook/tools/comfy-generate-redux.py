@@ -79,9 +79,19 @@ def download(url, out_path, timeout=30):
     tmp_path to match out_path's current mode before replacing it when
     out_path already exists; otherwise fall back to the mode a normal
     open()/os.open() would have produced under the real umask, so a
-    brand-new file isn't needlessly locked down either."""
+    brand-new file isn't needlessly locked down either.
+
+    The temp filename's prefix is out_path's basename truncated to 32
+    chars, not the full basename -- an out_path whose basename is near the
+    filesystem's NAME_MAX (255 bytes on ext4) would otherwise make
+    mkstemp's own generated name (prefix + random chars + ".part") exceed
+    that limit and raise ENAMETOOLONG before any download even starts,
+    even though out_path itself is a perfectly valid, creatable path. 32
+    chars is far more than enough to keep a stray .part file identifiable
+    for debugging while leaving a large, fixed margin under any real
+    NAME_MAX regardless of out_path's own length."""
     tmp_dir = os.path.dirname(os.path.abspath(out_path))
-    fd, tmp_path = tempfile.mkstemp(dir=tmp_dir, prefix=os.path.basename(out_path) + ".", suffix=".part")
+    fd, tmp_path = tempfile.mkstemp(dir=tmp_dir, prefix=os.path.basename(out_path)[:32] + ".", suffix=".part")
     try:
         if os.path.exists(out_path):
             os.chmod(tmp_path, os.stat(out_path).st_mode & 0o777)

@@ -70,9 +70,37 @@ jobs:
         run: |
           npm run build
           npm run verify
+          cp dist/pdf/kennedi-is-the-boss-book-1.pdf /tmp/committed-book.pdf
 
       - name: Run the full build -> pdf -> screenshots -> rasterize -> verify pipeline
         run: npm run all
+
+      # The pre-check above and verify.mjs's own hash check both only ever
+      # compare the .sourcehash SIDECAR against current source -- neither
+      # one reads the committed PDF's own bytes/content, so a committed
+      # PDF that's stale or simply wrong can sit next to a sidecar that
+      # correctly (and separately) matches current source, with nothing
+      # anywhere catching the mismatch between the two: the sidecar
+      # authenticates the source, not the specific PDF file next to it.
+      # Comparing extracted text from the committed PDF (saved above,
+      # before npm run pdf overwrote it) against extracted text from the
+      # just-regenerated PDF closes that gap directly, against the PDF's
+      # own real content -- not a proxy for it. Both sides go through the
+      # identical pdftotext extraction, so any extraction-fidelity quirks
+      # (whitespace, line-reflow) apply equally to both and cancel out;
+      # confirmed empirically that two regenerations of unchanged source
+      # produce byte-identical normalized text, and that a real content
+      # edit is caught as a real diff.
+      - name: Confirm the committed PDF's own text matches a fresh regeneration
+        run: |
+          normalize() { tr -s '[:space:]' ' ' | tr 'A-Z' 'a-z'; }
+          pdftotext /tmp/committed-book.pdf - | normalize > /tmp/committed-text.txt
+          pdftotext dist/pdf/kennedi-is-the-boss-book-1.pdf - | normalize > /tmp/fresh-text.txt
+          if ! diff -q /tmp/committed-text.txt /tmp/fresh-text.txt > /dev/null; then
+            echo "::error::The committed PDF's own extracted text differs from a fresh regeneration, even though its .sourcehash sidecar matched current source -- the committed PDF itself is stale or wrong. Run 'npm run pdf' and commit the result."
+            diff /tmp/committed-text.txt /tmp/fresh-text.txt || true
+            exit 1
+          fi
 
       # verify.mjs proves the pipeline produces a self-consistent result
       # (title/hash/size/overflow all agree with each other) but that alone
