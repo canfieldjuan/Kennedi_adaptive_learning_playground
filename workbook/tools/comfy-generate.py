@@ -6,6 +6,7 @@ this session)."""
 import json
 import os
 import sys
+import tempfile
 import time
 import urllib.parse
 import urllib.request
@@ -29,9 +30,73 @@ def download(url, out_path, timeout=30):
     urlretrieve accepts none, so if Comfy's /view endpoint accepts the
     connection and then stalls returning the image, this call hung
     indefinitely regardless of --timeout (which only bounds the polling
-    loop above, not this final download)."""
-    with urllib.request.urlopen(url, timeout=timeout) as r, open(out_path, "wb") as f:
-        f.write(r.read())
+    loop above, not this final download).
+
+    Downloads to a temp sibling first and only replaces out_path once the
+    full response has been read, via an atomic rename -- opening out_path
+    directly (the first version of this fix) truncates it immediately, so
+    a timeout or dropped connection partway through the read left out_path
+    an empty file. If --out names an existing, already-approved asset (a
+    plausible way to invoke this tool while iterating), that failure mode
+    destroyed it instead of just failing to produce a new one.
+
+    The temp-file write also needs its own failure path handled, not just
+    its success path: a first pass at this (write tmp_path, os.replace())
+    left tmp_path behind as debris on any failure -- caught by testing the
+    failure case directly (simulate a dropped connection, then check the
+    directory), not just the success case. Any exception during the
+    download or the replace removes the partial tmp_path and re-raises
+    unchanged, so a failed run leaves exactly the same directory state as
+    before it started -- either fully replaced, or untouched.
+
+    tmp_path is created via tempfile.mkstemp() (O_CREAT|O_EXCL), not a
+    predictable name -- a prior version derived it from out_path plus the
+    running pid, which is guessable: in a shared-writable directory another
+    local user could pre-create that exact path as a symlink to any file
+    they can't otherwise write, and plain open(tmp_path, "wb") follows a
+    symlink and truncates whatever it points to before os.replace() ever
+    runs. mkstemp's O_EXCL create fails outright if the path already exists
+    in any form (symlink included), so there's no path for an attacker to
+    pre-place. It also makes tmp_path unique per call (not just per
+    process), which subsumes the earlier pid-based fix for two invocations
+    sharing the same --out.
+
+    mkstemp creates tmp_path mode 0600 regardless of umask (that's the
+    whole point of it, for cases where that's the desired security
+    property), and os.replace() carries that mode onto out_path -- but here
+    out_path is routinely an existing, previously-generated asset (see
+    above), and silently narrowing a replaced file from 0644 to 0600 could
+    leave it unreadable to whatever else reads it later. Explicitly chmod
+    tmp_path to match out_path's current mode before replacing it when
+    out_path already exists; otherwise fall back to the mode a normal
+    open()/os.open() would have produced under the real umask, so a
+    brand-new file isn't needlessly locked down either.
+
+    The temp filename's prefix is out_path's basename truncated to 32
+    chars, not the full basename -- an out_path whose basename is near the
+    filesystem's NAME_MAX (255 bytes on ext4) would otherwise make
+    mkstemp's own generated name (prefix + random chars + ".part") exceed
+    that limit and raise ENAMETOOLONG before any download even starts,
+    even though out_path itself is a perfectly valid, creatable path. 32
+    chars is far more than enough to keep a stray .part file identifiable
+    for debugging while leaving a large, fixed margin under any real
+    NAME_MAX regardless of out_path's own length."""
+    tmp_dir = os.path.dirname(os.path.abspath(out_path))
+    fd, tmp_path = tempfile.mkstemp(dir=tmp_dir, prefix=os.path.basename(out_path)[:32] + ".", suffix=".part")
+    try:
+        if os.path.exists(out_path):
+            os.chmod(tmp_path, os.stat(out_path).st_mode & 0o777)
+        else:
+            umask = os.umask(0o022)
+            os.umask(umask)
+            os.chmod(tmp_path, 0o666 & ~umask)
+        with urllib.request.urlopen(url, timeout=timeout) as r, os.fdopen(fd, "wb") as f:
+            f.write(r.read())
+        os.replace(tmp_path, out_path)
+    except BaseException:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
 
 
 def flux_clip():

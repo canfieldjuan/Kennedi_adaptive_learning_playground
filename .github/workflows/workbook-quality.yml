@@ -53,5 +53,85 @@ jobs:
       - name: Install poppler-utils
         run: sudo apt-get update && sudo apt-get install --yes poppler-utils
 
+      # Runs build (which doesn't touch dist/pdf/) then verify BEFORE the
+      # next step's npm run pdf overwrites the committed PDF -- verify.mjs's
+      # existing pdfinfo/pdftotext/sourcehash checks therefore run against
+      # the actual committed PDF binary and its actual committed sidecar,
+      # not a freshly regenerated pair. Without this, nothing anywhere ever
+      # inspects the originally-committed PDF's own content: the drift
+      # check below deliberately excludes dist/pdf/*.pdf (its bytes are
+      # never deterministic, see that step's comment), and by the time the
+      # next step's verify.mjs run happens, npm run pdf has already
+      # overwritten the committed file with a fresh one -- so a PR that
+      # commits a stale, corrupted, or mismatched PDF (while its sidecar
+      # and every other dist/ artifact are otherwise correct) would
+      # otherwise sail through unnoticed and get merged.
+      - name: Validate the committed PDF is fresh before regenerating it
+        run: |
+          npm run build
+          npm run verify
+          cp dist/pdf/kennedi-is-the-boss-book-1.pdf /tmp/committed-book.pdf
+
       - name: Run the full build -> pdf -> screenshots -> rasterize -> verify pipeline
         run: npm run all
+
+      # The pre-check above and verify.mjs's own hash check both only ever
+      # compare the .sourcehash SIDECAR against current source -- neither
+      # one reads the committed PDF's own bytes/content, so a committed
+      # PDF that's stale or simply wrong can sit next to a sidecar that
+      # correctly (and separately) matches current source, with nothing
+      # anywhere catching the mismatch between the two: the sidecar
+      # authenticates the source, not the specific PDF file next to it.
+      # Comparing extracted text from the committed PDF (saved above,
+      # before npm run pdf overwrote it) against extracted text from the
+      # just-regenerated PDF closes that gap directly, against the PDF's
+      # own real content -- not a proxy for it. Both sides go through the
+      # identical pdftotext extraction, so any extraction-fidelity quirks
+      # (whitespace, line-reflow) apply equally to both and cancel out;
+      # confirmed empirically that two regenerations of unchanged source
+      # produce byte-identical normalized text, and that a real content
+      # edit is caught as a real diff.
+      - name: Confirm the committed PDF's own text matches a fresh regeneration
+        run: |
+          normalize() { tr -s '[:space:]' ' ' | tr 'A-Z' 'a-z'; }
+          pdftotext /tmp/committed-book.pdf - | normalize > /tmp/committed-text.txt
+          pdftotext dist/pdf/kennedi-is-the-boss-book-1.pdf - | normalize > /tmp/fresh-text.txt
+          if ! diff -q /tmp/committed-text.txt /tmp/fresh-text.txt > /dev/null; then
+            echo "::error::The committed PDF's own extracted text differs from a fresh regeneration, even though its .sourcehash sidecar matched current source -- the committed PDF itself is stale or wrong. Run 'npm run pdf' and commit the result."
+            diff /tmp/committed-text.txt /tmp/fresh-text.txt || true
+            exit 1
+          fi
+
+      # verify.mjs proves the pipeline produces a self-consistent result
+      # (title/hash/size/overflow all agree with each other) but that alone
+      # doesn't prove the COMMITTED dist/ artifacts a reader might open
+      # directly (the PDF, its sourcehash, screenshots, rasters) are what
+      # this source would actually produce -- a PR that edits workbook
+      # source but forgets to re-run and commit the regenerated dist/
+      # output would still pass verify.mjs here, because this job always
+      # regenerates dist/ fresh before verifying it. Comparing the
+      # just-regenerated working tree against the committed tree closes
+      # that gap: any uncommitted or stale dist/ file fails the build.
+      #
+      # The PDF itself (dist/pdf/*.pdf, not its .sourcehash sidecar) is
+      # excluded -- Chrome's PDF printer embeds a CreationDate/ModDate
+      # timestamp of the moment it ran, so the PDF's raw bytes differ on
+      # every regeneration even when every rendered page is byte-identical
+      # (confirmed directly: two consecutive exports of unchanged source
+      # differed only in those two pdfinfo fields; the rasterized PNGs
+      # pdftoppm produces from them were identical). Diffing the PDF's raw
+      # bytes here would make this check permanently fail on every PR
+      # regardless of correctness. The .sourcehash sidecar -- a hash of
+      # preview.html, which IS byte-deterministic -- stays in the check and
+      # carries the real freshness signal: if a PR's committed dist/ was
+      # built from older source than the PR's own diff, the freshly
+      # regenerated preview.html (and thus its hash) differs from what's
+      # committed, and this still catches it.
+      - name: Fail if the committed dist/ artifacts are stale
+        run: |
+          if [ -n "$(git status --porcelain -- dist/ ':!dist/pdf/*.pdf')" ]; then
+            echo "::error::Committed workbook/dist/ artifacts do not match a fresh 'npm run all' regeneration. Run 'npm run all' locally and commit the result."
+            git status --porcelain -- dist/ ':!dist/pdf/*.pdf'
+            git diff -- dist/ ':!dist/pdf/*.pdf' | head -200
+            exit 1
+          fi
