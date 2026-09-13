@@ -38,9 +38,33 @@ def download(url, out_path, timeout=30):
     urlretrieve accepts none, so if Comfy's /view endpoint accepts the
     connection and then stalls returning the image, this call hung
     indefinitely regardless of --timeout (which only bounds the polling
-    loop above, not this final download)."""
-    with urllib.request.urlopen(url, timeout=timeout) as r, open(out_path, "wb") as f:
-        f.write(r.read())
+    loop above, not this final download).
+
+    Downloads to a temp sibling first and only replaces out_path once the
+    full response has been read, via an atomic rename -- opening out_path
+    directly (the first version of this fix) truncates it immediately, so
+    a timeout or dropped connection partway through the read left out_path
+    an empty file. If --out names an existing, already-approved asset (a
+    plausible way to invoke this tool while iterating), that failure mode
+    destroyed it instead of just failing to produce a new one.
+
+    The temp-file write also needs its own failure path handled, not just
+    its success path: a first pass at this (write tmp_path, os.replace())
+    left tmp_path behind as debris on any failure -- caught by testing the
+    failure case directly (simulate a dropped connection, then check the
+    directory), not just the success case. Any exception during the
+    download or the replace removes the partial tmp_path and re-raises
+    unchanged, so a failed run leaves exactly the same directory state as
+    before it started -- either fully replaced, or untouched."""
+    tmp_path = f"{out_path}.part"
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as r, open(tmp_path, "wb") as f:
+            f.write(r.read())
+        os.replace(tmp_path, out_path)
+    except BaseException:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
 
 
 def flux_clip():

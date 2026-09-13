@@ -4,6 +4,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
@@ -12,7 +13,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const distDir = path.join(root, 'dist');
 const pagesDir = path.join(distDir, 'pages');
+const previewPath = path.join(distDir, 'preview.html');
 const pdfPath = path.join(distDir, 'pdf', 'kennedi-is-the-boss-book-1.pdf');
+const pdfHashPath = `${pdfPath}.sourcehash`;
 
 const failures = [];
 const ok = (msg) => console.log(`  OK   ${msg}`);
@@ -69,6 +72,35 @@ if (!existsSync(pdfPath)) {
       ok(`page ${meta.pageNumber}: PDF page text contains title "${meta.title}"`);
     } else {
       fail(`page ${meta.pageNumber}: PDF page text does not contain title "${meta.title}" -- PDF looks stale, run "npm run pdf" again`);
+    }
+  }
+
+  // --- PDF content freshness (source hash) ----------------------------------
+  // The pdftotext check above only catches staleness when a page's TITLE no
+  // longer matches -- a body-only edit (rewording an instruction, tuning
+  // tracingWord()'s ringFrac, swapping a hero illustration) changes what's
+  // rendered without touching any title, so pdftotext still finds the
+  // expected title and reports OK on a genuinely stale PDF. export-pdf.mjs
+  // writes a SHA-256 hash of dist/preview.html (the exact, fully
+  // self-contained source Playwright renders the PDF from) to a companion
+  // .sourcehash file at export time; recomputing that hash now and comparing
+  // catches ANY drift between the current source and the committed PDF, not
+  // just a title mismatch. Kept alongside the pdftotext check rather than
+  // replacing it -- pdftotext also proves Chrome's PDF *rendering* itself
+  // didn't corrupt the text, a failure class a source-hash match can't rule
+  // out since it never inspects the PDF's own content.
+  console.log('\nPDF content freshness (source hash):');
+  if (!existsSync(previewPath)) {
+    fail(`missing ${path.relative(root, previewPath)} - run "npm run build" first`);
+  } else if (!existsSync(pdfHashPath)) {
+    fail(`missing ${path.relative(root, pdfHashPath)} - PDF was built before source-hash tracking existed, run "npm run pdf" again`);
+  } else {
+    const recordedHash = readFileSync(pdfHashPath, 'utf8').trim();
+    const currentHash = createHash('sha256').update(readFileSync(previewPath)).digest('hex');
+    if (currentHash === recordedHash) {
+      ok('PDF source hash matches current dist/preview.html');
+    } else {
+      fail('PDF source hash does not match current dist/preview.html -- PDF looks stale, run "npm run pdf" again');
     }
   }
 }
