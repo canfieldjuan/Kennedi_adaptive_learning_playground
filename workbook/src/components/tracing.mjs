@@ -39,9 +39,25 @@ import { svgWrap } from '../illustrations/svg-utils.mjs';
  * that ring's thickness as a fraction of font-size; `directions` is how many
  * copies form the halo (16 shows no visible faceting on any letter's curves
  * at print scale).
+ *
+ * ringFrac has a real ceiling, not just a look-and-feel dial: dilation grows
+ * ink inward at a counter (an enclosed hole, like the two loops in "B" or
+ * the one in "b"/"e"/"p") the exact same way it grows ink outward at the
+ * glyph's silhouette. Push the radius `fontSize * ringFrac` past roughly
+ * half a counter's narrowest neck and the halo bridges across it -- not
+ * erasing the counter outright, but splitting it with a spurious stray line
+ * (confirmed with an objective pixel cross-section, not just a look: a
+ * clean counter shows exactly 2 dark runs across it; a bridged one shows
+ * 3+). 0.07 does this on "B"/"b" specifically -- their counters pinch
+ * narrower than any other letter this component draws. Verified via the
+ * real render pipeline at several values: 0.05 is clean on every letter
+ * tested (including B/b), with no perceptible thinning on multi-letter
+ * words like "Kennedi" or "help" where the bridging risk doesn't arise
+ * (their counters are wider relative to fontSize). Re-verify with the same
+ * cross-section technique before raising this default again.
  */
 export function tracingWord(word, opts = {}) {
-  const { height = 150, ringFrac = 0.07, directions = 16 } = opts;
+  const { height = 150, ringFrac = 0.05, directions = 16 } = opts;
   const fontSize = height * 0.82;
   const approxCharWidth = fontSize * 0.66;
   const vbWidth = Math.round(word.length * approxCharWidth + fontSize * 0.9);
