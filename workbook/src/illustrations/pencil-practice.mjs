@@ -74,7 +74,19 @@ export function practiceRow(kind, opts = {}) {
     if (i === 0) {
       cells += `<path d="${d}" stroke="#000" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" />`;
       if (startMark) {
-        const [sx, sy] = cellStart(kind, x0, cellW, midY);
+        const [rawSx, sy] = cellStart(kind, x0, cellW, midY);
+        // cellStart() places horizontal/wave/zigzag/loop's marker at the
+        // path's own literal start (x0+6) so the star sits exactly on the
+        // line it marks -- correct for cells 2-5, but for cell 1 (x0=0)
+        // that's only 6 units from the viewBox's left edge, well inside the
+        // outer radius (13) of the star drawn there, clipping its left
+        // points against the "0 0 640 100" viewBox (confirmed by rendering:
+        // the star's leftmost tip was visibly flat, not pointed). Clamp to
+        // the star's own footprint (outer radius + half the 5px stroke)
+        // instead of the path's exact start -- shifts the marker, not the
+        // traceable path itself, and only on the one cell where it would
+        // otherwise clip.
+        const sx = Math.max(rawSx, 15.5);
         cells += starPolygon(sx, sy, 13, 5.5, 'stroke="#000" stroke-width="5" stroke-linejoin="round" fill="#fff"');
       }
     } else {

@@ -24,6 +24,15 @@ try {
     printBackground: true,
     preferCSSPageSize: true,
     margin: { top: '0in', bottom: '0in', left: '0in', right: '0in' },
+    // Tagged (accessible) PDF: without this, the committed PDF has no
+    // structure tree or marked-content metadata at all, so a screen-reader
+    // user opening the advertised "print-ready deliverable" loses every
+    // heading and image description present in the HTML source it's
+    // rendered from. Supported by the pinned Playwright version (checked
+    // node_modules/playwright-core/types/types.d.ts) and by channel:
+    // 'chrome' the same as Chromium, since tagging is a Chrome PDF-printing
+    // feature, not Playwright's own.
+    tagged: true,
   });
   console.log(`Wrote ${path.relative(root, outPath)}`);
 } finally {
