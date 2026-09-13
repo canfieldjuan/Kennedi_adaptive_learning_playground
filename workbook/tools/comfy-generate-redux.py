@@ -68,10 +68,27 @@ def download(url, out_path, timeout=30):
     in any form (symlink included), so there's no path for an attacker to
     pre-place. It also makes tmp_path unique per call (not just per
     process), which subsumes the earlier pid-based fix for two invocations
-    sharing the same --out."""
+    sharing the same --out.
+
+    mkstemp creates tmp_path mode 0600 regardless of umask (that's the
+    whole point of it, for cases where that's the desired security
+    property), and os.replace() carries that mode onto out_path -- but here
+    out_path is routinely an existing, previously-generated asset (see
+    above), and silently narrowing a replaced file from 0644 to 0600 could
+    leave it unreadable to whatever else reads it later. Explicitly chmod
+    tmp_path to match out_path's current mode before replacing it when
+    out_path already exists; otherwise fall back to the mode a normal
+    open()/os.open() would have produced under the real umask, so a
+    brand-new file isn't needlessly locked down either."""
     tmp_dir = os.path.dirname(os.path.abspath(out_path))
     fd, tmp_path = tempfile.mkstemp(dir=tmp_dir, prefix=os.path.basename(out_path) + ".", suffix=".part")
     try:
+        if os.path.exists(out_path):
+            os.chmod(tmp_path, os.stat(out_path).st_mode & 0o777)
+        else:
+            umask = os.umask(0o022)
+            os.umask(umask)
+            os.chmod(tmp_path, 0o666 & ~umask)
         with urllib.request.urlopen(url, timeout=timeout) as r, os.fdopen(fd, "wb") as f:
             f.write(r.read())
         os.replace(tmp_path, out_path)

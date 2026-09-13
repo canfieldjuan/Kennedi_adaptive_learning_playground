@@ -53,6 +53,24 @@ jobs:
       - name: Install poppler-utils
         run: sudo apt-get update && sudo apt-get install --yes poppler-utils
 
+      # Runs build (which doesn't touch dist/pdf/) then verify BEFORE the
+      # next step's npm run pdf overwrites the committed PDF -- verify.mjs's
+      # existing pdfinfo/pdftotext/sourcehash checks therefore run against
+      # the actual committed PDF binary and its actual committed sidecar,
+      # not a freshly regenerated pair. Without this, nothing anywhere ever
+      # inspects the originally-committed PDF's own content: the drift
+      # check below deliberately excludes dist/pdf/*.pdf (its bytes are
+      # never deterministic, see that step's comment), and by the time the
+      # next step's verify.mjs run happens, npm run pdf has already
+      # overwritten the committed file with a fresh one -- so a PR that
+      # commits a stale, corrupted, or mismatched PDF (while its sidecar
+      # and every other dist/ artifact are otherwise correct) would
+      # otherwise sail through unnoticed and get merged.
+      - name: Validate the committed PDF is fresh before regenerating it
+        run: |
+          npm run build
+          npm run verify
+
       - name: Run the full build -> pdf -> screenshots -> rasterize -> verify pipeline
         run: npm run all
 

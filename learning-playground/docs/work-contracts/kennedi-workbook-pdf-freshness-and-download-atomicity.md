@@ -2,7 +2,7 @@
 
 Post-merge follow-up to PR #133 (Pages 1-6 rebuild): two Codex findings on
 that PR (comment ids 3998987174, 3998987181), plus findings Codex raised on
-this fix's own diff across two further review passes.
+this fix's own diff across three further review passes.
 
 ## Before Code
 
@@ -92,6 +92,28 @@ Two independent bugs, both in `workbook/tools/*.py` and
   fix's scope. Recorded here rather than silently dropped, per this
   contract's own review-guideline bar (`AGENTS.md`: only a *plausible*
   failure path blocks).
+- **Round 4** (after the third push): Codex found two more issues.
+  (a) The round-3 drift check's `dist/pdf/*.pdf` exclusion, while correct
+  (the PDF's raw bytes are never deterministic), left a real gap: nothing
+  anywhere ever inspected the *originally committed* PDF's own content --
+  CI's `npm run pdf` step overwrites it with a fresh one before
+  `verify.mjs` ever runs, and the drift check explicitly skips it. A PR
+  that committed a stale, corrupted, or mismatched PDF (with an otherwise
+  correct `dist/` tree) would sail through unnoticed. Amended
+  `Correct Fix Must Touch`: reordered `workbook-quality.yml` to run
+  `npm run build && npm run verify` *before* `npm run pdf` ever touches
+  the committed file -- this reuses `verify.mjs`'s existing pdfinfo/
+  pdftotext/sourcehash checks unchanged, now exercised against the actual
+  committed PDF and its actual committed sidecar instead of a freshly
+  regenerated pair. (b) `tempfile.mkstemp()` creates the temp sibling mode
+  0600 regardless of umask, and `os.replace()` carries that mode onto
+  `out_path` -- since `out_path` is routinely an existing, previously
+  approved asset (the tool's own documented primary use case), silently
+  narrowing it from (typically) 0644 to 0600 on every successful download
+  could leave it unreadable to whatever else reads it later. Amended
+  `download()` to `chmod` the temp file to match `out_path`'s existing
+  mode before replacing it, or to the umask-appropriate default mode for
+  a genuinely new file.
 
 ## Cold Diff Audit
 
@@ -110,8 +132,10 @@ Two independent bugs, both in `workbook/tools/*.py` and
 - `comfy-generate.py`, `comfy-generate-redux.py` -- `download()` rewritten:
   `tempfile.mkstemp()` creates the temp sibling exclusively (random name,
   `O_CREAT|O_EXCL`, so no predictable path exists to pre-place a symlink
-  at); the download writes through the returned fd; `os.replace()` renames
-  it onto `out_path` only after the full response is read; any exception
+  at); before writing, `chmod`s the temp file to match `out_path`'s
+  existing mode if it exists, else to the current umask's default mode;
+  the download writes through the returned fd; `os.replace()` renames it
+  onto `out_path` only after the full response is read; any exception
   during either step removes the partial temp file (if it still exists)
   and re-raises unchanged.
 - `export-pdf.mjs` -- reads `preview.html` once into a buffer; hashes that
@@ -122,7 +146,10 @@ Two independent bugs, both in `workbook/tools/*.py` and
 - `verify.mjs` -- new block after the existing pdftotext loop: reads
   `<pdf>.sourcehash`, recomputes SHA-256 of the current `preview.html`,
   fails with a clear message on mismatch or a missing hash file.
-- `workbook-quality.yml` -- new step after `npm run all`: fails if
+- `workbook-quality.yml` -- new step before `npm run pdf` runs: `npm run
+  build && npm run verify`, validating the committed PDF's own content
+  (via `verify.mjs`'s existing checks) before anything overwrites it. New
+  step after `npm run all`: fails if
   `git status --porcelain -- dist/ ':!dist/pdf/*.pdf'` is non-empty.
 - `dist/pdf/kennedi-is-the-boss-book-1.pdf` -- regenerated (content
   unchanged; only the Chrome-embedded timestamp differs from the PR
@@ -130,10 +157,12 @@ Two independent bugs, both in `workbook/tools/*.py` and
 
 ### Contract Traceability
 
-- `download()` atomicity + symlink-safety -> Root Cause 1, amended round 3.
+- `download()` atomicity + symlink-safety + mode preservation -> Root
+  Cause 1, amended rounds 3 and 4.
 - `export-pdf.mjs` / `verify.mjs` hash check + TOCTOU fix -> Root Cause 2,
   amended round 2.
-- `workbook-quality.yml` drift check -> amended round 3.
+- `workbook-quality.yml` drift check + pre-overwrite committed-PDF
+  validation -> amended rounds 3 and 4.
 - Waived concurrent-process findings -> recorded above, not implemented.
 
 ### Verification
@@ -170,3 +199,19 @@ Two independent bugs, both in `workbook/tools/*.py` and
 - Visual inspection of the two highest-risk rasterized pages after the
   `setContent` swap (B/b tracing on page 5, "help" tracing on page 6):
   both still render as clean hollow letters, no bridging or tangling.
+- Genuine negative test (round 4, pre-overwrite PDF validation): with the
+  working tree otherwise clean and matching HEAD, overwrote the committed
+  `.sourcehash` sidecar with a bogus value (simulating a stale/mismatched
+  committed PDF+hash pair) and confirmed `npm run build && npm run verify`
+  fails on the source-hash check before anything regenerates; restored the
+  real value and reconfirmed green. Also confirmed the positive case
+  (true committed state) passes this same pre-check.
+- `download()` mode-preservation (round 4): directly tested both branches
+  -- replacing an existing mode-0644 file preserves 0644 (not mkstemp's
+  0600 default), and creating a brand-new file gets the real process
+  umask's default mode (0o666 & ~umask), not 0600. Re-ran the round-3
+  regression tests (success/no-debris, failure/no-debris/original-
+  untouched, symlink-safety) unchanged and passing.
+- `workbook-quality-gate` CI job itself (not just local simulation)
+  observed green on GitHub Actions after the round-3 push, including the
+  new drift-check step running for real in a fresh checkout.
