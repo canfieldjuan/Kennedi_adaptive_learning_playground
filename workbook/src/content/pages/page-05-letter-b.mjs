@@ -1,86 +1,8 @@
 import { pageShell } from '../../components/layout.mjs';
-import { handwritingLine } from '../../components/tracing.mjs';
+import { tracingWord, handwritingLine } from '../../components/tracing.mjs';
 import { pictureChoiceRow } from '../../components/activities.mjs';
 import { bossBadgeIcon, ballIcon, appleIcon } from '../../illustrations/icons.mjs';
 import { bird } from '../../illustrations/animals.mjs';
-import { svgWrap } from '../../illustrations/svg-utils.mjs';
-
-/**
- * A large fill-only hollow "ring" outline for ONE big letter -- deliberately
- * NOT the shared tracingWord()'s dashed-stroke technique.
- *
- * Root cause: Chromium's <text>-to-path extraction for any *stroke*-based
- * rendering (SVG stroke-dasharray, plain SVG stroke, -webkit-text-stroke,
- * paint-order:stroke -- all four were tested) exposes a genuine redundant
- * interior contour baked into this font's (Baloo 2, weight 800) "B"/"b"
- * glyphs -- confirmed empirically to be a font-file characteristic, not a
- * dasharray/stroke-width/font-weight/variable-font-instancing issue: it
- * persists across every stroke technique and every weight 400-800, and
- * disappears completely the instant the SAME glyph is drawn with `fill`
- * instead. tracingWord's multi-letter words (BOSS, help, Kennedi, ...) carry
- * the exact same latent defect on any B/b/p/e-shaped letter, but it's
- * imperceptible at the physical scale those pages use (each letter is a
- * small fraction of a wider word). This page blows ONE letter up to fill a
- * multi-inch box -- exactly the scale that makes the defect the single most
- * prominent feature of the trace target -- so it can't be shrugged off here.
- *
- * Fix: build the ring from two overlapping FILLED (not stroked) copies of
- * the glyph -- a full-size black one, a smaller white one on top -- so the
- * rendering never touches the buggy stroke/outline-extraction code path at
- * all. Both copies are centered on the glyph's TRUE ink center, not its
- * text-anchor/baseline point (which is off-center) -- measured once via a
- * pixel-bbox scan of the rendered glyph (see the throwaway
- * _tmp_measure_glyph.mjs used during this page's build, since removed) and
- * hard-coded below as a fraction of font-size, the same way the page-6
- * pilot hard-coded its own measured locked-pose crop numbers. Page-local
- * only -- tracing.mjs (imported by every other page) is untouched.
- *
- * `height` here only sets internal proportions (aspect ratio + ring
- * thickness-to-letter-size ratio, both fixed regardless of its value for a
- * single character) -- it does NOT set the on-page physical size; that's
- * whatever width the caller gives the wrapping div, same convention as
- * tracingWord. Separately: values below ~120 trip a real but unrelated
- * Chromium quirk where a large-font <text> element's own reported
- * scrollHeight briefly exceeds clientHeight by more than
- * preview-page.mjs's overflow tolerance (confirmed via a throwaway sweep --
- * reproduces on ANY letter/fill, stroke or not, so it is not this ring
- * technique's bug specifically) -- stay at 130+ for both letters.
- */
-const LETTER_RING_CENTER_OFFSET = {
-  // dx/dy = (true ink-bbox center) - (text-anchor point), as a fraction of
-  // font-size. Measured at fontSize 300, anchor (200,280), text-anchor
-  // "middle", viewBox 0 0 400 400: B ink bbox center (204.5, 188.5); b ink
-  // bbox center (203.0, 183.0).
-  B: { dx: 0.015, dy: -0.305 },
-  b: { dx: 0.01, dy: -0.3233 },
-};
-
-function letterRing(letter, opts = {}) {
-  const { height = 150, ringFrac = 0.08 } = opts;
-  const offset = LETTER_RING_CENTER_OFFSET[letter];
-  if (!offset) throw new Error(`letterRing: no measured center offset for "${letter}"`);
-
-  // Same proportions tracingWord uses for a single character, so this drops
-  // into the same width-in/aspect-ratio-out sizing pattern page authors
-  // already use for tracingWord.
-  const fontSize = height * 0.82;
-  const vbWidth = Math.round(fontSize * 1.56);
-  const anchorX = vbWidth / 2;
-  const anchorY = height * 0.72;
-
-  const innerFontSize = fontSize * (1 - ringFrac);
-  const deltaF = fontSize - innerFontSize;
-  const innerX = (anchorX + offset.dx * deltaF).toFixed(2);
-  const innerY = (anchorY + offset.dy * deltaF).toFixed(2);
-
-  const inner = `
-    <text x="${anchorX}" y="${anchorY}" text-anchor="middle" style="line-height:1;"
-      font-family="'Baloo 2', sans-serif" font-weight="800" font-size="${fontSize}" fill="#000">${letter}</text>
-    <text x="${innerX}" y="${innerY}" text-anchor="middle" style="line-height:1;"
-      font-family="'Baloo 2', sans-serif" font-weight="800" font-size="${innerFontSize.toFixed(2)}" fill="#fff">${letter}</text>
-  `;
-  return `<div class="tracing-word" style="aspect-ratio:${vbWidth}/${height};">${svgWrap(`0 0 ${vbWidth} ${height}`, inner, { label: `trace the letter ${letter}` })}</div>`;
-}
 
 /**
  * `bird('branch')` (animals.mjs) is a hand-composed illustration, not a
@@ -152,8 +74,8 @@ export function render() {
       <p class="word-display" style="margin:0;">b</p>
     </div>
     <div class="row" style="justify-content:center; gap:var(--space-4);">
-      <div style="width:2.3in;">${letterRing('B', { height: 140 })}</div>
-      <div style="width:2.3in;">${letterRing('b', { height: 130 })}</div>
+      <div style="width:2.3in;">${tracingWord('B', { height: 140 })}</div>
+      <div style="width:2.3in;">${tracingWord('b', { height: 130 })}</div>
     </div>
     ${handwritingLine({ rows: 1 })}
     ${pictureChoiceRow({
