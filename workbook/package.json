@@ -14,6 +14,7 @@
     "all": "npm run build && npm run pdf && npm run screenshots && npm run rasterize && npm run verify"
   },
   "devDependencies": {
+    "fontkit": "^2.0.4",
     "playwright": "1.62.1"
   }
 }

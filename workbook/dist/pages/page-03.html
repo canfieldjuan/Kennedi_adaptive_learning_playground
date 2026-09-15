@@ -307,6 +307,17 @@ svg { display: block; }
 .tracing-word { width: 100%; max-width: 100%; }
 .tracing-word svg { width: auto; height: 100%; max-width: 100%; display: block; margin: 0 auto; }
 
+/* Height-driven (not width-driven like .tracing-word above): the caller
+   wraps these in a div with an explicit CSS height, and width falls out
+   of each letter's own aspect ratio -- inline-block so `height:100%` has
+   something definite to resolve against while width shrink-to-fits the
+   svg's own intrinsic (viewBox) aspect ratio, instead of stretching to
+   the parent's full width like a normal block element would. */
+.solo-letter,
+.dotted-letter-row { display: inline-block; height: 100%; max-width: 100%; }
+.solo-letter svg,
+.dotted-letter-row svg { width: auto; height: 100%; max-width: 100%; display: block; }
+
 .handwriting-block { display: flex; flex-direction: column; gap: var(--space-3); }
 .hw-row { position: relative; height: 0.95in; }
 .hw-top, .hw-mid, .hw-base {
