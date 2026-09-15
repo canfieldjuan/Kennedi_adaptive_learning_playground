@@ -44,3 +44,24 @@ export function inlineImageFile(path) {
 export function withSvgLabel(svgMarkup, label) {
   return svgMarkup.replace(/^<svg /, `<svg role="img" aria-label="${label}" `);
 }
+
+/**
+ * Re-windows a locked-pose/object SVG with a tighter viewBox -- a pure crop
+ * (the path data is untouched, so nothing is stretched or distorted). Every
+ * potrace trace in this project comes from a 1024x1024 canvas, but the
+ * actual subject often occupies only the center portion of it (headroom
+ * baked into the source raster), which reads as noticeably smaller/sparser
+ * than a tightly-composed card at typical on-page sizes. Compute the real
+ * content bbox via `svgEl.getBBox()` in a headless browser (NOT the inner
+ * potrace <g>'s -- it carries its own transform="translate(...)
+ * scale(0.1,-0.1)", and getBBox() reports an element's geometry in its OWN
+ * pre-transform local space, so querying the <g> directly returns raw
+ * ~10x-too-large coordinates), pad ~6% per axis, then square off (shorter
+ * axis padded to match the longer) so a square-aspect-ratio card still
+ * gets a square asset. First shipped as a page-local withViewBox() in
+ * page-06-helping-mission.mjs; promoted here once a second page needed the
+ * identical fix (letter-page.mjs), same reasoning as withSvgLabel() above.
+ */
+export function withViewBox(svgMarkup, viewBox) {
+  return svgMarkup.replace(/viewBox="[^"]*"/, `viewBox="${viewBox}"`);
+}
