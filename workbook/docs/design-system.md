@@ -1,9 +1,17 @@
 # Design system: how to build a page
 
 This is the reference for adding a page to the "Kennedi Is the Boss"
-workbook system. Page 1 (`src/content/pages/page-01-cover.mjs`) is the
-proven, rendered, verified reference implementation -- when in doubt, read
-that file and copy its patterns rather than inventing new ones.
+workbook system (Book 1). Page 1 (`src/content/pages/page-01-cover.mjs`) is
+the proven, rendered, verified reference implementation -- when in doubt,
+read that file and copy its patterns rather than inventing new ones.
+
+Book 2 ("Kennedi's Workbook", `src/content/pages/book-2/`,
+`components/letter-page.mjs`) is a separate book with its own,
+owner-approved contract: every page shares one book-level `<h1>` ("Kennedi's
+Workbook") rather than a per-page title, since it's one continuous workbook
+rather than 26 standalone worksheets -- see `alphabetPage()`'s own doc
+comment for the rationale. The "title must exactly match the `<h1>`"
+requirement below is Book 1's contract specifically, not a cross-book rule.
 
 ## The page module contract
 

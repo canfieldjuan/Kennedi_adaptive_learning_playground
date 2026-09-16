@@ -87,6 +87,9 @@ function rawPointsFor(char) {
  * complexity -- verified by rendering both and comparing.
  */
 function sampleDots(char, stride) {
+  if (!Number.isFinite(stride) || stride <= 0) {
+    throw new Error(`sampleDots: stride must be a positive finite number, got ${stride}`);
+  }
   const raw = rawPointsFor(char);
   const out = [];
   for (let i = 0; i < raw.length; i += stride) out.push(raw[i]);

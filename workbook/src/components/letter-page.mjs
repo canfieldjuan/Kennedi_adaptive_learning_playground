@@ -18,12 +18,15 @@ const ROW_HEIGHT_IN = 1.15;
 // matching the reference), midline at a rough x-height fraction, baseline
 // at the SAME 0.72 fraction dottedLetterRow uses internally for its own
 // text baseline, so the guide line and the actual glyph baseline coincide
-// without extra math.
+// without extra math. All three pure black (#000) per design-system.md's
+// print-safety hard rule (no gray ink anywhere -- thin gray lines
+// disappear on cheap home printers); the sky/mid lines stay visually
+// lighter than the baseline through weight and dash style, not color.
 function guideLines() {
   return `
     <div style="position:absolute; inset:0;">
-      <div style="position:absolute; left:0; right:0; top:6%; border-top:1.5px solid #999;"></div>
-      <div style="position:absolute; left:0; right:0; top:45%; border-top:1.5px dashed #999;"></div>
+      <div style="position:absolute; left:0; right:0; top:6%; border-top:1px solid #000;"></div>
+      <div style="position:absolute; left:0; right:0; top:45%; border-top:1px dashed #000;"></div>
       <div style="position:absolute; left:0; right:0; top:72%; border-top:2.5px solid #000;"></div>
     </div>
   `;
