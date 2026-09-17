@@ -3,12 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { pageShell } from '../../components/layout.mjs';
 import { tracingWord } from '../../components/tracing.mjs';
 import { pictureChoiceRow, rewardStar } from '../../components/activities.mjs';
-import { svgWrap } from '../../illustrations/svg-utils.mjs';
-import { inlineSvgFile, withSvgLabel } from '../asset-inline.mjs';
+import { inlineSvgFile, withSvgLabel, withViewBox } from '../asset-inline.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKBOOK = path.resolve(__dirname, '../../..');
 const KENNEDI_LOCKED = path.join(WORKBOOK, 'design-source/boss-kennedi/locked-poses');
+const OBJECTS_LOCKED = path.join(WORKBOOK, 'design-source/objects/locked');
 
 // Character-lock locked-pose asset (Art Direction v2 -- see
 // docs/art/asset-provenance.md). Full detail throughout: both the hero
@@ -37,29 +37,12 @@ const kennediHelpingRaw = inlineSvgFile(path.join(KENNEDI_LOCKED, '04-helping.sv
 // deliverable this book is actually printed from.
 const kennediHelping = withSvgLabel(kennediHelpingRaw, 'Kennedi kneeling down to help a puppy');
 
-/**
- * The locked-pose SVGs are potrace traces of a 1024x1024 canvas, but the
- * actual character only occupies the center ~50-65% of it per axis (lots of
- * headroom/footroom baked into the source raster) -- confirmed by measuring
- * the real content bbox with getBBox() in a headless browser. At the
- * default `.choice-card > svg { width:68%; height:68% }` sizing this reads
- * as noticeably SMALLER than a tightly-composed hand-drawn icon in the same
- * card (verified by rendering: see the structured report's
- * choice_row_at_full_size_verdict). Fix: re-window the same artwork with a
- * tighter, still-square viewBox (pure crop -- the path data is untouched,
- * so nothing is stretched or distorted) before handing it to
- * pictureChoiceRow, so the card-1 asset fills its card at roughly the same
- * density as the hand-drawn cards 2/3. Computed once via getBBox() on
- * 04-helping.svg (content bbox x=225.1 y=196.3 w=581.4 h=668.6 inside the
- * 0-1024 viewBox), padded 6% per axis, then squared off (shorter axis
- * padded to match the longer) so the square-aspect-ratio fallback this
- * page's sizing math depends on still holds. Reuse this same
- * measure-then-crop technique for any other locked pose going into a
- * pictureChoiceRow -- do not just eyeball a crop.
- */
-function withViewBox(svgMarkup, viewBox) {
-  return svgMarkup.replace(/viewBox="[^"]*"/, `viewBox="${viewBox}"`);
-}
+// withViewBox() is now shared (src/content/asset-inline.mjs) -- see its own
+// doc comment for the measure-then-crop technique (getBBox() on the outer
+// <svg>, pad 6%, square off). Computed once for these assets via getBBox()
+// on 04-helping.svg (content bbox x=225.1 y=196.3 w=581.4 h=668.6 inside
+// the 0-1024 viewBox). Reuse this same technique for any other locked pose
+// going into a pictureChoiceRow -- do not just eyeball a crop.
 
 // withSvgLabel() (src/content/asset-inline.mjs): without it, a raw
 // inlineSvgFile() result dropped into a pictureChoiceRow card has no
@@ -77,52 +60,39 @@ export const meta = {
   },
 };
 
-/**
- * Page-specific: a ball peeking out from behind a crate (the "hide the
- * ball" wrong choice). Reproduced inline from the old page-06-word-help.mjs
- * -- not imported from it, since that file is deleted once every
- * redesigned page is verified. Promote to icons.mjs only if a later page
- * needs the same composition.
- */
-function ballBehindBoxIcon(label = 'a ball hidden behind a box') {
-  const inner = `
-    <circle cx="28" cy="58" r="20" stroke="#000" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="#fff" />
-    <path d="M10 58 Q28 48 46 58 Q28 68 10 58" stroke="#000" stroke-width="3" fill="none" />
-    <rect x="32" y="26" width="58" height="60" rx="6" stroke="#000" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="#fff" />
-    <line x1="32" y1="44" x2="90" y2="44" stroke="#000" stroke-width="4" />
-    <line x1="32" y1="62" x2="90" y2="62" stroke="#000" stroke-width="4" />
-  `;
-  return svgWrap('0 0 100 100', inner, { label });
-}
-
-/**
- * Page-specific: an open door with an arrow leading away from it, for the
- * "walk away" wrong choice. No locked pose exists for a back-turned/walking
- * Kennedi (not one of the 8 required poses -- see
- * docs/art/asset-provenance.md), and the brief rules out reusing the old
- * primitive bossKennedi('walkAway') figure or inventing a new character
- * style, so this is a simple hand-drawn icon instead of a character pose.
- * Same stroke convention as ballBehindBoxIcon above.
- *
- * Two earlier drafts were tried and rejected after actually looking at the
- * render (not assumed clean): (1) an oval pad + 3 small round "toe" circles
- * per mark -- reads as an animal PAW print, wrong for a choice about what
- * KENNEDI does; (2) two plain stacked ellipses meant to simplify a human
- * footprint -- reads as an ambiguous figure-8/snowman blob at this icon
- * size, not recognizable as a foot. An open door + arrow sidesteps shape
- * literacy about feet entirely -- "the door is open and she's gone through
- * it" is a concept a preschooler already has, and door/arrow/knob are all
- * simple, unambiguous geometric shapes at small size.
- */
-function walkingAwayIcon(label = 'an open door with an arrow leading away, meaning Kennedi leaves') {
-  const inner = `
-    <rect x="14" y="10" width="9" height="82" rx="2" stroke="#000" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="#000" />
-    <path d="M23 12 L67 30 L67 84 L23 90 Z" stroke="#000" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="#fff" />
-    <circle cx="56" cy="58" r="4.5" fill="#000" />
-    <path d="M74 51 L95 51 M95 51 L85 41 M95 51 L85 61" stroke="#000" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-  `;
-  return svgWrap('0 0 100 100', inner, { label });
-}
+// Locked, textured FLUX-generated assets (Art Direction v2 continued,
+// 2026-09-13) -- replaces two page-local hand-coded icons (the "hide the
+// ball" and "walk away" wrong choices). No locked Kennedi pose exists for
+// a back-turned/walking figure (not one of the 8 required poses -- see
+// docs/art/asset-provenance.md), so the door+arrow reads as "the door is
+// open and she's gone through it" instead of depicting Kennedi directly --
+// same reasoning as the hand-drawn version this replaces, now executed in
+// the locked-asset style instead of a simple stroke icon.
+//
+// Both DO need the same measure-then-crop treatment as kennediHelpingCard
+// above, contrary to what a first pass at this assumed ("potrace-vectorized
+// from a square 1024x1024 source like every other locked asset, so no
+// special crop needed"): rendered in this row at real print size, both
+// read noticeably smaller/sparser than the Kennedi card -- confirmed by
+// looking at the actual rasterized page (dist/pdf-raster/page-6.png), not
+// assumed from the source SVG. A first crop attempt (padding the raw
+// generation's bbox 6%) only closed part of the gap -- the remaining
+// difference wasn't framing, it was ink DENSITY: a door/crate outline is
+// inherently leaner than a densely-detailed character illustration.
+// Regenerated both from a prompt explicitly asking for a larger, closer,
+// more detailed composition (visible hinges/panel detail on the door,
+// wood-grain/rivet texture on the crate) before cropping, which closed
+// most of the remaining gap.
+//
+// Content bbox measured the same way (getBBox() on the <svg> root -- NOT
+// on the inner potrace <g>, whose own transform="translate(...)
+// scale(0.1,-0.1)" makes getBBox() on it return raw pre-transform path
+// coordinates ~10x too large): door-arrow.svg x=99.2 y=145.1 w=811.2
+// h=834.7; ball-behind-box.svg x=209.6 y=277.4 w=618.1 h=508.9 (both
+// inside the nominal 0-1024 viewBox). Padded 6% per axis then squared
+// off, same recipe as kennediHelpingCard.
+const ballBehindBoxLocked = withSvgLabel(withViewBox(inlineSvgFile(path.join(OBJECTS_LOCKED, 'ball-behind-box.svg')), '172 186 692 692'), 'a ball hidden behind a box');
+const walkingAwayLocked = withSvgLabel(withViewBox(inlineSvgFile(path.join(OBJECTS_LOCKED, 'door-arrow.svg')), '37 95 935 935'), 'an open door with an arrow leading away, meaning Kennedi leaves');
 
 export function render() {
   const body = `
@@ -138,8 +108,8 @@ export function render() {
       columns: 3,
       items: [
         { svg: kennediHelpingCard },
-        { svg: walkingAwayIcon() },
-        { svg: ballBehindBoxIcon() },
+        { svg: walkingAwayLocked },
+        { svg: ballBehindBoxLocked },
       ],
     })}
     <div class="row" style="justify-content:center; align-items:center; gap:0.2in;">

@@ -1,0 +1,47 @@
+[
+  {
+    "pageNumber": 1,
+    "title": "ALPHABET PAGE 1: A, B, C",
+    "primarySkill": "uppercase/lowercase letter recognition + tracing: A, B, C"
+  },
+  {
+    "pageNumber": 2,
+    "title": "ALPHABET PAGE 2: D, E, F",
+    "primarySkill": "uppercase/lowercase letter recognition + tracing: D, E, F"
+  },
+  {
+    "pageNumber": 3,
+    "title": "ALPHABET PAGE 3: G, H, I",
+    "primarySkill": "uppercase/lowercase letter recognition + tracing: G, H, I"
+  },
+  {
+    "pageNumber": 4,
+    "title": "ALPHABET PAGE 4: J, K, L",
+    "primarySkill": "uppercase/lowercase letter recognition + tracing: J, K, L"
+  },
+  {
+    "pageNumber": 5,
+    "title": "ALPHABET PAGE 5: M, N, O",
+    "primarySkill": "uppercase/lowercase letter recognition + tracing: M, N, O"
+  },
+  {
+    "pageNumber": 6,
+    "title": "ALPHABET PAGE 6: P, Q, R",
+    "primarySkill": "uppercase/lowercase letter recognition + tracing: P, Q, R"
+  },
+  {
+    "pageNumber": 7,
+    "title": "ALPHABET PAGE 7: S, T, U",
+    "primarySkill": "uppercase/lowercase letter recognition + tracing: S, T, U"
+  },
+  {
+    "pageNumber": 8,
+    "title": "ALPHABET PAGE 8: V, W, X",
+    "primarySkill": "uppercase/lowercase letter recognition + tracing: V, W, X"
+  },
+  {
+    "pageNumber": 9,
+    "title": "ALPHABET PAGE 9: Y, Z",
+    "primarySkill": "uppercase/lowercase letter recognition + tracing: Y, Z"
+  }
+]
