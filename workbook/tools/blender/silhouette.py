@@ -34,13 +34,20 @@ def body_mask(path):
     enclosed = [(size, label) for label, size in enumerate(sizes, start=1) if label not in border]
     if not enclosed:
         sys.exit(f"{path}: no white region is enclosed by ink -- outline broken")
-    region = labels == max(enclosed)[1]
-    # With a broken outline the body joins the background, and the largest enclosed region is then
-    # the leaf or the highlight. The body surrounds the middle of the drawing; those don't.
-    ys, xs = np.where(~white)
-    if not ndimage.binary_fill_holes(region)[(ys.min() + ys.max()) // 2, (xs.min() + xs.max()) // 2]:
-        sys.exit(f"{path}: the largest enclosed region is off-centre, not the body -- outline broken")
-    return region
+    size, label = max(enclosed)
+    # A gap in the body outline joins the body to the background, and the largest enclosed region
+    # is then the leaf or a highlight. The leaked body is still background walled in by ink on all
+    # four sides, which an intact drawing only has in small notches (the stem cavity).
+    ink = ~white
+    walled = np.ones_like(ink)
+    for axis in (0, 1):
+        walled &= np.logical_or.accumulate(ink, axis=axis)
+        walled &= np.flip(np.logical_or.accumulate(np.flip(ink, axis=axis), axis=axis), axis=axis)
+    leaked = int((walled & white & np.isin(labels, list(border))).sum())
+    if leaked >= size:
+        sys.exit(f"{path}: {leaked} px of background is walled in by ink, at least as much as the largest "
+                 f"enclosed region ({int(size)} px) -- the body outline has a gap")
+    return labels == label
 
 
 def row_widths(mask):

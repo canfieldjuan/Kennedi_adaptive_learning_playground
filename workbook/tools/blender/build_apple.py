@@ -61,6 +61,8 @@ def reset_scene():
     scene.view_settings.look = 'None'
     # Dither noise would scatter 254-grey specks across the white background.
     scene.render.dither_intensity = 0.0
+    # Write exactly the paths given (no added or swapped extension), so main() can check them.
+    scene.render.use_file_extension = False
     scene.render.resolution_x = scene.render.resolution_y = 1000
     scene.render.resolution_percentage = 100
     scene.render.film_transparent = False
@@ -309,6 +311,16 @@ def setup_linesets(scene):
     taper.value_min, taper.value_max = 0.45, 1.0
 
 
+def file_identity(path):
+    # Symlinks and hard links to one file share an inode; a file that doesn't exist yet is its path.
+    path = path.resolve()
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return path
+    return stat.st_dev, stat.st_ino
+
+
 def render(scene, path):
     scene.render.filepath = str(path)
     bpy.ops.render.render(write_still=True)
@@ -320,6 +332,13 @@ def main():
         sys.exit(f"build_apple.py needs Blender {MIN_BLENDER[0]}.{MIN_BLENDER[1]} or later; "
                  f"this is {bpy.app.version_string}")
     args = parse_args()
+    lineart = (args.out_dir / "apple-lineart.png").resolve()
+    shaded = (args.out_dir / "apple-shaded.png").resolve()
+    silhouette = args.silhouette.resolve() if args.silhouette else None
+    files = [f for f in (args.profile.resolve(), lineart, shaded, silhouette) if f]
+    if len({file_identity(f) for f in files}) < len(files):
+        sys.exit("--profile, --silhouette and the two outputs in --out-dir must be different files, "
+                 f"or one would overwrite another: {', '.join(map(str, files))}")
     profile = json.loads(args.profile.read_text())["profile"]
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -333,11 +352,11 @@ def main():
     highlight = seat_highlight(body, cam, mat)
     setup_linesets(scene)
 
-    render(scene, args.out_dir / "apple-lineart.png")
-    if args.silhouette:
+    render(scene, lineart)
+    if silhouette:
         for obj in (stem, leaf, highlight):
             obj.hide_render = True
-        render(scene, args.silhouette)
+        render(scene, silhouette)
         for obj in (stem, leaf, highlight):
             obj.hide_render = False
 
@@ -348,7 +367,7 @@ def main():
     scene.display.shading.light = 'STUDIO'
     scene.display.shading.color_type = 'SINGLE'
     scene.display.shading.single_color = (0.8, 0.8, 0.8)
-    render(scene, args.out_dir / "apple-shaded.png")
+    render(scene, shaded)
 
 
 main()

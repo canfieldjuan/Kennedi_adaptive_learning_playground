@@ -69,9 +69,9 @@ used anywhere.
     symmetric lathe can't reproduce that.
   - Locating the body (`silhouette.py`). A fixed seed pixel at 60% height
     and 50% width is replaced by the largest white region enclosed by ink.
-    That region must surround the centre of the drawing, so a broken
-    outline is still rejected instead of the leaf or highlight being
-    measured.
+    Round 1 also required that region to surround the centre of the
+    drawing, so that a broken outline wasn't measured as the leaf or the
+    highlight. Round 3 replaced that centre check (see below).
   - Degenerate smoothing inputs (`silhouette.py smooth`). `--points` must
     be at least 2; with 1, the endpoint pinning collapsed the outer surface
     silently. `--rim` must leave the degree-5 spline at least 6
@@ -111,6 +111,37 @@ used anywhere.
     The rule is now one explicit ranking key, `(max(flips, --flips), rms)`.
     The new `--flips` flag defaults to 2 for the apple, and a surface with
     no inflections passes `--flips 0`.
+- **Round 3** (Codex on `e91a324`, two findings, both confirmed):
+  - Broken-outline guard (`silhouette.py body_mask`). The round-1 check
+    needed the selected region to contain the bounding-box midpoint of *all*
+    ink, so an unrelated distant mark or a long leaf could push that point
+    outside a valid body and reject it. This was the third heuristic in
+    three rounds for the same decision, so the check itself was
+    re-derived, not moved again.
+    - What the guard exists to catch: a gap in the body outline joins the
+      body to the background, which lets a smaller region (the leaf or a
+      highlight) become the largest enclosed one.
+    - What such a gap leaves behind: background that is still walled in by
+      ink on all four sides.
+    - The new check: reject when the walled-in background is at least as
+      large as the selected region. An intact reference has 2,702 px walled
+      in against a 188,519 px body. Broken outlines have 120,719-185,240 px
+      against a largest region of 16,342-26,893 px.
+    - Unrelated ink outside the drawing doesn't enclose anything, so it no
+      longer matters. The check also catches cases the centre check got
+      wrong: wide gaps, and broken outlines where a large ring is the
+      biggest enclosed region. Round 2 code measured the ring silently in
+      those cases.
+  - Output collisions (`build_apple.py`). `--silhouette` could name the
+    line-art or shaded output, or the profile, and silently overwrite it.
+    - The check covers the whole class: before anything is built, all four
+      files (profile, line art, shaded, silhouette) must be different.
+    - Files are compared by their resolved path, or by device and inode if
+      they already exist, so symlinks and hard links are caught.
+    - Blender used to add or swap the extension on still renders (`x` ->
+      `x.png`, `x.jpg` -> `x.png`), so a checked path could differ from the
+      written one. `use_file_extension` is now off, and Blender writes
+      exactly the checked path. The committed PNGs are unchanged by this.
 
 ## Cold Diff Audit
 
@@ -125,52 +156,62 @@ used anywhere.
 ### Change By Change Reconstruction
 
 - `build_apple.py:25` `MIN_BLENDER = (5, 2)`, checked first in `main()`
-  (`:319-321`): exits with the found version before any output is written.
-- `build_apple.py:50-73` `reset_scene()`: clears objects, selects EEVEE
+  (`:331-333`): exits with the found version before any output is written.
+- `build_apple.py:50-75` `reset_scene()`: clears objects, selects EEVEE
   (`:54`), turns off every render metadata flag (`:55-58`), sets the Standard
-  view transform, turns dithering off (`:62-63`), and sets 1000px square
-  output with a pure white world.
-- `build_apple.py:76-86` `flat_white_material()`: an emission-white fill, so
+  view transform, turns dithering off (`:62-63`), turns off Blender's
+  extension handling so the written paths are exactly the checked ones
+  (`:64-65`), and sets 1000px square output with a pure white world.
+- `build_apple.py:78-88` `flat_white_material()`: an emission-white fill, so
   lighting never greys it.
-- `build_apple.py:96-127` `build_body()`: revolves the profile, adds the
+- `build_apple.py:98-129` `build_body()`: revolves the profile, adds the
   2-fold shoulder humps and the bottom lobes, and scales height to the
   reference aspect.
-- `build_apple.py:130-235`: `build_stem()` and `build_leaf()`. Leaf veins are
+- `build_apple.py:132-237`: `build_stem()` and `build_leaf()`. Leaf veins are
   Freestyle edge marks on faced edges, and the mirrored halves share one
   winding.
-- `build_apple.py:238-272`: `build_camera()` (10 degree tilt) and
+- `build_apple.py:240-274`: `build_camera()` (10 degree tilt) and
   `seat_highlight()`.
-- `build_apple.py:275-309` `setup_linesets()`: an Outline set with a
+- `build_apple.py:277-311` `setup_linesets()`: an Outline set with a
   calligraphy nib, and a Veins set with a taper.
-- `build_apple.py:318-352` `main()`: after the version check, renders
-  `apple-lineart.png`, an optional body-only silhouette, and then
-  `apple-shaded.png` in Workbench.
-- `silhouette.py:27-43` `body_mask()`: the largest enclosed white region,
-  rejected if it doesn't surround the drawing's centre.
-- `silhouette.py:59-66` `measure`: row half-widths, a 9-row moving average
+- `build_apple.py:314-321` `file_identity()`: device and inode for an
+  existing file, and the resolved path for one not yet written.
+- `build_apple.py:330-370` `main()`:
+  - Checks the Blender version.
+  - Resolves the four file paths and exits if any two are the same file
+    (`:334-341`).
+  - Renders `apple-lineart.png`, an optional body-only silhouette, and then
+    `apple-shaded.png` in Workbench, each to its resolved path.
+- `silhouette.py:27-50` `body_mask()`: the largest enclosed white region. It
+  is rejected if the background walled in by ink on all four sides is at
+  least as large (`:38-49`).
+- `silhouette.py:66-73` `measure`: row half-widths, a 9-row moving average
   and 64 profile points at the true aspect.
-- `silhouette.py:69-84` `compare`: the sample-row table plus the worst
-  difference over every row (`:77-81`), and an optional overlay.
-- `silhouette.py:111-140` `smooth`:
-  - Validates `--rim` (`:115-117`).
+- `silhouette.py:76-91` `compare`: the sample-row table plus the worst
+  difference over every row (`:84-88`), and an optional overlay.
+- `silhouette.py:118-147` `smooth`:
+  - Validates `--rim` (`:122-124`).
   - Fits arc-length splines at five smoothing levels.
-  - Ranks the candidates by `(max(flips, --flips), rms)` (`:132-134`): any
+  - Ranks the candidates by `(max(flips, --flips), rms)` (`:139-141`): any
     fit with no more flips than the real surface qualifies, and the least
     distorted of those wins.
-- `silhouette.py:142-149` `at_least()`: the integer argument type behind
+- `silhouette.py:149-156` `at_least()`: the integer argument type behind
   `--points` (at least 2) and `--flips` (at least 0), registered at
-  `:166-169`.
+  `:172-176`.
 - `design-source/blender/apple/`: `profile.json` (104 points, rim index 4,
   derivation recorded), `reference.png`, and `apple-lineart.png` plus
   `apple-shaded.png` as generated by the script.
 
 ### Contract Traceability
 
-- `build_apple.py`: Correct Fix Must Touch (the build and render). Round 1
-  covers the metadata. Round 2 covers the version floor and the dithering.
-- `silhouette.py`: Correct Fix Must Touch (measure, compare, smooth). Round 1
-  covers compare, body_mask and the smooth validation. Round 2 covers the
-  ranking and `--flips`.
+- `build_apple.py`: Correct Fix Must Touch (the build and render).
+  - Round 1: the metadata.
+  - Round 2: the version floor and the dithering.
+  - Round 3: the output collision check and exact output paths.
+- `silhouette.py`: Correct Fix Must Touch (measure, compare, smooth).
+  - Round 1: compare, locating the body, and the smooth validation.
+  - Round 2: the ranking and `--flips`.
+  - Round 3: the broken-outline guard.
 - `design-source/blender/apple/*`: Correct Fix Must Touch (profile,
   reference, generated outputs).
 - This file: Correct Fix Must Touch (contract).
@@ -180,20 +221,33 @@ used anywhere.
 All runs used Blender 5.2.2 LTS headless (`--background --factory-startup`)
 and system Python.
 
-- Build, as of round 2: exits 0 on every run. `apple-shaded.png` was
-  byte-identical in 8 of 8 runs. `apple-lineart.png` was byte-identical in
-  7 of 8; the other run is the Freestyle stroke-order jitter described
-  above. The committed PNGs are the majority output: no metadata chunks,
-  and no dither in the background.
+- Build:
+  - Round 2: exits 0 on every run. `apple-shaded.png` was byte-identical in
+    8 of 8 runs, and `apple-lineart.png` in 7 of 8. The other run is the
+    Freestyle stroke-order jitter described above. The committed PNGs are
+    the majority output, with no metadata chunks and no dither in the
+    background.
+  - Round 3: 6 of 6 rebuilds are byte-identical to the committed PNGs, so
+    turning off extension handling changed no output.
 - Version floor: a copy with `MIN_BLENDER = (99, 0)` exits 1 with
   `build_apple.py needs Blender 99.0 or later; this is 5.2.2 LTS` and
   writes no files. It was not run on 4.x (no install is available), which
   is why the floor sits at the verified version.
+- Output collisions: each of these cases exits 1 with nothing written, and
+  existing files stay byte-identical. `--silhouette` given as:
+  - the line-art path;
+  - the shaded path;
+  - an alias through `..`;
+  - a symlink to an existing line-art file;
+  - a hard link to it;
+  - the `--profile` file.
+
+  Distinct paths still build all three files.
 - `compare` against the rebuilt body: `worst |diff| 0.541 at t=0.000 (all
   546 rows)`. The sample-row table is unchanged from before.
 - `measure` on `reference.png`: new code output is byte-identical to old
   code output. The body masks are identical for the reference and the
-  rendered body.
+  rendered body, in every round.
 - `smooth`: output from the round-2 code is byte-identical to the round-1
   code for `profile.json` with `--rim` 0, 4, 50 and 94, and for the
   64-point measured profile with `--rim` 0, 10 and 30.
@@ -203,14 +257,28 @@ and system Python.
   - All fits above the threshold, with two tied at 4 flips: the lower-RMS
     one is kept. Round-1 code kept the first one.
   - A single fit within the threshold is kept despite higher RMS.
-- Boundary probes for `body_mask`:
-  - Apple moved into the corner of a 2000px canvas: old code rejected it;
-    new code gives a measurement identical to the reference's.
-  - Closed ring drawn around the old seed pixel: old code silently measured
-    the ring (aspect 1.000); new code measures the body, identical to the
-    reference.
-  - Outline cut open: both reject it.
-  - Blank image and a single open line: new code rejects both.
+- Boundary probes for `body_mask`, round-3 code compared with round-2 code.
+  "Same" means a measurement byte-identical to the unmodified reference's.
+
+  Should be accepted:
+  | Case | Round 2 | Round 3 |
+  |---|---|---|
+  | Distant ink mark | rejected | same |
+  | Long leaf | rejected | same |
+  | Apple moved into a canvas corner | same | same |
+  | Closed ring at the old seed pixel | same | same |
+  | Large ring at the drawing's centre | rejected | same |
+
+  Should be rejected:
+  | Case | Round 2 | Round 3 |
+  |---|---|---|
+  | Outline cut, 12 px gap | rejected | rejected |
+  | Outline cut, 240 px gap | rejected | rejected |
+  | Cut outline + small rings (centre / off-centre) | rejected | rejected |
+  | Cut outline + large ring at the drawing's centre | **ring silently measured** (aspect 0.875) | rejected |
+  | Cut outline + large off-centre ring | **ring silently measured** (aspect 1.000) | rejected |
+  | Blank image | rejected | rejected |
+  | A single open line | rejected | rejected |
 - Boundary probes for `smooth` arguments:
   - `--points`: 1 rejected (old code wrote a 9-point profile from 104 input
     points), `abc` rejected, 2 accepted.
