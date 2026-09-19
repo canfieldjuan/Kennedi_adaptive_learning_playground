@@ -149,6 +149,31 @@ does not change scope.
     written before versioning are v1, and their `guide_recipe` records the
     1.5 px blur.
 
+- **`selftest` checks every locked recipe.** Added at the operator's request
+  after the penguin lock. Until now each lock was checked by a one-off
+  snippet, because `selftest` only knew three hard-coded assets.
+  - `selftest` finds every `*.recipe.json` in the locked folders and checks
+    each asset:
+    - the PNG is present, and for line art so is the SVG;
+    - the manifest's template equals the tool's current template for that
+      kind, since templates must never be edited;
+    - the template and fields rebuild the embedded prompt;
+    - the embedded seed and steps match the recipe;
+    - the embedded graph equals the graph the tool builds.
+  - Color assets also get guide checks:
+    - the committed guide matches the SHA-256 fingerprint in the PNG;
+    - the recorded recipe version regenerates that guide byte for byte
+      from the source line art. Unrecorded means `v1`.
+  - The dog and the house stay as the template checks for assets made
+    before the tool. Locked PNGs without a recipe are counted and reported,
+    not checked.
+  - Any problem prints a `FAIL` line with its reasons, and `selftest` exits 1.
+  - Needs no ComfyUI and no GPU.
+  - Settling evidence: all 8 recipe assets pass. Tampered copies each fail
+    with the right reason: changed fields, an edited template, the wrong
+    seed, a different guide, the wrong recipe version, a missing SVG, and a
+    missing PNG.
+
 ## Cold Diff Audit
 
 ### Gaps
