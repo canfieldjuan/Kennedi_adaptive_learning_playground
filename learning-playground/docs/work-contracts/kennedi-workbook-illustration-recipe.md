@@ -30,8 +30,10 @@ page version.
     - `reproduce` uploads a color asset's guide image before re-rendering.
     - `selftest` covers the color template.
 - `workbook/design-source/animals/drafts/` and `.../locked-poses/`: the
-  bunny, turtle, bear and penguin candidates and locks, and the bunny color
-  candidates, guide and lock.
+  bunny, turtle, bear and penguin candidates and locks. As amended below,
+  also the color candidates, guides and locks of the bunny, bear, turtle,
+  penguin and fox; the fox's line-art candidates and lock; and
+  `design-source/legacy-locked-assets.json`.
 - `workbook/docs/art/illustration-recipe-refinements.md`: the running list of
   deferred improvements.
 - This contract.
@@ -223,6 +225,32 @@ does not change scope.
     The existing color bunny and penguin re-renders were already re-checked
     in RGB on the CPU: 0 of 1,048,576 pixels differ, max channel
     difference 0.
+
+- **PR #138 review round 2** (Codex on `34768a8`, three findings, all
+  confirmed). Two are gaps in classes that round 1 was meant to close, so
+  this time each class is closed at its single enforcement point.
+  - **B, continued: every file in a locked folder is accounted for.**
+    `selftest` fails any PNG in a locked folder that is not one of these:
+    - a recipe-managed asset;
+    - a guide referenced by a recipe in that folder;
+    - an entry in `design-source/legacy-locked-assets.json`, the 39
+      pre-tool PNGs.
+
+    Before this, a managed asset whose recipe was deleted fell silently into
+    the legacy count. A missing baseline file also fails.
+  - **A, continued: one validator for "this PNG is the render its recipe
+    describes".** `embedded_problems()` checks the template, the prompt,
+    the seed and steps, the graph, and for color the guide fingerprint. It
+    is used by `selftest` on locked assets and by `lock` on the candidate
+    before anything is staged, so a stale or mismatched candidate can't be
+    locked. It replaces round 1's guide-only check in `lock`.
+  - **Scope and traceability.** Correct Fix Must Touch covers the color
+    drafts, guides and locks of the bunny, bear, turtle, penguin and fox,
+    and the fox's line art (its own amendment above). The audit's
+    traceability names each group.
+  - Settling evidence: probes for a deleted recipe, an orphan guide, a
+    missing baseline, and a mismatched candidate at lock time; `selftest`
+    passes on the real workbook.
 
 ## Cold Diff Audit
 
