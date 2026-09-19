@@ -41,13 +41,19 @@ characters today; each item says what it would fix.
   (same-subject only), not a new text prompt.
 
 ## Color versions (Mode A)
-- **`colorize` from the locked line art.** Interior pages stay black-and-white
-  (Mode B, the child colors them). Covers, certificates and promo use color
-  (Mode A, `docs/design-system.md`). Generate each character's color version
-  from its *locked* line art as a soft-edge ControlNet guide (Union-Pro 2.0,
-  now on the Dev-Drive) so the color character is guaranteed to match the
-  black-and-white one, instead of a fresh text prompt that draws a different
-  animal. Record it in the same `.recipe.json`.
+- **`colorize` is built** (`illustration-recipe.py colorize`, then
+  `lock --color`). The bunny was first: seed 72 is locked as
+  `bunny-01-sitting-color.png`.
+- **Stronger outlines in a v2 color template.** The v1 wording ("clean bold
+  outlines", taken from the cover) left 3 of 4 bunny seeds faint, with no
+  outline at all. Seed 83's darkest pixel was 78, against 0 for seed 72.
+  This is the same faint-line failure noted in `asset-provenance.md`, and
+  adding "bold thick solid black outlines, not faint" should raise the hit
+  rate. It has to be a new template version, because editing v1 would stop
+  the locked color bunny rebuilding from its template.
+- **Fur colour is a per-character choice.** The bunny is white with pink
+  details, which is light next to the warm cover. Pick each character's
+  colours on purpose, so a set of color characters reads as one palette.
 
 ## Plumbing
 - **`comfy-generate.py` defaults.** It hardcodes port 8188 and defaults to 24

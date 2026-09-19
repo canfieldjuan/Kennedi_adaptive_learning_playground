@@ -94,4 +94,107 @@ to the refinements list.
 
 ## Contract Amendments
 
+Both amendments were found while building. Each tightens a failure case and
+does not change scope.
+
+- **Guide fingerprint.** When ComfyUI saves a graph into a PNG, it stamps the
+  image-loading node with `is_changed`, which is the SHA-256 of the guide it
+  loaded. For the locked color bunny, that value equals the committed guide's
+  hash.
+  - `selftest` now requires the committed guide to match that fingerprint.
+  - `reproduce` refuses to re-render when the guide differs, because a
+    different guide would silently produce a different image.
+  - `selftest` compares graphs with that ComfyUI-added key removed.
+- **Line art outside the workbook.** `colorize` now refuses line art from
+  outside `workbook/` before rendering. The manifest records paths relative
+  to the workbook, and the old code only found out after rendering all four
+  seeds.
+
 ## Cold Diff Audit
+
+### Gaps
+
+- change without contract trace: none.
+- contract requirement not delivered: none.
+- protected surface touched: none. The implementation commit touches only
+  `workbook/tools/illustration-recipe.py`,
+  `workbook/docs/art/illustration-recipe-refinements.md`, the bunny color
+  files under `workbook/design-source/animals/` and this contract.
+
+### Change By Change Reconstruction
+
+`illustration-recipe.py`:
+- `:54-61`: `COLOR_TEMPLATE` (the cover's Mode A wording), the guide
+  threshold and blur, the ControlNet strength and end, and the model name.
+- `:70-72`: a `selftest` entry for the locked color bunny.
+- `:85-95` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
+  stores the file under another name or in a subfolder.
+- `:98-109` `without_cache_keys()` and `check_guide()`: strip `is_changed`,
+  and compare it with the guide's SHA-256.
+- `:133-153` `color_graph()`: the soft-edge ControlNet graph. It is
+  identical, node for node, to the graph embedded in the seed-72 PNG.
+- `:156-162` `contact_sheet()`: the existing sheet code, moved into a helper
+  that `candidates` (`:187`) and `colorize` (`:232`) share. The layout is
+  unchanged: 480 px tiles with a label strip.
+- `:198-245` `cmd_colorize()`:
+  - Exits unless the line art is inside the workbook, has a
+    `.recipe.json`, is an animal, and the ControlNet is visible.
+  - Builds and uploads the guide, renders the four seeds, and writes the
+    contact sheet (line art first) and the manifest.
+- `:248-275` `cmd_lock()`:
+  - `--color` reads `<name>-color-recipe.json` and names the lock
+    `<line-art-stem>-color`.
+  - It skips vectorizing (`:270`).
+  - Line-art locks behave as before.
+- `:278-301` `cmd_reproduce()`: if the sibling recipe names a guide, it
+  exits when the guide is missing or doesn't match the fingerprint. Then it
+  uploads the guide under the name the graph expects (`:286-295`) and
+  renders the graph without the cache keys.
+- `:304-322` `cmd_selftest()`: entries now carry their template. For the
+  color entry, the whole graph and the guide fingerprint must also match
+  (`:312-319`).
+- `:336-345`: the `colorize` subcommand and the `lock --color` flag.
+
+Other files:
+- `design-source/animals/drafts/bunny-color-*`: the four candidates, the
+  guide, the contact sheet and the manifest, all written by the tool.
+- `design-source/animals/locked-poses/bunny-01-sitting-color.{png,recipe.json}`:
+  the lock of seed 72.
+- `illustration-recipe-refinements.md`: marks colorize as built, and adds
+  the v2 outline-wording item and the per-character colour note.
+
+### Contract Traceability
+
+- `illustration-recipe.py`: Correct Fix Must Touch (the new colorize
+  pieces), plus the two amendments.
+- The bunny color drafts and lock: Correct Fix Must Touch (the design-source
+  animals).
+- The refinements doc: Correct Fix Must Touch.
+- This file: Correct Fix Must Touch (contract).
+
+### Verification
+
+Renders ran on ComfyUI 0.25.0 at `:8189`, with FLUX.1-dev Q8 and
+Union-Pro 2.0.
+
+- **Settling evidence 1:** `colorize` run through the tool reproduced the
+  exploratory run of the same bunny. All four seeds had 0 differing pixels,
+  and the guide was byte-identical.
+- **Settling evidence 2:** `lock animal bunny --seed 72 --color`, then
+  `selftest` printed `OK` for the dog, the house and the color bunny.
+- **Settling evidence 3:** `reproduce` on the locked color bunny printed
+  `pixels differing: 0.000% | max diff 0`.
+- **Failure cases:** each exits 1 before rendering, with the ComfyUI queue
+  empty and no output file written:
+  - locking seed 50;
+  - locking again over the existing color lock without `--force`;
+  - `lock --color` for an object;
+  - `colorize` on line art with no recipe (the dog);
+  - `colorize` on an object;
+  - `colorize` on line art outside the workbook;
+  - `reproduce` with a different guide file;
+  - `reproduce` with the guide missing.
+- **Not run:** `candidates` and the line-art `lock` were not re-rendered. Their
+  code changed only by the `contact_sheet()` extraction and the `lock`
+  branching, and the line-art path through both is unchanged. `selftest`
+  still passes for the dog and the house.
