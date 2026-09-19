@@ -110,6 +110,26 @@ does not change scope.
   to the workbook, and the old code only found out after rendering all four
   seeds.
 
+- **Color template v2** (added after the bunny, bear and turtle locks):
+  - The v1 wording ("clean bold outlines") gave soft, near-outline-less
+    renders on 3 of 4 seeds for the bunny, the bear and the turtle. On the
+    penguin all 4 seeds were soft; the operator judged the penguin
+    "blurry".
+  - The cause is the outline wording, which applies to every character, so
+    the fix is a new template version, not re-rolling seeds.
+  - Behaviour:
+    - `COLOR_TEMPLATES` holds `v1` unchanged, plus `v2`. `v2` replaces
+      "clean bold outlines" with the black-and-white recipe's proven phrase
+      ("confident clean bold black outline of uniform thickness") and asks
+      for crisp edges that are not faint or blurry.
+    - `colorize --template {v1,v2}` defaults to `v2`, and the manifest
+      records `template_version`.
+  - Invariant: the existing color locks (bunny, bear, turtle) stay on
+    `v1` and still rebuild from it, and `selftest` keeps checking the `v1`
+    bunny.
+  - Settling evidence: the penguin re-run on `v2`, judged by the operator
+    on the contact sheet.
+
 ## Cold Diff Audit
 
 ### Gaps
