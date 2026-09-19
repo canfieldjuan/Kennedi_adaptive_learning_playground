@@ -38,10 +38,14 @@ characters today; each item says what it would fix.
   elsewhere. A ComfyUI upgrade may also change output.
 - **Backfill recipes for the older locked art.** `selftest` checks every asset
   that has a `.recipe.json`. 39 locked PNGs were made before the tool, so they
-  are only counted: the puppy poses, the dog, the letter animals and the
-  objects. Each of them still has its graph embedded, so `reproduce` works
-  on them. Writing a recipe for each (prompt, seed, graph) would bring them
-  under `selftest` too.
+  are only counted: the puppy poses, the dog, the letter animals, the
+  objects and Boss Kennedi. Writing a recipe for each (prompt, seed, graph)
+  would bring them under `selftest` too.
+  - Plain renders can be reproduced today from the graph in the PNG.
+  - Guided ones cannot, until their recipe names the reference image they
+    were rendered from: puppy poses 02-04 (reference `01-sitting.png`) and
+    7 of the 8 Boss Kennedi poses. `reproduce` refuses them rather than
+    rendering with whatever file the server happens to hold.
 - **More poses of one character.** `lock` names assets `<name>-01-<pose>`. A
   second pose needs `-02-`, and should come from FLUX Redux on the locked image
   (same-subject only), not a new text prompt.

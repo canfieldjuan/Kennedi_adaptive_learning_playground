@@ -24,6 +24,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -52,6 +53,10 @@ TEMPLATES = {
                "no character, no text, no color"),
 }
 FOLDERS = {"animal": ("animals/drafts", "animals/locked-poses"), "object": ("objects/drafts", "objects/locked")}
+# Every folder of approved art. Boss Kennedi has no drafts folder and is never written by this tool, but it is
+# locked art all the same: reproductions must not land in it, and its PNGs must be accounted for.
+LOCKED_ROOTS = [locked for _, locked in FOLDERS.values()] + ["boss-kennedi/locked-poses"]
+SAFE_NAME = re.compile(r"[a-z0-9][a-z0-9-]*")
 
 # Mode A color, in the cover's style wording (design-source/scenes/cover-concept-c-final.png).
 COLOR_TEMPLATE = ("Full color flat children's book illustration, warm soft palette, gentle shading and soft shadows, "
@@ -128,7 +133,15 @@ def file_identity(path):
 
 
 def locked_folders():
-    return [WORKBOOK / "design-source" / locked for _, locked in FOLDERS.values()]
+    return [WORKBOOK / "design-source" / rel for rel in LOCKED_ROOTS]
+
+
+def safe_name(value, what):
+    # File names are built from these, so anything but lowercase letters, digits and hyphens is refused:
+    # a path fragment would put the output somewhere else entirely.
+    if not SAFE_NAME.fullmatch(value or ""):
+        sys.exit(f"{what} {value!r} must be lowercase letters, digits and hyphens; paths are built from it")
+    return value
 
 
 def render(comfy, graph, out, timeout=600):
@@ -201,6 +214,7 @@ def fields(args):
 
 
 def cmd_candidates(args):
+    safe_name(args.name, "the name")
     prompt = TEMPLATES[args.kind].format(**fields(args))
     drafts = WORKBOOK / "design-source" / FOLDERS[args.kind][0]
     drafts.mkdir(parents=True, exist_ok=True)
@@ -234,7 +248,7 @@ def cmd_colorize(args):
     source = json.loads(source_recipe.read_text())
     if source["kind"] != "animal":
         sys.exit(f"colorize supports animals only (the color template needs a pose); this is {source['kind']!r}")
-    name = source["name"]
+    name = safe_name(source["name"], f"the name in {source_recipe.name}")
     color_fields = dict(subject=source["fields"]["subject"], pose=source["fields"]["pose"], colors=args.colors)
     prompt = COLOR_TEMPLATE.format(**color_fields)
     blur = COLOR_RECIPES[args.recipe]["guide_blur"]
@@ -284,16 +298,31 @@ def cmd_lock(args):
     if args.seed not in manifest["seeds"]:
         sys.exit(f"seed {args.seed} is not one of the rendered candidates {manifest['seeds']}")
     src = drafts / f"{tag}-candidate-{args.seed}.png"
+    safe_name(args.name, "the name")
     if args.locked_name:
-        stem = args.locked_name
+        stem = safe_name(args.locked_name, "--locked-name")
     elif args.color:
         stem = f"{Path(manifest['source_line_art']).stem}-color"
+    elif args.kind == "animal":
+        # The pose is free text ("swimming, large and ..."), so only its first word's letters name the file.
+        word = re.sub(r"[^a-z0-9]", "", manifest["fields"]["pose"].split()[0].lower())
+        stem = safe_name(f"{args.name}-01-{word}", f"the name built from pose {manifest['fields']['pose']!r}")
     else:
-        stem = f"{args.name}-01-{manifest['fields']['pose'].split()[0]}" if args.kind == "animal" else args.name
+        stem = args.name
     locked.mkdir(parents=True, exist_ok=True)
     png = locked / f"{stem}.png"
+    if png.resolve().parent != locked.resolve():
+        sys.exit(f"{png} would fall outside {locked}")
     if png.exists() and not args.force:
         sys.exit(f"{png.relative_to(WORKBOOK)} already exists (use --force to replace)")
+    if png.exists() and not args.color:
+        # A colour lock's guide is rebuilt from this line art, so replacing it would break that lock.
+        rel = str(png.relative_to(WORKBOOK))
+        dependents = [r.name for r in sorted(locked.glob("*.recipe.json"))
+                      if json.loads(r.read_text()).get("source_line_art") == rel]
+        if dependents:
+            sys.exit(f"{rel} is the source of {', '.join(dependents)}; re-run colorize and lock those after "
+                     f"replacing it, or delete them first")
     if not src.exists():
         sys.exit(f"{src.relative_to(WORKBOOK)} is missing -- re-run the candidates")
     manifest.update(chosen_seed=args.seed, source=str(src.relative_to(WORKBOOK)))
@@ -436,15 +465,16 @@ def account_locked_pngs():
     legacy = set(json.loads(baseline_path.read_text())) if baseline_path.exists() else set()
     recipes = [r for folder in locked_folders() for r in folder.glob("*.recipe.json")]
     guides = {(WORKBOOK / g).resolve() for r in recipes if (g := json.loads(r.read_text()).get("guide"))}
-    unaccounted, legacy_count = [], 0
+    unaccounted, seen = [], set()
     for png in sorted(p for folder in locked_folders() for p in folder.glob("*.png")):
         if png.with_name(png.stem + ".recipe.json").exists() or png.resolve() in guides:
             continue
-        if str(png.relative_to(source)) in legacy:
-            legacy_count += 1
+        rel = str(png.relative_to(source))
+        if rel in legacy:
+            seen.add(rel)
         else:
             unaccounted.append(png)
-    return unaccounted, legacy_count, baseline_path.exists()
+    return unaccounted, sorted(legacy - seen), len(seen), baseline_path.exists()
 
 
 def cmd_selftest(args):
@@ -462,7 +492,7 @@ def cmd_selftest(args):
         ok &= not problems
         print(f"{'FAIL' if problems else 'OK  '} recipe   {recipe.relative_to(source)}"
               + (": " + "; ".join(problems) if problems else ""))
-    unaccounted, legacy_count, baseline_present = account_locked_pngs()
+    unaccounted, missing, legacy_count, baseline_present = account_locked_pngs()
     if not baseline_present:
         ok = False
         print(f"FAIL {LEGACY_BASELINE} is missing, so no locked PNG can be accounted for as legacy")
@@ -470,6 +500,9 @@ def cmd_selftest(args):
         ok = False
         print(f"FAIL locked   {png.relative_to(source)}: no recipe, not a guide a recipe names, and not on "
               f"the legacy baseline -- was its recipe deleted?")
+    for rel in missing:
+        ok = False
+        print(f"FAIL legacy   {rel}: on the legacy baseline but not on disk -- an approved asset is gone")
     print(f"{legacy_count} legacy PNGs (made before the tool, listed in {LEGACY_BASELINE}); not checked")
     sys.exit(0 if ok else 1)
 

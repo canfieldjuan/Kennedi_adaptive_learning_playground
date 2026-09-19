@@ -272,18 +272,19 @@ does not change scope.
     - `lock --force` refuses to replace line art that a color recipe names
       as its source, because the color guide is rebuilt from that line art
       and would no longer match. The message names the dependent locks.
-  - **C. Guided art locked before the tool can still be reproduced.**
-    The puppy poses 02-04 are Redux renders whose reference image is
-    `01-sitting.png`; their embedded fingerprints match that file. They had
-    no recipe, so the fail-closed guide rule blocked `reproduce` on them.
-    - `backfill --guide PATH` records a guide for such an asset, after
-      checking it against the embedded fingerprint.
-    - `upload()` handles a graph that names its image inside a subfolder,
-      which these graphs do.
-    - Any recipe with a guide has that guide fingerprint-checked, not only
-      color locks.
-  - Settling evidence: probes for each refusal, the three puppy poses
-    backfilled and checked, and `selftest` passing with the wider baseline.
+  - **C. Guided art locked before the tool.** The puppy poses 02-04 are
+    Redux renders whose reference image is `01-sitting.png`; their embedded
+    fingerprints match that file byte for byte. They have no recipe, so the
+    fail-closed guide rule refuses to reproduce them, while
+    `illustration-recipe-refinements.md` claimed every pre-tool asset could
+    be reproduced.
+    - The claim is corrected here: guided pre-tool art needs a recipe naming
+      its reference image first.
+    - Writing those recipes needs the `backfill` command, which is on the
+      follow-up branch, so the mapping lands there rather than being
+      hand-written twice. The guard stays fail-closed meanwhile.
+  - Settling evidence: probes for each refusal and each new failure, and
+    `selftest` passing with the wider baseline.
 
 ## Cold Diff Audit
 
@@ -472,3 +473,22 @@ Union-Pro 2.0.
       39 pre-tool PNGs.
     - With the generated baseline, it passes: every recipe OK, and 39
       legacy PNGs listed.
+- **PR #138 review round 3.**
+  - 11 of 11 probes pass against a scratch copy of the workbook:
+    - `--locked-name` as an absolute path, `../escape`, `Bad_Name` or
+      `with space` is refused, and a file outside the workbook stays
+      byte-identical;
+    - `candidates` with a path in the name is refused;
+    - a pose with punctuation still locks `bunny-01-sitting.png`, with no
+      comma in the name;
+    - replacing line art a color lock names as its source is refused, and
+      the message names that lock;
+    - baseline entries that exist are counted, and one whose file is gone
+      is reported;
+    - `reproduce` on a plain asset in `boss-kennedi/locked-poses` refuses to
+      default its output into that locked folder.
+  - Real workbook: `selftest` first failed the 8 Boss Kennedi poses as
+    unaccounted, then passed with them on the baseline (47 entries).
+  - Not covered here: the guided pre-tool assets still cannot be
+    reproduced. That needs `backfill --guide`, which is on the follow-up
+    branch; the refinements doc no longer claims otherwise.
