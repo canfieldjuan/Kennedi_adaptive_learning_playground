@@ -8,6 +8,11 @@ import {
   toTrainTripCompletion,
   type TrainTripCompletion,
 } from '../modules/number-train/trip-history';
+import {
+  FASHION_CARD_HISTORY_LIMIT,
+  toFashionCardCompletion,
+  type FashionCardCompletion,
+} from '../modules/dress-up-studio/fashion-cards';
 import type { StorageServiceInterface } from '../types/runtime';
 import type { ActivityAttemptEvent } from '../types/events';
 import type { ParentObservation } from '../types/observations';
@@ -60,6 +65,7 @@ const REVIEW_SCHEDULE_RECORDS_KEY = 'lp_parent_review_schedule_records';
 const STORY_HISTORY_KEY = 'lp_story_history';
 const CAFE_ORDER_HISTORY_KEY = 'lp_cafe_order_history';
 const TRAIN_TRIP_HISTORY_KEY = 'lp_train_trip_history';
+const FASHION_CARD_HISTORY_KEY = 'lp_fashion_card_history';
 const DEFAULT_CHILD_ID = 'local-child';
 
 export interface KeyValueStorage {
@@ -537,6 +543,40 @@ export class StorageService implements StorageServiceInterface {
     this.localStore.removeItem(TRAIN_TRIP_HISTORY_KEY);
   }
 
+  getFashionCardHistory(): FashionCardCompletion[] {
+    try {
+      const raw = this.localStore.getItem(FASHION_CARD_HISTORY_KEY);
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map(toFashionCardCompletion)
+        .filter((record): record is FashionCardCompletion => record !== null)
+        .slice(-FASHION_CARD_HISTORY_LIMIT);
+    } catch {
+      return [];
+    }
+  }
+
+  appendFashionCardHistory(record: FashionCardCompletion): void {
+    try {
+      const safeRecord = toFashionCardCompletion(record);
+      if (!safeRecord) return;
+      const records = this.getFashionCardHistory();
+      if (records.some((stored) => stored.completion_id === safeRecord.completion_id)) {
+        return;
+      }
+      const nextRecords = [...records, safeRecord].slice(-FASHION_CARD_HISTORY_LIMIT);
+      this.localStore.setItem(FASHION_CARD_HISTORY_KEY, JSON.stringify(nextRecords));
+    } catch (err) {
+      console.error('[Storage] Failed to append fashion card history:', err);
+    }
+  }
+
+  clearFashionCardHistory(): void {
+    this.localStore.removeItem(FASHION_CARD_HISTORY_KEY);
+  }
+
   clearCafeOrderHistory(): void {
     this.localStore.removeItem(CAFE_ORDER_HISTORY_KEY);
   }
@@ -556,6 +596,7 @@ export class StorageService implements StorageServiceInterface {
       storyHistory: this.getStoryHistory(),
       cafeOrderHistory: this.getCafeOrderHistory(),
       trainTripHistory: this.getTrainTripHistory(),
+      fashionCardHistory: this.getFashionCardHistory(),
     });
   }
 }

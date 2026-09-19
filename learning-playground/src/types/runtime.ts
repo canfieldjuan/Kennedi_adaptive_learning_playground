@@ -21,6 +21,7 @@ import type {
 import type { ParentSettings } from './storage';
 import type { ChildProgressProfile, SkillMasteryState } from './progress';
 import type { TrainTripCompletion } from '../modules/number-train/trip-history';
+import type { FashionCardCompletion } from '../modules/dress-up-studio/fashion-cards';
 
 export interface SpeechServiceInterface {
   enabled: boolean;
@@ -83,6 +84,9 @@ export interface StorageServiceInterface {
   getTrainTripHistory(): TrainTripCompletion[];
   appendTrainTripHistory(record: TrainTripCompletion): void;
   clearTrainTripHistory(): void;
+  getFashionCardHistory(): FashionCardCompletion[];
+  appendFashionCardHistory(record: FashionCardCompletion): void;
+  clearFashionCardHistory(): void;
   exportProgressData(events: ActivityAttemptEvent[]): string;
 }
 
