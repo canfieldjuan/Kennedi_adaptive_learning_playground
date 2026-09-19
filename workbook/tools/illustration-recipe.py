@@ -11,6 +11,8 @@
       Render Mode A color candidates of a locked animal, guided by its line art so it stays the same character.
   lock animal bunny --seed 72 --color
       Lock a color candidate as <line-art-name>-color.png (raster, not vectorized).
+  backfill design-source/animals/locked-poses/cat-01-sleeping.png --subject cat --pose "curled up sleeping"
+      Write a recipe for art locked before this tool, from the graph embedded in its PNG.
   reproduce design-source/animals/locked-poses/dog-01-sitting.png
       Re-render a locked asset from the graph embedded in its PNG and compare pixels.
   selftest
@@ -274,6 +276,46 @@ def cmd_colorize(args):
           f"then `lock animal {name} --seed N --color`")
 
 
+def cmd_backfill(args):
+    png = Path(args.png).resolve()
+    if png.parent not in locked_folders():
+        sys.exit(f"{png} is not in a locked folder; backfill describes art this tool already locked elsewhere")
+    recipe = png.with_suffix(".recipe.json")
+    if recipe.exists():
+        sys.exit(f"{recipe.name} already exists; backfill only describes art that has no recipe")
+    if "prompt" not in Image.open(png).info:
+        sys.exit(f"{png.name} has no embedded graph, so its render can't be described")
+    graph, prompt, sampler = embedded_graph(png)
+    kind = "animal" if png.parent == WORKBOOK / "design-source" / FOLDERS["animal"][1] else "object"
+    if kind == "animal" and not args.pose:
+        sys.exit("animals need --pose")
+    fields = {"subject": args.subject, **({"pose": args.pose} if args.pose else {})}
+    template = None
+    if args.shading and args.accent:
+        # An old prompt the current template still rebuilds is recorded as template-derived, like a new lock.
+        fields = dict(fields, shading=args.shading, accent=args.accent)
+        if TEMPLATES[kind].format(**fields) != prompt:
+            sys.exit(f"{png.name}: the template with those fields does not rebuild its prompt:\n{prompt}")
+        template = TEMPLATES[kind]
+    manifest = {"kind": kind, "name": args.name or png.stem.split("-01-")[0], "template": template,
+                "fields": fields, "prompt": prompt, "seeds": [sampler["seed"]], "chosen_seed": sampler["seed"],
+                "steps": sampler["steps"], "size": next(n["inputs"]["width"] for n in graph.values()
+                                                        if n["class_type"] == "EmptySD3LatentImage"),
+                "graph": graph, "source": "rendered before the recipe tool"}
+    problems = check_locked_manifest(png, manifest, load_comfy(args.server))
+    if problems:
+        sys.exit(f"{png.name} would not check out against this recipe: " + "; ".join(problems))
+    recipe.write_text(json.dumps(manifest, indent=1))
+    # The legacy baseline only ever shrinks: this asset is described now.
+    baseline_path = WORKBOOK / LEGACY_BASELINE
+    listed = json.loads(baseline_path.read_text())
+    rel = str(png.relative_to(WORKBOOK / "design-source"))
+    if rel in listed:
+        baseline_path.write_text(json.dumps([e for e in listed if e != rel], indent=1) + "\n")
+    print(f"wrote {recipe.relative_to(WORKBOOK)}"
+          + (" (template-derived)" if template else " (prompt recorded as written)"))
+
+
 def cmd_lock(args):
     if args.color and args.kind != "animal":
         sys.exit("--color locks come from colorize, which supports animals only")
@@ -380,10 +422,15 @@ def embedded_problems(png, manifest, seed, comfy, guide=None):
     """Why png is not the render its recipe describes at this seed; an empty list when it is."""
     graph, prompt, sampler = embedded_graph(png)
     kind, problems = manifest["kind"], []
-    if manifest["template"] != (COLOR_TEMPLATE if kind == "animal-color" else TEMPLATES[kind]):
-        problems.append("its template differs from the tool's (templates are never edited)")
-    if manifest["template"].format(**manifest["fields"]) != prompt:
-        problems.append("its template and fields don't rebuild the embedded prompt")
+    if manifest["prompt"] != prompt:
+        problems.append("its recorded prompt is not the one embedded in the PNG")
+    # Art locked before this tool records no template: its prompt was written by hand, so the prompt
+    # itself is the recipe and there is nothing to rebuild it from.
+    if manifest["template"] is not None:
+        if manifest["template"] != (COLOR_TEMPLATE if kind == "animal-color" else TEMPLATES[kind]):
+            problems.append("its template differs from the tool's (templates are never edited)")
+        if manifest["template"].format(**manifest["fields"]) != prompt:
+            problems.append("its template and fields don't rebuild the embedded prompt")
     if (sampler["seed"], sampler["steps"]) != (seed, manifest["steps"]):
         problems.append(f"embedded seed/steps {sampler['seed']}/{sampler['steps']} != recipe {seed}/{manifest['steps']}")
     if manifest["steps"] != STEPS:
@@ -409,13 +456,17 @@ def check_locked(recipe_path, comfy):
     png = recipe_path.with_name(recipe_path.name.removesuffix(".recipe.json") + ".png")
     if not png.exists():
         return [f"{png.name} is missing"]
+    return check_locked_manifest(png, manifest, comfy, recipe_path.parent)
+
+
+def check_locked_manifest(png, manifest, comfy, lock_folder=None):
     guide = WORKBOOK / manifest["guide"] if manifest["kind"] == "animal-color" else None
     problems = embedded_problems(png, manifest, manifest["chosen_seed"], comfy, guide)
     if guide is None:
         if not png.with_suffix(".svg").exists():
             problems.append(f"{png.with_suffix('.svg').name} is missing")
         return problems
-    if guide.parent != recipe_path.parent:
+    if lock_folder is not None and guide.parent != lock_folder:
         problems.append(f"its guide {manifest['guide']} is outside the lock folder, where colorize can overwrite it")
     if not guide.exists():
         return problems
@@ -485,6 +536,13 @@ def main():
     c.add_argument("--pose", help="animals only, e.g. 'sitting'")
     c.add_argument("--shading", required=True, help="where the gray roundness shading goes")
     c.add_argument("--accent", required=True, help="detail lines drawn at the same bold weight")
+    bf = sub.add_parser("backfill")
+    bf.add_argument("png", help="a locked PNG with no recipe, rendered before this tool")
+    bf.add_argument("--subject", required=True, help="what it is, e.g. 'cat'")
+    bf.add_argument("--pose", help="animals only, e.g. 'curled up sleeping'")
+    bf.add_argument("--shading", help="with --accent: record it as template-derived if the template rebuilds it")
+    bf.add_argument("--accent")
+    bf.add_argument("--name", help="defaults to the part of the file name before -01-")
     col = sub.add_parser("colorize")
     col.add_argument("png", help="a locked line-art PNG with its .recipe.json alongside")
     col.add_argument("--colors", required=True, help="fur and feature colors, e.g. 'soft white fur, pink inner ears'")
@@ -502,8 +560,8 @@ def main():
     r.add_argument("--out")
     sub.add_parser("selftest")
     args = ap.parse_args()
-    {"candidates": cmd_candidates, "colorize": cmd_colorize, "lock": cmd_lock, "reproduce": cmd_reproduce,
-     "selftest": cmd_selftest}[args.cmd](args)
+    {"backfill": cmd_backfill, "candidates": cmd_candidates, "colorize": cmd_colorize, "lock": cmd_lock,
+     "reproduce": cmd_reproduce, "selftest": cmd_selftest}[args.cmd](args)
 
 
 if __name__ == "__main__":

@@ -86,3 +86,64 @@ anything, so these assets record their prompt verbatim instead.
 - A probe: `backfill` refuses an asset that already has a recipe, and one
   with no embedded graph.
 - A probe: a recipe whose recorded prompt is edited fails `selftest`.
+
+## Cold Diff Audit
+
+### Gaps
+
+- change without contract trace: none.
+- contract requirement not delivered: none. The objects and the remaining
+  animals (bird, the three extra puppy poses) are not backfilled yet; the
+  contract's scope is the ten alphabet animals the operator asked for, and
+  `backfill` works on any of the rest when wanted.
+- protected surface touched: none. No PNG or SVG changed; `git status`
+  shows only added `.recipe.json` files and the shrunken baseline.
+
+### Change By Change Reconstruction
+
+- `illustration-recipe.py:279-316` `cmd_backfill()`:
+  - refuses a PNG outside the locked folders, one that already has a
+    recipe, and one with no embedded graph;
+  - reads the prompt, seed, steps and size from the embedded graph;
+  - with `--shading` and `--accent`, records the template and full fields,
+    and refuses fields the template can't rebuild the prompt from;
+  - otherwise records `template: null` with the subject and pose;
+  - checks the manifest against the PNG before writing it;
+  - removes the asset from the legacy baseline, which therefore only
+    shrinks.
+- `illustration-recipe.py:421-451` `embedded_problems()`: the recorded
+  prompt must equal the embedded one for every recipe. The template checks
+  run only when a template is recorded (`:429`).
+- `illustration-recipe.py:453-460` `check_locked()` and `:462-...`
+  `check_locked_manifest()`: the checks split out so `backfill` can validate
+  a manifest it hasn't written yet. The guide-ownership check only applies
+  when a lock folder is known.
+- `illustration-recipe.py:539-545`: the `backfill` subcommand.
+- `design-source/animals/locked-poses/*.recipe.json`: ten new recipes. Eight
+  are template-derived (dog, elephant, giraffe, jellyfish, lion, owl, queen,
+  whale); the cat and zebra record their prompt as written.
+- `design-source/legacy-locked-assets.json`: 39 entries down to 29.
+
+### Contract Traceability
+
+- `illustration-recipe.py`: Correct Fix Must Touch (backfill, template-less
+  recipes).
+- The ten recipes and the baseline: Correct Fix Must Touch.
+- This file: Correct Fix Must Touch.
+
+### Verification
+
+- `selftest` passes: every recipe OK, including the ten new ones, and 29
+  legacy PNGs remain.
+- No art changed: `git status` lists only added recipes and the baseline.
+- 10 of 10 probes pass against a scratch copy of the workbook:
+  - `backfill` refuses art that already has a recipe, a PNG with no
+    embedded graph, a path outside the locked folders, and fields the
+    template can't rebuild the prompt from;
+  - a template-derived backfill records the template, removes the baseline
+    entry, and checks out;
+  - an edited recorded prompt fails with "its recorded prompt is not the
+    one embedded in the PNG";
+  - the cat records no template and still checks out.
+- Not run: no re-render. `reproduce` on a backfilled asset needs the GPU and
+  was not part of this slice.
