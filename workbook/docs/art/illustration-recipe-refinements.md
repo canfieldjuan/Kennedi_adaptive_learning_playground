@@ -36,6 +36,12 @@ characters today; each item says what it would fix.
   ComfyUI version (0.25.0), not file hashes. Bit-exact reproduction was verified
   on this machine; recording sizes/hashes would make a mismatch detectable
   elsewhere. A ComfyUI upgrade may also change output.
+- **Backfill recipes for the older locked art.** `selftest` checks every asset
+  that has a `.recipe.json`. 39 locked PNGs were made before the tool, so they
+  are only counted: the puppy poses, the dog, the letter animals and the
+  objects. Each of them still has its graph embedded, so `reproduce` works
+  on them. Writing a recipe for each (prompt, seed, graph) would bring them
+  under `selftest` too.
 - **More poses of one character.** `lock` names assets `<name>-01-<pose>`. A
   second pose needs `-02-`, and should come from FLUX Redux on the locked image
   (same-subject only), not a new text prompt.

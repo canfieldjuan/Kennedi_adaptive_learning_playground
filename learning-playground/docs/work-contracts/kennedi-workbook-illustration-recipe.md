@@ -188,41 +188,48 @@ does not change scope.
 ### Change By Change Reconstruction
 
 `illustration-recipe.py`:
-- `:54-66`: `COLOR_TEMPLATE` (the cover's Mode A wording), the color recipe
+- `:55-67`: `COLOR_TEMPLATE` (the cover's Mode A wording), the color recipe
   versions (`COLOR_RECIPES`: `v1` blurs the guide 1.5 px, `v2` doesn't;
   default `v2`), the guide threshold, the ControlNet strength and end, and
   the model name.
-- `:75-77`: a `selftest` entry for the locked color bunny.
-- `:90-100` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
+- `:69-77` `LEGACY_TEMPLATE_CHECKS`: template checks for the dog and the
+  house, which were locked before recipes existed.
+- `:89-99` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
   stores the file under another name or in a subfolder.
-- `:103-114` `without_cache_keys()` and `check_guide()`: strip `is_changed`,
+- `:102-113` `without_cache_keys()` and `check_guide()`: strip `is_changed`,
   and compare it with the guide's SHA-256.
-- `:138-158` `color_graph()`: the soft-edge ControlNet graph. It is
+- `:137-157` `color_graph()`: the soft-edge ControlNet graph. It is
   identical, node for node, to the graph embedded in the seed-72 PNG.
-- `:161-165` `make_guide()`: the locked art's print lines as white on black,
+- `:160-164` `make_guide()`: the locked art's print lines as white on black,
   blurred only when the recipe says so.
-- `:168-174` `contact_sheet()`: the existing sheet code, moved into a helper
-  that `candidates` (`:199`) and `colorize` (`:242`) share. The layout is
+- `:167-173` `contact_sheet()`: the existing sheet code, moved into a helper
+  that `candidates` (`:198`) and `colorize` (`:241`) share. The layout is
   unchanged: 480 px tiles with a label strip.
-- `:210-257` `cmd_colorize()`:
+- `:209-256` `cmd_colorize()`:
   - Exits unless the line art is inside the workbook, has a
     `.recipe.json`, is an animal, and the ControlNet is visible.
-  - Builds the guide with the chosen recipe's blur (`:231`), uploads it,
+  - Builds the guide with the chosen recipe's blur (`:230`), uploads it,
     renders the four seeds, and writes the
     contact sheet (line art first) and the manifest.
-- `:260-287` `cmd_lock()`:
+- `:259-286` `cmd_lock()`:
   - `--color` reads `<name>-color-recipe.json` and names the lock
     `<line-art-stem>-color`.
-  - It skips vectorizing (`:282`).
+  - It skips vectorizing (`:281`).
   - Line-art locks behave as before.
-- `:290-313` `cmd_reproduce()`: if the sibling recipe names a guide, it
+- `:289-312` `cmd_reproduce()`: if the sibling recipe names a guide, it
   exits when the guide is missing or doesn't match the fingerprint. Then it
-  uploads the guide under the name the graph expects (`:298-306`) and
+  uploads the guide under the name the graph expects (`:297-305`) and
   renders the graph without the cache keys.
-- `:316-334` `cmd_selftest()`: entries now carry their template. For the
-  color entry, the whole graph and the guide fingerprint must also match
-  (`:324-331`).
-- `:348-359`: the `colorize` subcommand (with `--recipe`) and the
+- `:315-361` `embedded_graph()` and `check_locked()`: every reason a
+  locked asset no longer rebuilds from its recipe. For color assets this
+  includes the fingerprint and a byte-exact rebuild of the guide from the
+  recorded recipe version (`:354-360`).
+- `:364-383` `cmd_selftest()`:
+  - runs the two legacy template checks;
+  - runs `check_locked()` on every `*.recipe.json` in the locked folders;
+  - counts the locked PNGs that have no recipe;
+  - exits 1 on any failure.
+- `:397-408`: the `colorize` subcommand (with `--recipe`) and the
   `lock --color` flag.
 
 Other files:
@@ -268,3 +275,19 @@ Union-Pro 2.0.
   code changed only by the `contact_sheet()` extraction and the `lock`
   branching, and the line-art path through both is unchanged. `selftest`
   still passes for the dog and the house.
+- **`selftest` over every recipe** (no ComfyUI or GPU needed):
+  - Real assets: it passes all 8 locked recipes and the 2 legacy template
+    checks, and reports the 39 locked PNGs that have no recipe.
+  - Tampered copies run through `check_locked()`. Each fails with the right
+    reason:
+    - changed colors;
+    - edited template text;
+    - the wrong seed;
+    - a different guide;
+    - a v2 asset recorded as v1, and a v1 asset recorded as v2;
+    - a missing SVG;
+    - a missing PNG;
+    - the tool's own template edited in code.
+  - Untouched copies pass.
+  - Run in-process with the color template edited in memory, all four color
+    recipes fail, the line art still passes, and it exits 1.

@@ -14,7 +14,7 @@
   reproduce design-source/animals/locked-poses/dog-01-sitting.png
       Re-render a locked asset from the graph embedded in its PNG and compare pixels.
   selftest
-      Check the templates rebuild the exact prompts of existing locked assets.
+      Check every locked asset with a .recipe.json still rebuilds from it (no ComfyUI needed).
 
 Needs a running ComfyUI (--server, default http://127.0.0.1:8188) and Pillow.
 """
@@ -24,6 +24,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+import tempfile
 import urllib.request
 import uuid
 from pathlib import Path
@@ -65,16 +66,14 @@ GUIDE_INK = 180               # the print vectorizer's 70% threshold: what count
 CONTROL_STRENGTH, CONTROL_END = 0.7, 0.8    # Union-Pro 2.0's suggested soft-edge settings
 CONTROLNET = "diffusion_pytorch_model.safetensors"    # Shakker-Labs FLUX.1-dev-ControlNet-Union-Pro-2.0
 
-SELFTEST = [
-    ("animal", TEMPLATES["animal"], "animals/locked-poses/dog-01-sitting.png",
+# Locked before the tool wrote recipes: the templates must still rebuild their prompts.
+LEGACY_TEMPLATE_CHECKS = [
+    ("animal", "animals/locked-poses/dog-01-sitting.png",
      dict(subject="puppy", pose="sitting", shading="body and ears",
           accent="fur texture accent lines on the ears and tail")),
-    ("object", TEMPLATES["object"], "objects/locked/house.png",
+    ("object", "objects/locked/house.png",
      dict(subject="simple house with a triangular roof", shading="the roof",
           accent="a door, a window, and a chimney")),
-    ("color", COLOR_TEMPLATE, "animals/locked-poses/bunny-01-sitting-color.png",
-     dict(subject="bunny", pose="sitting",
-          colors="soft white fur with light warm-grey shading, pink inner ears and a pink nose")),
 ]
 
 
@@ -313,24 +312,74 @@ def cmd_reproduce(args):
     print(f"print ink (after threshold) differing: {100 * (ink_a ^ ink_b).mean():.3f}% of pixels")
 
 
-def cmd_selftest(_args):
+def embedded_graph(png):
+    graph = json.loads(Image.open(png).info["prompt"])
+    prompt = next(n["inputs"]["text"] for n in graph.values()
+                  if n["class_type"] == "CLIPTextEncode" and n["inputs"]["text"])
+    sampler = next(n["inputs"] for n in graph.values() if n["class_type"] == "KSampler")
+    return graph, prompt, sampler
+
+
+def check_locked(recipe_path, comfy):
+    """What stops a locked asset rebuilding from its recipe; an empty list when nothing does."""
+    manifest = json.loads(recipe_path.read_text())
+    png = recipe_path.with_name(recipe_path.name.removesuffix(".recipe.json") + ".png")
+    if not png.exists():
+        return [f"{png.name} is missing"]
+    graph, prompt, sampler = embedded_graph(png)
+    kind, problems = manifest["kind"], []
+    if manifest["template"] != (COLOR_TEMPLATE if kind == "animal-color" else TEMPLATES[kind]):
+        problems.append("its template differs from the tool's (templates are never edited)")
+    if manifest["template"].format(**manifest["fields"]) != prompt:
+        problems.append("its template and fields don't rebuild the embedded prompt")
+    if (sampler["seed"], sampler["steps"]) != (manifest["chosen_seed"], STEPS):
+        problems.append(f"embedded seed/steps {sampler['seed']}/{sampler['steps']} "
+                        f"!= recipe {manifest['chosen_seed']}/{STEPS}")
+    if kind != "animal-color":
+        if graph != comfy.build_graph(prompt, SIZE, SIZE, sampler["seed"], STEPS, None):
+            problems.append("its graph differs from the one the tool builds")
+        if not png.with_suffix(".svg").exists():
+            problems.append(f"{png.with_suffix('.svg').name} is missing")
+        return problems
+
+    image = next(n["inputs"]["image"] for n in graph.values() if n["class_type"] == "LoadImage")
+    prefix = next(n["inputs"]["filename_prefix"] for n in graph.values() if n["class_type"] == "SaveImage")
+    if color_graph(prompt, sampler["seed"], image, prefix) != without_cache_keys(graph):
+        problems.append("its graph differs from the color graph the tool builds")
+    guide = WORKBOOK / manifest["guide"]
+    if not guide.exists():
+        return problems + [f"guide {manifest['guide']} is missing"]
+    if not check_guide(graph, guide):
+        problems.append("the committed guide is not the file it was rendered from")
+    # The guide itself must come back from the line art: manifests written before versioning are v1.
+    version = manifest.get("recipe_version", "v1")
+    with tempfile.TemporaryDirectory() as tmp:
+        rebuilt = Path(tmp) / "guide.png"
+        make_guide(WORKBOOK / manifest["source_line_art"], COLOR_RECIPES[version]["guide_blur"], rebuilt)
+        if rebuilt.read_bytes() != guide.read_bytes():
+            problems.append(f"recipe {version} no longer rebuilds its guide from {manifest['source_line_art']}")
+    return problems
+
+
+def cmd_selftest(args):
     ok = True
-    for label, template, rel, f in SELFTEST:
-        graph = json.loads(Image.open(WORKBOOK / "design-source" / rel).info["prompt"])
-        embedded = next(n["inputs"]["text"] for n in graph.values()
-                        if n["class_type"] == "CLIPTextEncode" and n["inputs"]["text"])
-        sampler = next(n["inputs"] for n in graph.values() if n["class_type"] == "KSampler")
-        match = template.format(**f) == embedded and sampler["seed"] in SEEDS and sampler["steps"] == STEPS
-        if label == "color":
-            # The whole guided graph must be the one this tool builds, apart from the output name,
-            # and the committed guide must be the exact file it was rendered from.
-            guide = next(n["inputs"]["image"] for n in graph.values() if n["class_type"] == "LoadImage")
-            prefix = next(n["inputs"]["filename_prefix"] for n in graph.values() if n["class_type"] == "SaveImage")
-            recipe = json.loads((WORKBOOK / "design-source" / rel).with_suffix(".recipe.json").read_text())
-            match = (match and color_graph(embedded, sampler["seed"], guide, prefix) == without_cache_keys(graph)
-                     and check_guide(graph, WORKBOOK / recipe["guide"]))
+    for kind, rel, f in LEGACY_TEMPLATE_CHECKS:
+        _, prompt, sampler = embedded_graph(WORKBOOK / "design-source" / rel)
+        match = TEMPLATES[kind].format(**f) == prompt and sampler["seed"] in SEEDS and sampler["steps"] == STEPS
         ok &= match
-        print(f"{'OK  ' if match else 'FAIL'} {label:6s} {rel} (seed {sampler['seed']}, steps {sampler['steps']})")
+        print(f"{'OK  ' if match else 'FAIL'} template {rel} (seed {sampler['seed']}, made before recipes)")
+
+    comfy = load_comfy(args.server)     # only for its graph builder; nothing is sent to ComfyUI
+    source = WORKBOOK / "design-source"
+    locked = [source / folder for _, folder in FOLDERS.values()]
+    for recipe in sorted(r for folder in locked for r in folder.glob("*.recipe.json")):
+        problems = check_locked(recipe, comfy)
+        ok &= not problems
+        print(f"{'FAIL' if problems else 'OK  '} recipe   {recipe.relative_to(source)}"
+              + (": " + "; ".join(problems) if problems else ""))
+    unrecorded = [p for folder in locked for p in folder.glob("*.png")
+                  if not p.with_name(p.stem + ".recipe.json").exists()]
+    print(f"{len(unrecorded)} locked PNGs have no recipe (made before the tool); not checked")
     sys.exit(0 if ok else 1)
 
 
