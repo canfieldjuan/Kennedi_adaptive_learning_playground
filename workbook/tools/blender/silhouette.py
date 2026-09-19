@@ -14,6 +14,7 @@ Requires numpy, scipy and Pillow (system python, not Blender's).
 import argparse
 import json
 import sys
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -22,6 +23,21 @@ from scipy.interpolate import UnivariateSpline
 
 SAMPLE_T = (0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.88, 0.94, 0.98)    # printed rows
 SPLINE_K = 5
+
+
+def file_identity(path):
+    # Symlinks and hard links to one file share an inode; a file that doesn't exist yet is its path.
+    path = Path(path).resolve()
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return path
+    return stat.st_dev, stat.st_ino
+
+
+def refuse_to_overwrite(inputs, output):
+    if output and file_identity(output) in {file_identity(p) for p in inputs}:
+        sys.exit(f"{output} is also an input of this command; writing it would destroy that input")
 
 
 def body_mask(path):
@@ -64,6 +80,7 @@ def normalised(mask):
 
 
 def cmd_measure(args):
+    refuse_to_overwrite([args.reference], args.out)
     half, aspect = row_widths(body_mask(args.reference))
     r = np.convolve(np.pad(half / half.max(), 4, mode="edge"), np.ones(9) / 9, mode="valid")
     z = (0.5 - np.linspace(0.0, 1.0, len(r))) * 2.0 * aspect
@@ -74,6 +91,7 @@ def cmd_measure(args):
 
 
 def cmd_compare(args):
+    refuse_to_overwrite([args.reference, args.render], args.overlay)
     ref_mask, mine_mask = body_mask(args.reference), body_mask(args.render)
     rt, rw, ra = normalised(ref_mask)
     mt, mw, ma = normalised(mine_mask)
@@ -116,6 +134,7 @@ def curvature_flips(points):
 
 
 def cmd_smooth(args):
+    refuse_to_overwrite([args.profile], args.out)
     data = json.load(open(args.profile))
     profile = np.array(data["profile"], dtype=float)
     lowest = int(np.argmin(profile[:, 1]))
