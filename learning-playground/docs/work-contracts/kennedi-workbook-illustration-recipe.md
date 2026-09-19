@@ -286,6 +286,30 @@ does not change scope.
   - Settling evidence: probes for each refusal and each new failure, and
     `selftest` passing with the wider baseline.
 
+- **One seam instead of per-command checks** (operator: "use a shareable
+  seam if possible... fix it at the source, stop patching").
+  - Three review rounds each found another write path missing a check,
+    because every command built its own paths and carried its own
+    validation. The checks were right; their placement was not.
+  - `Outputs` is now the only place this tool writes a file. A command
+    declares the folder it may write to and the files it read; `Outputs`
+    then refuses a generated name that is not a plain file name, a folder
+    that is locked (except for `lock`), and any target that is one of the
+    command's inputs, and it lands every write by rename from a staging
+    folder beside the target. `candidates`, `colorize`, `lock` and
+    `reproduce` all go through it, so the per-command copies are deleted.
+  - `--workbook` makes the workbook root an argument. The tests run the
+    real command line against a copy, instead of reaching into the module
+    to swap a global.
+  - `tools/test-illustration-recipe.py` reproduces every reported issue
+    against such a copy: names that build paths, a pose with punctuation, a
+    dependent color lock, a failing vectorizer, a candidate that is not its
+    recipe's render, the `reproduce` output rules, and the `selftest`
+    accounting. It needs no ComfyUI and no GPU.
+  - Writing those tests found one more gap and it is fixed: a recipe's
+    recorded `prompt` could drift from the prompt embedded in the PNG while
+    the template and fields still rebuilt it. `selftest` now compares it.
+
 ## Cold Diff Audit
 
 ### Gaps
@@ -473,6 +497,9 @@ Union-Pro 2.0.
       39 pre-tool PNGs.
     - With the generated baseline, it passes: every recipe OK, and 39
       legacy PNGs listed.
+- **The seam refactor.** `tools/test-illustration-recipe.py` passes 22 of
+  22 checks, each running the real command line against a copy of the
+  workbook. `selftest` passes on the real workbook.
 - **PR #138 review round 3.**
   - 11 of 11 probes pass against a scratch copy of the workbook:
     - `--locked-name` as an absolute path, `../escape`, `Bad_Name` or

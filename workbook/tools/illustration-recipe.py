@@ -20,6 +20,7 @@ Needs numpy and Pillow; lock also needs ImageMagick and potrace (vectorize-line-
 and reproduce render on a running ComfyUI (--server, default http://127.0.0.1:8188); selftest needs no ComfyUI.
 """
 import argparse
+import contextlib
 import hashlib
 import importlib.util
 import json
@@ -56,7 +57,8 @@ FOLDERS = {"animal": ("animals/drafts", "animals/locked-poses"), "object": ("obj
 # Every folder of approved art. Boss Kennedi has no drafts folder and is never written by this tool, but it is
 # locked art all the same: reproductions must not land in it, and its PNGs must be accounted for.
 LOCKED_ROOTS = [locked for _, locked in FOLDERS.values()] + ["boss-kennedi/locked-poses"]
-SAFE_NAME = re.compile(r"[a-z0-9][a-z0-9-]*")
+SAFE_NAME = re.compile(r"[a-z0-9][a-z0-9-]*")        # names this tool builds file names from
+SAFE_FILE = re.compile(r"[a-z0-9][a-z0-9.-]*")        # the file names themselves
 
 # Mode A color, in the cover's style wording (design-source/scenes/cover-concept-c-final.png).
 COLOR_TEMPLATE = ("Full color flat children's book illustration, warm soft palette, gentle shading and soft shadows, "
@@ -144,6 +146,64 @@ def safe_name(value, what):
     return value
 
 
+class Outputs:
+    """The one place this tool writes files.
+
+    A command says which folder it may write into and which files it read. Every write then goes to a
+    validated name in that folder, never to a file the command read, and lands by rename from a staging
+    folder beside it: a failure part-way leaves what was there untouched. Only `lock` may write into a
+    locked folder. The checks each command used to carry live here instead, so a new command cannot
+    quietly skip one.
+    """
+
+    def __init__(self, folder, inputs=(), into_locked=False):
+        self.folder = Path(folder).resolve()
+        locked = [f.resolve() for f in locked_folders()]
+        inside_locked = self.folder in locked or any(f in self.folder.parents for f in locked)
+        if into_locked and self.folder not in locked:
+            sys.exit(f"{self.folder} is not a locked folder, so `lock` will not write there")
+        if not into_locked and inside_locked:
+            sys.exit(f"{self.folder} is a locked folder; only `lock` writes there")
+        self.inputs = {file_identity(p) for p in inputs}
+
+    def target(self, name, validate=True):
+        if validate and not SAFE_FILE.fullmatch(name):
+            sys.exit(f"{name!r} is not a file name this tool will write: lowercase letters, digits, - and .")
+        target = self.folder / name
+        if target.parent.resolve() != self.folder:
+            sys.exit(f"{target} would fall outside {self.folder}")
+        if file_identity(target) in self.inputs:
+            sys.exit(f"{target} is an input of this command; writing it would destroy that input")
+        return target
+
+    @contextlib.contextmanager
+    def staging(self):
+        """Everything written in the block moves into place together when it ends without an exception."""
+        self.folder.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=self.folder, prefix=".staging-") as tmp:
+            batch = _Staging(self, Path(tmp))
+            yield batch
+            for name in batch.names:
+                os.replace(Path(tmp) / name, self.folder / name)
+
+    def write(self, name, write, validate=True):
+        """One file, written atomically."""
+        with self.staging() as batch:
+            path = batch.file(name, validate)
+            write(path)
+        return self.folder / name
+
+
+class _Staging:
+    def __init__(self, outputs, tmp):
+        self.outputs, self.tmp, self.names = outputs, tmp, []
+
+    def file(self, name, validate=True):
+        self.outputs.target(name, validate)      # refuses before anything is written
+        self.names.append(name)
+        return self.tmp / name
+
+
 def render(comfy, graph, out, timeout=600):
     import time
     import urllib.parse
@@ -216,25 +276,24 @@ def fields(args):
 def cmd_candidates(args):
     safe_name(args.name, "the name")
     prompt = TEMPLATES[args.kind].format(**fields(args))
-    drafts = WORKBOOK / "design-source" / FOLDERS[args.kind][0]
-    drafts.mkdir(parents=True, exist_ok=True)
+    outputs = Outputs(WORKBOOK / "design-source" / FOLDERS[args.kind][0])
     comfy = load_comfy(args.server)
     paths = []
     for seed in SEEDS:
-        out = drafts / f"{args.name}-candidate-{seed}.png"
-        render(comfy, comfy.build_graph(prompt, SIZE, SIZE, seed, STEPS, None), out)
+        graph = comfy.build_graph(prompt, SIZE, SIZE, seed, STEPS, None)
+        out = outputs.write(f"{args.name}-candidate-{seed}.png", lambda p, g=graph: render(comfy, g, p))
         paths.append(out)
         print(f"wrote {out.relative_to(WORKBOOK)}")
 
-    sheet_path = drafts / f"{args.name}-contact-sheet.png"
-    contact_sheet([(f"seed {seed}", p) for seed, p in zip(SEEDS, paths)], sheet_path)
+    sheet_path = outputs.write(f"{args.name}-contact-sheet.png",
+                               lambda p: contact_sheet([(f"seed {s}", c) for s, c in zip(SEEDS, paths)], p))
 
     stats = comfy.api("/system_stats", timeout=10).get("system", {})
     manifest = {"kind": args.kind, "name": args.name, "template": TEMPLATES[args.kind], "fields": fields(args),
                 "prompt": prompt, "seeds": list(SEEDS), "steps": STEPS, "size": SIZE,
                 "graph": comfy.build_graph(prompt, SIZE, SIZE, 0, STEPS, None),
                 "comfyui_version": stats.get("comfyui_version")}
-    (drafts / f"{args.name}-recipe.json").write_text(json.dumps(manifest, indent=1))
+    outputs.write(f"{args.name}-recipe.json", lambda p: p.write_text(json.dumps(manifest, indent=1)))
     print(f"wrote {sheet_path.relative_to(WORKBOOK)} and {args.name}-recipe.json -- pick a seed, then `lock`")
 
 
@@ -253,25 +312,24 @@ def cmd_colorize(args):
     prompt = COLOR_TEMPLATE.format(**color_fields)
     blur = COLOR_RECIPES[args.recipe]["guide_blur"]
     drafts = WORKBOOK / "design-source" / FOLDERS["animal"][0]
+    outputs = Outputs(drafts, inputs=[line_art])
     comfy = load_comfy(args.server)
     controlnets = comfy.api("/object_info/ControlNetLoader")["ControlNetLoader"]["input"]["required"]
     if CONTROLNET not in controlnets["control_net_name"][0]:
         sys.exit(f"ControlNet {CONTROLNET} is not visible to ComfyUI -- check extra_model_paths.yaml")
 
-    guide = drafts / f"{name}-color-guide.png"
-    make_guide(line_art, blur, guide)
+    guide = outputs.write(f"{name}-color-guide.png", lambda p: make_guide(line_art, blur, p))
     upload(comfy, guide, guide.name)
 
     paths = []
     for seed in SEEDS:
-        out = drafts / f"{name}-color-candidate-{seed}.png"
-        render(comfy, color_graph(prompt, seed, guide.name, f"{name}-color-{seed}"), out)
+        graph = color_graph(prompt, seed, guide.name, f"{name}-color-{seed}")
+        out = outputs.write(f"{name}-color-candidate-{seed}.png", lambda p, g=graph: render(comfy, g, p))
         paths.append(out)
         print(f"wrote {out.relative_to(WORKBOOK)}")
 
-    sheet_path = drafts / f"{name}-color-contact-sheet.png"
-    contact_sheet([("locked line art", line_art)] + [(f"color seed {s}", p) for s, p in zip(SEEDS, paths)],
-                  sheet_path)
+    sheet_path = outputs.write(f"{name}-color-contact-sheet.png", lambda p: contact_sheet(
+        [("locked line art", line_art)] + [(f"color seed {s}", c) for s, c in zip(SEEDS, paths)], p))
     stats = comfy.api("/system_stats", timeout=10).get("system", {})
     manifest = {"kind": "animal-color", "name": name, "recipe_version": args.recipe, "template": COLOR_TEMPLATE,
                 "fields": color_fields,
@@ -283,7 +341,7 @@ def cmd_colorize(args):
                 "seeds": list(SEEDS), "steps": STEPS, "size": SIZE,
                 "graph": color_graph(prompt, 0, guide.name, f"{name}-color"),
                 "comfyui_version": stats.get("comfyui_version")}
-    (drafts / f"{name}-color-recipe.json").write_text(json.dumps(manifest, indent=1))
+    outputs.write(f"{name}-color-recipe.json", lambda p: p.write_text(json.dumps(manifest, indent=1)))
     print(f"wrote {sheet_path.relative_to(WORKBOOK)} and {name}-color-recipe.json -- pick a seed, "
           f"then `lock animal {name} --seed N --color`")
 
@@ -309,10 +367,8 @@ def cmd_lock(args):
         stem = safe_name(f"{args.name}-01-{word}", f"the name built from pose {manifest['fields']['pose']!r}")
     else:
         stem = args.name
-    locked.mkdir(parents=True, exist_ok=True)
-    png = locked / f"{stem}.png"
-    if png.resolve().parent != locked.resolve():
-        sys.exit(f"{png} would fall outside {locked}")
+    outputs = Outputs(locked, inputs=[src], into_locked=True)
+    png = outputs.target(f"{stem}.png")
     if png.exists() and not args.force:
         sys.exit(f"{png.relative_to(WORKBOOK)} already exists (use --force to replace)")
     if png.exists() and not args.color:
@@ -332,25 +388,19 @@ def cmd_lock(args):
     problems = embedded_problems(src, manifest, args.seed, load_comfy(args.server), draft_guide)
     if problems:
         sys.exit(f"{src.name} is not the render its recipe describes: " + "; ".join(problems))
-    # Build the whole lock set aside and move it into place only once every step has worked, so a failed
-    # vectorizer or write never leaves an approved lock half-replaced. The recipe goes in last.
-    with tempfile.TemporaryDirectory(dir=locked, prefix=".lock-") as tmp:
-        staged = {f"{stem}.png": src.read_bytes()}
+    # The whole lock set is built aside and moves into place together, so a failed vectorizer or write
+    # never leaves an approved lock half-replaced.
+    with outputs.staging() as batch:
+        batch.file(f"{stem}.png").write_bytes(src.read_bytes())
         if args.color:
             # The lock owns an exact copy of its guide: colorize rewrites the draft guide on every run.
-            staged[f"{stem}-guide.png"] = draft_guide.read_bytes()
+            batch.file(f"{stem}-guide.png").write_bytes(draft_guide.read_bytes())
             manifest["guide"] = str((locked / f"{stem}-guide.png").relative_to(WORKBOOK))
-        for name, data in staged.items():
-            (Path(tmp) / name).write_bytes(data)
-        names = list(staged)
         # Mode A color art is used as a raster; only print line art is vectorized.
         if not args.color:
-            subprocess.run(["bash", str(WORKBOOK / "tools/vectorize-line-art.sh"), str(Path(tmp) / f"{stem}.png"),
-                            str(Path(tmp) / f"{stem}.svg"), "70"], check=True)
-            names.append(f"{stem}.svg")
-        (Path(tmp) / f"{stem}.recipe.json").write_text(json.dumps(manifest, indent=1))
-        for name in names + [f"{stem}.recipe.json"]:
-            os.replace(Path(tmp) / name, locked / name)
+            subprocess.run(["bash", str(WORKBOOK / "tools/vectorize-line-art.sh"), str(batch.tmp / f"{stem}.png"),
+                            str(batch.file(f"{stem}.svg")), "70"], check=True)
+        batch.file(f"{stem}.recipe.json").write_text(json.dumps(manifest, indent=1))
     extras = " + .svg" if not args.color else " + guide"
     print(f"locked {png.relative_to(WORKBOOK)}{extras} + .recipe.json")
 
@@ -371,22 +421,18 @@ def cmd_reproduce(args):
         if not check_guide(graph, WORKBOOK / guide):
             sys.exit(f"guide image {guide} is not the file this asset was rendered from (sha256 differs)")
 
-    # Locked folders are written only by `lock`, and the output must never replace an input.
+    # A locked asset's reproduction belongs in that kind's drafts folder: Outputs refuses a locked one.
     drafts = next((WORKBOOK / "design-source" / d for d, l in FOLDERS.values()
                    if original.parent == WORKBOOK / "design-source" / l), original.parent)
     out = (Path(args.out) if args.out else drafts / f"{original.stem}.reproduced.png").resolve()
-    if any(folder in out.parents for folder in locked_folders()):
-        sys.exit(f"{out} is inside a locked folder; write the reproduction somewhere else")
-    inputs = [original] + ([WORKBOOK / guide] if guide else [])
-    if file_identity(out) in {file_identity(p) for p in inputs}:
-        sys.exit(f"{out} is an input of this reproduction; writing it would destroy that input")
+    outputs = Outputs(out.parent, inputs=[original] + ([WORKBOOK / guide] if guide else []))
 
     comfy = load_comfy(args.server)
     if guide:
         for node in graph.values():
             if node["class_type"] == "LoadImage":
                 upload(comfy, WORKBOOK / guide, node["inputs"]["image"])
-    render(comfy, without_cache_keys(graph), out)
+    outputs.write(out.name, lambda p: render(comfy, without_cache_keys(graph), p), validate=False)
     a = np.asarray(Image.open(original).convert("RGBA"), dtype=int)
     b = np.asarray(Image.open(out).convert("RGBA"), dtype=int)
     diff = np.abs(a - b).max(axis=-1)    # every channel, so a hue change that keeps brightness still counts
@@ -409,6 +455,8 @@ def embedded_problems(png, manifest, seed, comfy, guide=None):
     """Why png is not the render its recipe describes at this seed; an empty list when it is."""
     graph, prompt, sampler = embedded_graph(png)
     kind, problems = manifest["kind"], []
+    if manifest["prompt"] != prompt:
+        problems.append("its recorded prompt is not the one embedded in the PNG")
     if manifest["template"] != (COLOR_TEMPLATE if kind == "animal-color" else TEMPLATES[kind]):
         problems.append("its template differs from the tool's (templates are never edited)")
     if manifest["template"].format(**manifest["fields"]) != prompt:
@@ -480,7 +528,12 @@ def account_locked_pngs():
 def cmd_selftest(args):
     ok = True
     for kind, rel, f in LEGACY_TEMPLATE_CHECKS:
-        _, prompt, sampler = embedded_graph(WORKBOOK / "design-source" / rel)
+        png = WORKBOOK / "design-source" / rel
+        if not png.exists():
+            ok = False
+            print(f"FAIL template {rel}: missing, so the {kind} template has nothing to check against")
+            continue
+        _, prompt, sampler = embedded_graph(png)
         match = TEMPLATES[kind].format(**f) == prompt and sampler["seed"] in SEEDS and sampler["steps"] == STEPS
         ok &= match
         print(f"{'OK  ' if match else 'FAIL'} template {rel} (seed {sampler['seed']}, made before recipes)")
@@ -508,8 +561,11 @@ def cmd_selftest(args):
 
 
 def main():
+    global WORKBOOK
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--server", default="http://127.0.0.1:8188")
+    ap.add_argument("--workbook", type=Path, default=WORKBOOK,
+                    help="workbook root to work in (the tests point this at a copy)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("candidates")
     c.add_argument("kind", choices=TEMPLATES)
@@ -535,6 +591,7 @@ def main():
     r.add_argument("--out")
     sub.add_parser("selftest")
     args = ap.parse_args()
+    WORKBOOK = args.workbook.resolve()
     {"candidates": cmd_candidates, "colorize": cmd_colorize, "lock": cmd_lock, "reproduce": cmd_reproduce,
      "selftest": cmd_selftest}[args.cmd](args)
 
