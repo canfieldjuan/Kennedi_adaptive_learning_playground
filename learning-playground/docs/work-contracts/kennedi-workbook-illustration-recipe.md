@@ -184,6 +184,46 @@ does not change scope.
   - Settling evidence: `selftest` passes `fox-01-sitting` and
     `fox-01-sitting-color`.
 
+- **PR #138 review round 1** (Codex on `deda041`, nine findings, all
+  confirmed). They fall into three classes, and each class is closed across
+  every command in one pass, not finding by finding.
+  - **A. Locked assets are immutable and self-contained.**
+    - Each lock owns its guide. `lock --color` copies the exact draft guide
+      to `locked-poses/<stem>-guide.png` and records that path. Before this,
+      locks pointed at `drafts/<name>-color-guide.png`, and the next
+      `colorize` run rewrote it.
+    - The five existing color locks are migrated to guide copies. The bytes
+      are the same, so the fingerprints are unchanged.
+    - `lock` builds every output in a temporary directory inside the locked
+      folder, and moves them into place only after every step has
+      succeeded. A failed vectorizer or manifest write under `--force`
+      leaves the previous lock set untouched.
+    - `reproduce` writes by default to the kind's `drafts/`, never beside the
+      locked asset. It refuses an `--out` that is the same file as its
+      source PNG or its guide, compared by resolved path or, for existing
+      files, device and inode. This is the input-overwrite class from PR
+      #136, which this tool had not been swept for.
+  - **B. Checks fail closed.**
+    - `reproduce` compares full RGB(A) values. Greyscale is used only for
+      the print-ink line.
+    - A guided node whose `is_changed` fingerprint is missing or malformed
+      fails `check_guide`.
+    - `check_locked` compares the embedded steps with the manifest's
+      `steps`, and separately with the tool's `STEPS`.
+    - `reproduce` of a PNG whose graph loads an image requires a sibling
+      recipe that names its guide. Otherwise it exits before queueing, so it
+      never renders with a stale guide left on the server.
+  - **C. Packaging.** The docstring names NumPy as well as Pillow, and the
+    script is executable like the other `workbook/tools` scripts.
+  - Settling evidence:
+    - each fix has a probe that fails before the fix and passes after;
+    - `selftest` passes every recipe after the guide migration;
+    - `reproduce` keeps its 0-difference result, re-checked in RGB.
+    
+    The existing color bunny and penguin re-renders were already re-checked
+    in RGB on the CPU: 0 of 1,048,576 pixels differ, max channel
+    difference 0.
+
 ## Cold Diff Audit
 
 ### Gaps
