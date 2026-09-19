@@ -252,6 +252,39 @@ does not change scope.
     missing baseline, and a mismatched candidate at lock time; `selftest`
     passes on the real workbook.
 
+- **PR #138 review round 3** (Codex on `d95df1e`, five findings, all
+  confirmed). Three classes again, and each is closed at one enforcement
+  point.
+  - **A. Every name the tool builds a path from is validated.**
+    `--locked-name /tmp/report` was accepted as a stem, so `locked / stem`
+    escaped the workbook and `--force` overwrote an unrelated file. The same
+    hole put a comma in `shark-01-swimming,.png`, because the lock stem
+    takes the first word of the pose verbatim.
+    - `safe_name()` accepts only lowercase letters, digits and hyphens.
+    - It guards the character name, `--locked-name`, and the word taken from
+      the pose, which is stripped of punctuation first.
+  - **B. The locked state is complete and consistent.**
+    - `locked_folders()` covers every locked root, including
+      `boss-kennedi/locked-poses`, which `reproduce` previously treated as
+      an ordinary folder and wrote into. Its 8 PNGs join the baseline.
+    - `account_locked_pngs()` fails for a baseline entry whose file is gone,
+      not just for files that are not on the baseline.
+    - `lock --force` refuses to replace line art that a color recipe names
+      as its source, because the color guide is rebuilt from that line art
+      and would no longer match. The message names the dependent locks.
+  - **C. Guided art locked before the tool can still be reproduced.**
+    The puppy poses 02-04 are Redux renders whose reference image is
+    `01-sitting.png`; their embedded fingerprints match that file. They had
+    no recipe, so the fail-closed guide rule blocked `reproduce` on them.
+    - `backfill --guide PATH` records a guide for such an asset, after
+      checking it against the embedded fingerprint.
+    - `upload()` handles a graph that names its image inside a subfolder,
+      which these graphs do.
+    - Any recipe with a guide has that guide fingerprint-checked, not only
+      color locks.
+  - Settling evidence: probes for each refusal, the three puppy poses
+    backfilled and checked, and `selftest` passing with the wider baseline.
+
 ## Cold Diff Audit
 
 ### Gaps
