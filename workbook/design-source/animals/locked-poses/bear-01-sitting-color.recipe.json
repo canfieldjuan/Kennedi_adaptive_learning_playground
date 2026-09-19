@@ -1,0 +1,178 @@
+{
+ "kind": "animal-color",
+ "name": "bear",
+ "template": "Full color flat children's book illustration, warm soft palette, gentle shading and soft shadows, a single cute cartoon {subject} {pose}, {colors}, big round expressive dark eyes, happy smile, clean bold outlines, charming storybook illustration style, pure white background, centered composition, no text",
+ "fields": {
+  "subject": "bear",
+  "pose": "sitting",
+  "colors": "warm honey-brown fur with soft darker brown shading, a light tan muzzle, belly and inner ears and a dark brown nose"
+ },
+ "prompt": "Full color flat children's book illustration, warm soft palette, gentle shading and soft shadows, a single cute cartoon bear sitting, warm honey-brown fur with soft darker brown shading, a light tan muzzle, belly and inner ears and a dark brown nose, big round expressive dark eyes, happy smile, clean bold outlines, charming storybook illustration style, pure white background, centered composition, no text",
+ "source_line_art": "design-source/animals/locked-poses/bear-01-sitting.png",
+ "guide": "design-source/animals/drafts/bear-color-guide.png",
+ "guide_recipe": "line art grey < 180 -> white lines on black, Gaussian blur 1.5",
+ "controlnet": "diffusion_pytorch_model.safetensors",
+ "strength": 0.7,
+ "end_percent": 0.8,
+ "seeds": [
+  61,
+  72,
+  83,
+  94
+ ],
+ "steps": 28,
+ "size": 1024,
+ "graph": {
+  "1": {
+   "class_type": "UnetLoaderGGUF",
+   "inputs": {
+    "unet_name": "flux1-dev-Q8_0.gguf"
+   }
+  },
+  "2": {
+   "class_type": "DualCLIPLoader",
+   "inputs": {
+    "clip_name1": "t5xxl_fp8_e4m3fn.safetensors",
+    "clip_name2": "clip_l.safetensors",
+    "type": "flux"
+   }
+  },
+  "3": {
+   "class_type": "VAELoader",
+   "inputs": {
+    "vae_name": "ae.safetensors"
+   }
+  },
+  "4": {
+   "class_type": "CLIPTextEncode",
+   "inputs": {
+    "clip": [
+     "2",
+     0
+    ],
+    "text": "Full color flat children's book illustration, warm soft palette, gentle shading and soft shadows, a single cute cartoon bear sitting, warm honey-brown fur with soft darker brown shading, a light tan muzzle, belly and inner ears and a dark brown nose, big round expressive dark eyes, happy smile, clean bold outlines, charming storybook illustration style, pure white background, centered composition, no text"
+   }
+  },
+  "5": {
+   "class_type": "FluxGuidance",
+   "inputs": {
+    "conditioning": [
+     "4",
+     0
+    ],
+    "guidance": 3.5
+   }
+  },
+  "6": {
+   "class_type": "CLIPTextEncode",
+   "inputs": {
+    "clip": [
+     "2",
+     0
+    ],
+    "text": ""
+   }
+  },
+  "10": {
+   "class_type": "ControlNetLoader",
+   "inputs": {
+    "control_net_name": "diffusion_pytorch_model.safetensors"
+   }
+  },
+  "11": {
+   "class_type": "LoadImage",
+   "inputs": {
+    "image": "bear-color-guide.png"
+   }
+  },
+  "12": {
+   "class_type": "ControlNetApplyAdvanced",
+   "inputs": {
+    "positive": [
+     "5",
+     0
+    ],
+    "negative": [
+     "6",
+     0
+    ],
+    "control_net": [
+     "10",
+     0
+    ],
+    "image": [
+     "11",
+     0
+    ],
+    "strength": 0.7,
+    "start_percent": 0.0,
+    "end_percent": 0.8,
+    "vae": [
+     "3",
+     0
+    ]
+   }
+  },
+  "7": {
+   "class_type": "EmptySD3LatentImage",
+   "inputs": {
+    "width": 1024,
+    "height": 1024,
+    "batch_size": 1
+   }
+  },
+  "8": {
+   "class_type": "KSampler",
+   "inputs": {
+    "model": [
+     "1",
+     0
+    ],
+    "positive": [
+     "12",
+     0
+    ],
+    "negative": [
+     "12",
+     1
+    ],
+    "latent_image": [
+     "7",
+     0
+    ],
+    "seed": 0,
+    "steps": 28,
+    "cfg": 1.0,
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "denoise": 1.0
+   }
+  },
+  "9": {
+   "class_type": "VAEDecode",
+   "inputs": {
+    "samples": [
+     "8",
+     0
+    ],
+    "vae": [
+     "3",
+     0
+    ]
+   }
+  },
+  "13": {
+   "class_type": "SaveImage",
+   "inputs": {
+    "images": [
+     "9",
+     0
+    ],
+    "filename_prefix": "bear-color"
+   }
+  }
+ },
+ "comfyui_version": "0.25.0",
+ "chosen_seed": 94,
+ "source": "design-source/animals/drafts/bear-color-candidate-94.png"
+}
