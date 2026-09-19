@@ -1,0 +1,132 @@
+{
+ "kind": "animal",
+ "name": "bear",
+ "template": "a single cute cartoon {subject} {pose}, children's coloring book clipart style, confident clean bold black outline of uniform thickness (not sketchy, not scribbled), big round expressive eyes, soft airbrushed gray shading gradient for roundness on the {shading}, {accent} drawn with the same bold black line weight, centered on plain white background, simple flat 2D illustration, no text, no color",
+ "fields": {
+  "subject": "bear",
+  "shading": "body and round ears",
+  "accent": "fur texture accent lines on the ears and belly",
+  "pose": "sitting"
+ },
+ "prompt": "a single cute cartoon bear sitting, children's coloring book clipart style, confident clean bold black outline of uniform thickness (not sketchy, not scribbled), big round expressive eyes, soft airbrushed gray shading gradient for roundness on the body and round ears, fur texture accent lines on the ears and belly drawn with the same bold black line weight, centered on plain white background, simple flat 2D illustration, no text, no color",
+ "seeds": [
+  61,
+  72,
+  83,
+  94
+ ],
+ "steps": 28,
+ "size": 1024,
+ "graph": {
+  "1": {
+   "class_type": "UnetLoaderGGUF",
+   "inputs": {
+    "unet_name": "flux1-dev-Q8_0.gguf"
+   }
+  },
+  "2": {
+   "class_type": "DualCLIPLoader",
+   "inputs": {
+    "clip_name1": "t5xxl_fp8_e4m3fn.safetensors",
+    "clip_name2": "clip_l.safetensors",
+    "type": "flux"
+   }
+  },
+  "3": {
+   "class_type": "VAELoader",
+   "inputs": {
+    "vae_name": "ae.safetensors"
+   }
+  },
+  "4": {
+   "class_type": "CLIPTextEncode",
+   "inputs": {
+    "clip": [
+     "2",
+     0
+    ],
+    "text": "a single cute cartoon bear sitting, children's coloring book clipart style, confident clean bold black outline of uniform thickness (not sketchy, not scribbled), big round expressive eyes, soft airbrushed gray shading gradient for roundness on the body and round ears, fur texture accent lines on the ears and belly drawn with the same bold black line weight, centered on plain white background, simple flat 2D illustration, no text, no color"
+   }
+  },
+  "5": {
+   "class_type": "FluxGuidance",
+   "inputs": {
+    "conditioning": [
+     "4",
+     0
+    ],
+    "guidance": 3.5
+   }
+  },
+  "6": {
+   "class_type": "ConditioningZeroOut",
+   "inputs": {
+    "conditioning": [
+     "4",
+     0
+    ]
+   }
+  },
+  "7": {
+   "class_type": "EmptySD3LatentImage",
+   "inputs": {
+    "width": 1024,
+    "height": 1024,
+    "batch_size": 1
+   }
+  },
+  "8": {
+   "class_type": "KSampler",
+   "inputs": {
+    "model": [
+     "1",
+     0
+    ],
+    "positive": [
+     "5",
+     0
+    ],
+    "negative": [
+     "6",
+     0
+    ],
+    "latent_image": [
+     "7",
+     0
+    ],
+    "seed": 0,
+    "steps": 28,
+    "cfg": 1.0,
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "denoise": 1.0
+   }
+  },
+  "9": {
+   "class_type": "VAEDecode",
+   "inputs": {
+    "samples": [
+     "8",
+     0
+    ],
+    "vae": [
+     "3",
+     0
+    ]
+   }
+  },
+  "10": {
+   "class_type": "SaveImage",
+   "inputs": {
+    "images": [
+     "9",
+     0
+    ],
+    "filename_prefix": "kennedi_concept/gen"
+   }
+  }
+ },
+ "comfyui_version": "0.25.0",
+ "chosen_seed": 94,
+ "source": "design-source/animals/drafts/bear-candidate-94.png"
+}

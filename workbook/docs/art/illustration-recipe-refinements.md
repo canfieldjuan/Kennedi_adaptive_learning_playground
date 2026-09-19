@@ -10,6 +10,17 @@ characters today; each item says what it would fix.
 - **Flag black blobs automatically.** Grey inner ears, pads and ground shadows
   threshold into solid black shapes (bunny seeds 61 and 94, the puppy's ground
   shadow). Measure large filled regions after thresholding and label risky seeds.
+- **Dark-bodied animals print as solid black.** Penguin seeds 61, 83 and 94
+  have black backs and heads that threshold into large solid fills, which
+  leaves nothing to color. Needs a decision per book: allow it, or add an
+  "outline-only, white body" variant of the animal template (seed 72's white
+  chick shows FLUX can do it).
+- **Ground shadows recur.** Seen again on turtle seeds 72/83 and bear seeds
+  61/72/83 (plus black paw pads). A "no ground shadow" template version would
+  remove most of the black-blob risk.
+- **"no color" isn't always obeyed.** Penguin seed 61 came back with an orange
+  beak and feet. Thresholding hides it in print, but the raw PNGs shouldn't be
+  used anywhere color matters without checking.
 - **Line-weight check.** Seed 83 of the bunny printed thinner than the puppy.
   Measure stroke width on the vectorized result and compare it against the
   locked puppy, so a set stays visually even.
@@ -28,6 +39,15 @@ characters today; each item says what it would fix.
 - **More poses of one character.** `lock` names assets `<name>-01-<pose>`. A
   second pose needs `-02-`, and should come from FLUX Redux on the locked image
   (same-subject only), not a new text prompt.
+
+## Color versions (Mode A)
+- **`colorize` from the locked line art.** Interior pages stay black-and-white
+  (Mode B, the child colors them). Covers, certificates and promo use color
+  (Mode A, `docs/design-system.md`). Generate each character's color version
+  from its *locked* line art as a soft-edge ControlNet guide (Union-Pro 2.0,
+  now on the Dev-Drive) so the color character is guaranteed to match the
+  black-and-white one, instead of a fresh text prompt that draws a different
+  animal. Record it in the same `.recipe.json`.
 
 ## Plumbing
 - **`comfy-generate.py` defaults.** It hardcodes port 8188 and defaults to 24
