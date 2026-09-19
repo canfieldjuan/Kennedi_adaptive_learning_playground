@@ -5,10 +5,12 @@ Usage:
       [--profile PROFILE.json] [--out-dir DIR] [--silhouette BODY_ONLY.png]
 
 Writes apple-lineart.png (print art) and apple-shaded.png (form check) to --out-dir.
-Verified with Blender 5.2.2 LTS. The PNGs carry no render metadata, so a rebuild rewrites the
-same bytes -- except that Freestyle's stroke order sometimes varies between runs, which shifts
-the anti-aliasing of a few line-edge pixels. If a rebuild dirties apple-lineart.png with no
-input change, that is the cause; discard it.
+Needs Blender 5.2 or later (verified on 5.2.2 LTS).
+
+The PNGs carry no render metadata, so a rebuild rewrites the same bytes -- except that
+Freestyle's stroke order sometimes varies between runs, which shifts the anti-aliasing of a
+few line-edge pixels. If a rebuild dirties apple-lineart.png with no input change, that is
+the cause; discard it.
 """
 import argparse
 import json
@@ -20,6 +22,7 @@ import bmesh
 import bpy
 from mathutils import Vector
 
+MIN_BLENDER = (5, 2)    # the verified version; earlier releases rename render engines and APIs
 WORKBOOK = Path(__file__).resolve().parents[2]
 ASSET_DIR = WORKBOOK / "design-source" / "blender" / "apple"
 
@@ -48,10 +51,7 @@ def reset_scene():
     for obj in list(bpy.data.objects):
         bpy.data.objects.remove(obj, do_unlink=True)
     scene = bpy.context.scene
-    try:
-        scene.render.engine = 'BLENDER_EEVEE'
-    except TypeError:    # Blender 4.2-4.4 name the engine BLENDER_EEVEE_NEXT
-        scene.render.engine = 'BLENDER_EEVEE_NEXT'
+    scene.render.engine = 'BLENDER_EEVEE'
     # Render metadata (date, render time, ...) would make every rebuild rewrite the tracked PNGs.
     for prop in scene.render.bl_rna.properties:
         if prop.identifier.startswith("use_stamp"):
@@ -59,6 +59,8 @@ def reset_scene():
     # Tone-mapped view transforms (AgX, Filmic) render pure white as grey.
     scene.view_settings.view_transform = 'Standard'
     scene.view_settings.look = 'None'
+    # Dither noise would scatter 254-grey specks across the white background.
+    scene.render.dither_intensity = 0.0
     scene.render.resolution_x = scene.render.resolution_y = 1000
     scene.render.resolution_percentage = 100
     scene.render.film_transparent = False
@@ -314,6 +316,9 @@ def render(scene, path):
 
 
 def main():
+    if bpy.app.version[:2] < MIN_BLENDER:
+        sys.exit(f"build_apple.py needs Blender {MIN_BLENDER[0]}.{MIN_BLENDER[1]} or later; "
+                 f"this is {bpy.app.version_string}")
     args = parse_args()
     profile = json.loads(args.profile.read_text())["profile"]
     args.out_dir.mkdir(parents=True, exist_ok=True)

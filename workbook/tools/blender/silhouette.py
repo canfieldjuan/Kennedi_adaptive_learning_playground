@@ -5,8 +5,9 @@
       Outer profile [(radius, z)] of the reference body, max radius 1.0, true aspect.
   silhouette.py compare REFERENCE.png RENDER.png [--overlay OUT.png]
       Row-by-row width difference of the two bodies, normalised to the same height.
-  silhouette.py smooth PROFILE.json OUT.json --rim INDEX
-      Refit the outer surface (rim to lowest point) with arc-length smoothing splines.
+  silhouette.py smooth PROFILE.json OUT.json --rim INDEX [--flips N]
+      Refit the outer surface (rim to lowest point) with arc-length smoothing splines, keeping the
+      least-distorted fit with no more curvature flips than the real surface has (--flips, default 2).
 
 Requires numpy, scipy and Pillow (system python, not Blender's).
 """
@@ -117,7 +118,7 @@ def cmd_smooth(args):
     head, outer, tail = profile[:args.rim], profile[args.rim:lowest + 1], profile[lowest + 1:]
     # Arc-length parametrisation: r(z) goes near-vertical across a flat top, which breaks a z-based fit.
     s = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(outer, axis=0), axis=1))])
-    best = None
+    candidates = []
     for smoothing in (2e-4, 5e-4, 1e-3, 2e-3, 4e-3):
         fr = UnivariateSpline(s, outer[:, 0], k=SPLINE_K, s=smoothing)
         fz = UnivariateSpline(s, outer[:, 1], k=SPLINE_K, s=smoothing)
@@ -127,9 +128,10 @@ def cmd_smooth(args):
         rms = float(np.sqrt(np.mean((np.column_stack([fr(s), fz(s)]) - outer) ** 2)))
         flips = curvature_flips(fit)
         print(f"  smoothing {smoothing:g}: {flips} curvature flips, rms shift {rms:.4f}")
-        if best is None or (flips <= 2 and rms < best[2]) or (best[1] > 2 and flips < best[1]):
-            best = (smoothing, flips, rms, fit)
-    smoothing, flips, rms, fit = best
+        candidates.append((smoothing, flips, rms, fit))
+    # Fits with no more flips than the real surface all have the right shape, so they compete on
+    # distortion alone. Past that, fewer spurious flips win, then less distortion.
+    smoothing, flips, rms, fit = min(candidates, key=lambda c: (max(c[1], args.flips), c[2]))
     out = np.vstack([head, fit, tail])
     data["profile"] = [(round(float(r), 5), round(float(z), 5)) for r, z in out]
     json.dump(data, open(args.out, "w"), indent=1)
@@ -137,11 +139,14 @@ def cmd_smooth(args):
           f"({flips} flips, rms shift {rms:.4f}) -> {args.out}")
 
 
-def point_count(value):
-    count = int(value)
-    if count < 2:    # both ends of the outer surface are pinned to the original rim and lowest point
-        raise argparse.ArgumentTypeError(f"needs at least 2 points, got {count}")
-    return count
+def at_least(minimum):
+    def parse(value):
+        number = int(value)
+        if number < minimum:
+            raise argparse.ArgumentTypeError(f"must be at least {minimum}, got {number}")
+        return number
+    parse.__name__ = "int"    # argparse names the type in its "invalid int value" message
+    return parse
 
 
 def main():
@@ -158,7 +163,10 @@ def main():
     s.add_argument("profile")
     s.add_argument("out")
     s.add_argument("--rim", type=int, required=True, help="index of the cavity rim in the profile")
-    s.add_argument("--points", type=point_count, default=96)
+    s.add_argument("--points", type=at_least(2), default=96,
+                   help="outer-surface points; both ends are pinned to the rim and the lowest point")
+    s.add_argument("--flips", type=at_least(0), default=2,
+                   help="curvature flips the real outer surface has (the apple: 2)")
     args = parser.parse_args()
     {"measure": cmd_measure, "compare": cmd_compare, "smooth": cmd_smooth}[args.cmd](args)
 
