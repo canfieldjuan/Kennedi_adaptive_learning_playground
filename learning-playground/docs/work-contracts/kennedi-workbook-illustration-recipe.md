@@ -174,6 +174,16 @@ does not change scope.
     seed, a different guide, the wrong recipe version, a missing SVG, and a
     missing PNG.
 
+- **The fox: a new character as the end-to-end test.** Added at the
+  operator's request, after PR #138 opened, to see whether the tool can make
+  a new character. The scope grows to include the fox's drafts and locks
+  under `design-source/animals/`.
+  - The fox was made with `candidates`, then `lock` on seed 94, then
+    `colorize` with recipe v2, then `lock --color` on seed 94. The operator
+    picked both seeds.
+  - Settling evidence: `selftest` passes `fox-01-sitting` and
+    `fox-01-sitting-color`.
+
 ## Cold Diff Audit
 
 ### Gaps
