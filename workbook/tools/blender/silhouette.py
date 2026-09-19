@@ -19,19 +19,27 @@ from PIL import Image
 from scipy import ndimage
 from scipy.interpolate import UnivariateSpline
 
-SAMPLE_T = (0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.88, 0.94, 0.98)
+SAMPLE_T = (0.02, 0.05, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.88, 0.94, 0.98)    # printed rows
+SPLINE_K = 5
 
 
 def body_mask(path):
-    # Flood-fill the white region enclosed by the body outline: leaf and stem
-    # interiors are separate regions, so they can't leak into the measurement.
+    # The body is the largest white region enclosed by ink: leaf, stem and highlight
+    # interiors are separate, smaller regions, so they can't leak into the measurement.
     white = np.array(Image.open(path).convert("L")) >= 128
-    labels, _ = ndimage.label(white)
-    h, w = white.shape
-    region = labels[int(h * 0.6), w // 2]
-    if region == 0 or region == labels[0, 0]:
-        sys.exit(f"{path}: body centre is not an enclosed white region -- outline broken or seed on a line")
-    return labels == region
+    labels, count = ndimage.label(white)
+    border = set(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]).tolist())
+    sizes = ndimage.sum(white, labels, index=np.arange(1, count + 1))
+    enclosed = [(size, label) for label, size in enumerate(sizes, start=1) if label not in border]
+    if not enclosed:
+        sys.exit(f"{path}: no white region is enclosed by ink -- outline broken")
+    region = labels == max(enclosed)[1]
+    # With a broken outline the body joins the background, and the largest enclosed region is then
+    # the leaf or the highlight. The body surrounds the middle of the drawing; those don't.
+    ys, xs = np.where(~white)
+    if not ndimage.binary_fill_holes(region)[(ys.min() + ys.max()) // 2, (xs.min() + xs.max()) // 2]:
+        sys.exit(f"{path}: the largest enclosed region is off-centre, not the body -- outline broken")
+    return region
 
 
 def row_widths(mask):
@@ -62,12 +70,14 @@ def cmd_compare(args):
     rt, rw, ra = normalised(ref_mask)
     mt, mw, ma = normalised(mine_mask)
     print(f"aspect  reference {ra:.3f} | render {ma:.3f}")
-    worst = 0.0
     for t in SAMPLE_T:
         a, b = np.interp(t, rt, rw), np.interp(t, mt, mw)
-        worst = max(worst, abs(b - a))
         print(f"  t={t:.2f}  reference {a:.3f}  render {b:.3f}  diff {b - a:+.3f}")
-    print(f"worst |diff| {worst:.3f}")
+    # The worst case covers every row of the taller body, not only the rows printed above.
+    t = np.linspace(0.0, 1.0, max(len(rt), len(mt)))
+    diff = np.abs(np.interp(t, mt, mw) - np.interp(t, rt, rw))
+    worst = int(np.argmax(diff))
+    print(f"worst |diff| {diff[worst]:.3f} at t={t[worst]:.3f} (all {len(t)} rows)")
     if args.overlay:
         write_overlay(ref_mask, mine_mask, args.overlay)
         print(f"overlay (reference red, render blue) -> {args.overlay}")
@@ -101,13 +111,16 @@ def cmd_smooth(args):
     data = json.load(open(args.profile))
     profile = np.array(data["profile"], dtype=float)
     lowest = int(np.argmin(profile[:, 1]))
+    if not 0 <= args.rim <= lowest - SPLINE_K:
+        sys.exit(f"--rim must be 0..{lowest - SPLINE_K}: the spline needs at least {SPLINE_K + 1} "
+                 f"outer-surface points up to the lowest point (index {lowest})")
     head, outer, tail = profile[:args.rim], profile[args.rim:lowest + 1], profile[lowest + 1:]
     # Arc-length parametrisation: r(z) goes near-vertical across a flat top, which breaks a z-based fit.
     s = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(outer, axis=0), axis=1))])
     best = None
     for smoothing in (2e-4, 5e-4, 1e-3, 2e-3, 4e-3):
-        fr = UnivariateSpline(s, outer[:, 0], k=5, s=smoothing)
-        fz = UnivariateSpline(s, outer[:, 1], k=5, s=smoothing)
+        fr = UnivariateSpline(s, outer[:, 0], k=SPLINE_K, s=smoothing)
+        fz = UnivariateSpline(s, outer[:, 1], k=SPLINE_K, s=smoothing)
         ss = np.linspace(0.0, s[-1], args.points)
         fit = np.column_stack([fr(ss), fz(ss)])
         fit[0], fit[-1] = outer[0], outer[-1]
@@ -124,6 +137,13 @@ def cmd_smooth(args):
           f"({flips} flips, rms shift {rms:.4f}) -> {args.out}")
 
 
+def point_count(value):
+    count = int(value)
+    if count < 2:    # both ends of the outer surface are pinned to the original rim and lowest point
+        raise argparse.ArgumentTypeError(f"needs at least 2 points, got {count}")
+    return count
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -138,7 +158,7 @@ def main():
     s.add_argument("profile")
     s.add_argument("out")
     s.add_argument("--rim", type=int, required=True, help="index of the cavity rim in the profile")
-    s.add_argument("--points", type=int, default=96)
+    s.add_argument("--points", type=point_count, default=96)
     args = parser.parse_args()
     {"measure": cmd_measure, "compare": cmd_compare, "smooth": cmd_smooth}[args.cmd](args)
 
