@@ -129,6 +129,22 @@ does not change scope.
     bunny.
   - Settling evidence: the penguin re-run on `v2`, judged by the operator
     on the contact sheet.
+- **Correction to the v2 amendment above: the wording was not the cause.**
+  - The penguin re-run with the stronger wording barely changed: each seed
+    moved by 1.5-3.3/255 on average, and edge sharpness stayed at 2-4.
+    Sharp locks score 13-19.
+  - One factor at a time on penguin seed 83 found the real cause, the 1.5 px
+    blur on the guide. Without the blur, sharpness rose from 2.4 to 134.7,
+    with crisp edges and no artifacts. ControlNet strength 0.5, an end of
+    0.5, or both, left it at 2.4-2.5.
+  - v2 is therefore a *recipe* version, not a template version. It keeps v1's
+    wording and ControlNet settings and stops blurring the guide.
+    `colorize --recipe {v1,v2}` defaults to `v2`, and the manifest records
+    `recipe_version` and the guide recipe. The wording change is dropped.
+  - Invariant check: the v1 recipe regenerates the committed bunny, bear and
+    turtle guides byte for byte, so those locks are untouched. Manifests
+    written before versioning are v1, and their `guide_recipe` records the
+    1.5 px blur.
 
 ## Cold Diff Audit
 
