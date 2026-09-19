@@ -68,6 +68,10 @@ GUIDE_INK = 180               # the print vectorizer's 70% threshold: what count
 CONTROL_STRENGTH, CONTROL_END = 0.7, 0.8    # Union-Pro 2.0's suggested soft-edge settings
 CONTROLNET = "diffusion_pytorch_model.safetensors"    # Shakker-Labs FLUX.1-dev-ControlNet-Union-Pro-2.0
 
+# Locked PNGs made before the tool wrote recipes. Every other PNG in a locked folder must be a recipe-managed
+# asset or a guide one of those recipes names, so a deleted recipe can't hide an asset from selftest.
+LEGACY_BASELINE = "design-source/legacy-locked-assets.json"
+
 # Locked before the tool wrote recipes: the templates must still rebuild their prompts.
 LEGACY_TEMPLATE_CHECKS = [
     ("animal", "animals/locked-poses/dog-01-sitting.png",
@@ -125,10 +129,6 @@ def file_identity(path):
 
 def locked_folders():
     return [WORKBOOK / "design-source" / locked for _, locked in FOLDERS.values()]
-
-
-def is_guide(png):
-    return png.name.endswith("-guide.png")
 
 
 def render(comfy, graph, out, timeout=600):
@@ -294,16 +294,21 @@ def cmd_lock(args):
     png = locked / f"{stem}.png"
     if png.exists() and not args.force:
         sys.exit(f"{png.relative_to(WORKBOOK)} already exists (use --force to replace)")
+    if not src.exists():
+        sys.exit(f"{src.relative_to(WORKBOOK)} is missing -- re-run the candidates")
     manifest.update(chosen_seed=args.seed, source=str(src.relative_to(WORKBOOK)))
+    # The candidate must be exactly the render this recipe describes: a re-render, a stale manifest or a
+    # rewritten draft guide would otherwise lock an asset its recipe can't reproduce.
+    draft_guide = WORKBOOK / manifest["guide"] if args.color else None
+    problems = embedded_problems(src, manifest, args.seed, load_comfy(args.server), draft_guide)
+    if problems:
+        sys.exit(f"{src.name} is not the render its recipe describes: " + "; ".join(problems))
     # Build the whole lock set aside and move it into place only once every step has worked, so a failed
     # vectorizer or write never leaves an approved lock half-replaced. The recipe goes in last.
     with tempfile.TemporaryDirectory(dir=locked, prefix=".lock-") as tmp:
         staged = {f"{stem}.png": src.read_bytes()}
         if args.color:
             # The lock owns an exact copy of its guide: colorize rewrites the draft guide on every run.
-            draft_guide = WORKBOOK / manifest["guide"]
-            if not check_guide(json.loads(Image.open(src).info["prompt"]), draft_guide):
-                sys.exit(f"{manifest['guide']} is not the guide {src.name} was rendered from -- re-run colorize")
             staged[f"{stem}-guide.png"] = draft_guide.read_bytes()
             manifest["guide"] = str((locked / f"{stem}-guide.png").relative_to(WORKBOOK))
         for name, data in staged.items():
@@ -371,41 +376,49 @@ def embedded_graph(png):
     return graph, prompt, sampler
 
 
-def check_locked(recipe_path, comfy):
-    """What stops a locked asset rebuilding from its recipe; an empty list when nothing does."""
-    manifest = json.loads(recipe_path.read_text())
-    png = recipe_path.with_name(recipe_path.name.removesuffix(".recipe.json") + ".png")
-    if not png.exists():
-        return [f"{png.name} is missing"]
+def embedded_problems(png, manifest, seed, comfy, guide=None):
+    """Why png is not the render its recipe describes at this seed; an empty list when it is."""
     graph, prompt, sampler = embedded_graph(png)
     kind, problems = manifest["kind"], []
     if manifest["template"] != (COLOR_TEMPLATE if kind == "animal-color" else TEMPLATES[kind]):
         problems.append("its template differs from the tool's (templates are never edited)")
     if manifest["template"].format(**manifest["fields"]) != prompt:
         problems.append("its template and fields don't rebuild the embedded prompt")
-    if (sampler["seed"], sampler["steps"]) != (manifest["chosen_seed"], manifest["steps"]):
-        problems.append(f"embedded seed/steps {sampler['seed']}/{sampler['steps']} "
-                        f"!= recipe {manifest['chosen_seed']}/{manifest['steps']}")
+    if (sampler["seed"], sampler["steps"]) != (seed, manifest["steps"]):
+        problems.append(f"embedded seed/steps {sampler['seed']}/{sampler['steps']} != recipe {seed}/{manifest['steps']}")
     if manifest["steps"] != STEPS:
         problems.append(f"its recipe records {manifest['steps']} steps; the tool renders {STEPS}")
     if kind != "animal-color":
         if graph != comfy.build_graph(prompt, SIZE, SIZE, sampler["seed"], STEPS, None):
             problems.append("its graph differs from the one the tool builds")
-        if not png.with_suffix(".svg").exists():
-            problems.append(f"{png.with_suffix('.svg').name} is missing")
         return problems
-
     image = next(n["inputs"]["image"] for n in graph.values() if n["class_type"] == "LoadImage")
     prefix = next(n["inputs"]["filename_prefix"] for n in graph.values() if n["class_type"] == "SaveImage")
     if color_graph(prompt, sampler["seed"], image, prefix) != without_cache_keys(graph):
         problems.append("its graph differs from the color graph the tool builds")
-    guide = WORKBOOK / manifest["guide"]
+    if not guide.exists():
+        problems.append(f"guide {guide.relative_to(WORKBOOK)} is missing")
+    elif not check_guide(graph, guide):
+        problems.append(f"guide {guide.relative_to(WORKBOOK)} is not the file it was rendered from")
+    return problems
+
+
+def check_locked(recipe_path, comfy):
+    """What stops a locked asset rebuilding from its recipe; an empty list when nothing does."""
+    manifest = json.loads(recipe_path.read_text())
+    png = recipe_path.with_name(recipe_path.name.removesuffix(".recipe.json") + ".png")
+    if not png.exists():
+        return [f"{png.name} is missing"]
+    guide = WORKBOOK / manifest["guide"] if manifest["kind"] == "animal-color" else None
+    problems = embedded_problems(png, manifest, manifest["chosen_seed"], comfy, guide)
+    if guide is None:
+        if not png.with_suffix(".svg").exists():
+            problems.append(f"{png.with_suffix('.svg').name} is missing")
+        return problems
     if guide.parent != recipe_path.parent:
         problems.append(f"its guide {manifest['guide']} is outside the lock folder, where colorize can overwrite it")
     if not guide.exists():
-        return problems + [f"guide {manifest['guide']} is missing"]
-    if not check_guide(graph, guide):
-        problems.append("the committed guide is not the file it was rendered from")
+        return problems
     # The guide itself must come back from the line art: manifests written before versioning are v1.
     version = manifest.get("recipe_version", "v1")
     with tempfile.TemporaryDirectory() as tmp:
@@ -414,6 +427,24 @@ def check_locked(recipe_path, comfy):
         if rebuilt.read_bytes() != guide.read_bytes():
             problems.append(f"recipe {version} no longer rebuilds its guide from {manifest['source_line_art']}")
     return problems
+
+
+def account_locked_pngs():
+    """(PNGs no recipe, referenced guide or baseline entry accounts for, legacy count, baseline present)."""
+    source = WORKBOOK / "design-source"
+    baseline_path = WORKBOOK / LEGACY_BASELINE
+    legacy = set(json.loads(baseline_path.read_text())) if baseline_path.exists() else set()
+    recipes = [r for folder in locked_folders() for r in folder.glob("*.recipe.json")]
+    guides = {(WORKBOOK / g).resolve() for r in recipes if (g := json.loads(r.read_text()).get("guide"))}
+    unaccounted, legacy_count = [], 0
+    for png in sorted(p for folder in locked_folders() for p in folder.glob("*.png")):
+        if png.with_name(png.stem + ".recipe.json").exists() or png.resolve() in guides:
+            continue
+        if str(png.relative_to(source)) in legacy:
+            legacy_count += 1
+        else:
+            unaccounted.append(png)
+    return unaccounted, legacy_count, baseline_path.exists()
 
 
 def cmd_selftest(args):
@@ -426,15 +457,20 @@ def cmd_selftest(args):
 
     comfy = load_comfy(args.server)     # only for its graph builder; nothing is sent to ComfyUI
     source = WORKBOOK / "design-source"
-    locked = locked_folders()
-    for recipe in sorted(r for folder in locked for r in folder.glob("*.recipe.json")):
+    for recipe in sorted(r for folder in locked_folders() for r in folder.glob("*.recipe.json")):
         problems = check_locked(recipe, comfy)
         ok &= not problems
         print(f"{'FAIL' if problems else 'OK  '} recipe   {recipe.relative_to(source)}"
               + (": " + "; ".join(problems) if problems else ""))
-    unrecorded = [p for folder in locked for p in folder.glob("*.png")
-                  if not is_guide(p) and not p.with_name(p.stem + ".recipe.json").exists()]
-    print(f"{len(unrecorded)} locked PNGs have no recipe (made before the tool); not checked")
+    unaccounted, legacy_count, baseline_present = account_locked_pngs()
+    if not baseline_present:
+        ok = False
+        print(f"FAIL {LEGACY_BASELINE} is missing, so no locked PNG can be accounted for as legacy")
+    for png in unaccounted:
+        ok = False
+        print(f"FAIL locked   {png.relative_to(source)}: no recipe, not a guide a recipe names, and not on "
+              f"the legacy baseline -- was its recipe deleted?")
+    print(f"{legacy_count} legacy PNGs (made before the tool, listed in {LEGACY_BASELINE}); not checked")
     sys.exit(0 if ok else 1)
 
 

@@ -270,12 +270,13 @@ does not change scope.
   versions (`COLOR_RECIPES`: `v1` blurs the guide 1.5 px, `v2` doesn't;
   default `v2`), the guide threshold, the ControlNet strength and end, and
   the model name.
-- `:71-79` `LEGACY_TEMPLATE_CHECKS`: template checks for the dog and the
+- `:71-73` `LEGACY_BASELINE`: the path of the pre-tool PNG list.
+- `:75-83` `LEGACY_TEMPLATE_CHECKS`: template checks for the dog and the
   house, which were locked before recipes existed.
-- `:91-101` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
+- `:95-105` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
   stores the file under another name or in a subfolder.
-- `:104-131` `without_cache_keys()`, `check_guide()`, `file_identity()`,
-  `locked_folders()` and `is_guide()`:
+- `:108-131` `without_cache_keys()`, `check_guide()`, `file_identity()` and
+  `locked_folders()`:
   - `check_guide()` passes only when every guided node's `is_changed`
     equals the guide's SHA-256. A missing or malformed fingerprint fails.
   - `file_identity()` is the resolved path, or the device and inode for a
@@ -293,37 +294,49 @@ does not change scope.
   - Builds the guide with the chosen recipe's blur (`:248`), uploads it,
     renders the four seeds, and writes the
     contact sheet (line art first) and the manifest.
-- `:277-321` `cmd_lock()`:
+- `:277-326` `cmd_lock()`:
+  - Refuses a missing candidate. Refuses one that `embedded_problems()`
+    says is not its recipe's render at that seed (`:297-305`), before
+    staging anything.
   - Stages the whole lock set in a `.lock-*` temporary folder inside the
     locked folder, then moves it into place with `os.replace`, recipe last.
   - `--color`:
     - reads `<name>-color-recipe.json`;
     - names the lock `<line-art-stem>-color`;
-    - refuses a draft guide that fails the candidate's fingerprint;
+    - the draft guide must pass the candidate's fingerprint, which is
+      part of the same check;
     - copies that guide into the lock as `<stem>-guide.png`, and records
       that path.
-  - It skips vectorizing for color (`:313`).
-- `:324-363` `cmd_reproduce()`:
+  - It skips vectorizing for color (`:318`).
+- `:329-368` `cmd_reproduce()`:
   - A graph that loads an image needs a sibling recipe naming its guide
-    (`:331-333`).
+    (`:336-338`).
   - The guide must exist and match its fingerprint.
   - The output defaults to the kind's `drafts/`. It is refused if it sits
     inside a locked folder, or is the same file as the source or the guide
-    (`:340-348`).
+    (`:345-353`).
   - Only then does it upload the guide, render, and compare full RGBA,
     with greyscale used only for the print-ink line.
-- `:366-416` `embedded_graph()` and `check_locked()`: every reason a
-  locked asset no longer rebuilds from its recipe. For color assets this
-  includes the fingerprint and a byte-exact rebuild of the guide from the
-  recorded recipe version (`:409-415`). The guide must also live in the lock
-  folder (`:403-404`). Embedded steps are checked against the recipe's
-  `steps`, and that value against the tool's `STEPS`.
-- `:419-438` `cmd_selftest()`:
+- `:371-403` `embedded_graph()` and `embedded_problems()`: the one
+  validator for "this PNG is the render its recipe describes at this seed".
+  It checks the template, the prompt, the seed and steps (against the
+  recipe, then against the tool), the graph, and for color the guide
+  fingerprint. `lock` and `check_locked()` both use it.
+- `:406-429` `check_locked()`: `embedded_problems()` on the locked asset,
+  plus the SVG for line art. For color it also needs the guide to live in
+  the lock folder (`:418-419`), and to rebuild byte for byte from the
+  recorded recipe version (`:422-428`).
+- `:432-447` `account_locked_pngs()`: every PNG in a locked folder must be
+  recipe-managed, a guide some recipe names, or on the legacy baseline. It
+  returns the unaccounted PNGs, the legacy count, and whether the baseline
+  exists.
+- `:450-474` `cmd_selftest()`:
   - runs the two legacy template checks;
   - runs `check_locked()` on every `*.recipe.json` in the locked folders;
-  - counts the locked PNGs that have no recipe, excluding guide copies;
+  - fails a missing baseline and every unaccounted PNG, and counts the
+    legacy ones;
   - exits 1 on any failure.
-- `:452-463`: the `colorize` subcommand (with `--recipe`) and the
+- `:488-499`: the `colorize` subcommand (with `--recipe`) and the
   `lock --color` flag.
 
 Other files:
@@ -338,8 +351,15 @@ Other files:
 
 - `illustration-recipe.py`: Correct Fix Must Touch (the new colorize
   pieces), plus the two amendments.
-- The bunny color drafts and lock: Correct Fix Must Touch (the design-source
-  animals).
+- `design-source/animals/` drafts and locks: Correct Fix Must Touch, as
+  amended.
+  - Line art: bunny, turtle, bear and penguin (original scope); fox (fox
+    amendment).
+  - Color drafts, guides and locks: bunny (original scope); bear, turtle,
+    penguin and fox (round-2 scope amendment). Guide copies came in round 1.
+- `design-source/legacy-locked-assets.json`: round 2, B continued. It lists
+  the 39 pre-tool locked PNGs, generated from the locked folders minus
+  recipe-managed assets and referenced guides.
 - The refinements doc: Correct Fix Must Touch.
 - This file: Correct Fix Must Touch (contract).
 
@@ -404,3 +424,18 @@ Union-Pro 2.0.
   - Real workbook: before the guide migration, `selftest` failed exactly the
     five color locks with "outside the lock folder". After it, all recipes
     pass.
+- **PR #138 review round 2.**
+  - 30 of 30 probes pass: the 22 above plus 8 new ones.
+    - `lock` refuses a candidate that is another seed's re-render
+      (embedded 72 against recipe 61), and leaves the lock untouched.
+    - It refuses a candidate whose manifest changed after it rendered, and
+      a missing candidate.
+    - With a baseline, everything is accounted for.
+    - A managed PNG whose recipe is deleted becomes unaccounted.
+    - A deleted color recipe leaves its PNG and guide unaccounted.
+    - A missing baseline is reported.
+  - Real workbook:
+    - With no baseline file, `selftest` fails: the missing file plus the
+      39 pre-tool PNGs.
+    - With the generated baseline, it passes: every recipe OK, and 39
+      legacy PNGs listed.
