@@ -92,6 +92,9 @@ The v1 color template gave faint, outline-less results on 3 of 4 bunny seeds
 would stop the locked color bunny rebuilding from its template, so v2 is left
 to the refinements list.
 
+Resolved by recipe v2, and not in the way expected here. The cause was the
+guide blur, not the wording; see the correction amendment below.
+
 ## Contract Amendments
 
 Both amendments were found while building. Each tightens a failure case and
@@ -160,36 +163,42 @@ does not change scope.
 ### Change By Change Reconstruction
 
 `illustration-recipe.py`:
-- `:54-61`: `COLOR_TEMPLATE` (the cover's Mode A wording), the guide
-  threshold and blur, the ControlNet strength and end, and the model name.
-- `:70-72`: a `selftest` entry for the locked color bunny.
-- `:85-95` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
+- `:54-66`: `COLOR_TEMPLATE` (the cover's Mode A wording), the color recipe
+  versions (`COLOR_RECIPES`: `v1` blurs the guide 1.5 px, `v2` doesn't;
+  default `v2`), the guide threshold, the ControlNet strength and end, and
+  the model name.
+- `:75-77`: a `selftest` entry for the locked color bunny.
+- `:90-100` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
   stores the file under another name or in a subfolder.
-- `:98-109` `without_cache_keys()` and `check_guide()`: strip `is_changed`,
+- `:103-114` `without_cache_keys()` and `check_guide()`: strip `is_changed`,
   and compare it with the guide's SHA-256.
-- `:133-153` `color_graph()`: the soft-edge ControlNet graph. It is
+- `:138-158` `color_graph()`: the soft-edge ControlNet graph. It is
   identical, node for node, to the graph embedded in the seed-72 PNG.
-- `:156-162` `contact_sheet()`: the existing sheet code, moved into a helper
-  that `candidates` (`:187`) and `colorize` (`:232`) share. The layout is
+- `:161-165` `make_guide()`: the locked art's print lines as white on black,
+  blurred only when the recipe says so.
+- `:168-174` `contact_sheet()`: the existing sheet code, moved into a helper
+  that `candidates` (`:199`) and `colorize` (`:242`) share. The layout is
   unchanged: 480 px tiles with a label strip.
-- `:198-245` `cmd_colorize()`:
+- `:210-257` `cmd_colorize()`:
   - Exits unless the line art is inside the workbook, has a
     `.recipe.json`, is an animal, and the ControlNet is visible.
-  - Builds and uploads the guide, renders the four seeds, and writes the
+  - Builds the guide with the chosen recipe's blur (`:231`), uploads it,
+    renders the four seeds, and writes the
     contact sheet (line art first) and the manifest.
-- `:248-275` `cmd_lock()`:
+- `:260-287` `cmd_lock()`:
   - `--color` reads `<name>-color-recipe.json` and names the lock
     `<line-art-stem>-color`.
-  - It skips vectorizing (`:270`).
+  - It skips vectorizing (`:282`).
   - Line-art locks behave as before.
-- `:278-301` `cmd_reproduce()`: if the sibling recipe names a guide, it
+- `:290-313` `cmd_reproduce()`: if the sibling recipe names a guide, it
   exits when the guide is missing or doesn't match the fingerprint. Then it
-  uploads the guide under the name the graph expects (`:286-295`) and
+  uploads the guide under the name the graph expects (`:298-306`) and
   renders the graph without the cache keys.
-- `:304-322` `cmd_selftest()`: entries now carry their template. For the
+- `:316-334` `cmd_selftest()`: entries now carry their template. For the
   color entry, the whole graph and the guide fingerprint must also match
-  (`:312-319`).
-- `:336-345`: the `colorize` subcommand and the `lock --color` flag.
+  (`:324-331`).
+- `:348-359`: the `colorize` subcommand (with `--recipe`) and the
+  `lock --color` flag.
 
 Other files:
 - `design-source/animals/drafts/bunny-color-*`: the four candidates, the

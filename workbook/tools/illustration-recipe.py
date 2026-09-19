@@ -7,7 +7,7 @@
   lock animal bunny --seed 83
       Vectorize the chosen candidate into the locked folder, with its recipe alongside.
   colorize design-source/animals/locked-poses/bunny-01-sitting.png \
-      --colors "soft white fur with light warm-grey shading, pink inner ears and a pink nose"
+      --colors "soft white fur with light warm-grey shading, pink inner ears and a pink nose" [--recipe v2]
       Render Mode A color candidates of a locked animal, guided by its line art so it stays the same character.
   lock animal bunny --seed 72 --color
       Lock a color candidate as <line-art-name>-color.png (raster, not vectorized).
@@ -55,8 +55,13 @@ COLOR_TEMPLATE = ("Full color flat children's book illustration, warm soft palet
                   "a single cute cartoon {subject} {pose}, {colors}, big round expressive dark eyes, happy smile, "
                   "clean bold outlines, charming storybook illustration style, pure white background, centered "
                   "composition, no text")
+# Color recipe versions are never edited: a locked asset must keep rebuilding from its recipe. v1 blurred the
+# guide, and the ControlNet copied that softness: most renders came out blurry (bunny, bear, turtle 3 of 4 seeds,
+# penguin 4 of 4). Changing one factor at a time on penguin seed 83 showed the blur alone was the cause (edge
+# sharpness 2.4 -> 134.7; lower strength or an earlier end changed nothing), so v2 only stops blurring it.
+COLOR_RECIPES = {"v1": {"guide_blur": 1.5}, "v2": {"guide_blur": 0.0}}
+COLOR_DEFAULT = "v2"
 GUIDE_INK = 180               # the print vectorizer's 70% threshold: what counts as a line
-GUIDE_BLUR = 1.5
 CONTROL_STRENGTH, CONTROL_END = 0.7, 0.8    # Union-Pro 2.0's suggested soft-edge settings
 CONTROLNET = "diffusion_pytorch_model.safetensors"    # Shakker-Labs FLUX.1-dev-ControlNet-Union-Pro-2.0
 
@@ -153,6 +158,13 @@ def color_graph(prompt, seed, guide_name, prefix):
     }
 
 
+def make_guide(line_art, blur, out):
+    # Soft-edge guides are white lines on black: the locked art's print lines.
+    grey = np.array(Image.open(line_art).convert("L"))
+    lines = Image.fromarray(np.where(grey < GUIDE_INK, 255, 0).astype(np.uint8))
+    (lines.filter(ImageFilter.GaussianBlur(blur)) if blur else lines).convert("RGB").save(out)
+
+
 def contact_sheet(tiles, out, tile=480):
     sheet = Image.new("RGB", (tile * len(tiles), tile + 30), "white")
     draw = ImageDraw.Draw(sheet)
@@ -208,17 +220,15 @@ def cmd_colorize(args):
     name = source["name"]
     color_fields = dict(subject=source["fields"]["subject"], pose=source["fields"]["pose"], colors=args.colors)
     prompt = COLOR_TEMPLATE.format(**color_fields)
+    blur = COLOR_RECIPES[args.recipe]["guide_blur"]
     drafts = WORKBOOK / "design-source" / FOLDERS["animal"][0]
     comfy = load_comfy(args.server)
     controlnets = comfy.api("/object_info/ControlNetLoader")["ControlNetLoader"]["input"]["required"]
     if CONTROLNET not in controlnets["control_net_name"][0]:
         sys.exit(f"ControlNet {CONTROLNET} is not visible to ComfyUI -- check extra_model_paths.yaml")
 
-    # Soft-edge guides are white lines on black: the locked art's print lines, slightly softened.
     guide = drafts / f"{name}-color-guide.png"
-    grey = np.array(Image.open(line_art).convert("L"))
-    lines = Image.fromarray(np.where(grey < GUIDE_INK, 255, 0).astype(np.uint8))
-    lines.filter(ImageFilter.GaussianBlur(GUIDE_BLUR)).convert("RGB").save(guide)
+    make_guide(line_art, blur, guide)
     upload(comfy, guide, guide.name)
 
     paths = []
@@ -232,10 +242,12 @@ def cmd_colorize(args):
     contact_sheet([("locked line art", line_art)] + [(f"color seed {s}", p) for s, p in zip(SEEDS, paths)],
                   sheet_path)
     stats = comfy.api("/system_stats", timeout=10).get("system", {})
-    manifest = {"kind": "animal-color", "name": name, "template": COLOR_TEMPLATE, "fields": color_fields,
+    manifest = {"kind": "animal-color", "name": name, "recipe_version": args.recipe, "template": COLOR_TEMPLATE,
+                "fields": color_fields,
                 "prompt": prompt, "source_line_art": str(line_art.relative_to(WORKBOOK)),
                 "guide": str(guide.relative_to(WORKBOOK)),
-                "guide_recipe": f"line art grey < {GUIDE_INK} -> white lines on black, Gaussian blur {GUIDE_BLUR}",
+                "guide_recipe": f"line art grey < {GUIDE_INK} -> white lines on black"
+                                + (f", Gaussian blur {blur}" if blur else ", not blurred"),
                 "controlnet": CONTROLNET, "strength": CONTROL_STRENGTH, "end_percent": CONTROL_END,
                 "seeds": list(SEEDS), "steps": STEPS, "size": SIZE,
                 "graph": color_graph(prompt, 0, guide.name, f"{name}-color"),
@@ -309,7 +321,7 @@ def cmd_selftest(_args):
                         if n["class_type"] == "CLIPTextEncode" and n["inputs"]["text"])
         sampler = next(n["inputs"] for n in graph.values() if n["class_type"] == "KSampler")
         match = template.format(**f) == embedded and sampler["seed"] in SEEDS and sampler["steps"] == STEPS
-        if template is COLOR_TEMPLATE:
+        if label == "color":
             # The whole guided graph must be the one this tool builds, apart from the output name,
             # and the committed guide must be the exact file it was rendered from.
             guide = next(n["inputs"]["image"] for n in graph.values() if n["class_type"] == "LoadImage")
@@ -336,6 +348,8 @@ def main():
     col = sub.add_parser("colorize")
     col.add_argument("png", help="a locked line-art PNG with its .recipe.json alongside")
     col.add_argument("--colors", required=True, help="fur and feature colors, e.g. 'soft white fur, pink inner ears'")
+    col.add_argument("--recipe", choices=COLOR_RECIPES, default=COLOR_DEFAULT,
+                     help=f"color recipe version (default {COLOR_DEFAULT}); v1 blurred the guide")
     lk = sub.add_parser("lock")
     lk.add_argument("kind", choices=TEMPLATES)
     lk.add_argument("name")

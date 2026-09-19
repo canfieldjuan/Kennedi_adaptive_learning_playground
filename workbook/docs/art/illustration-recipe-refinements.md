@@ -44,13 +44,19 @@ characters today; each item says what it would fix.
 - **`colorize` is built** (`illustration-recipe.py colorize`, then
   `lock --color`). The bunny was first: seed 72 is locked as
   `bunny-01-sitting-color.png`.
-- **Stronger outlines in a v2 color template.** The v1 wording ("clean bold
-  outlines", taken from the cover) left 3 of 4 bunny seeds faint, with no
-  outline at all. Seed 83's darkest pixel was 78, against 0 for seed 72.
-  This is the same faint-line failure noted in `asset-provenance.md`, and
-  adding "bold thick solid black outlines, not faint" should raise the hit
-  rate. It has to be a new template version, because editing v1 would stop
-  the locked color bunny rebuilding from its template.
+- **Blurry color renders: fixed in recipe v2.** Recipe v1 blurred the guide
+  1.5 px, and the ControlNet copied that softness. Most seeds came out soft
+  with no outline: 3 of 4 for the bunny, bear and turtle, and 4 of 4 for the
+  penguin.
+  - Stronger outline wording did nothing. It changed each seed by only
+    1.5-3.3/255 on average.
+  - Removing only the blur took penguin seed 83's edge sharpness from 2.4
+    to 134.7.
+  - With v2, the default, all 4 penguin seeds were crisp.
+
+  The bunny, bear and turtle stay on v1 so they keep rebuilding exactly.
+  Re-colouring them on v2 would give crisper versions, but only by
+  replacing the locked assets.
 - **Fur colour is a per-character choice.** The bunny is white with pink
   details, which is light next to the warm cover. Pick each character's
   colours on purpose, so a set of color characters reads as one palette.
