@@ -10,7 +10,7 @@
  },
  "prompt": "Full color flat children's book illustration, warm soft palette, gentle shading and soft shadows, a single cute cartoon fox sitting, warm orange fur with soft darker orange shading, a white chest, muzzle and tail tip, and dark brown paws and ear tips, big round expressive dark eyes, happy smile, clean bold outlines, charming storybook illustration style, pure white background, centered composition, no text",
  "source_line_art": "design-source/animals/locked-poses/fox-01-sitting.png",
- "guide": "design-source/animals/drafts/fox-color-guide.png",
+ "guide": "design-source/animals/locked-poses/fox-01-sitting-color-guide.png",
  "guide_recipe": "line art grey < 180 -> white lines on black, not blurred",
  "controlnet": "diffusion_pytorch_model.safetensors",
  "strength": 0.7,

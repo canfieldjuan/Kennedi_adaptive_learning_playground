@@ -10,7 +10,7 @@
  },
  "prompt": "Full color flat children's book illustration, warm soft palette, gentle shading and soft shadows, a single cute cartoon penguin standing, glossy blue-black back, head and flippers, a white belly and face, and an orange beak and feet, big round expressive dark eyes, happy smile, clean bold outlines, charming storybook illustration style, pure white background, centered composition, no text",
  "source_line_art": "design-source/animals/locked-poses/penguin-01-standing.png",
- "guide": "design-source/animals/drafts/penguin-color-guide.png",
+ "guide": "design-source/animals/locked-poses/penguin-01-standing-color-guide.png",
  "guide_recipe": "line art grey < 180 -> white lines on black, not blurred",
  "controlnet": "diffusion_pytorch_model.safetensors",
  "strength": 0.7,

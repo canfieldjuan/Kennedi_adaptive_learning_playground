@@ -16,12 +16,14 @@
   selftest
       Check every locked asset with a .recipe.json still rebuilds from it (no ComfyUI needed).
 
-Needs a running ComfyUI (--server, default http://127.0.0.1:8188) and Pillow.
+Needs numpy and Pillow; lock also needs ImageMagick and potrace (vectorize-line-art.sh). candidates, colorize
+and reproduce render on a running ComfyUI (--server, default http://127.0.0.1:8188); selftest needs no ComfyUI.
 """
 import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -106,11 +108,27 @@ def without_cache_keys(graph):
 
 def check_guide(graph, guide):
     # The guide on disk must be the exact file the asset was rendered from, or a re-render is a different image.
+    # No fingerprint is no evidence, so it fails rather than passes.
     digest = hashlib.sha256(Path(guide).read_bytes()).hexdigest()
-    for node in graph.values():
-        if node["class_type"] == "LoadImage" and node.get("is_changed", [digest]) != [digest]:
-            return False
-    return True
+    return all(node.get("is_changed") == [digest] for node in graph.values() if node["class_type"] == "LoadImage")
+
+
+def file_identity(path):
+    # Symlinks and hard links to one file share an inode; a file that doesn't exist yet is its path.
+    path = Path(path).resolve()
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return path
+    return stat.st_dev, stat.st_ino
+
+
+def locked_folders():
+    return [WORKBOOK / "design-source" / locked for _, locked in FOLDERS.values()]
+
+
+def is_guide(png):
+    return png.name.endswith("-guide.png")
 
 
 def render(comfy, graph, out, timeout=600):
@@ -276,37 +294,70 @@ def cmd_lock(args):
     png = locked / f"{stem}.png"
     if png.exists() and not args.force:
         sys.exit(f"{png.relative_to(WORKBOOK)} already exists (use --force to replace)")
-    png.write_bytes(src.read_bytes())
-    # Mode A color art is used as a raster; only print line art is vectorized.
-    if not args.color:
-        subprocess.run(["bash", str(WORKBOOK / "tools/vectorize-line-art.sh"), str(png),
-                        str(locked / f"{stem}.svg"), "70"], check=True)
     manifest.update(chosen_seed=args.seed, source=str(src.relative_to(WORKBOOK)))
-    (locked / f"{stem}.recipe.json").write_text(json.dumps(manifest, indent=1))
-    print(f"locked {png.relative_to(WORKBOOK)}{'' if args.color else ' + .svg'} + .recipe.json")
+    # Build the whole lock set aside and move it into place only once every step has worked, so a failed
+    # vectorizer or write never leaves an approved lock half-replaced. The recipe goes in last.
+    with tempfile.TemporaryDirectory(dir=locked, prefix=".lock-") as tmp:
+        staged = {f"{stem}.png": src.read_bytes()}
+        if args.color:
+            # The lock owns an exact copy of its guide: colorize rewrites the draft guide on every run.
+            draft_guide = WORKBOOK / manifest["guide"]
+            if not check_guide(json.loads(Image.open(src).info["prompt"]), draft_guide):
+                sys.exit(f"{manifest['guide']} is not the guide {src.name} was rendered from -- re-run colorize")
+            staged[f"{stem}-guide.png"] = draft_guide.read_bytes()
+            manifest["guide"] = str((locked / f"{stem}-guide.png").relative_to(WORKBOOK))
+        for name, data in staged.items():
+            (Path(tmp) / name).write_bytes(data)
+        names = list(staged)
+        # Mode A color art is used as a raster; only print line art is vectorized.
+        if not args.color:
+            subprocess.run(["bash", str(WORKBOOK / "tools/vectorize-line-art.sh"), str(Path(tmp) / f"{stem}.png"),
+                            str(Path(tmp) / f"{stem}.svg"), "70"], check=True)
+            names.append(f"{stem}.svg")
+        (Path(tmp) / f"{stem}.recipe.json").write_text(json.dumps(manifest, indent=1))
+        for name in names + [f"{stem}.recipe.json"]:
+            os.replace(Path(tmp) / name, locked / name)
+    extras = " + .svg" if not args.color else " + guide"
+    print(f"locked {png.relative_to(WORKBOOK)}{extras} + .recipe.json")
 
 
 def cmd_reproduce(args):
     original = Path(args.png).resolve()
     graph = json.loads(Image.open(original).info["prompt"])
-    out = Path(args.out) if args.out else original.with_name(f"{original.stem}.reproduced.png")
-    comfy = load_comfy(args.server)
-    # A guided (color) render loads its guide image, which ComfyUI must have under the name in the graph.
+    # A guided (color) render loads its guide image, which ComfyUI must have under the name in the graph:
+    # without the recipe naming it, the server could silently use a stale file of that name.
     recipe = original.with_suffix(".recipe.json")
     guide = json.loads(recipe.read_text()).get("guide") if recipe.exists() else None
+    guided = any(node["class_type"] == "LoadImage" for node in graph.values())
+    if guided and not guide:
+        sys.exit(f"{original.name} loads a guide image, but no {recipe.name} names it -- refusing to render")
     if guide:
         if not (WORKBOOK / guide).exists():
             sys.exit(f"guide image {guide} is missing -- this asset can't be re-rendered without it")
         if not check_guide(graph, WORKBOOK / guide):
             sys.exit(f"guide image {guide} is not the file this asset was rendered from (sha256 differs)")
+
+    # Locked folders are written only by `lock`, and the output must never replace an input.
+    drafts = next((WORKBOOK / "design-source" / d for d, l in FOLDERS.values()
+                   if original.parent == WORKBOOK / "design-source" / l), original.parent)
+    out = (Path(args.out) if args.out else drafts / f"{original.stem}.reproduced.png").resolve()
+    if any(folder in out.parents for folder in locked_folders()):
+        sys.exit(f"{out} is inside a locked folder; write the reproduction somewhere else")
+    inputs = [original] + ([WORKBOOK / guide] if guide else [])
+    if file_identity(out) in {file_identity(p) for p in inputs}:
+        sys.exit(f"{out} is an input of this reproduction; writing it would destroy that input")
+
+    comfy = load_comfy(args.server)
+    if guide:
         for node in graph.values():
             if node["class_type"] == "LoadImage":
                 upload(comfy, WORKBOOK / guide, node["inputs"]["image"])
     render(comfy, without_cache_keys(graph), out)
-    a = np.asarray(Image.open(original).convert("L"), dtype=int)
-    b = np.asarray(Image.open(out).convert("L"), dtype=int)
-    diff = np.abs(a - b)
-    ink_a, ink_b = a < 180, b < 180    # the vectorizer's 70% threshold
+    a = np.asarray(Image.open(original).convert("RGBA"), dtype=int)
+    b = np.asarray(Image.open(out).convert("RGBA"), dtype=int)
+    diff = np.abs(a - b).max(axis=-1)    # every channel, so a hue change that keeps brightness still counts
+    ink_a = np.asarray(Image.open(original).convert("L")) < 180    # the vectorizer's 70% threshold
+    ink_b = np.asarray(Image.open(out).convert("L")) < 180
     print(f"wrote {out}")
     print(f"pixels differing: {100 * (diff > 0).mean():.3f}% | max diff {diff.max()} | mean diff {diff.mean():.3f}")
     print(f"print ink (after threshold) differing: {100 * (ink_a ^ ink_b).mean():.3f}% of pixels")
@@ -332,9 +383,11 @@ def check_locked(recipe_path, comfy):
         problems.append("its template differs from the tool's (templates are never edited)")
     if manifest["template"].format(**manifest["fields"]) != prompt:
         problems.append("its template and fields don't rebuild the embedded prompt")
-    if (sampler["seed"], sampler["steps"]) != (manifest["chosen_seed"], STEPS):
+    if (sampler["seed"], sampler["steps"]) != (manifest["chosen_seed"], manifest["steps"]):
         problems.append(f"embedded seed/steps {sampler['seed']}/{sampler['steps']} "
-                        f"!= recipe {manifest['chosen_seed']}/{STEPS}")
+                        f"!= recipe {manifest['chosen_seed']}/{manifest['steps']}")
+    if manifest["steps"] != STEPS:
+        problems.append(f"its recipe records {manifest['steps']} steps; the tool renders {STEPS}")
     if kind != "animal-color":
         if graph != comfy.build_graph(prompt, SIZE, SIZE, sampler["seed"], STEPS, None):
             problems.append("its graph differs from the one the tool builds")
@@ -347,6 +400,8 @@ def check_locked(recipe_path, comfy):
     if color_graph(prompt, sampler["seed"], image, prefix) != without_cache_keys(graph):
         problems.append("its graph differs from the color graph the tool builds")
     guide = WORKBOOK / manifest["guide"]
+    if guide.parent != recipe_path.parent:
+        problems.append(f"its guide {manifest['guide']} is outside the lock folder, where colorize can overwrite it")
     if not guide.exists():
         return problems + [f"guide {manifest['guide']} is missing"]
     if not check_guide(graph, guide):
@@ -371,14 +426,14 @@ def cmd_selftest(args):
 
     comfy = load_comfy(args.server)     # only for its graph builder; nothing is sent to ComfyUI
     source = WORKBOOK / "design-source"
-    locked = [source / folder for _, folder in FOLDERS.values()]
+    locked = locked_folders()
     for recipe in sorted(r for folder in locked for r in folder.glob("*.recipe.json")):
         problems = check_locked(recipe, comfy)
         ok &= not problems
         print(f"{'FAIL' if problems else 'OK  '} recipe   {recipe.relative_to(source)}"
               + (": " + "; ".join(problems) if problems else ""))
     unrecorded = [p for folder in locked for p in folder.glob("*.png")
-                  if not p.with_name(p.stem + ".recipe.json").exists()]
+                  if not is_guide(p) and not p.with_name(p.stem + ".recipe.json").exists()]
     print(f"{len(unrecorded)} locked PNGs have no recipe (made before the tool); not checked")
     sys.exit(0 if ok else 1)
 

@@ -9,7 +9,7 @@
  },
  "prompt": "Full color flat children's book illustration, warm soft palette, gentle shading and soft shadows, a single cute cartoon turtle walking, soft green skin with lighter green shading, a warm tan shell with golden-brown hexagon segments, big round expressive dark eyes, happy smile, clean bold outlines, charming storybook illustration style, pure white background, centered composition, no text",
  "source_line_art": "design-source/animals/locked-poses/turtle-01-walking.png",
- "guide": "design-source/animals/drafts/turtle-color-guide.png",
+ "guide": "design-source/animals/locked-poses/turtle-01-walking-color-guide.png",
  "guide_recipe": "line art grey < 180 -> white lines on black, Gaussian blur 1.5",
  "controlnet": "diffusion_pytorch_model.safetensors",
  "strength": 0.7,

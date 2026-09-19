@@ -238,48 +238,64 @@ does not change scope.
 ### Change By Change Reconstruction
 
 `illustration-recipe.py`:
-- `:55-67`: `COLOR_TEMPLATE` (the cover's Mode A wording), the color recipe
+- `:57-69`: `COLOR_TEMPLATE` (the cover's Mode A wording), the color recipe
   versions (`COLOR_RECIPES`: `v1` blurs the guide 1.5 px, `v2` doesn't;
   default `v2`), the guide threshold, the ControlNet strength and end, and
   the model name.
-- `:69-77` `LEGACY_TEMPLATE_CHECKS`: template checks for the dog and the
+- `:71-79` `LEGACY_TEMPLATE_CHECKS`: template checks for the dog and the
   house, which were locked before recipes existed.
-- `:89-99` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
+- `:91-101` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
   stores the file under another name or in a subfolder.
-- `:102-113` `without_cache_keys()` and `check_guide()`: strip `is_changed`,
-  and compare it with the guide's SHA-256.
-- `:137-157` `color_graph()`: the soft-edge ControlNet graph. It is
+- `:104-131` `without_cache_keys()`, `check_guide()`, `file_identity()`,
+  `locked_folders()` and `is_guide()`:
+  - `check_guide()` passes only when every guided node's `is_changed`
+    equals the guide's SHA-256. A missing or malformed fingerprint fails.
+  - `file_identity()` is the resolved path, or the device and inode for a
+    file that exists.
+- `:155-175` `color_graph()`: the soft-edge ControlNet graph. It is
   identical, node for node, to the graph embedded in the seed-72 PNG.
-- `:160-164` `make_guide()`: the locked art's print lines as white on black,
+- `:178-182` `make_guide()`: the locked art's print lines as white on black,
   blurred only when the recipe says so.
-- `:167-173` `contact_sheet()`: the existing sheet code, moved into a helper
-  that `candidates` (`:198`) and `colorize` (`:241`) share. The layout is
+- `:185-191` `contact_sheet()`: the existing sheet code, moved into a helper
+  that `candidates` (`:216`) and `colorize` (`:259`) share. The layout is
   unchanged: 480 px tiles with a label strip.
-- `:209-256` `cmd_colorize()`:
+- `:227-274` `cmd_colorize()`:
   - Exits unless the line art is inside the workbook, has a
     `.recipe.json`, is an animal, and the ControlNet is visible.
-  - Builds the guide with the chosen recipe's blur (`:230`), uploads it,
+  - Builds the guide with the chosen recipe's blur (`:248`), uploads it,
     renders the four seeds, and writes the
     contact sheet (line art first) and the manifest.
-- `:259-286` `cmd_lock()`:
-  - `--color` reads `<name>-color-recipe.json` and names the lock
-    `<line-art-stem>-color`.
-  - It skips vectorizing (`:281`).
-  - Line-art locks behave as before.
-- `:289-312` `cmd_reproduce()`: if the sibling recipe names a guide, it
-  exits when the guide is missing or doesn't match the fingerprint. Then it
-  uploads the guide under the name the graph expects (`:297-305`) and
-  renders the graph without the cache keys.
-- `:315-361` `embedded_graph()` and `check_locked()`: every reason a
+- `:277-321` `cmd_lock()`:
+  - Stages the whole lock set in a `.lock-*` temporary folder inside the
+    locked folder, then moves it into place with `os.replace`, recipe last.
+  - `--color`:
+    - reads `<name>-color-recipe.json`;
+    - names the lock `<line-art-stem>-color`;
+    - refuses a draft guide that fails the candidate's fingerprint;
+    - copies that guide into the lock as `<stem>-guide.png`, and records
+      that path.
+  - It skips vectorizing for color (`:313`).
+- `:324-363` `cmd_reproduce()`:
+  - A graph that loads an image needs a sibling recipe naming its guide
+    (`:331-333`).
+  - The guide must exist and match its fingerprint.
+  - The output defaults to the kind's `drafts/`. It is refused if it sits
+    inside a locked folder, or is the same file as the source or the guide
+    (`:340-348`).
+  - Only then does it upload the guide, render, and compare full RGBA,
+    with greyscale used only for the print-ink line.
+- `:366-416` `embedded_graph()` and `check_locked()`: every reason a
   locked asset no longer rebuilds from its recipe. For color assets this
   includes the fingerprint and a byte-exact rebuild of the guide from the
-  recorded recipe version (`:354-360`).
-- `:364-383` `cmd_selftest()`:
+  recorded recipe version (`:409-415`). The guide must also live in the lock
+  folder (`:403-404`). Embedded steps are checked against the recipe's
+  `steps`, and that value against the tool's `STEPS`.
+- `:419-438` `cmd_selftest()`:
   - runs the two legacy template checks;
   - runs `check_locked()` on every `*.recipe.json` in the locked folders;
-  - counts the locked PNGs that have no recipe;
+  - counts the locked PNGs that have no recipe, excluding guide copies;
   - exits 1 on any failure.
-- `:397-408`: the `colorize` subcommand (with `--recipe`) and the
+- `:452-463`: the `colorize` subcommand (with `--recipe`) and the
   `lock --color` flag.
 
 Other files:
@@ -341,3 +357,22 @@ Union-Pro 2.0.
   - Untouched copies pass.
   - Run in-process with the color template edited in memory, all four color
     recipes fail, the line art still passes, and it exits 1.
+- **PR #138 review round 1.**
+  - 22 of 22 probes pass, run against a scratch copy of the workbook with
+    mocked failures, so no GPU was used:
+    - a failing vectorizer under `lock --force` leaves the old lock set
+      byte-identical and no staging folder;
+    - a successful `--force` replaces the set;
+    - `lock --color` owns a byte-identical guide copy, survives the draft
+      guide being rewritten, and refuses a mismatched draft guide;
+    - missing and malformed fingerprints fail;
+    - recipe steps 29 against embedded 28 fails;
+    - a guide outside the lock folder fails;
+    - `reproduce` refuses `--out` as the source, a symlink to it, or the
+      guide, and refuses a guided PNG with no recipe;
+    - an RGB change that keeps brightness (the greyscale of both blocks
+      was 76) is caught;
+    - identical renders report 0, and default output goes to `drafts/`.
+  - Real workbook: before the guide migration, `selftest` failed exactly the
+    five color locks with "outside the lock folder". After it, all recipes
+    pass.
