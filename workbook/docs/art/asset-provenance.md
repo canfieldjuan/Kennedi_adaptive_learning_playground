@@ -93,7 +93,7 @@ sheet image: `docs/art/kennedi-consistency-sheet.png`):
 | 1 | Neutral / front standing | `01-neutral.{png,svg}` | n/a (this IS the reference) | clean star badge, no artifacts |
 | 2 | Hero + clipboard | `02-hero-clipboard.{png,svg}` | 0.08 | regenerated for cross-pose consistency; took 5 attempts before the clipboard rendered convincingly held (see "What didn't work" below) |
 | 3 | Waving | `03-waving.{png,svg}` | 0.2 | |
-| 4 | Helping / bending | `04-helping.{png,svg}` | 0.08 | true kneeling pose; took 2 attempts (first attempt at 0.08 improved on the failed 0.2 attempt but wasn't kneeling low enough) |
+| ~~4~~ | ~~Helping / bending~~ | ~~`04-helping.{png,svg}`~~ | ~~0.08~~ | **SUPERSEDED 2026-09-23** -- failed 6 of 10 locked identity traits; replaced at the same path (see "2026-09-23: 04-helping replaced" below). Original notes: true kneeling pose; took 2 attempts (first attempt at 0.08 improved on the failed 0.2 attempt but wasn't kneeling low enough) |
 | 5 | Pointing | `05-pointing.{png,svg}` | 0.2 | |
 | 6 | Sitting + writing | `06-sitting-writing.{png,svg}` | 0.08 | first attempt at 0.2 failed to sit at all (stayed standing) |
 | 7 | Thinking | `07-thinking.{png,svg}` | 0.08 | 3rd attempt; final pose is arms-crossed (not literal hand-on-chin) -- accepted as a valid "thinking" read, artifact-free, after the hand-on-chin version had a stray badge glyph |
@@ -130,6 +130,80 @@ first attempt after the badge-language fix).
 `dist-proof/print-size-test.pdf` / `dist-proof/pdf-raster/size-test-*.png`
 (300dpi rasterization of the actual PDF). Shows the 3 simplified-tier Kennedi
 poses + 2 puppy poses at 0.75in, 1.0in, 1.5in in dashed-border boxes.
+(Committed proof artifacts predate the 2026-09-23 04-helping replacement and
+were not rebuilt; they still show the old helping pose.)
+
+## 2026-09-23: 04-helping replaced
+
+**Why.** A character-consistency audit of the eight locked poses, scored
+against design-system.md's "Locked identity traits", found `04-helping`
+failing 6 of 10: older-looking face with smaller almond eyes, hair down with
+one tie (not two pigtails), puffy shorts (not the pleated skirt), no socks,
+barefoot. The other seven poses held (identity >=3/4 vs `01-neutral` in 6 of
+7). Cause, confirmed by reproduction: re-running the prompt embedded in the
+old PNG's metadata with its recorded seed (2845242026) and strength (0.08)
+regenerates the old PNG pixel-identically. That prompt never mentioned
+socks, shoes, face, eyes or age, and omitted both guard phrases from "What
+actually worked" below. The old puppy was also not the canonical puppy.
+
+**Base generation** -- `tools/comfy-generate-redux.py` (unmodified),
+reference `01-neutral.png` (via `kennedi-lock/kennedi-neutral-clean.png`,
+byte-identical), Redux **0.08**, seed **202**, 30 steps, 1024x1024. Prompt:
+
+> black and white line art, coloring-book style illustration, bold thick
+> solid black outlines (not thin or faint) on a pure white background, no
+> color, crisp clean sharp lines, clearly visible hands with five fingers
+> each. The same young preschool-age girl character, about four years old,
+> round chubby face, big round eyes with eyelashes, two high pigtails each
+> tied with a small hair tie, a collared polo shirt with a plain round badge
+> pinned on it (a simple star only, no letters, no numbers), a knee-length
+> pleated skirt, short white socks and sneakers on both feet, full body,
+> centered in frame, crouching down low on both bent knees close to the
+> ground, upper body leaning far forward, one hand reaching out to gently
+> pet a small friendly puppy sitting on the ground right in front of her,
+> warm caring expression, looking down at the puppy.
+
+Selected by the owner from 15 candidates (seeds 101/202/303 plus the
+original seed, strengths 0.08 and 0.12, plus a one-knee / skirt-draped
+prompt round). Finding: in this pipeline a low crouch and the full attribute
+bundle compete -- more trait text pulls Redux back toward the standing
+reference, and every low crouch rendered the skirt as shorts. Strength 0.12
+reverted all four seeds to standing.
+
+**Repairs** -- FLUX.1 Fill (`flux1-fill-dev-Q6_K.gguf`, guidance 30, 28
+steps, euler/simple, DifferentialDiffusion), each result composited back
+onto the base through its own feathered mask, so pixels outside each mask
+are unchanged (verified: 0 changed pixels outside every mask):
+
+1. Stray tail on her back removed -- Fill seed 33.
+2. Six-digit hand corrected to thumb + four fingers -- Fill seed 203
+   (6 seeds tried; 2 still had six digits).
+
+**Canonical puppy** -- `animals/locked-poses/01-sitting.png` composited in
+front of her (no generation): silhouette-masked, scaled to 225px tall,
+bottom-right corner at (428, 898), outlines thickened 1px so its line weight
+matches Kennedi's (5.7px). The replaced dog's pixels were refilled from
+background; its leftover leg line and toe loop between the puppy and her
+hand were then removed and that strip refilled with the flat ground-shadow
+grey behind her hand. Grey tones vanish at the 70% vectorization threshold,
+so the SVG carries line work only.
+
+**Accepted deviations from the locked traits** (owner decision): puffy
+shorts instead of the pleated skirt, and a small rectangular badge instead
+of the round star badge.
+
+**Derived files** -- `04-helping.svg` via `tools/vectorize-line-art.sh`
+(default threshold); `simplified-tier/04-helping-simplified-source.png` is
+the new PNG, and `04-helping-simplified.svg` is traced with the documented
+looser parameters (threshold 70% + `potrace -s --flat -t 20 -O 1.0 -a 1.2`;
+the same command reproduces the previous simplified SVG byte-for-byte). The
+page-6 picture-card crop was re-measured on the new SVG (outer-`<svg>`
+`getBBox()` x=264.0 y=79.2 w=473.4 h=818.8 -> viewBox `42 30 917 917`); the
+same tool reproduces the old documented bbox and crop exactly.
+
+**Not in this repo:** the Fill-repair and puppy-composite scripts were run
+from a scratch workspace outside the repo; the parameters above are the full
+record.
 
 ## Character-lock mechanism (read before generating more poses)
 
