@@ -75,7 +75,12 @@ round star badge.
 
 ## Contract Amendments
 
-None yet.
+- **During implementation** (before editing `design-system.md`): the same
+  audit found the collar missing in `03-waving` and `08-celebrating`
+  (crew necks). Correcting the "preserved across all 8 poses" sentence to
+  mention only 04 would leave it knowingly false, so the correction also
+  records the 03/08 collar gap. Documentation only -- neither asset is
+  touched.
 
 ## Cold Diff Audit
 
