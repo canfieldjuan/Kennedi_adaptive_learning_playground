@@ -273,13 +273,21 @@ work" list (so it isn't relitigated) are in `docs/art/asset-provenance.md`
   **0.08** for anything changing body posture or held objects (sitting,
   kneeling, clipboard), **0.15-0.2** for arm-gesture-only changes on a
   standing body (waving, pointing, celebrating).
-- **Locked identity traits** (preserved across all 8 poses): face shape,
+- **Locked identity traits**: face shape,
   pigtail hairstyle with two small hair ties, big eyes with eyelashes, a
   round badge with a plain star (explicitly re-described in every prompt --
   Redux alone doesn't reliably carry small details), collared shirt +
   knee-length pleated skirt + socks + sneakers, consistent short/round
   preschooler proportions, consistent bold-outline print-line-art style.
-  Sheet: `docs/art/kennedi-consistency-sheet.png`.
+  Sheet: `docs/art/kennedi-consistency-sheet.png` (predates the 2026-09-23
+  04-helping replacement and still shows the old pose).
+  **Known exceptions (2026-09-23 audit):** `04-helping` (replaced
+  2026-09-23) wears puffy shorts instead of the pleated skirt and a small
+  rectangular badge instead of the round star -- accepted by the owner; see
+  asset-provenance.md "2026-09-23: 04-helping replaced". `03-waving` and
+  `08-celebrating` have crew necks, not the collar. Re-describe every trait
+  in the prompt for any new pose -- the old 04 prompt's omissions are what
+  let it drift.
 - **Simplified small-scale tier**: NOT a distinct generated art style
   (prompting FLUX to "simplify" didn't reliably work -- see
   asset-provenance.md). Instead, the already-correct locked hero/helping/

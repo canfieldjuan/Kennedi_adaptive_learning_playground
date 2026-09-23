@@ -40,7 +40,7 @@ const kennediHelping = withSvgLabel(kennediHelpingRaw, 'Kennedi kneeling down to
 // withViewBox() is now shared (src/content/asset-inline.mjs) -- see its own
 // doc comment for the measure-then-crop technique (getBBox() on the outer
 // <svg>, pad 6%, square off). Computed once for these assets via getBBox()
-// on 04-helping.svg (content bbox x=225.1 y=196.3 w=581.4 h=668.6 inside
+// on 04-helping.svg (content bbox x=264.0 y=79.2 w=473.4 h=818.8 inside
 // the 0-1024 viewBox). Reuse this same technique for any other locked pose
 // going into a pictureChoiceRow -- do not just eyeball a crop.
 
@@ -49,7 +49,7 @@ const kennediHelping = withSvgLabel(kennediHelpingRaw, 'Kennedi kneeling down to
 // accessible name, so a screen-reader user reaches "What should Kennedi
 // do?" with no name for this choice. Same gap page 3 has for the same
 // reason.
-const kennediHelpingCard = withSvgLabel(withViewBox(kennediHelpingRaw, '141 156 749 749'), 'Kennedi kneeling down to help the puppy');
+const kennediHelpingCard = withSvgLabel(withViewBox(kennediHelpingRaw, '42 30 917 917'), 'Kennedi kneeling down to help the puppy');
 
 export const meta = {
   pageNumber: 6,
