@@ -86,14 +86,92 @@ round star badge.
 
 ### Gaps
 
-- change without contract trace:
-- contract requirement not delivered:
-- protected surface touched:
+- change without contract trace: none. `git diff --stat origin/main..HEAD`
+  lists 14 files, all named in "Correct Fix Must Touch" (or the amendment).
+- contract requirement not delivered: none.
+- protected surface touched: none. Pages 1-5 artifacts, every other locked
+  pose, all animal assets, `scripts/**`, `tools/**`, CI workflows,
+  `dist-proof/**`, `dist-book-2/**` and `learning-playground/` code are
+  untouched.
 
-Do not declare done while any gap stands.
+Standing notes (not gaps, owner-visible):
+
+- The new art draws the puppy smaller relative to Kennedi than the old art
+  (compact crouch, larger head). Page 6 still reads "Kennedi helps the
+  puppy", but the puppy is a smaller element in both the hero and the card.
+- `docs/art/kennedi-consistency-sheet.png` and the committed
+  `dist-proof/**` artifacts still show the old pose (excluded by Must Not
+  Change; both docs now say so).
+- The Fill-repair / puppy-composite scripts are not in the repo;
+  `asset-provenance.md` records every parameter.
 
 ### Change By Change Reconstruction
 
+1. `workbook/design-source/boss-kennedi/locked-poses/04-helping.png` --
+   binary replaced (721322 -> 556834 bytes), 1024x1024 RGB like the old file.
+2. `.../locked-poses/04-helping.svg` -- re-traced from (1) by
+   `tools/vectorize-line-art.sh`; the same command reproduces the old SVG
+   byte-for-byte from the old PNG.
+3. `.../simplified-tier/04-helping-simplified-source.png` -- byte copy of (1)
+   (the old source was likewise identical to the old locked PNG).
+4. `.../simplified-tier/04-helping-simplified.svg` -- traced from (3) with
+   threshold 70% + `potrace -s --flat -t 20 -O 1.0 -a 1.2`; that command
+   reproduces the old simplified SVG byte-for-byte from the old source.
+5. `workbook/src/content/pages/page-06-helping-mission.mjs:43` -- comment
+   bbox updated to the measured `x=264.0 y=79.2 w=473.4 h=818.8`.
+   `:52` -- card viewBox `'141 156 749 749'` -> `'42 30 917 917'`. The
+   measuring tool (outer-`<svg>` `getBBox()` in Chrome, side =
+   longest axis x 1.12, centered, rounded) reproduces the old documented
+   bbox and old viewBox exactly on the old SVG. Labels and
+   `meta.correctAnswers` unchanged.
+6. `workbook/docs/art/asset-provenance.md:96` -- row 4 struck through and
+   marked superseded; `:133` note that proof artifacts predate the swap;
+   `:136` new section "2026-09-23: 04-helping replaced" (cause, prompt,
+   seed, strength, repairs, composite, deviations, derived files).
+7. `workbook/docs/design-system.md:276-290` -- "(preserved across all 8
+   poses)" removed; known exceptions recorded (04 shorts + rectangular
+   badge; 03/08 crew necks); sheet marked as predating the swap.
+8. `workbook/dist/pages/page-06.html`, `workbook/dist/preview.html` --
+   only the two inlined 04-helping SVGs differ (hero: path data; card: path
+   data + viewBox). Verified by stripping all `<svg>` elements from old and
+   new page-06.html: the remaining HTML is identical; aria-labels identical.
+9. `workbook/dist/pdf/*.pdf`, `.pdf.sourcehash`, `dist/pdf-raster/page-6.png`,
+   `dist/screenshots/page-06.png` -- regenerated page-6 output; no other
+   page's raster or screenshot changed.
+10. This contract file.
+
 ### Contract Traceability
 
+| File | Contract item |
+|---|---|
+| `locked-poses/04-helping.png`, `.svg` | Must Touch 1-2 |
+| `simplified-tier/04-helping-simplified-source.png`, `-simplified.svg` | Must Touch 3 |
+| `page-06-helping-mission.mjs` | Must Touch 4 |
+| `docs/art/asset-provenance.md` | Must Touch 5 |
+| `docs/design-system.md` | Must Touch 6 + Amendment |
+| `dist/**` (6 files) | Must Touch 7 |
+| this file | Must Touch 8 |
+
 ### Verification
+
+Run locally in an isolated worktree off `origin/main` (d836475):
+
+- Baseline before any change: `npm ci && npm run all` on unmodified main ->
+  `git status -- dist/ ':!dist/pdf/*.pdf'` clean (committed dist reproduces
+  exactly on this machine).
+- Replay of `.github/workflows/workbook-quality.yml` on the committed head:
+  `npm run build && npm run verify` against the committed PDF -> VERIFY
+  PASSED; `npm run all` -> VERIFY PASSED (incl. page 6 no horizontal /
+  vertical overflow, no console errors); committed-vs-fresh `pdftotext`
+  normalized diff -> identical; `git status --porcelain -- dist/
+  ':!dist/pdf/*.pdf'` -> empty.
+- Determinism: two consecutive `npm run all` runs -> `diff -rq dist`
+  differs only in the PDF's raw bytes (timestamps, excluded by CI).
+- `learning-playground`: `npm ci && npm test` -> 64 files / 892 tests
+  passed; `npm run typecheck` -> exit 0. (`test:viewport` and `build` not
+  run: this PR's only change under `learning-playground/` is this Markdown
+  file, which no test, script or config reads.)
+- Visual: `dist/pdf-raster/page-6.png` inspected against main's; hero figure
+  measured 1.25x1.43in -> 1.01x1.67in at 150dpi (above the 1in clean-print
+  floor in design-system.md).
+- Could not run: GitHub Actions itself (runs on push).
