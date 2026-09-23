@@ -86,7 +86,11 @@ standing pose, itself plain FLUX.1-dev, no Redux). Reference for all puppy
 poses: `concept-a-floppy-classic.png` above.
 
 **8-pose Kennedi consistency sheet** (`design-source/boss-kennedi/locked-poses/`,
-sheet image: `docs/art/kennedi-consistency-sheet.png`):
+sheet image: `docs/art/kennedi-consistency-sheet.png`, built by
+`tools/make-kennedi-consistency-sheet.sh` -- ImageMagick `montage` of the eight
+locked PNGs; that script reproduces the original 2026-08-19 sheet with 0
+differing pixels from the poses of that date. Regenerated 2026-09-23 after the
+04-helping replacement; only tile 4 changed):
 
 | # | Pose | File | Redux strength | Notes |
 |---|---|---|---|---|

@@ -279,8 +279,8 @@ work" list (so it isn't relitigated) are in `docs/art/asset-provenance.md`
   Redux alone doesn't reliably carry small details), collared shirt +
   knee-length pleated skirt + socks + sneakers, consistent short/round
   preschooler proportions, consistent bold-outline print-line-art style.
-  Sheet: `docs/art/kennedi-consistency-sheet.png` (predates the 2026-09-23
-  04-helping replacement and still shows the old pose).
+  Sheet: `docs/art/kennedi-consistency-sheet.png` -- rebuild it with
+  `tools/make-kennedi-consistency-sheet.sh` whenever a locked pose changes.
   **Known exceptions (2026-09-23 audit):** `04-helping` (replaced
   2026-09-23) wears puffy shorts instead of the pleated skirt and a small
   rectangular badge instead of the round star -- accepted by the owner; see
