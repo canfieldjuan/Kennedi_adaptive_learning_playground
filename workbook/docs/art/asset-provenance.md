@@ -86,7 +86,12 @@ standing pose, itself plain FLUX.1-dev, no Redux). Reference for all puppy
 poses: `concept-a-floppy-classic.png` above.
 
 **8-pose Kennedi consistency sheet** (`design-source/boss-kennedi/locked-poses/`,
-sheet image: `docs/art/kennedi-consistency-sheet.png`):
+sheet image: `docs/art/kennedi-consistency-sheet.png`, built by
+`tools/make-kennedi-consistency-sheet.sh` -- ImageMagick `montage` of the eight
+locked PNGs; that script reproduces the original 2026-08-19 sheet with 0
+differing pixels from the poses of that date. Regenerated 2026-09-24 after the
+face + hair lock below. The Redux strengths in this table record how each
+pose's body was generated; every head was repainted afterwards):
 
 | # | Pose | File | Redux strength | Notes |
 |---|---|---|---|---|
@@ -139,8 +144,11 @@ were not rebuilt; they still show the old helping pose.)
 against design-system.md's "Locked identity traits", found `04-helping`
 failing 6 of 10: older-looking face with smaller almond eyes, hair down with
 one tie (not two pigtails), puffy shorts (not the pleated skirt), no socks,
-barefoot. The other seven poses held (identity >=3/4 vs `01-neutral` in 6 of
-7). Cause, confirmed by reproduction: re-running the prompt embedded in the
+barefoot. The other seven poses were scored as holding (identity >=3/4 vs
+`01-neutral` in 6 of 7). **Corrected 2026-09-24:** that audit scored trait
+*presence* (has pigtails, has eyelashes), not whether the faces matched --
+side by side at equal scale all eight faces and hairstyles differed. See
+"2026-09-24: face + hair lock" below. Cause, confirmed by reproduction: re-running the prompt embedded in the
 old PNG's metadata with its recorded seed (2845242026) and strength (0.08)
 regenerates the old PNG pixel-identically. That prompt never mentioned
 socks, shoes, face, eyes or age, and omitted both guard phrases from "What
@@ -199,10 +207,118 @@ looser parameters (threshold 70% + `potrace -s --flat -t 20 -O 1.0 -a 1.2`;
 the same command reproduces the previous simplified SVG byte-for-byte). The
 page-6 picture-card crop was re-measured on the new SVG (outer-`<svg>`
 `getBBox()` x=264.0 y=79.2 w=473.4 h=818.8 -> viewBox `42 30 917 917`); the
-same tool reproduces the old documented bbox and crop exactly.
+same tool reproduces the old documented bbox and crop exactly. (Superseded
+2026-09-24 by the face + hair lock, which re-measured this crop again.)
 
 **Not in this repo:** the Fill-repair and puppy-composite scripts were run
 from a scratch workspace outside the repo; the parameters above are the full
+record.
+
+## 2026-09-24: face + hair lock (all 8 poses)
+
+**Why.** Owner review of the consistency sheet: "the faces and some features
+are different among the different pictures." At equal face width the eight
+poses showed eight similar girls: eyes (small dots / large glossy /
+heavy-lashed), nose (none / curve / prominent "c" / freckled), bangs
+(curtain / swept / center part / spiky), pigtails (curly / long straight /
+short high puffs), and apparent age all varied. Cause: Redux strength is
+asked to carry both pose change and identity. Posture changes need ~0.08
+(0.2+ snaps back to the standing reference, see "What actually worked"),
+and at 0.08 Redux transfers style and outfit but almost none of the face,
+so FLUX invents a new face every pose.
+
+**Fix: separate the two jobs.** Keep each pose's body exactly as drawn and
+repaint only the head (face + hair + pigtails) against one canonical head.
+Every repaint below is FLUX.1 Fill (`flux1-fill-dev-Q6_K.gguf`, guidance 30,
+28 steps, euler/simple, DifferentialDiffusion), composited back onto the pose
+through its mask feathered with a 3px Gaussian. **Verified for every pose:
+0 changed pixels outside the head mask plus feather margin** (for 04 also
+outside the strip above its head that was cleared of the old hair puffs).
+
+**Canonical head -- `locked-poses/07-thinking.png` (owner pick).** 07's
+original body and hair, with only its face repainted: Fill + Redux strength
+**0.6**, seed **2**, reference = the pre-2026-09-24 `01-neutral` head crop
+(x 300-720, y 40-460), face mask = ellipse center (507,252), radii 110x104.
+Head-only Redux can run far above 0.08 because the pose is not regenerated.
+Prompt: `<STYLE>. Close-up of <FACE>, a calm thoughtful expression, small
+closed-mouth smile.`
+
+**Other seven poses -- in-context head lock.** One 2048x1024 canvas: the
+canonical `07-thinking.png` on the left half, the target pose on the right,
+the target's head polygon masked (no Redux). Prompt: `<STYLE>. Two drawings
+of the exact same girl side by side, the same character drawn twice:
+identical face and identical hairstyle in both. She has <HEAD>. On the
+right: <expression>.` Four seeds per pose; the owner-approved seed matched
+the canonical face *and* hair (candidates that grew bangs, spiky pigtails,
+barrettes or a stray signature scribble were rejected).
+
+| Pose | Seed | Expression phrase |
+|---|---|---|
+| 01-neutral | 3 | the same girl standing, a gentle happy closed-mouth smile, looking at the viewer |
+| 02-hero-clipboard | 3 | the same girl, a big happy open-mouth grin showing her top teeth, looking at the viewer |
+| 03-waving | 2 | the same girl, a happy closed-mouth smile, looking at the viewer |
+| 04-helping | 6 | see below |
+| 05-pointing | 3 | the same girl, cheerful gentle closed-mouth smile, looking at the viewer |
+| 06-sitting-writing | 3 | the same girl, a small happy closed-mouth smile, looking at the viewer |
+| 08-celebrating | 3 | the same girl, a big excited open-mouth laugh, looking at the viewer |
+
+Head mask polygons (1024px image coordinates):
+
+```
+01 [[290,48],[730,48],[792,108],[792,316],[640,316],[622,322],[400,322],[382,316],[248,316],[243,108]]
+02 [[320,28],[700,28],[778,88],[788,366],[662,368],[622,336],[420,336],[382,330],[288,330],[278,88]]
+03 [[262,78],[750,78],[802,138],[802,340],[700,346],[648,398],[600,410],[420,410],[375,398],[330,346],[214,340],[214,138]]
+04 [[330,165],[420,150],[520,150],[600,165],[700,185],[765,230],[768,520],[610,522],[560,522],[460,522],[425,548],[300,550],[240,540],[236,230],[270,185]]
+05 [[330,33],[700,33],[772,88],[778,368],[662,372],[642,382],[362,382],[342,372],[302,366],[230,364],[226,88]]
+06 [[250,213],[760,213],[812,278],[812,490],[692,495],[642,528],[600,538],[420,538],[380,528],[330,470],[213,470],[213,278]]
+08 [[330,53],[700,53],[747,100],[747,213],[702,240],[690,330],[650,354],[560,360],[470,360],[390,354],[345,330],[335,240],[288,213],[288,100]]
+```
+
+**04 needed a second pass.** Its old high hair puffs sat above the first
+mask, so all four first-pass seeds kept them on top of the new pigtails.
+Second pass: the larger polygon above, the old puffs erased first (region
+x 230-775, y 55-235 outside the mask set to white), expression "the same
+girl seen in a three-quarter view with her head tilted down, looking down
+at a puppy on the ground, a warm caring closed-mouth smile; her hair is
+parted in the middle and her two long smooth wavy pigtails hang down beside
+her face to her shoulders", seeds 5-8, seed **6** chosen. Clean-up inside
+the cleared strip only: marks not connected to the figure's line work
+(fragments of hair drawn past the mask edge) removed, and the strip's pure
+white re-toned to the image's background grey (253) so no brighter box shows.
+
+**Prompt fragments.**
+`<STYLE>` = black and white line art, coloring-book style illustration, bold
+thick solid black outlines (not thin or faint) on a pure white background,
+no color, crisp clean sharp lines.
+`<FACE>` = the face of a young preschool girl, about four years old: a wide
+round chubby face with a round chin, big round solid black eyes each with a
+white shine dot and three short curled eyelashes on the outer corner, thin
+curved eyebrows, a tiny small dot nose, a simple gentle closed-mouth smile,
+three small hash-mark lines on each cheek.
+`<HEAD>` = hair parted in the middle and pulled back smoothly with no bangs,
+two long smooth wavy pigtails at the sides of her head each tied with a small
+round hair tie; a round chubby face, big round dark eyes with white shine dots
+and long curled eyelashes on the outer corners, thin arched eyebrows, a tiny
+two-stroke nose, four small diagonal blush lines on each cheek.
+
+**Derived files.** All 8 locked SVGs re-traced with
+`tools/vectorize-line-art.sh`; simplified-tier 02/04/05 re-traced with the
+documented looser parameters (both commands reproduce every previous SVG
+byte-for-byte from the previous PNGs). Card crops re-measured with outer-
+`<svg>` `getBBox()` (the same tool reproduces all four previous crops
+exactly): page 3 -- 06 `129.2 178.3 745.5 745.5`, 08 `-6.3 13.9 1037.7
+1037.7`, 03 `11.5 34.2 1005.1 1005.1`; page 6 -- 04 `105 131 811 811`.
+
+**Print note.** The new faces' feature lines are thinner than the bodies'
+(p75 stroke width 4-6px on the faces vs 5.7-7.2px on the bodies, measured on
+all eight PNGs). At the 70% vectorization threshold the white eye-shine dots
+partly fill in, leaving small irregular highlights; checked on all eight
+rendered SVGs, every pose's eyes read the same way (large black eyes with
+lashes), and lashes, brows, blush marks and smiles survive.
+
+**Not changed:** outfits. The documented exceptions (03/08 crew necks; 04
+shorts + rectangular badge) remain. **Not in this repo:** the head-lock
+scripts ran from a scratch workspace; the parameters above are the full
 record.
 
 ## Character-lock mechanism (read before generating more poses)
