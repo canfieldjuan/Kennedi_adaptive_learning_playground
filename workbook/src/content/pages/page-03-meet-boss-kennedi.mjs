@@ -54,11 +54,11 @@ const puppySitting = withSvgLabel(inlineSvgFile(path.join(PUPPY_LOCKED, '01-sitt
  * own 100x100 viewBox tightly).
  *
  * Measured content bbox (of the 0-1024 viewBox), via getBBox():
- *   06-sitting-writing: x=199.2 y=223.1 w=609.7 h=660.7 (seated -- uses the
+ *   06-sitting-writing: x=199.2 y=218.2 w=605.5 h=665.6 (seated -- uses the
  *     least vertical canvas of the three, so this pose gets the most zoom)
- *   08-celebrating:     x=211.0 y=55.9  w=603.0 h=940.1 (arms raised high --
+ *   08-celebrating:     x=211.0 y=69.5  w=603.0 h=926.5 (arms raised high --
  *     already spans nearly the full canvas height, so squaring barely crops)
- *   03-waving:          x=229.1 y=81.2  w=558.0 h=904.3 (raised arm, same
+ *   03-waving:          x=235.2 y=88.1  w=557.7 h=897.4 (raised arm, same
  *     tall silhouette as celebrating)
  */
 function withViewBox(svgMarkup, viewBox) {
@@ -73,15 +73,15 @@ function withViewBox(svgMarkup, viewBox) {
 // shows, same as every hand-drawn icon's label elsewhere in this book, not
 // whether it's the correct answer.
 const kennediSittingWritingCard = withSvgLabel(
-  withViewBox(kennediSittingWritingRaw, '134.0 183.5 740.0 740.0'),
+  withViewBox(kennediSittingWritingRaw, '129.2 178.3 745.5 745.5'),
   'Kennedi sitting and writing on a clipboard'
 );
 const kennediCelebratingCard = withSvgLabel(
-  withViewBox(inlineSvgFile(path.join(KENNEDI_LOCKED, '08-celebrating.svg')), '-13.9 -0.5 1052.9 1052.9'),
+  withViewBox(inlineSvgFile(path.join(KENNEDI_LOCKED, '08-celebrating.svg')), '-6.3 13.9 1037.7 1037.7'),
   'Kennedi celebrating with both arms raised'
 );
 const kennediWavingCard = withSvgLabel(
-  withViewBox(inlineSvgFile(path.join(KENNEDI_LOCKED, '03-waving.svg')), '1.7 27.0 1012.8 1012.8'),
+  withViewBox(inlineSvgFile(path.join(KENNEDI_LOCKED, '03-waving.svg')), '11.5 34.2 1005.1 1005.1'),
   'Kennedi waving hello'
 );
 

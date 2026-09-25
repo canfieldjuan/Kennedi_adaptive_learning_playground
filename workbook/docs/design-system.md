@@ -273,14 +273,29 @@ work" list (so it isn't relitigated) are in `docs/art/asset-provenance.md`
   **0.08** for anything changing body posture or held objects (sitting,
   kneeling, clipboard), **0.15-0.2** for arm-gesture-only changes on a
   standing body (waving, pointing, celebrating).
+  **Redux at these strengths does NOT lock the face or hair** -- it carries
+  style and outfit, and FLUX invents a new face each pose (confirmed
+  2026-09-24: all eight poses showed different faces and hairstyles). So
+  every new pose gets a second step: **head lock** -- keep the generated body
+  and repaint only the head (face + hair + pigtails) with FLUX.1 Fill
+  "in-context": the canonical `locked-poses/07-thinking.png` on the left half
+  of one canvas, the new pose on the right, its head masked; composite back
+  through the mask so nothing outside the head changes. Full recipe, prompt
+  and per-pose masks: asset-provenance.md "2026-09-24: face + hair lock".
+- **Canonical face + hair** (the reference for every head lock:
+  `locked-poses/07-thinking.png`): hair parted in the middle and pulled back
+  smoothly, no bangs; two long smooth wavy pigtails with small round ties;
+  round chubby face; big round dark eyes with curled outer lashes; thin
+  arched brows; tiny two-stroke nose; small diagonal blush lines on each
+  cheek.
 - **Locked identity traits**: face shape,
   pigtail hairstyle with two small hair ties, big eyes with eyelashes, a
   round badge with a plain star (explicitly re-described in every prompt --
   Redux alone doesn't reliably carry small details), collared shirt +
   knee-length pleated skirt + socks + sneakers, consistent short/round
   preschooler proportions, consistent bold-outline print-line-art style.
-  Sheet: `docs/art/kennedi-consistency-sheet.png` (predates the 2026-09-23
-  04-helping replacement and still shows the old pose).
+  Sheet: `docs/art/kennedi-consistency-sheet.png` -- rebuild it with
+  `tools/make-kennedi-consistency-sheet.sh` whenever a locked pose changes.
   **Known exceptions (2026-09-23 audit):** `04-helping` (replaced
   2026-09-23) wears puffy shorts instead of the pleated skirt and a small
   rectangular badge instead of the round star -- accepted by the owner; see
