@@ -58,6 +58,16 @@ const SPECIAL_DELIVERY_PRODUCTION_ASSETS: Record<string, string> = {
   'delivery-ending-high': 'story-stage-delivery-ending-high-poppy-forest',
   'delivery-ending-wagon': 'story-stage-delivery-ending-wagon-poppy-forest',
 };
+const CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS: Record<string, string> = {
+  'delivery-intro': 'story-stage-delivery-intro-poppy-cloud-village',
+  'delivery-problem': 'story-stage-delivery-problem-poppy-cloud-village',
+  'delivery-route': 'story-stage-delivery-route-poppy-cloud-village',
+  'delivery-bridge': 'story-stage-delivery-bridge-poppy-cloud-village',
+  'delivery-meadow': 'story-stage-delivery-meadow-poppy-cloud-village',
+  'delivery-protect': 'story-stage-delivery-protect-poppy-cloud-village',
+  'delivery-ending-high': 'story-stage-delivery-ending-high-poppy-cloud-village',
+  'delivery-ending-wagon': 'story-stage-delivery-ending-wagon-poppy-cloud-village',
+};
 
 describe('the first tale (resolved story graph)', () => {
   const scenesById = new Map(FIRST_TALE.scenes.map((scene) => [scene.id, scene]));
@@ -308,6 +318,16 @@ describe('story stage runtime', () => {
     findByAria(root, 'Princess Poppy')?.click();
     findByAria(root, 'Next step')?.click();
     findByAria(root, 'The Enchanted Forest')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'A Special Delivery')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'Start the story')?.click();
+  }
+
+  function startCloudVillageDeliveryStory(root: MockElement): void {
+    findByAria(root, 'Princess Poppy')?.click();
+    findByAria(root, 'Next step')?.click();
+    findByAria(root, 'The Cloud Village')?.click();
     findByAria(root, 'Next step')?.click();
     findByAria(root, 'A Special Delivery')?.click();
     findByAria(root, 'Next step')?.click();
@@ -631,10 +651,10 @@ describe('story stage runtime', () => {
 
       const alternateSetting = storySceneSvg(artKey, {
         characterArt: 'poppy',
-        settingArt: 'cloud-village',
+        settingArt: 'moon-castle',
       });
       expect(alternateSetting).not.toContain('data-production-art');
-      expect(alternateSetting).toContain('#d6ecfa');
+      expect(alternateSetting).toContain('#d8d4f2');
     }
 
     const lostFriend = storySceneSvg('lost-intro', {
@@ -653,6 +673,99 @@ describe('story stage runtime', () => {
     const unknownScene = storySceneSvg('not-a-story-scene', {
       characterArt: 'poppy',
       settingArt: 'forest',
+    });
+    expect(unknownScene).not.toContain('data-production-art');
+    expect(unknownScene).toContain('#fd79a8');
+  });
+
+  test('the Cloud Village bridge and carry-high path preserves every production beat', () => {
+    const root = setup();
+    startCloudVillageDeliveryStory(root);
+    expectProductionScene(root, CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS['delivery-intro']);
+
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS['delivery-problem']);
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS['delivery-route']);
+    findByAria(root, 'Over the little bridge')?.click();
+    expectProductionScene(root, CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS['delivery-bridge']);
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS['delivery-protect']);
+    findByAria(root, 'Carry it up high')?.click();
+    expectProductionScene(root, CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS['delivery-ending-high']);
+    expect(findByAria(root, 'New story')).toBeDefined();
+  });
+
+  test('the Cloud Village meadow and wagon path keeps its distinct consequence and ending', () => {
+    const root = setup();
+    startCloudVillageDeliveryStory(root);
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'What happens next?')?.click();
+    findByAria(root, 'Through the flower meadow')?.click();
+    expectProductionScene(root, CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS['delivery-meadow']);
+    findByAria(root, 'What happens next?')?.click();
+    expectProductionScene(root, CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS['delivery-protect']);
+    findByAria(root, 'Roll it in the little wagon')?.click();
+    expectProductionScene(root, CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS['delivery-ending-wagon']);
+    expect(findByAria(root, 'New story')).toBeDefined();
+  });
+
+  test('all eight Cloud Village delivery beats use exact local decorative production art', () => {
+    for (const [artKey, assetId] of Object.entries(CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS)) {
+      const productionScene = storySceneSvg(artKey, {
+        characterArt: 'poppy',
+        settingArt: 'cloud-village',
+      });
+      expect(productionScene).toContain(`data-production-art="${assetId}"`);
+      expect(productionScene).toContain(`href="/assets/images/${assetId}.svg"`);
+      expect(productionScene).toContain('aria-hidden="true"');
+      expect(productionScene).toContain('focusable="false"');
+    }
+  });
+
+  test('the Cloud Village delivery map remains exact without displacing merged or dynamic contexts', () => {
+    for (const artKey of Object.keys(CLOUD_VILLAGE_SPECIAL_DELIVERY_ASSETS)) {
+      const alternateCharacter = storySceneSvg(artKey, {
+        characterArt: 'finn',
+        settingArt: 'cloud-village',
+      });
+      expect(alternateCharacter).not.toContain('data-production-art');
+      expect(alternateCharacter).toContain('#8fce9b');
+
+      const approvedForest = storySceneSvg(artKey, {
+        characterArt: 'poppy',
+        settingArt: 'forest',
+      });
+      expect(approvedForest).toContain(
+        `data-production-art="${SPECIAL_DELIVERY_PRODUCTION_ASSETS[artKey]}"`
+      );
+
+      const moonCastle = storySceneSvg(artKey, {
+        characterArt: 'poppy',
+        settingArt: 'moon-castle',
+      });
+      expect(moonCastle).not.toContain('data-production-art');
+      expect(moonCastle).toContain('#d8d4f2');
+    }
+
+    const cozyTownLostFriend = storySceneSvg('lost-intro', {
+      characterArt: 'poppy',
+      settingArt: 'cozy-town',
+    });
+    expect(cozyTownLostFriend).toContain(
+      'data-production-art="story-stage-lost-intro-poppy-cozy-town"'
+    );
+
+    const unsupportedLostFriend = storySceneSvg('lost-intro', {
+      characterArt: 'poppy',
+      settingArt: 'cloud-village',
+    });
+    expect(unsupportedLostFriend).not.toContain('data-production-art');
+    expect(unsupportedLostFriend).toContain('#d6ecfa');
+
+    const unknownScene = storySceneSvg('not-a-story-scene', {
+      characterArt: 'poppy',
+      settingArt: 'cloud-village',
     });
     expect(unknownScene).not.toContain('data-production-art');
     expect(unknownScene).toContain('#fd79a8');
