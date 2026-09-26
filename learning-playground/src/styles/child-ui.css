@@ -5449,3 +5449,172 @@
     font-size: 1.3rem;
   }
 }
+
+/* =============================================
+   Dress-Up Studio (creative play) — Luna, her wardrobe, scenes, and the
+   saved fashion cards. Scoped under .dress-up-studio; no global changes.
+   ============================================= */
+.dress-up-studio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md, 12px);
+  padding-bottom: var(--space-xl, 24px);
+}
+
+.dress-up-studio__studio,
+.dress-up-studio__payoff {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md, 12px);
+}
+
+/* The live doll-in-scene preview — the biggest, clearest thing on screen. */
+.dress-up-studio__doll {
+  width: min(72vw, 260px);
+}
+.dress-up-studio__doll .du-stage-svg,
+.dress-up-studio__card .du-card-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  filter: drop-shadow(0 4px 10px rgba(58, 36, 97, 0.18));
+}
+
+/* Supply tabs — an icon-first strip; the active tab is clearly marked. */
+.dress-up-studio__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.dress-up-studio__tab {
+  min-height: 48px;
+  min-width: 72px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 3px solid transparent;
+  background: #fbf5ea;
+  color: #3a2461;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.dress-up-studio__tab.is-active {
+  border-color: #f06fa6;
+  background: #fff;
+}
+
+/* Choice tray — grouped chips (Skin, Hair, Tops, ...). */
+.dress-up-studio__tray {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 12px);
+  width: 100%;
+}
+.dress-up-studio__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+.dress-up-studio__group-label {
+  flex-basis: 100%;
+  text-align: center;
+  color: #6a5a86;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.dress-up-studio__chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 84px;
+  min-height: 84px;
+  padding: 8px;
+  border-radius: 16px;
+  border: 3px solid #e6ddf0;
+  background: #fff;
+  color: #3a2461;
+  font: inherit;
+  cursor: pointer;
+}
+.dress-up-studio__chip.is-selected {
+  border-color: #f06fa6;
+  box-shadow: 0 0 0 3px rgba(240, 111, 166, 0.25);
+}
+.dress-up-studio__chip-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #3a2461;
+  background: var(--du-swatch, #ddd);
+}
+.dress-up-studio__chip-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.dress-up-studio__finish {
+  min-height: 60px;
+  min-width: 220px;
+  font-size: 1.15rem;
+}
+
+/* Saved-look shelf (bounded revisit) — mini fashion cards, newest first. */
+.dress-up-studio__shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+.dress-up-studio__mini {
+  width: 84px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 3px solid #e6ddf0;
+  background: #fff;
+  cursor: pointer;
+}
+.dress-up-studio__mini .du-card-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* The finished fashion card + child-controlled finish. */
+.dress-up-studio__card {
+  width: min(78vw, 300px);
+}
+.dress-up-studio__payoff-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* One-shot reveal when a card is finished. */
+.dress-up-studio__card.is-revealing .du-card-svg {
+  animation: du-card-pop 460ms ease-out;
+}
+@keyframes du-card-pop {
+  0% { transform: scale(0.86); opacity: 0.4; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dress-up-studio__card.is-revealing .du-card-svg {
+    animation: none;
+  }
+}
