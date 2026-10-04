@@ -420,6 +420,59 @@ does not change scope.
     - `selftest` passes on the real workbook.
     - The gate runs both and is green.
 
+- **PR #138 review round 5** (Codex on `45297cc`, five findings, all
+  confirmed). Three classes, each closed at one point.
+  - **A. Locked art changes under one lock, and `lock` commits what it
+    validated.**
+    - The findings:
+      - two `lock --force` runs on one name can interleave their renames
+        and leave one lock's files under the other's recipe;
+      - `lock` validates the draft candidate and guide, then reads them
+        again to stage them, so a draft replaced in between is committed
+        unvalidated.
+    - `art_lock()` takes `flock` on the `design-source` folder. `lock`
+      holds it exclusively from its ownership check to its last rename;
+      `selftest` holds it shared, so it never reads a half-committed lock.
+    - `lock` copies the candidate (and the guide) into its staging folder
+      first, then validates the staged copies, so the files it commits are
+      the files it checked.
+    - A crash between renames can still leave a partial set. `selftest`
+      catches that, because each file's digest is recorded; an atomic swap
+      would need a folder or symlink per lock, which B forbids.
+  - **B. Locked folders hold only regular files, owned by their own path.**
+    - The findings:
+      - the scan saw only top-level files, so `animals/locked-poses/x/rogue.png`
+        passed;
+      - ownership was looked up by resolved path, so a symlink named
+        `alias.png` inherited the bunny's recipe.
+    - `locked_tree()` walks every locked root recursively. A folder, a
+      symlink, or anything else that isn't a regular file fails `selftest`,
+      and the files inside a folder still need owners.
+    - Ownership is keyed by the file's path in its root, not by what it
+      resolves to. A legacy key must name a file directly in a locked root.
+    - `lock` refuses to write over a symlink.
+  - **C. A color asset's source is a managed line-art lock.**
+    - The finding: `colorize` accepted any PNG with a recipe beside it, so a
+      copy outside the locked folder could become the source of approved
+      color art.
+    - `line_art_problems()` requires a PNG directly in
+      `animals/locked-poses`, not a symlink, owned by an `animal` recipe
+      whose `files` include it. `colorize` runs it before contacting
+      ComfyUI. `embedded_problems()` runs it for every color recipe, so
+      `lock` and `selftest` check it too.
+    - The guide-from-line-art check moves from `check_locked()` into
+      `embedded_problems()`, so `lock --color` refuses a candidate that
+      `selftest` would fail, instead of locking it.
+  - **Settling evidence (planned):** each finding reproduced against
+    `45297cc` first:
+    - a `lock` that blocks while another holder has the lock, and completes
+      after release;
+    - a draft swapped mid-validation (injected through the copy's
+      `build_graph`) that never yields a lock `selftest` rejects;
+    - a nested folder, a symlink alias and a scratch-copy color source each
+      refused;
+    - the untouched copy still passing.
+
 ## Cold Diff Audit
 
 ### Gaps
