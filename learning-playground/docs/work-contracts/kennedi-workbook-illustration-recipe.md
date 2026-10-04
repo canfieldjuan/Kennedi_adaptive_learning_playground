@@ -522,6 +522,58 @@ does not change scope.
       that no longer matches its record;
     - a recipe with a wrong `source`.
 
+- **PR #138 review round 7** (Codex on `e1044c7`, three findings, all
+  confirmed). They reach the drafts side of the round-6 table, so this
+  round closes that side too.
+
+  | Draft files | Written by | Read by |
+  |---|---|---|
+  | `<name>-candidate-<seed>.png`, `-contact-sheet.png`, `-recipe.json` | `candidates` | `lock` |
+  | `<name>-color-candidate-<seed>.png`, `-color-contact-sheet.png`, `-color-recipe.json`, `-color-guide.png` | `colorize` | `lock --color` |
+  | `<locked stem>.reproduced.png` | `reproduce` | the operator |
+
+  - **A. A draft set is committed whole, and commits are serialized.**
+    - The finding: two overlapping `candidates` (or `colorize`) runs
+      replaced each file as it rendered, so the set could end up mixing
+      both runs under one recipe.
+    - Both commands now render every file of the set into one staging
+      folder, then commit it together.
+    - Every commit into `design-source` (drafts, reproductions, locks)
+      takes `art_lock(exclusive)` for its renames. The lock is re-entrant
+      within one process, since `lock` already holds it.
+    - `lock` reads the draft recipe inside its lock too, so the recipe and
+      the candidate it stages come from one committed set.
+  - **B. One namespace, each name with one producer.**
+    - The finding: an animal named `bunny-color` writes exactly bunny's
+      color draft names.
+    - The `-color` suffix is reserved: `candidates` and `lock` refuse an
+      asset name ending in it.
+    - `lock` checks that the draft recipe's kind matches the mode, and
+      refuses cleanly instead of raising `KeyError`.
+    - `reproduce --out` inside `design-source` must end in
+      `.reproduced.png`, so it can't overwrite a draft-set file.
+  - **C. Dependents are checked by name, not by presence.** A line-art
+    `lock` refuses whenever a color recipe names its path as the source,
+    whether the PNG is there or not. A missing PNG is restored from git,
+    not re-rendered under a color lock that depends on it.
+  - **D. The rendering commands run in the tests.**
+    - `test-illustration-recipe.py` gains a fake ComfyUI. It speaks the
+      HTTP endpoints the tool uses, "renders" a small image from the seed
+      and prompt, and embeds the graph with `is_changed` fingerprints on
+      `LoadImage` nodes, as ComfyUI does.
+    - So `candidates`, `colorize` and `reproduce` run end to end on CPU.
+    - ComfyUI is the external boundary, and only it is faked.
+  - **Settling evidence (planned):** reproduced against `e1044c7`:
+    - a `candidates` run that, while the test holds the lock, renders all
+      its candidates and lands none of them, then commits a consistent set
+      on release;
+    - `candidates animal bunny-color` refused;
+    - `lock --color` over a line-art recipe refused cleanly;
+    - a line-art lock refused while a color lock depends on the missing PNG;
+    - `reproduce --out` onto a draft name refused;
+    - an end-to-end run: `candidates`, `lock`, `colorize`, `lock --color`,
+      `reproduce` (0 differing pixels) and `selftest`.
+
 ## Cold Diff Audit
 
 ### Gaps
