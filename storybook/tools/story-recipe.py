@@ -161,8 +161,9 @@ def embedded_problems(png, manifest, seed, canon):
 
 @contextlib.contextmanager
 def art_lock():
-    """Commits into design-source happen one at a time."""
-    folder = os.open(STORYBOOK / "design-source", os.O_RDONLY)
+    """Commits into design-source happen one at a time. The lock is on the storybook folder itself, which
+    always exists; design-source is made on first use, since git doesn't keep empty folders."""
+    folder = os.open(STORYBOOK, os.O_RDONLY)
     try:
         fcntl.flock(folder, fcntl.LOCK_EX)
         yield

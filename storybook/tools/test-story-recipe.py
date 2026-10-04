@@ -103,8 +103,7 @@ def storybook_copy(root):
     (root / "tools").mkdir(parents=True)
     shutil.copy(TOOL, root / "tools")
     shutil.copytree(STORYBOOK / "canon", root / "canon")
-    (root / "design-source").mkdir()
-    return root
+    return root        # no design-source/: like the real tree, the tool makes it on first use
 
 
 def run(root, *args):
@@ -128,6 +127,14 @@ def drawn(root, name="pippa", seed=72):
         assert not code, out
     finally:
         comfy.close()
+
+
+def case_fresh_storybook(root):
+    """A storybook with no art yet, as it is in git, passes selftest without writing anything."""
+    code, out = run(root, "selftest")
+    check("selftest passes on a storybook with no design-source yet", not code and "0 character locks" in out,
+          out.strip()[-160:])
+    check("and leaves it without one", not (root / "design-source").exists())
 
 
 def case_character_lock_selftest(root):
@@ -236,7 +243,7 @@ def case_locked_folder_holds_only_records(root):
 
 
 def main():
-    cases = [case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
+    cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_locked_folder_holds_only_records]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
