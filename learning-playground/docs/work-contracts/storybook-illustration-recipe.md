@@ -84,8 +84,8 @@ now. We can use the stories as our first template."
 
 - **Models are allowlisted by licence.** The tool knows each model file it
   may render with, its source repo and its licence. A recipe records them,
-  and the tool refuses any other model, so a lock is sell-safe by
-  construction.
+  and the tool refuses any other model, so a recipe names only allowlisted
+  apache-2.0 files (round-1 amendment: names, not bytes).
 
   | File | Source | License |
   |---|---|---|
@@ -169,6 +169,30 @@ now. We can use the stories as our first template."
   exist yet.
 - **Garments read "wearing a `<garment>`"** (found while building). The
   canon's garments have no article ("patchwork vest").
+
+- **PR #144 review, round 1 (Codex, five findings).**
+  - Four are fixed in one round:
+    - **A lock is its character.** `selftest` fails a recipe whose file name
+      isn't its manifest's character, so a Bramble sheet saved as
+      `pippa.png` can't pass as Pippa's reference.
+    - **A candidate is the bytes `character` rendered.** The draft recipe
+      records each candidate's SHA-256, and `lock` refuses one whose bytes
+      changed after rendering, even with its metadata kept.
+    - **`selftest` requires `chosen_seed` to be one of the rendered
+      seeds**, as `lock` does.
+    - **The drafts and locked folders must be the storybook's real
+      folders.** A symlinked or non-canonical folder is refused before any
+      write, and fails `selftest`.
+  - One is deferred, and the claim it exposed is corrected. The allowlist
+    binds model **file names**: a recipe can only name the three apache-2.0
+    files. Which bytes ComfyUI loads under those names is the machine's
+    model configuration, which the tool can't see.
+    - "Sell-safe by construction" therefore overstated it. The guarantee
+      is: a recipe names only allowlisted apache-2.0 model files.
+    - The verified SHA-256 of the base model is recorded in `MODELS`, for
+      checking by hand.
+    - Binding renders to model bytes, by hashing the files ComfyUI actually
+      loads, is a follow-up issue.
 
 ## Cold Diff Audit
 
