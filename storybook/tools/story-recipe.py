@@ -37,13 +37,18 @@ CANON = "canon/moon-berry-forest.json"
 DRAFTS, LOCKED = "design-source/characters/drafts", "design-source/characters/locked"
 SEEDS = (61, 72, 83, 94)
 
-# Every model the book renders with, by role: its file, where it comes from and its licence, verified on the
-# Hugging Face Hub 2026-10-04. Nothing else is loaded, so a lock is sell-safe by construction.
+# Every model the book renders with, by role: its file, where it comes from, its licence and the SHA-256 the Hub
+# publishes for it, all verified 2026-10-04 (the local copies matched). A recipe can name only these files. The
+# tool can't see which bytes ComfyUI loads under these names; that is the machine's model configuration, and the
+# digests are here to check it against.
 MODELS = {
-    "unet": {"file": "qwen-image-Q8_0.gguf", "source": "city96/Qwen-Image-gguf", "license": "apache-2.0"},
+    "unet": {"file": "qwen-image-Q8_0.gguf", "source": "city96/Qwen-Image-gguf", "license": "apache-2.0",
+             "sha256": "43142b32778dc0568c27395abc6f8291ac53f1de0b98eed919712cf161f248de"},
     "clip": {"file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
-             "source": "Comfy-Org/Qwen-Image_ComfyUI (from Qwen/Qwen2.5-VL-7B-Instruct)", "license": "apache-2.0"},
-    "vae": {"file": "qwen_image_vae.safetensors", "source": "Comfy-Org/Qwen-Image_ComfyUI", "license": "apache-2.0"},
+             "source": "Comfy-Org/Qwen-Image_ComfyUI (from Qwen/Qwen2.5-VL-7B-Instruct)", "license": "apache-2.0",
+             "sha256": "cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4"},
+    "vae": {"file": "qwen_image_vae.safetensors", "source": "Comfy-Org/Qwen-Image_ComfyUI", "license": "apache-2.0",
+            "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f"},
 }
 LOADERS = {"unet": ("UnetLoaderGGUF", "unet_name"), "clip": ("CLIPLoader", "clip_name"), "vae": ("VAELoader", "vae_name")}
 
@@ -57,12 +62,22 @@ SHEET_TEMPLATES = {"v1": {
 # ComfyUI's own Qwen-Image defaults (its "Text to Image (Qwen-Image)" blueprint).
 RENDERS = {"v1": {"size": 1328, "shift": 3.1, "steps": 20, "cfg": 4.0, "sampler": "euler", "scheduler": "simple"}}
 TEMPLATE, RENDER = "v1", "v1"
-# Keys a recipe gains outside draft_manifest(): the ComfyUI version noted at render time, and what `lock` adds.
-ADDED_KEYS = {"comfyui_version", "chosen_seed", "source", "files"}
+# Keys a recipe gains outside draft_manifest(): the ComfyUI version and the candidates' SHA-256, noted at render
+# time, and what `lock` adds.
+ADDED_KEYS = {"comfyui_version", "candidates", "chosen_seed", "source", "files"}
 
 
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def real_folder(rel):
+    """STORYBOOK/rel, refused if the way there goes through a symlink: the tool writes only inside the storybook."""
+    path = STORYBOOK / rel
+    if path.resolve() != path:
+        sys.exit(f"{rel} goes through a symlink to {path.resolve()}; the tool writes only into the storybook's "
+                 f"real folders")
+    return path
 
 
 def load_canon():
@@ -230,7 +245,7 @@ def cmd_character(args):
         options = api(args.server, f"/object_info/{node}")[node]["input"]["required"][field][0]
         if MODELS[role]["file"] not in options:
             sys.exit(f"ComfyUI can't see {MODELS[role]['file']} ({node}) -- check extra_model_paths.yaml")
-    drafts = STORYBOOK / DRAFTS
+    drafts = real_folder(DRAFTS)
     with staging(drafts) as tmp:
         paths = []
         for seed in SEEDS:
@@ -240,6 +255,8 @@ def cmd_character(args):
         contact_sheet([(f"seed {s}", p) for s, p in zip(SEEDS, paths)], tmp / f"{name}-contact-sheet.png")
         manifest["comfyui_version"] = api(args.server, "/system_stats", timeout=10).get("system", {}).get(
             "comfyui_version")
+        # The bytes ComfyUI returned, so `lock` can refuse a candidate edited afterwards.
+        manifest["candidates"] = {path.name: sha256(path) for path in paths}
         (tmp / f"{name}-recipe.json").write_text(json.dumps(manifest, indent=1))
     print(f"wrote {name}'s candidates, contact sheet and recipe to {DRAFTS} -- pick a seed, then `lock {name}`")
 
@@ -247,7 +264,7 @@ def cmd_character(args):
 def cmd_lock(args):
     canon = load_canon()
     name = character(canon, args.name)["name"].lower()
-    drafts, locked = STORYBOOK / DRAFTS, STORYBOOK / LOCKED
+    drafts, locked = real_folder(DRAFTS), real_folder(LOCKED)
     with art_lock():
         # The draft set is read under the lock, so the recipe and the candidate come from one committed set.
         draft_recipe = drafts / f"{name}-recipe.json"
@@ -270,6 +287,11 @@ def cmd_lock(args):
             # The candidate is read once, into staging, and the staged copy is what gets validated and committed.
             staged = Path(tmp) / f"{name}.png"
             staged.write_bytes(candidate.read_bytes())
+            rendered = manifest.get("candidates", {}).get(candidate.name) if isinstance(manifest.get("candidates"),
+                                                                                         dict) else None
+            if rendered is None or sha256(staged) != rendered:
+                sys.exit(f"{candidate.name} is not the bytes `character` rendered (edited since, or a draft from "
+                         f"before candidates were recorded) -- re-run `character {name}`")
             problems = embedded_problems(staged, manifest, args.seed, canon)
             if problems:
                 sys.exit(f"{candidate.name} is not the render its recipe describes: " + "; ".join(problems))
@@ -284,6 +306,8 @@ def locked_problems(canon):
     """[(path, why)] for everything wrong in the locked folder: recipes that don't check out, and files that
     aren't exactly one recipe's."""
     locked, problems, owners = STORYBOOK / LOCKED, [], {}
+    if locked.resolve() != locked:
+        return [(locked, f"goes through a symlink to {locked.resolve()}; locks live only in the storybook")]
     if not locked.is_dir():
         return problems
     entries = sorted(locked.iterdir())
@@ -301,6 +325,10 @@ def locked_problems(canon):
             owners.setdefault(locked / file_name, []).append(recipe)
             if (locked / file_name).is_file() and sha256(locked / file_name) != digest:
                 problems.append((recipe, f"{file_name} has changed since it was locked (sha256 differs)"))
+        if manifest.get("name") != recipe.name.removesuffix(".recipe.json"):
+            problems.append((recipe, f"it is {manifest.get('name')!r}'s recipe under another character's name"))
+        if manifest.get("chosen_seed") not in SEEDS:
+            problems.append((recipe, f"its chosen_seed {manifest.get('chosen_seed')!r} is not one of the rendered seeds"))
         if not png.is_file():
             problems.append((recipe, f"{png.name} is not on disk"))
             continue

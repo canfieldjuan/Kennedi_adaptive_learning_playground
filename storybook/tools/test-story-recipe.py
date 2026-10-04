@@ -193,8 +193,19 @@ def case_candidate_is_not_its_recipe(root):
         comfy.close()
     shutil.copy(root / DRAFTS / "bramble-candidate-83.png", root / DRAFTS / "bramble-candidate-61.png")
     code, out = run(root, "lock", "bramble", "--seed", 61)
-    check("locking a candidate that isn't its recipe's render is refused",
-          code and "is not the render its recipe describes" in out and not locked_state(root), out.strip()[-160:])
+    check("locking another seed's render under this seed's name is refused",
+          code and "is not the bytes `character` rendered" in out and not locked_state(root), out.strip()[-160:])
+    # Pixels retouched after rendering, with the original prompt chunk kept, look like a render but aren't one.
+    candidate = root / DRAFTS / "bramble-candidate-72.png"
+    image = Image.open(candidate)
+    meta = PngInfo()
+    meta.add_text("prompt", image.info["prompt"])
+    retouched = image.convert("RGB")
+    retouched.putpixel((10, 10), (0, 0, 0))
+    retouched.save(candidate, pnginfo=meta)
+    code, out = run(root, "lock", "bramble", "--seed", 72)
+    check("locking a candidate retouched after rendering (metadata kept) is refused",
+          code and "is not the bytes `character` rendered" in out and not locked_state(root), out.strip()[-160:])
 
 
 def case_licence_allowlist(root):
@@ -222,6 +233,55 @@ def case_canon_change(root):
           out.strip()[-200:])
 
 
+def case_lock_is_its_character(root):
+    """A lock's files are named for its character, and its seed is one that was rendered."""
+    drawn(root, "bramble")
+    locked = root / LOCKED
+    recipe = json.loads((locked / "bramble.recipe.json").read_text())
+    recipe["files"] = {"pippa.png": recipe["files"]["bramble.png"]}
+    (locked / "bramble.png").rename(locked / "pippa.png")
+    (locked / "bramble.recipe.json").unlink()
+    (locked / "pippa.recipe.json").write_text(json.dumps(recipe))
+    code, out = run(root, "selftest")
+    check("Bramble's sheet saved as pippa.png fails selftest", code and "under another character's name" in out,
+          out.strip()[-200:])
+    drawn(root, "barnaby")
+    # A consistent seed-50 lock: a real render at seed 50 (graph, size and digest all agree), never offered as a
+    # candidate. Only the rendered-seed rule can tell it apart.
+    recipe_path, png = locked / "barnaby.recipe.json", locked / "barnaby.png"
+    graph = json.loads(Image.open(png).info["prompt"])
+    next(n for n in graph.values() if n["class_type"] == "KSampler")["inputs"]["seed"] = 50
+    png.write_bytes(FakeComfy.render(graph))
+    recipe = json.loads(recipe_path.read_text())
+    recipe.update(chosen_seed=50, source=f"{DRAFTS}/barnaby-candidate-50.png",
+                  files={"barnaby.png": hashlib.sha256(png.read_bytes()).hexdigest()})
+    recipe_path.write_text(json.dumps(recipe))
+    code, out = run(root, "selftest")
+    check("a lock claiming seed 50, never rendered, fails selftest", code and "not one of the rendered seeds" in out,
+          out.strip()[-200:])
+
+
+def case_real_folders_only(root):
+    """Drafts and locks are written only into the storybook's own folders, never through a symlink."""
+    outside = root.parent / "elsewhere"
+    outside.mkdir()
+    (root / "design-source/characters").mkdir(parents=True)
+    (root / LOCKED).symlink_to(outside, target_is_directory=True)
+    (root / DRAFTS).symlink_to(outside, target_is_directory=True)
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "pippa")
+        check("character into a symlinked drafts folder is refused before rendering",
+              code and "goes through a symlink" in out and not comfy.images, out.strip()[-160:])
+    finally:
+        comfy.close()
+    code, out = run(root, "lock", "pippa", "--seed", 72)
+    check("lock into a symlinked locked folder is refused", code and "goes through a symlink" in out, out.strip()[-160:])
+    code, out = run(root, "selftest")
+    check("and a symlinked locked folder fails selftest", code and "goes through a symlink" in out, out.strip()[-160:])
+    check("nothing was written outside the storybook", not any(outside.iterdir()))
+
+
 def case_locked_folder_holds_only_records(root):
     """Every file in the locked folder is a lock's, and its bytes are the ones it locked."""
     drawn(root)
@@ -244,7 +304,8 @@ def case_locked_folder_holds_only_records(root):
 
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
-             case_canon_change, case_locked_folder_holds_only_records]
+             case_canon_change, case_lock_is_its_character, case_real_folders_only,
+             case_locked_folder_holds_only_records]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
