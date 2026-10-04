@@ -31,7 +31,16 @@
     "counting:rasterize": "node scripts/counting.mjs rasterize",
     "counting:verify": "node scripts/counting.mjs verify",
     "counting:all": "node scripts/counting.mjs all",
-    "counting:test": "node --test tests/counting-practice.test.mjs"
+    "counting:test": "node --test tests/counting-practice.test.mjs",
+    "workbook:all": "node scripts/workbook.mjs all",
+    "workbook:build": "node scripts/workbook.mjs build",
+    "workbook:pdf": "node scripts/workbook.mjs pdf",
+    "workbook:screenshots": "node scripts/workbook.mjs screenshots",
+    "workbook:rasterize": "node scripts/workbook.mjs rasterize",
+    "workbook:verify": "node scripts/workbook.mjs verify",
+    "workbook:validate": "node scripts/workbook.mjs validate",
+    "workbook:catalog": "node scripts/workbook.mjs catalog",
+    "workbook:test": "node --test tests/recipes.test.mjs tests/counting-practice.test.mjs tests/alphabet-practice.test.mjs"
   },
   "devDependencies": {
     "fontkit": "^2.0.4",

@@ -9,23 +9,29 @@ import { createCountingBook, DEFAULT_SEED, describeGroup, isMonotonic, renderPag
 import { numberGlyph } from '../src/components/number-glyphs.mjs';
 import { renderDocument } from '../src/render.mjs';
 import { inlineSvgFile, inlineImageFile } from '../src/content/asset-inline.mjs';
+import { freezeRecipe, readRecipe, resolveRecipe } from '../src/recipes.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
 const stage = args.shift() ?? 'all';
 const stages = ['build', 'pdf', 'screenshots', 'rasterize', 'verify', 'all'];
 const options = {};
-const usage = 'Usage: node scripts/counting.mjs [build|pdf|screenshots|rasterize|verify|all] [--out DIRECTORY] [--seed UINT32] [--mode choice|guided]';
+const usage = 'Usage: node scripts/counting.mjs [build|pdf|screenshots|rasterize|verify|all] [--out DIRECTORY] [--recipe FILE | --seed UINT32 --mode choice|guided]';
 if (!stages.includes(stage)) throw new Error(usage);
 for (let i = 0; i < args.length; i += 2) {
   const flag = args[i], value = args[i + 1];
-  if (!['--out', '--seed', '--mode'].includes(flag) || !value || value.startsWith('--') || flag in options) throw new Error(usage);
+  if (!['--out', '--seed', '--mode', '--recipe'].includes(flag) || !value || value.startsWith('--') || flag in options) throw new Error(usage);
   options[flag] = value;
 }
 if (options['--seed'] !== undefined && !/^(0|[1-9]\d*)$/.test(options['--seed'])) throw new Error(usage);
-const seed = validateSeed(options['--seed'] === undefined ? DEFAULT_SEED : Number(options['--seed']));
-const mode = validateMode(options['--mode'] ?? 'choice');
-const { pages, assets } = createCountingBook(seed, mode);
+if (options['--recipe'] && (options['--seed'] !== undefined || options['--mode'] !== undefined)) throw new Error('Recipe cannot be combined with --seed or --mode.');
+const inputRecipe = options['--recipe'] ? readRecipe(path.resolve(options['--recipe'])) : null;
+if (inputRecipe && inputRecipe.template !== 'count-and-trace-v1') throw new TypeError('Counting command requires count-and-trace-v1.');
+const book = inputRecipe ? resolveRecipe(inputRecipe).book : createCountingBook(
+  validateSeed(options['--seed'] === undefined ? DEFAULT_SEED : Number(options['--seed'])), validateMode(options['--mode'] ?? 'choice'));
+const { pages, assets, seed, mode } = book;
+const customGroups = inputRecipe !== null && Object.hasOwn(inputRecipe, 'groups');
+const frozenRecipe = freezeRecipe('count-and-trace-v1', book);
 const out = path.resolve(options['--out'] ?? path.join(root, mode === 'choice' ? 'dist-counting-choice' : 'dist-counting'));
 const pdfPath = path.join(out, 'pdf', mode === 'choice' ? 'kennedi-count-circle-and-trace.pdf' : 'kennedi-mixed-count-and-trace.pdf');
 const num = n => String(n).padStart(2, '0');
@@ -70,12 +76,13 @@ async function build() {
       return [assets[index], [b.x - b.width * .06, b.y - b.height * .06, b.width * 1.12, b.height * 1.12].map(n => n.toFixed(2)).join(' ')];
     }));
   });
-  const manifest = { seed, mode, pages: pages.map(page => page.meta),
+  const manifest = { seed, mode, recipeSha256: hash(JSON.stringify(frozenRecipe)), pages: pages.map(page => page.meta),
     artwork: assets.map(asset => ({ path: asset, viewBox: crops[asset], sha256: hash(readFileSync(path.join(root, asset))) })) };
   const rendered = documents(crops);
   rendered.singles.forEach((document, index) => save(htmlPath(index + 1), document));
   save(path.join(out, 'preview.html'), rendered.preview);
   save(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  save(path.join(out, 'recipe.json'), JSON.stringify(frozenRecipe, null, 2) + '\n');
   console.log(`Built ${pages.length} ${mode} count-and-trace sheets / ${pages.reduce((sum, page) => sum + page.meta.groups.length, 0)} groups / seed ${seed}.`);
 }
 async function pdf() {
@@ -178,16 +185,22 @@ function assertLayout(m, label) {
 }
 async function verify() {
   const counts = pages.flatMap(page => page.meta.groups.map(group => group.count));
-  assert.deepEqual([...new Set(counts)].sort((a, b) => a - b), Array.from({ length: 20 }, (_, i) => i + 1));
-  assert.equal(counts.length, 24);
-  assert.equal(isMonotonic(counts), false);
-  assert.equal(pages.length, mode === 'choice' ? 12 : 8);
+  if (!customGroups) {
+    assert.deepEqual([...new Set(counts)].sort((a, b) => a - b), Array.from({ length: 20 }, (_, i) => i + 1));
+    assert.equal(counts.length, 24);
+    assert.equal(isMonotonic(counts), false);
+    assert.equal(pages.length, mode === 'choice' ? 12 : 8);
+  } else {
+    assert.deepEqual(counts, inputRecipe.groups.map(group => group.count));
+    assert.deepEqual(pages.flatMap(page => page.meta.groups.map(group => group.animal)), inputRecipe.groups.map(group => group.animal));
+  }
   const perPage = mode === 'choice' ? 2 : 3;
   const correctPositions = [0, 0, 0];
   for (const { meta } of pages) {
-    if (mode === 'guided') assert.equal(isMonotonic(meta.groups.map(group => group.count)), false);
-    assert.equal(meta.groups.length, perPage);
-    assert.equal(new Set(meta.groups.map(group => group.animal)).size, perPage);
+    if (mode === 'guided' && !customGroups) assert.equal(isMonotonic(meta.groups.map(group => group.count)), false);
+    if (customGroups) assert.ok(meta.groups.length >= 1 && meta.groups.length <= perPage);
+    else assert.equal(meta.groups.length, perPage);
+    assert.equal(new Set(meta.groups.map(group => group.animal)).size, meta.groups.length);
     if (mode === 'choice') for (const group of meta.groups) {
       assert.equal(group.choices.length, 3);
       assert.equal(new Set(group.choices).size, 3);
@@ -196,10 +209,12 @@ async function verify() {
       correctPositions[group.choices.indexOf(group.count)]++;
     }
   }
-  if (mode === 'choice') assert.deepEqual(correctPositions, [8, 8, 8]);
+  if (mode === 'choice' && !customGroups) assert.deepEqual(correctPositions, [8, 8, 8]);
   const manifest = JSON.parse(readFileSync(path.join(out, 'manifest.json'), 'utf8'));
   assert.equal(manifest.seed, seed);
   assert.equal(manifest.mode, mode);
+  assert.equal(manifest.recipeSha256, hash(JSON.stringify(frozenRecipe)), 'Stale recipe manifest.');
+  assert.deepEqual(resolveRecipe(readRecipe(path.join(out, 'recipe.json'))).recipe, frozenRecipe, 'Stale saved recipe.');
   assert.deepEqual(manifest.pages, pages.map(page => page.meta));
   assert.deepEqual(manifest.artwork.map(asset => asset.path), assets);
   for (const asset of manifest.artwork) assert.equal(hash(readFileSync(path.join(root, asset.path))), asset.sha256);
@@ -249,10 +264,10 @@ async function verify() {
   });
   assert.deepEqual(errors, []);
   save(path.join(out, 'verification.json'), JSON.stringify({ status: 'PASS', seed, mode, pages: pages.length,
-    groups: counts.length, quantities: [...new Set(counts)].sort((a, b) => a - b), pdf: pdfPath,
+    groups: counts.length, recipeSha256: manifest.recipeSha256, quantities: [...new Set(counts)].sort((a, b) => a - b), pdf: pdfPath,
     correctPositions: mode === 'choice' ? correctPositions : null,
     pdfSha256: hash(readFileSync(pdfPath)), dimensionsPoints: [612, 792], browserErrors: errors, ...results }, null, 2));
-  console.log(`PASS: ${pages.length} US Letter pages; ${counts.length} shuffled groups; quantities 1-20; exact pictures and ${mode === 'choice' ? 'three unique dotted choices, correct positions 8/8/8, .46875-inch numeral guides' : 'dotted answers, .75-inch numeral guides'}; .75-inch animal tiles; safe margins; no overflow/browser errors; maximum-density stress passed.`);
+  console.log(`PASS: ${pages.length} US Letter pages; ${counts.length} ${customGroups ? 'recipe-defined groups/quantities' : 'shuffled groups; quantities 1-20'}; exact pictures and ${mode === 'choice' ? `three unique dotted choices, correct positions ${correctPositions.join('/')}, .46875-inch numeral guides` : 'dotted answers, .75-inch numeral guides'}; .75-inch animal tiles; saved recipe locks; safe margins; no overflow/browser errors; maximum-density stress passed.`);
 }
 const operations = { build, pdf, screenshots, rasterize, verify };
 if (stage === 'all') for (const operation of Object.values(operations)) await operation();

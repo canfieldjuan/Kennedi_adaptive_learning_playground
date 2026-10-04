@@ -67,6 +67,45 @@ export function createCountingBook(seed = DEFAULT_SEED, mode = 'choice') {
     }
     return quantities.map((count, offset) => ({ count, ...selected[index * 3 + offset] }));
   }).flat();
+  return countingPages(seed, mode, groups);
+}
+
+// Recipe groups resolve only through this catalog, never through supplied paths.
+export function createCountingBookFromGroups(seed, mode, input) {
+  validateSeed(seed);
+  validateMode(mode);
+  if (!Array.isArray(input) || input.length < 1 || input.length > 60) {
+    throw new TypeError('Counting recipes need 1-60 groups.');
+  }
+  const perPage = mode === 'choice' ? 2 : 3;
+  const groups = Array.from(input, (group, index) => {
+    if (!group || typeof group !== 'object' || Array.isArray(group)
+      || Object.keys(group).some(key => !['animal', 'count', 'choices'].includes(key))) {
+      throw new TypeError(`Invalid counting group ${index + 1}.`);
+    }
+    const entry = animals.find(entry => entry.animal === group.animal);
+    if (!entry || !Number.isInteger(group.count) || group.count < 1 || group.count > 20) {
+      throw new TypeError(`Group ${index + 1} needs a catalog animal and count from 1-20.`);
+    }
+    if (Object.hasOwn(group, 'choices')) {
+      const choices = group.choices;
+      if (mode !== 'choice' || !Array.isArray(choices) || choices.length !== 3
+        || new Set(choices).size !== 3 || !choices.includes(group.count)
+        || !Array.from(choices).every(n => Number.isInteger(n) && n >= 1 && n <= 20)) {
+        throw new TypeError(`Group ${index + 1} needs three distinct choices containing its count once (choice mode only).`);
+      }
+    }
+    const earlier = input.slice(Math.floor(index / perPage) * perPage, index);
+    if (earlier.some(other => other?.animal === group.animal)) {
+      throw new TypeError(`Repeated animal on counting page: ${group.animal}.`);
+    }
+    return { count: group.count, ...entry,
+      ...(Object.hasOwn(group, 'choices') ? { choices: [...group.choices] } : {}) };
+  });
+  return countingPages(seed, mode, groups);
+}
+
+function countingPages(seed, mode, groups) {
   if (mode === 'choice') {
     // Independent choice RNG does not disturb the approved animal/count mix.
     const choiceRandom = randomFor((seed ^ 0xc0dec0de) >>> 0);
@@ -76,16 +115,16 @@ export function createCountingBook(seed = DEFAULT_SEED, mode = 'choice') {
         .filter(n => n !== group.count && Math.abs(n - group.count) <= 3);
       const choices = shuffle(nearby, choiceRandom).slice(0, 2);
       choices.splice(positions[index], 0, group.count);
-      group.choices = choices;
+      if (!Object.hasOwn(group, 'choices')) group.choices = choices;
     });
   }
   const perPage = mode === 'choice' ? 2 : 3;
-  const pages = Array.from({ length: groups.length / perPage }, (_, index) => {
+  const pages = Array.from({ length: Math.ceil(groups.length / perPage) }, (_, index) => {
     const meta = { pageNumber: index + 1, title: mode === 'choice' ? 'Count, choose and trace' : 'Count and trace',
       seed, mode, groups: groups.slice(index * perPage, (index + 1) * perPage) };
     return { meta, render: (crops = {}) => renderPage(meta, crops) };
   });
-  return { seed, mode, pages, assets: [...new Set(selected.map(entry => entry.illustrationPath))] };
+  return { seed, mode, pages, assets: [...new Set(groups.map(entry => entry.illustrationPath))] };
 }
 
 export function renderPage(meta, crops = {}) {
