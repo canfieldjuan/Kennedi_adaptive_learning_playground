@@ -16,3 +16,15 @@
 .ct-answer p { margin: 0; text-align: center; font: 800 15px/1.4 'Nunito', sans-serif; }
 .ct-answer-guide { width: 160px; height: 140px; }
 .ct-footer { display: flex; flex: 0 0 auto; justify-content: space-between; border-top: 1px solid #666; padding-top: 8px; font: 700 12px/1.4 'Nunito', sans-serif; }
+
+/* Choice mode: two groups, unchanged .75in animals, three equal .47in numerals. */
+.ct-sheet-choice .ct-groups { gap: 8px; }
+.ct-sheet-choice .ct-group { padding: 2px 0; }
+.ct-sheet-choice .ct-group h2 { margin-bottom: 4px; }
+.ct-sheet-choice .ct-group-body { grid-template-columns: 376px 328px; gap: 16px; }
+.ct-sheet-choice .ct-pictures { gap: 3px 4px; }
+.ct-answer-choices { width: 328px; }
+.ct-answer-choices p { margin-bottom: 8px; }
+.ct-choices { display: grid; grid-template-columns: repeat(3, 104px); gap: 8px; }
+.ct-choice { padding: 1px 0; border: 1.5px solid #111; border-radius: 10px; }
+.ct-choice .ct-answer-guide { width: 100px; height: 87.5px; margin: 0 auto; }

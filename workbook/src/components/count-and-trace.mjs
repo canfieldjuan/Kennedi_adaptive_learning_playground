@@ -19,8 +19,14 @@ export function traceAnswer(count) {
 }
 
 /** The same validated count controls both picture repetitions and the answer. */
-export function countAndTrace({ count, animal, plural, svg }) {
+export function countAndTrace({ count, animal, plural, svg, choices }) {
   const answer = traceAnswer(count);
+  const multipleChoice = choices !== undefined;
+  if (multipleChoice && (!Array.isArray(choices) || choices.length !== 3
+    || new Set(choices).size !== 3 || !choices.includes(count))) {
+    throw new TypeError('Choices must be three distinct numbers with the correct count exactly once.');
+  }
+  const choiceAnswers = multipleChoice ? Array.from(choices, traceAnswer) : [];
   if (![animal, plural, svg].every(value => typeof value === 'string' && value.trim())) {
     throw new TypeError('A counting group needs an animal name, plural name and SVG.');
   }
@@ -28,10 +34,13 @@ export function countAndTrace({ count, animal, plural, svg }) {
   return `<section class="ct-group" data-count="${count}" data-animal="${escapeText(animal)}">
     <h2>Count the ${escapeText(label)}.</h2>
     <div class="ct-group-body">
-      <div class="ct-pictures" style="--columns:${Math.min(count, 7)}" role="group" aria-label="${escapeText(label)} to count">
+      <div class="ct-pictures" style="--columns:${Math.min(count, multipleChoice ? 5 : 7)}" role="group" aria-label="${escapeText(label)} to count">
         ${Array.from({ length: count }, () => `<div class="ct-picture">${svg}</div>`).join('')}
       </div>
-      <div class="ct-answer"><p>Trace how many.</p>${answer}</div>
+      ${multipleChoice ? `<div class="ct-answer ct-answer-choices"><p>Circle and trace.</p>
+        <div class="ct-choices" role="group" aria-label="Three number choices">
+          ${choiceAnswers.map(mark => `<div class="ct-choice">${mark}</div>`).join('')}
+        </div></div>` : `<div class="ct-answer"><p>Trace how many.</p>${answer}</div>`}
     </div>
   </section>`;
 }

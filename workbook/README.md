@@ -253,7 +253,7 @@ consumer of `src/illustrations/`.
 
 Edit numbers and activities in `src/content/numbers-practice.mjs`, numeral strokes in `src/components/number-glyphs.mjs`, and scoped styles in `src/styles/numbers-practice.css`. Existing books and illustration files are unchanged. This layout awaits owner visual review; it is not a new illustration-approval claim.
 
-## Mixed animal counting with traceable answers
+## Mixed animal counting with three traceable choices
 
 From this checkout's `workbook/` directory:
 
@@ -263,12 +263,25 @@ npm run counting:test
 npm run counting:all
 ```
 
-Open `dist-counting/preview.html` in a browser. Print
-`dist-counting/pdf/kennedi-mixed-count-and-trace.pdf` at Actual size / 100%.
-There are eight US Letter sheets, three animal groups per sheet, covering
-every quantity 1-20 with four extra practice groups. Each has one large dotted
-answer. Count together first, then trace: these visible answers make this
-guided practice, not an independent counting assessment.
+Open `dist-counting-choice/preview.html` in a browser. Print
+`dist-counting-choice/pdf/kennedi-count-circle-and-trace.pdf` at Actual size / 100%.
+The default is 12 US Letter sheets, two animal groups per sheet, covering
+every quantity 1-20 with four extra practice groups. Each group has three
+different dotted choices, with exactly one correct answer. Count, circle the
+number, then trace it. Correct positions are seed-shuffled and balanced across
+the pack (eight left, eight middle, eight right); no answer is visibly marked.
+Animal tiles remain .75 inch. Numeral guides are about .47 inch tall, smaller
+than the single-answer format but still traceable, in roughly 1-inch cards.
+
+The original single-answer layout is still available, with separate defaults:
+
+```bash
+npm run counting:all -- --mode guided
+```
+
+That builds eight three-group pages into `dist-counting/`, with the original
+`pdf/kennedi-mixed-count-and-trace.pdf` filename. These are guided practice,
+not a hidden-answer assessment. Existing exported proofs are left untouched.
 
 To make another reproducible mix without overwriting the first:
 
@@ -276,8 +289,8 @@ To make another reproducible mix without overwriting the first:
 npm run counting:all -- --seed 42 --out /absolute/path/to/another-pack
 ```
 
-Seeds are integers from 0 through 4294967295. Use the same seed and output
-directory for each separate stage:
+Seeds are integers from 0 through 4294967295. Use the same seed, mode and
+output directory for each separate stage:
 
 ```bash
 npm run counting:build
@@ -287,11 +300,12 @@ npm run counting:rasterize
 npm run counting:verify
 ```
 
-`--out /absolute/path` and `--seed 42` work on every stage. Verification rejects
-stale output from a different seed, changed art, changed rendered content/styles
-or altered PDF.
+`--out /absolute/path`, `--seed 42` and `--mode choice|guided` work on every
+stage. Verification rejects stale output from a different seed/mode, changed
+art, changed rendered content/styles or altered PDF.
 Outputs include individual HTML/PDF pages, screenshots, actual grayscale PDF
-rasters, contact sheet, manifest (seed/groups/art hashes) and `verification.json`.
+rasters, contact sheet, manifest (seed/mode/groups/choices/art hashes) and
+`verification.json`. Keep each mode/variant in a separate output directory.
 Chromium/Chrome, `pdfinfo` and `pdftoppm` are required, as in the numbers book.
 
 Edit `src/content/counting-practice.mjs` for group selection; the animal catalog
