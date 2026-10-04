@@ -189,10 +189,22 @@ now. We can use the stories as our first template."
     model configuration, which the tool can't see.
     - "Sell-safe by construction" therefore overstated it. The guarantee
       is: a recipe names only allowlisted apache-2.0 model files.
-    - The verified SHA-256 of the base model is recorded in `MODELS`, for
-      checking by hand.
+    - The Hub's SHA-256 for all three allowlisted files is recorded in
+      `MODELS`, for checking by hand. All three local copies matched.
+      (This version first said "the base model"; all three were
+      verified.)
     - Binding renders to model bytes, by hashing the files ComfyUI actually
-      loads, is a follow-up issue.
+      loads, is issue #145.
+  - Round 1 evidence:
+    - 26 of 26 checks pass on both Python stacks.
+    - Against `6353c0a`, 8 fail. Seven of those are the fixed bugs:
+      - a retouched candidate was locked;
+      - Bramble's sheet passed as `pippa.png`;
+      - a consistent seed-50 lock, built with the fake renderer, passed
+        `selftest`;
+      - writes went through symlinked drafts and locked folders, landing
+        outside the storybook.
+    - The eighth is a refusal the old tool also made, worded differently.
 
 ## Cold Diff Audit
 
