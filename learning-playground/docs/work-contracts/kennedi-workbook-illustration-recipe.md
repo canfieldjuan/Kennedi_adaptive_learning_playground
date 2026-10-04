@@ -310,6 +310,105 @@ does not change scope.
     recorded `prompt` could drift from the prompt embedded in the PNG while
     the template and fields still rebuilt it. `selftest` now compares it.
 
+- **PR #138 review round 4, and main's rewritten Kennedi poses.** Codex on
+  `85d7cbb`, three findings, all confirmed; plus one found while merging
+  main (#139, #141).
+  - **The findings.**
+    - A color lock can be named after a line-art lock
+      (`lock animal bunny --seed 72 --color --locked-name bunny-01-sitting
+      --force`) and overwrite its PNG and recipe.
+    - A line-art lock's SVG is checked only for existence, so a swapped
+      SVG passes `selftest`.
+    - A recipe can record a different `size`, `strength`, `end_percent` or
+      ControlNet and still pass: the expected graph is built from the
+      tool's constants, not from the recipe.
+    - The legacy baseline lists names only. #141 rewrote all eight Boss
+      Kennedi poses (a canonical head composited through a feathered mask),
+      and the new PNGs carry no embedded graph. `selftest` stays green
+      over assets `reproduce` can no longer rebuild.
+  - **One cause.** A recipe or a baseline entry states facts about files,
+    and the tool checks only the facts someone listed. Every round found
+    another unlisted one. The fix closes the category instead of listing
+    the next fact.
+  - **A. One constructor writes a recipe, and the checker rebuilds it.**
+    - `COLOR_RECIPES` versions hold every color render parameter: the
+      guide blur, the ControlNet, its strength and its end. No value
+      changes.
+    - `draft_manifest()` builds everything a recipe records about how it
+      renders, from its inputs alone: kind, name and fields, plus the
+      recipe version and the source line art for color. `candidates` and
+      `colorize` write what it returns.
+    - `recipe_graph()` builds a render graph from a recipe alone. The tool
+      renders with it, so it cannot render something its recipe doesn't
+      say.
+    - `embedded_problems()` rebuilds the recipe from its inputs and
+      compares every key. A key the tool does not record fails, apart from
+      the ones a lock adds (`chosen_seed`, `source`, `files`, `guide`) and
+      `comfyui_version`. The embedded graph must then equal `recipe_graph()`
+      at the chosen seed. The guide image name and output prefix don't
+      change pixels, so they are still read from the embedded graph.
+    - A value a future version records is checked as soon as the
+      constructor records it.
+  - **B. Every file in a locked folder has one owner, and its bytes are
+    recorded.**
+    - A lock's recipe records `files`, the SHA-256 of each file the lock
+      wrote: its PNG and SVG, or its PNG and guide.
+    - The legacy baseline becomes an object keyed by PNG path. Each entry
+      records `files` (its PNG and SVG digests) and how it is rebuilt:
+      - `rebuild: reproduce`: `reproduce` accepts it. This is checked with
+        the same function `reproduce` runs before it renders.
+      - `rebuild: documented` with `record`: a workbook-relative document
+        holds the process, and must exist.
+      - Any other value fails.
+    - `locked_owners()` maps every file in a locked folder to the manifests
+      that claim it.
+      - `selftest`: each file has exactly one owner, and each owned file
+        exists with its recorded digest.
+      - `lock`: every file it would write must be absent, or owned by the
+        lock of the same kind at that stem. `--force` replaces only that
+        lock.
+    - This closes the alias in both directions, as well as a lock over a
+      legacy file or over another lock's guide. It also catches a swapped
+      SVG, and any rewrite of approved bytes that doesn't update its
+      record.
+  - **C. `reproduce` on a PNG with no embedded graph exits with the
+    reason.** It raised `KeyError` before.
+  - **D. The gate runs it.** `.github/workflows/workbook-quality.yml` runs
+    `selftest` and `tools/test-illustration-recipe.py` on every workbook
+    PR. Nothing ran `selftest` at PR time, which is how #141 replaced eight
+    baselined assets unremarked.
+  - **Data.**
+    - Legacy baseline: 36 entries are `rebuild: reproduce`. The puppy poses
+      02-04 (Redux from a reference not in the repo) and the eight Kennedi
+      poses (the face and hair composite) are `rebuild: documented`, with
+      `record: docs/art/asset-provenance.md`.
+    - The ten locks gain `files`. The bunny, bear and turtle color locks
+      gain `recipe_version: v1`, which is what its absence meant.
+    - Before an SVG's digest is recorded, it is re-vectorized from its PNG
+      and must be byte-identical.
+  - **Limits.**
+    - `rebuild: reproduce` proves `reproduce` will run, not that the render
+      matches. An exact re-render needs the GPU. It was proven for the
+      puppy and the color locks in earlier rounds, not for every legacy
+      asset.
+    - Changing locked art now means updating its recorded digests, on
+      purpose and in the same PR.
+  - **Scope added to Correct Fix Must Touch:**
+    `.github/workflows/workbook-quality.yml`, the ten lock recipes, the
+    baseline, and `tools/test-illustration-recipe.py`.
+  - **Settling evidence (planned):**
+    - A test case for each finding, with both sides of each guard:
+      - every alias direction refused, while a same-kind `--force`
+        replacement still works;
+      - a swapped SVG, a changed `size` or `strength`, and an unknown key
+        each fail;
+      - a rewritten legacy file, a `reproduce` claim on a PNG without a
+        graph, a missing record, an orphan file and a doubly claimed file
+        each fail;
+      - `reproduce` on a graphless PNG exits with a message.
+    - `selftest` passes on the real workbook.
+    - The gate runs both and is green.
+
 ## Cold Diff Audit
 
 ### Gaps
