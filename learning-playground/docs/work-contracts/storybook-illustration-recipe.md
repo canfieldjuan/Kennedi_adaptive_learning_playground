@@ -248,7 +248,11 @@ now. We can use the stories as our first template."
 - The three generated prompts were read and match the canon: Bramble's
   lantern and glasses, Pippa's acorn cap and stone, and no garment clause
   for Barnaby.
-- `selftest` on the real storybook passes, with no locks yet.
+- `selftest` on the real storybook passes, with no locks yet. Correction: the first version of this line
+  was checked while a local `design-source/` existed. On the real tree, which has none, `selftest`
+  crashed because `art_lock()` opened that missing folder. The lock is now on the storybook root, and
+  `case_fresh_storybook` covers it (it failed before the fix). The suite is now 19 of 19 checks on both
+  stacks.
 - Not run: a real render. It needs the operator's GPU go, and the Qwen
   models to finish downloading and be listed in ComfyUI's
   `extra_model_paths.yaml`.
