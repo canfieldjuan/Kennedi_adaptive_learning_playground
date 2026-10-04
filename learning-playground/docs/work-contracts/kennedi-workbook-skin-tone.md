@@ -152,6 +152,29 @@ Operator decisions, 2026-10-04:
   approved output, and only then fail on the empty bounds. Now a spec that
   recolors nothing is refused before anything is written, in both the write
   and `--check` modes.
+- **Skin is chosen by seeds, not by region size (Codex, PR #143, round 2).**
+  - Codex found a 41-pixel region on the pencil tip in the mask.
+  - Rendering every kept region over the cover found four more, all beige
+    shading on her shirt rather than skin:
+    - the collar shadows (regions 199 and 203);
+    - a shirt crease (285);
+    - the shirt's shadow beside the clipboard (473).
+  - The approved preview had the same flaw.
+  - The spec now names one seed point inside each real skin region: the face
+    with its ears and neck, the raised arm, the clipboard arm, and each leg.
+  - Only the regions holding a seed are recolored. A seed that doesn't land
+    on gated skin, or whose region is less than half flat skin, is refused.
+  - The minimum-region-size rule goes, since seeds replace it.
+  - The recolored pixels drop accordingly. The pencil and shirt go back to
+    the original's colors, and the skin is unchanged from the approved
+    preview.
+- **Same round, three refusals:**
+  - an output path that is any input (the source, the palette, or the spec
+    itself);
+  - a source that isn't RGB, since the tool can't keep an alpha channel or
+    palette (this replaces the "same mode" invariant with "RGB in, RGB
+    out");
+  - the usage example now gives paths that work from the repository root.
 
 ## Cold Diff Audit
 
