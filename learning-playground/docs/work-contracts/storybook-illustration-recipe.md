@@ -97,7 +97,7 @@ now. We can use the stories as our first template."
   plus the canon fields:
 
   > `<STYLE>`. A single `<build>` `<species>` standing in a relaxed
-  > three-quarter view, `<base_colors>`, wearing `<garment>`, holding
+  > three-quarter view, `<base_colors>`, wearing `<garment>`, with
   > `<props>`, `<accent>`, plain soft cream background, full body, centered,
   > no text.
 
@@ -155,7 +155,12 @@ now. We can use the stories as our first template."
 
 ## Contract Amendments
 
-None yet.
+- **"with `<props>`", not "holding `<props>`"** (before code). The canon's
+  signature props aren't all held: Bramble's are a small lantern and round
+  glasses, and Barnaby's are a porch swing and a mug of tea.
+- **The snapshot is parsed, not imported.** `WORLD_BIBLE` is read from
+  `git show 10636b5:engine/models.py` with Python's `ast`. The bedtime code
+  never runs, as Must Not Change requires.
 
 ## Cold Diff Audit
 
