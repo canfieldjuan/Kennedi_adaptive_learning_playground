@@ -352,3 +352,132 @@ Accepted 2026-10-04 ("accept"). Found while building:
   subfolder. Without overwrite, ComfyUI renames a file whose name is
   already taken. The tool always sends overwrite, and still checks the name
   it gets back.
+
+## Cold Diff Audit
+
+### Gaps
+
+- **Change without contract trace:** one, the tool's docstring.
+  - It now describes the page commands.
+  - It also corrects slice 1's line about where the tool takes its lock. It
+    said `design-source`; the lock is on the storybook folder, as slice 1's
+    amendment had already recorded.
+  - Everything else in `git diff origin/main...HEAD` traces to Correct Fix
+    Must Touch or to an amendment. The diff is five files:
+    - the story snapshot;
+    - the two tools;
+    - the workflow comment and step name;
+    - this contract.
+- **Contract requirement not delivered:** none. The real renders are planned
+  evidence for after your GPU go, as in slice 1.
+- **Protected surface touched:** none.
+  - Nothing under `workbook/` changes.
+  - `bedtime_broadcast` was only read, through SQLite `mode=ro`. It is still
+    at `10636b5`. Its status shows the same two untracked files as before,
+    neither of them this session's: `broadcast.log` and the story session's
+    `docs/contracts/character-vector-rig.spec.md`.
+
+### Change By Change Reconstruction
+
+- **`storybook/stories/pippa-and-the-whispering-moss.json`** (new):
+  - the `source` block: repo, file, table, id, publish date, read method,
+    `content_sha256`, and where the season came from;
+  - the title, refrain and primary character;
+  - the season ("gentle autumn");
+  - the text, verbatim;
+  - the seven accepted page entries.
+- **`storybook/tools/story-recipe.py`:**
+  - `:47-48` `STORIES`, `PAGES`, `STORY_NAME`.
+  - `:64` `MODELS["edit_unet"]`, with the Hub digest. `:68-71` `LOADERS`
+    gains it, and `SHEET_ROLES` and `PAGE_ROLES` split the roles.
+  - `:84` `PAGE_TEMPLATES` v1, the light set included. `:94` `PAGE_RENDERS`
+    v1. `:97` `PAGE_KEYS`.
+  - `:178` `allowlist_problems()` and `:185` `rebuild_problems()`: slice 1's
+    checks, moved out of `embedded_problems()` (`:210`) so pages share them.
+  - `:220` `load_story()`, `:229` `paragraphs()`, `:233` `story_problems()`:
+    the plan check.
+  - `:279` `reference_name()`, `:284` `page_prompt()`, `:291` `page_graph()`,
+    `:325` `page_manifest()`: the one constructor.
+  - `:347` `sheet_digests()` and `:353` `page_embedded_problems()`: the
+    rebuild uses the cast's current sheets.
+  - `:373` `page_identity()`.
+  - `:433` `require_models()`, `:442` `require_nodes()`, `:450` `upload()`;
+    `:466` `contact_sheet()` gains the reference strip.
+  - `:503` `cmd_page()`. `:549` `commit_lock()` is shared by `:590`
+    `cmd_lock()` and `:597` `cmd_lock_page()`.
+  - `:611` `lock_folder_problems()` is shared by `:647` `locked_problems()`
+    and `:661` `story_and_page_problems()`.
+  - `:698` `cmd_selftest()` and `main()`.
+- **`storybook/tools/test-story-recipe.py`:**
+  - `form_fields()`;
+  - `FakeComfy`, which now takes uploads, answers node queries, and renders
+    from the images a graph loads;
+  - six page cases: `case_page_lock_selftest` through `case_plan_check`.
+- **`.github/workflows/storybook-quality.yml`:** the comment and step name
+  only.
+
+### Contract Traceability
+
+- Story snapshot, page plan, tools and workflow: Correct Fix Must Touch, and
+  The Page Plan, v1.
+- Template, lights and render settings: Page Template, v1, and Render
+  Settings, v1.
+- References by content, the plan check and the failure cases: Recipes,
+  References and Locks; The Story Plan Check; Failure Cases.
+- Story names, exact page keys, orphan page folders, the shared lock code,
+  and the upload name check: Contract Amendments.
+
+## Verification
+
+- **`test-story-recipe.py`:** 64 of 64 checks, on Python 3.13 with
+  Pillow 11.3 and on Python 3.12 with Pillow 10.2.
+  - 27 are slice 1's: its 26, plus one new check that a character recipe
+    names exactly the three base-model files.
+  - 37 are new page checks:
+    - `case_page_lock_selftest` (9):
+      - `page`, `lock-page` and `selftest`, end to end;
+      - per-seed render times;
+      - the uploads ComfyUI received are byte-identical to the locked sheets,
+        and named by SHA-256;
+      - both encoders get Pippa as image1 and Bramble as image2, with no
+        image3;
+      - only the edit model loads;
+      - the prompt's picture numbers and light;
+      - the recorded references.
+    - `case_page_refusals` (15):
+      - an unknown story, a `../` path, page 0 and page 8;
+      - a cast member with no sheet;
+      - ComfyUI unreachable, a missing `CFGNorm` node, an edit model ComfyUI
+        can't see, and a renamed upload, each refused before rendering;
+      - a symlinked drafts folder, refused before uploading;
+      - an unrendered seed, a lock without `--force`, and a retouched
+        candidate;
+      - those refusals change nothing, and `--force` replaces the lock.
+    - `case_relocked_sheet` (3):
+      - re-locking Pippa fails page 1's lock until page 1 is redrawn;
+      - a broken sheet blocks `page` before anything is uploaded.
+    - `case_story_edits` (3): an edited text fails `selftest` and `page`; an
+      edited page entry fails its lock.
+    - `case_page_lock_is_its_page` (1): page 1's lock saved as page 2's.
+    - `case_plan_check` (6): one paragraph too many, a non-canon cast
+      member, a cast of four, an unknown time, an empty scene; and the
+      committed plan passes.
+- **The tests catch the bugs they're meant to.** Each of four broken copies
+  of the tool fails the suite:
+  - with references recorded as a constant, 4 checks fail, including the
+    re-lock case;
+  - with the cast order reversed in the graph, the wiring check fails;
+  - with the text hash check removed, both story-edit checks fail;
+  - with the page identity check removed, nothing failed at first. That gap
+    is how `case_page_lock_is_its_page` came to be added; with it, 1 check
+    fails.
+- **Slice 1's locks still pass.** I used `origin/main`'s tool to render and
+  lock Pippa, Bramble and Barnaby against the fake ComfyUI, then ran this
+  branch's `selftest` on that tree: "3 character locks, 1 stories and
+  0 page locks … 0 problems". The character recipe format is unchanged.
+- **`selftest` on the real storybook:** "0 character locks, 1 stories and
+  0 page locks checked against canon/moon-berry-forest.json; 0 problems".
+- **One page contact sheet from the fake run was viewed.** The cast's
+  sheets sit in a labelled strip above the four seeds.
+- **Not run: a real render.** It needs your GPU go, and Pippa's, Bramble's
+  and Barnaby's sheets rendered and locked first.
