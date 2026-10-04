@@ -18,7 +18,13 @@
     "alphabet:rasterize": "node scripts/alphabet.mjs rasterize",
     "alphabet:verify": "node scripts/alphabet.mjs verify",
     "alphabet:all": "node scripts/alphabet.mjs all",
-    "alphabet:test": "node --test tests/alphabet-practice.test.mjs"
+    "alphabet:test": "node --test tests/alphabet-practice.test.mjs",
+    "numbers:build": "node scripts/numbers.mjs build",
+    "numbers:pdf": "node scripts/numbers.mjs pdf",
+    "numbers:screenshots": "node scripts/numbers.mjs screenshots",
+    "numbers:rasterize": "node scripts/numbers.mjs rasterize",
+    "numbers:verify": "node scripts/numbers.mjs verify",
+    "numbers:all": "node scripts/numbers.mjs all"
   },
   "devDependencies": {
     "fontkit": "^2.0.4",

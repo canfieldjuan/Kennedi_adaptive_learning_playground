@@ -246,3 +246,9 @@ set) are built as parameterized SVG functions specifically so a future
 **Kennedi Is the Boss — Coloring Pack** can reuse the same character/scene
 library at full-page scale. Nothing in this build assumes it's the only
 consumer of `src/illustrations/`.
+
+## Numbers 1-20
+
+`npm run numbers:all -- --out /absolute/output/directory` builds ten number-practice sheets and two counting/coloring breaks for a four-year-old. Each number has a solid model, three dotted copies and a blank try space, plus an exact dot quantity and reused animal line art. The output includes a combined US Letter PDF, individual pages, actual PDF rasters, contact sheet and verification. Print at Actual size / 100%.
+
+Edit numbers and activities in `src/content/numbers-practice.mjs`, numeral strokes in `src/components/number-glyphs.mjs`, and scoped styles in `src/styles/numbers-practice.css`. Existing books and illustration files are unchanged. This layout awaits owner visual review; it is not a new illustration-approval claim.
