@@ -24,7 +24,14 @@
     "numbers:screenshots": "node scripts/numbers.mjs screenshots",
     "numbers:rasterize": "node scripts/numbers.mjs rasterize",
     "numbers:verify": "node scripts/numbers.mjs verify",
-    "numbers:all": "node scripts/numbers.mjs all"
+    "numbers:all": "node scripts/numbers.mjs all",
+    "counting:build": "node scripts/counting.mjs build",
+    "counting:pdf": "node scripts/counting.mjs pdf",
+    "counting:screenshots": "node scripts/counting.mjs screenshots",
+    "counting:rasterize": "node scripts/counting.mjs rasterize",
+    "counting:verify": "node scripts/counting.mjs verify",
+    "counting:all": "node scripts/counting.mjs all",
+    "counting:test": "node --test tests/counting-practice.test.mjs"
   },
   "devDependencies": {
     "fontkit": "^2.0.4",
