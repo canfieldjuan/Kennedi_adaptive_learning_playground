@@ -278,6 +278,15 @@ Operator decisions, 2026-10-04:
 - Round 2 refusals: a spec naming itself, the palette or the source as its
   output; an RGBA source; a seed off gated skin. Each exits 1 and writes
   nothing.
+- Round 3 (clothing): 59,498 pixels change.
+  - The 3,397 that no longer do are each inside a clothing box, at or above
+    its hue floor, and back to the source.
+  - Every remaining recolored pixel is unchanged from round 2, so equal to
+    the approved skin.
+  - What's left above hue 32 is 298 pixels in 161 clusters of at most
+    19 px: skin edges.
+  - Seen side by side, the raised sleeve's underside is beige again.
+  - `--check` passes on both stacks, and `npm run all` passes.
 - A seed placed on the pencil is accepted, by design. The gates can't tell
   wood from skin; the seeds are the author's statement of which regions are
   her.

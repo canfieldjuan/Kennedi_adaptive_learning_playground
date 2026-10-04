@@ -1,5 +1,5 @@
 {
- "about": "How tools/recolor-kennedi-skin.py finds Kennedi's skin in the cover. Gates are hue in degrees, saturation and value in 0-1. Only the regions holding a skin seed are recolored: the gates alone also match the pencil's wood and the beige shading on her shirt.",
+ "about": "How tools/recolor-kennedi-skin.py finds Kennedi's skin in the cover. Gates are hue in degrees, saturation and value in 0-1. Only the regions holding a skin seed are recolored: the gates alone also match the pencil's wood and the beige shading on her shirt. Where no outline separates her skin from clothing, a seeded region runs on into it; inside each clothing box, pixels at or above its hue floor are clothing and keep their color (her skin peaks at hue 30).",
  "source": "design-source/scenes/cover-concept-c-final.png",
  "output": "design-source/scenes/cover-concept-c-golden.png",
  "palette": "design-source/boss-kennedi/palette.json",
@@ -53,6 +53,38 @@
    "where": "right leg",
    "x": 603,
    "y": 1051
+  }
+ ],
+ "clothing": [
+  {
+   "where": "underside of the raised sleeve",
+   "box": [
+    352,
+    579,
+    442,
+    667
+   ],
+   "hue_min": 32
+  },
+  {
+   "where": "underside of the sleeve on the clipboard arm",
+   "box": [
+    606,
+    682,
+    633,
+    730
+   ],
+   "hue_min": 32
+  },
+  {
+   "where": "skirt hem above the left leg",
+   "box": [
+    512,
+    993,
+    539,
+    1002
+   ],
+   "hue_min": 32
   }
  ]
 }

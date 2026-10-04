@@ -9,7 +9,8 @@
 The palette is design-source/boss-kennedi/palette.json. A spec names the source, the output, the source's own
 skin color, the gates that match skin-colored pixels, and a seed point inside each region of her skin: the
 gates alone also match things that aren't her (a pencil's wood, beige shading on her shirt), so only the
-regions holding a seed change. Every other pixel is copied from the source. RGB images only. Needs numpy
+regions holding a seed change, less any clothing a seeded region runs on into, which the spec names by box and
+hue floor. Every other pixel is copied from the source. RGB images only. Needs numpy
 and Pillow.
 """
 import argparse
@@ -98,6 +99,11 @@ def recolor(source, spec, palette):
     body = keep[labels]
     hue = spec["shading_gate"]["hue"]
     mask = body | (grow(body, 1) & (h >= hue[0]) & (h <= hue[1]) & (s >= EDGE_SATURATION))
+    # Where no outline separates her skin from clothing, a seeded region runs on into it. Inside each clothing
+    # box, pixels at or above its hue floor are clothing (beige or orange) and keep their source color.
+    for item in spec["clothing"]:
+        x0, y0, x1, y1 = item["box"]
+        mask[y0:y1 + 1, x0:x1 + 1] &= h[y0:y1 + 1, x0:x1 + 1] < item["hue_min"]
 
     skin, rose = rgb(palette["skin"]), rgb(palette["blush"])
     # Shading keeps her hue and takes only the source's darkness, so shadows are golden brown, not salmon.
@@ -117,7 +123,7 @@ def load(spec_path):
     except (OSError, ValueError) as error:
         sys.exit(f"{spec_path}: {error}")
     required = {"source", "output", "palette", "source_skin", "skin_gate", "shading_gate", "ground_row",
-                "blush_hue_max", "skin_seeds"}
+                "blush_hue_max", "skin_seeds", "clothing"}
     if missing := sorted(required - set(spec)):
         sys.exit(f"{spec_path} is missing {', '.join(missing)}")
     paths = {key: (WORKBOOK / spec[key]).resolve() for key in ("source", "output", "palette")}
