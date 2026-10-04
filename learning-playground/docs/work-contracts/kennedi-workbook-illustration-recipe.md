@@ -393,9 +393,20 @@ does not change scope.
       asset.
     - Changing locked art now means updating its recorded digests, on
       purpose and in the same PR.
+  - **Found while wiring the gate.**
+    - `check_locked()` compared a rebuilt guide with the committed one byte
+      for byte. Encoded PNG bytes depend on the Pillow and zlib that wrote
+      them, so a correct guide could fail on the CI runner's stack. It now
+      compares pixels: mode, size and every value. The guide's bytes stay
+      bound by its fingerprint and its recorded digest.
+    - The bunny, bear and turtle color *draft* recipes also lack
+      `recipe_version`, so they could not be re-locked. Each gains the
+      version its own recorded `guide_recipe` names (blur 1.5 is v1).
   - **Scope added to Correct Fix Must Touch:**
-    `.github/workflows/workbook-quality.yml`, the ten lock recipes, the
-    baseline, and `tools/test-illustration-recipe.py`.
+    `.github/workflows/workbook-quality.yml`, the ten lock recipes, the three
+    color draft recipes above, the baseline, `tools/test-illustration-recipe.py`,
+    and the refinements doc's backfill item, which said legacy assets are only
+    counted and that seven Kennedi poses are guided.
   - **Settling evidence (planned):**
     - A test case for each finding, with both sides of each guard:
       - every alias direction refused, while a same-kind `--force`
