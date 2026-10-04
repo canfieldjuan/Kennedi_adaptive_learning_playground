@@ -4,6 +4,35 @@ Tracks every AI-generated or AI-assisted illustration asset in `workbook/`.
 Companion to `docs/design-system.md`'s Art Direction v2 section. Mirrors the
 convention used by the main app's `learning-playground/docs/art/`.
 
+## 2026-10-04: Separate-row alphabet workbook reuse
+
+The new `src/content/alphabet-practice.mjs` catalog reuses existing tracked
+line-art SVGs under `design-source/animals/locked-poses/` from alligator to
+zebra (queen is the existing Q cue). No images were generated, regenerated,
+recolored, vectorized or manually modified for this workbook slice. Existing
+AI-generation recipes and original provenance remain with the source assets.
+The original manuscript letter strokes in `components/manuscript-glyphs.mjs`
+are assistant-authored, AI-assisted deterministic SVG tracing geometry, not
+human-drawn illustrations or new generative character artwork.
+
+Build/export tool: existing HTML/CSS/SVG renderer, Chrome through Playwright,
+and Poppler. The output `manifest.json` records each editable source SVG path,
+SHA256 hash, cropped runtime viewBox and approval status. Cropping changes
+only empty canvas framing; optimized illustrations are embedded inline in
+each self-contained generated HTML file, with source SVG paths untouched.
+No untracked `drafts/*color-candidate*` image is consumed.
+
+Default proof outputs: `dist-alphabet/` (preview, individual pages/PDFs,
+combined PDF, browser screenshots, PDF rasters, contact sheet, verification).
+The `--out` option preserves the same tree outside a disposable checkout.
+This slice's durable proofs are at
+`/home/juan-canfield/Desktop/codex-evidence/kennedi-workbook/alphabet-a-z-2026-10-04/`.
+
+Approval: **draft alphabet layout/art pairing, owner visual review required**.
+This reuse does not promote or claim final approval of an existing art family.
+The records below describe the earlier character-art phases, not an assertion
+that this new alphabet format was present during those phases.
+
 **Status of everything on this page: DRAFT / OWNER VISUAL APPROVAL REQUIRED.**
 None of it is wired into the real 6-page book (`src/content/book-1.mjs`).
 It exists only as `dist-proof/` integration proof and

@@ -13,6 +13,32 @@ rather than 26 standalone worksheets -- see `alphabetPage()`'s own doc
 comment for the rationale. The "title must exactly match the `<h1>`"
 requirement below is Book 1's contract specifically, not a cross-book rule.
 
+## Separate-row alphabet practice format
+
+`src/content/alphabet-practice.mjs` is a separate, additive workbook, not a
+replacement for Book 2. Each sheet has two letter pairs in A/a/B/b order,
+with one case per row. `components/manuscript-glyphs.mjs` defines original
+monoline manuscript strokes (single-storey a/g), not display-glyph outlines.
+The same strokes form both the solid model and five dotted copies. A seventh
+cell stays blank for an independent attempt. Guides share cap/x-height/
+baseline/descender coordinates; cap height is 0.75in at actual print size.
+
+`components/alphabet-practice.mjs` and scoped `styles/alphabet-practice.css`
+keep the layout consistent. There is one primary skill: letter tracing.
+The existing line-art SVG cue appears once per letter pair; no quizzes or
+newly invented Kennedi poses. Supporting art is 0.8in and cropped to its
+measured ink bounds plus 6% padding per axis without modifying source paths.
+Small details are supporting decoration, not things the child must identify.
+
+The demonstrated tracing style uses dark ink and medium-gray thin guidelines
+(never pale-gray tracing dots). This is local to this format; it does not
+change the historical Book 1 rules or shared CSS. The actual PDF is the
+print authority. Source hashes, glyph bounds, actual dimensions, safe margins
+and overflow are verified by `scripts/alphabet.mjs`. See README commands.
+
+Status: working printable preview, owner visual review required. No new
+art-family approval is inferred from using the current tracked SVGs.
+
 ## The page module contract
 
 Every page is a `.mjs` file in `src/content/pages/` that exports:

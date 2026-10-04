@@ -11,7 +11,14 @@
     "rasterize": "node scripts/rasterize-pdf.mjs",
     "verify": "node scripts/verify.mjs",
     "preview": "npm run build && node -e \"console.log('Preview built. Open dist/preview.html in your browser (double-click or: xdg-open dist/preview.html).')\"",
-    "all": "npm run build && npm run pdf && npm run screenshots && npm run rasterize && npm run verify"
+    "all": "npm run build && npm run pdf && npm run screenshots && npm run rasterize && npm run verify",
+    "alphabet:build": "node scripts/alphabet.mjs build",
+    "alphabet:pdf": "node scripts/alphabet.mjs pdf",
+    "alphabet:screenshots": "node scripts/alphabet.mjs screenshots",
+    "alphabet:rasterize": "node scripts/alphabet.mjs rasterize",
+    "alphabet:verify": "node scripts/alphabet.mjs verify",
+    "alphabet:all": "node scripts/alphabet.mjs all",
+    "alphabet:test": "node --test tests/alphabet-practice.test.mjs"
   },
   "devDependencies": {
     "fontkit": "^2.0.4",
