@@ -135,6 +135,9 @@ def main():
     pixels, mask = recolor(source, spec, json.loads(paths["palette"].read_text()))
     changed = (pixels != np.asarray(source)).any(axis=-1)
     rel = paths["output"].relative_to(WORKBOOK)
+    # A spec that selects none of her skin would replace the approved output with a copy of the source.
+    if not changed.any():
+        sys.exit(f"{args.spec} recolors nothing in {spec['source']} -- check its gates; nothing was written")
     if args.check:
         if not paths["output"].is_file():
             sys.exit(f"{rel} is missing -- run without --check to write it")
