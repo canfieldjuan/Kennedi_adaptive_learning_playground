@@ -147,6 +147,11 @@ Operator decisions, 2026-10-04:
   `page-01-cover-art-proof.mjs` and `dist-proof/` move to Must Not Change.
   Only `page-01-cover.mjs` (the book's page 1) points at the recolored
   cover.
+- **Failure case added (Codex, PR #143).** A spec whose gates select no
+  pixels made the tool write an unrecolored copy of the source over the
+  approved output, and only then fail on the empty bounds. Now a spec that
+  recolors nothing is refused before anything is written, in both the write
+  and `--check` modes.
 
 ## Cold Diff Audit
 
