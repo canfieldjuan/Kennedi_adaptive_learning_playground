@@ -1,0 +1,7 @@
+{
+ "about": "Kennedi's skin in color (Mode A) art, approved by the operator 2026-10-04. Read by tools/recolor-kennedi-skin.py; see docs/design-system.md, Canonical character.",
+ "skin": "#D9A774",
+ "shading": "the skin hue, darker by the source pixel's luminance (no salmon or red cast)",
+ "blush": "#D68468",
+ "blush_strength": 0.35
+}
