@@ -159,18 +159,30 @@ def locked_folders():
     return [WORKBOOK / "design-source" / rel for rel in LOCKED_ROOTS]
 
 
+_ART_LOCK_HELD = []     # the mode this process holds, so a nested art_lock() doesn't wait on itself
+
+
 @contextlib.contextmanager
 def art_lock(exclusive):
-    """Locked art changes under one lock, taken on the design-source folder.
+    """Art in design-source changes under one lock, taken on that folder.
 
-    `lock` holds it exclusively from its ownership check to its last rename, so two locks can't interleave
-    their files; `selftest` holds it shared, so it never reads a half-committed lock.
+    Every commit into design-source (a draft set, a reproduction, a lock) holds it exclusively for its
+    renames, and `lock` from its ownership check to its last rename, so no two writers interleave. Readers
+    (selftest, colorize, reproduce) hold it shared while they read. Re-entrant within one process.
     """
+    if _ART_LOCK_HELD and (_ART_LOCK_HELD[-1] or not exclusive):
+        yield
+        return
+    if _ART_LOCK_HELD:
+        raise RuntimeError("art_lock: a shared lock can't be upgraded to exclusive")
     folder = os.open(WORKBOOK / "design-source", os.O_RDONLY)
     try:
         fcntl.flock(folder, fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH)
+        _ART_LOCK_HELD.append(exclusive)
         yield
     finally:
+        if _ART_LOCK_HELD:
+            _ART_LOCK_HELD.pop()
         os.close(folder)        # closing the descriptor releases the lock
 
 
@@ -247,13 +259,19 @@ class Outputs:
 
     @contextlib.contextmanager
     def staging(self):
-        """Everything written in the block moves into place together when it ends without an exception."""
+        """Everything written in the block moves into place together when it ends without an exception.
+
+        Inside design-source the renames happen under the exclusive art lock, so two commands committing
+        sets with the same names can't interleave: each set lands whole.
+        """
         self.folder.mkdir(parents=True, exist_ok=True)
+        in_art = (WORKBOOK / "design-source").resolve() in [self.folder, *self.folder.parents]
         with tempfile.TemporaryDirectory(dir=self.folder, prefix=".staging-") as tmp:
             batch = _Staging(self, Path(tmp))
             yield batch
-            for name in batch.names:
-                os.replace(Path(tmp) / name, self.folder / name)
+            with art_lock(exclusive=True) if in_art else contextlib.nullcontext():
+                for name in batch.names:
+                    os.replace(Path(tmp) / name, self.folder / name)
 
     def write(self, name, write, validate=True):
         """One file, written atomically."""
@@ -399,25 +417,32 @@ def fields(args):
     return f
 
 
+def asset_name(value):
+    """An asset's name: a safe name that doesn't end in -color, the suffix of every color draft and lock."""
+    name = safe_name(value, "the name")
+    if name.endswith("-color"):
+        sys.exit(f"the name {name!r} ends in -color, which is reserved for color drafts and locks: its files "
+                 f"would be {name.removesuffix('-color')}'s color set")
+    return name
+
+
 def cmd_candidates(args):
-    safe_name(args.name, "the name")
+    name = asset_name(args.name)
     outputs = Outputs(WORKBOOK / "design-source" / FOLDERS[args.kind][0])
     comfy = load_comfy(args.server)
-    manifest = draft_manifest(args.kind, args.name, fields(args), comfy)
-    paths = []
-    for seed in SEEDS:
-        graph = recipe_graph(manifest, comfy, seed)
-        out = outputs.write(f"{args.name}-candidate-{seed}.png", lambda p, g=graph: render(comfy, g, p))
-        paths.append(out)
-        print(f"wrote {out.relative_to(WORKBOOK)}")
-
-    sheet_path = outputs.write(f"{args.name}-contact-sheet.png",
-                               lambda p: contact_sheet([(f"seed {s}", c) for s, c in zip(SEEDS, paths)], p))
-
-    stats = comfy.api("/system_stats", timeout=10).get("system", {})
-    manifest["comfyui_version"] = stats.get("comfyui_version")
-    outputs.write(f"{args.name}-recipe.json", lambda p: p.write_text(json.dumps(manifest, indent=1)))
-    print(f"wrote {sheet_path.relative_to(WORKBOOK)} and {args.name}-recipe.json -- pick a seed, then `lock`")
+    manifest = draft_manifest(args.kind, name, fields(args), comfy)
+    # The whole set renders aside and lands together, so overlapping runs can't mix two prompts under one recipe.
+    with outputs.staging() as batch:
+        paths = []
+        for seed in SEEDS:
+            paths.append(batch.file(f"{name}-candidate-{seed}.png"))
+            render(comfy, recipe_graph(manifest, comfy, seed), paths[-1])
+            print(f"rendered seed {seed}")
+        contact_sheet([(f"seed {s}", c) for s, c in zip(SEEDS, paths)], batch.file(f"{name}-contact-sheet.png"))
+        manifest["comfyui_version"] = comfy.api("/system_stats", timeout=10).get("system", {}).get("comfyui_version")
+        batch.file(f"{name}-recipe.json").write_text(json.dumps(manifest, indent=1))
+    print(f"wrote {name}'s candidates, contact sheet and recipe to {outputs.folder.relative_to(WORKBOOK)} -- "
+          f"pick a seed, then `lock`")
 
 
 def cmd_colorize(args):
@@ -435,7 +460,7 @@ def cmd_colorize(args):
             sys.exit(f"colorize works from a line-art lock this tool manages: {'; '.join(problems)}")
         source = json.loads(source_recipe.read_text())
         snapshot = line_art.read_bytes()
-    name = safe_name(source["name"], f"the name in {source_recipe.name}")
+    name = asset_name(source["name"])
     color_fields = dict(subject=source["fields"]["subject"], pose=source["fields"]["pose"], colors=args.colors)
     drafts = WORKBOOK / "design-source" / FOLDERS["animal"][0]
     outputs = Outputs(drafts, inputs=[line_art])
@@ -446,36 +471,49 @@ def cmd_colorize(args):
         sys.exit(f"ControlNet {manifest['controlnet']} is not visible to ComfyUI -- check extra_model_paths.yaml")
 
     blur = COLOR_RECIPES[args.recipe]["guide_blur"]
-    guide = outputs.write(color_guide_name(name), lambda p: make_guide(io.BytesIO(snapshot), blur, p))
-    upload(comfy, guide.read_bytes(), guide.name)
-
-    paths = []
-    for seed in SEEDS:
-        graph = recipe_graph(manifest, comfy, seed, guide.name, f"{name}-color-{seed}")
-        out = outputs.write(f"{name}-color-candidate-{seed}.png", lambda p, g=graph: render(comfy, g, p))
-        paths.append(out)
-        print(f"wrote {out.relative_to(WORKBOOK)}")
-
-    sheet_path = outputs.write(f"{name}-color-contact-sheet.png", lambda p: contact_sheet(
-        [("locked line art", io.BytesIO(snapshot))] + [(f"color seed {s}", c) for s, c in zip(SEEDS, paths)], p))
-    stats = comfy.api("/system_stats", timeout=10).get("system", {})
-    manifest.update(guide=str(guide.relative_to(WORKBOOK)), comfyui_version=stats.get("comfyui_version"))
-    outputs.write(f"{name}-color-recipe.json", lambda p: p.write_text(json.dumps(manifest, indent=1)))
-    print(f"wrote {sheet_path.relative_to(WORKBOOK)} and {name}-color-recipe.json -- pick a seed, "
-          f"then `lock animal {name} --seed N --color`")
+    # The whole set (guide, candidates, contact sheet, recipe) renders aside and lands together.
+    with outputs.staging() as batch:
+        guide = batch.file(color_guide_name(name))
+        make_guide(io.BytesIO(snapshot), blur, guide)
+        upload(comfy, guide.read_bytes(), guide.name)
+        paths = []
+        for seed in SEEDS:
+            paths.append(batch.file(f"{name}-color-candidate-{seed}.png"))
+            render(comfy, recipe_graph(manifest, comfy, seed, guide.name, f"{name}-color-{seed}"), paths[-1])
+            print(f"rendered color seed {seed}")
+        contact_sheet([("locked line art", io.BytesIO(snapshot))] + [(f"color seed {s}", c) for s, c in zip(SEEDS, paths)],
+                      batch.file(f"{name}-color-contact-sheet.png"))
+        manifest.update(guide=str((outputs.folder / guide.name).relative_to(WORKBOOK)),
+                        comfyui_version=comfy.api("/system_stats", timeout=10).get("system", {}).get("comfyui_version"))
+        batch.file(f"{name}-color-recipe.json").write_text(json.dumps(manifest, indent=1))
+    print(f"wrote {name}'s color guide, candidates, contact sheet and recipe -- pick a seed, then "
+          f"`lock animal {name} --seed N --color`")
 
 
 def cmd_lock(args):
+    # Locked art changes under one lock, held from reading the draft set to the last rename: the recipe and the
+    # candidate come from one committed draft set, two locks can't interleave their files, and selftest never
+    # reads a half-committed lock.
+    with art_lock(exclusive=True):
+        lock_drafted(args)
+
+
+def lock_drafted(args):
     if args.color and args.kind != "animal":
         sys.exit("--color locks come from colorize, which supports animals only")
+    name = asset_name(args.name)
     drafts_rel, locked_rel = FOLDERS[args.kind]
     drafts, locked = WORKBOOK / "design-source" / drafts_rel, WORKBOOK / "design-source" / locked_rel
-    tag = f"{args.name}-color" if args.color else args.name
-    manifest = json.loads((drafts / f"{tag}-recipe.json").read_text())
+    tag = f"{name}-color" if args.color else name
+    draft_recipe = drafts / f"{tag}-recipe.json"
+    manifest = json.loads(draft_recipe.read_text())
+    expected = "animal-color" if args.color else args.kind
+    if manifest.get("kind") != expected:
+        sys.exit(f"{draft_recipe.relative_to(WORKBOOK)} is a {manifest.get('kind')!r} recipe, not {expected}; "
+                 f"re-run {'colorize' if args.color else 'candidates'}")
     if args.seed not in manifest["seeds"]:
         sys.exit(f"seed {args.seed} is not one of the rendered candidates {manifest['seeds']}")
     src = drafts / f"{tag}-candidate-{args.seed}.png"
-    safe_name(args.name, "the name")
     if args.locked_name:
         stem = safe_name(args.locked_name, "--locked-name")
     elif args.color:
@@ -483,72 +521,70 @@ def cmd_lock(args):
     elif args.kind == "animal":
         # The pose is free text ("swimming, large and ..."), so only its first word's letters name the file.
         word = re.sub(r"[^a-z0-9]", "", manifest["fields"]["pose"].split()[0].lower())
-        stem = safe_name(f"{args.name}-01-{word}", f"the name built from pose {manifest['fields']['pose']!r}")
+        stem = safe_name(f"{name}-01-{word}", f"the name built from pose {manifest['fields']['pose']!r}")
     else:
-        stem = args.name
+        stem = name
     outputs = Outputs(locked, inputs=[src], into_locked=True)
     png = outputs.target(f"{stem}.png")
     recipe = locked / f"{stem}.recipe.json"
     draft_guide = WORKBOOK / manifest["guide"] if args.color else None
-    # Locked art changes under one lock, held from the ownership check to the last rename: two locks can't
-    # interleave their files, and selftest never reads a half-committed one.
-    with art_lock(exclusive=True):
-        if os.path.lexists(png) and not args.force:
-            sys.exit(f"{png.relative_to(WORKBOOK)} already exists (use --force to replace)")
-        # A lock replaces only the lock of its own kind at this name. Any other file there belongs to another
-        # asset: line art, a color lock, its guide, or legacy art. --force does not reach those. Ownership is
-        # by the name in the folder, so a symlink is refused rather than followed.
-        own = (recipe if recipe.is_file() and not recipe.is_symlink()
-               and json.loads(recipe.read_text()).get("kind") == manifest["kind"] else None)
-        owners = locked_owners()
-        for name in [png.name, f"{stem}-guide.png" if args.color else f"{stem}.svg", recipe.name]:
-            outputs.target(name)
-            target = locked / name
-            if target.is_symlink():
-                sys.exit(f"{target.relative_to(WORKBOOK)} is a symlink; a lock writes only real files")
-            claims = owners.get(target, [])
-            if (target.exists() or claims) and (own is None or claims != [own]):
-                held_by = ", ".join(owner_label(c) for c in claims) or "nothing (it has no owner)"
-                sys.exit(f"{target.relative_to(WORKBOOK)} belongs to {held_by}, not to a {manifest['kind']} lock "
-                         f"at {stem}; a lock replaces only its own files -- choose another --locked-name")
-        if png.exists() and not args.color:
-            # A colour lock's guide is rebuilt from this line art, so replacing it would break that lock.
-            rel = str(png.relative_to(WORKBOOK))
-            dependents = [r.name for r in sorted(locked.glob("*.recipe.json"))
-                          if not r.is_symlink() and json.loads(r.read_text()).get("source_line_art") == rel]
-            if dependents:
-                sys.exit(f"{rel} is the source of {', '.join(dependents)}; re-run colorize and lock those after "
-                         f"replacing it, or delete them first")
-        if not src.exists():
-            sys.exit(f"{src.relative_to(WORKBOOK)} is missing -- re-run the candidates")
-        if args.color and not draft_guide.exists():
-            sys.exit(f"{manifest['guide']} is missing -- re-run colorize")
-        manifest.update(chosen_seed=args.seed, source=str(src.relative_to(WORKBOOK)))
-        # The whole lock set is built aside and moves into place together, so a failed vectorizer or write
-        # never leaves an approved lock half-replaced.
-        with outputs.staging() as batch:
-            # Each draft is read once, into staging, and the staged copies are what gets validated: a draft
-            # that `candidates` or `colorize` replaces mid-lock can't be committed unvalidated. The candidate
-            # must be exactly the render its recipe describes, or the lock couldn't be reproduced.
-            staged = batch.file(png.name)
-            staged.write_bytes(src.read_bytes())
-            staged_guide = None
-            if args.color:
-                # The lock owns an exact copy of its guide: colorize rewrites the draft guide on every run.
-                staged_guide = batch.file(f"{stem}-guide.png")
-                staged_guide.write_bytes(draft_guide.read_bytes())
-            problems = embedded_problems(staged, manifest, args.seed, load_comfy(args.server), staged_guide)
-            if problems:
-                sys.exit(f"{src.name} is not the render its recipe describes: " + "; ".join(problems))
-            if args.color:
-                manifest["guide"] = str((locked / staged_guide.name).relative_to(WORKBOOK))
-            else:
-                # Mode A color art is used as a raster; only print line art is vectorized.
-                subprocess.run(["bash", str(WORKBOOK / "tools/vectorize-line-art.sh"), str(staged),
-                                str(batch.file(f"{stem}.svg")), "70"], check=True)
-            # The recipe owns exactly the files written beside it, and records their bytes.
-            manifest["files"] = {name: sha256(batch.tmp / name) for name in batch.names}
-            batch.file(recipe.name).write_text(json.dumps(manifest, indent=1))
+    if os.path.lexists(png) and not args.force:
+        sys.exit(f"{png.relative_to(WORKBOOK)} already exists (use --force to replace)")
+    # A lock replaces only the lock of its own kind at this name. Any other file there belongs to another
+    # asset: line art, a color lock, its guide, or legacy art. --force does not reach those. Ownership is
+    # by the name in the folder, so a symlink is refused rather than followed.
+    own = (recipe if recipe.is_file() and not recipe.is_symlink()
+           and json.loads(recipe.read_text()).get("kind") == manifest["kind"] else None)
+    owners = locked_owners()
+    for file_name in [png.name, f"{stem}-guide.png" if args.color else f"{stem}.svg", recipe.name]:
+        outputs.target(file_name)
+        target = locked / file_name
+        if target.is_symlink():
+            sys.exit(f"{target.relative_to(WORKBOOK)} is a symlink; a lock writes only real files")
+        claims = owners.get(target, [])
+        if (target.exists() or claims) and (own is None or claims != [own]):
+            held_by = ", ".join(owner_label(c) for c in claims) or "nothing (it has no owner)"
+            sys.exit(f"{target.relative_to(WORKBOOK)} belongs to {held_by}, not to a {manifest['kind']} lock "
+                     f"at {stem}; a lock replaces only its own files -- choose another --locked-name")
+    if not args.color:
+        # A colour lock's guide is rebuilt from this path, so replacing what's there -- or restoring it while it
+        # is missing -- with another render would break that lock. Restore a missing PNG from git instead.
+        rel = str(png.relative_to(WORKBOOK))
+        dependents = [r.name for r in sorted(locked.glob("*.recipe.json"))
+                      if not r.is_symlink() and json.loads(r.read_text()).get("source_line_art") == rel]
+        if dependents:
+            sys.exit(f"{rel} is the source of {', '.join(dependents)}; re-run colorize and lock those after "
+                     f"replacing it, or delete them first")
+    if not src.exists():
+        sys.exit(f"{src.relative_to(WORKBOOK)} is missing -- re-run the candidates")
+    if args.color and not draft_guide.exists():
+        sys.exit(f"{manifest['guide']} is missing -- re-run colorize")
+    manifest.update(chosen_seed=args.seed, source=str(src.relative_to(WORKBOOK)))
+    # The whole lock set is built aside and moves into place together, so a failed vectorizer or write
+    # never leaves an approved lock half-replaced.
+    with outputs.staging() as batch:
+        # Each draft is read once, into staging, and the staged copies are what gets validated: a draft
+        # that `candidates` or `colorize` replaces mid-lock can't be committed unvalidated. The candidate
+        # must be exactly the render its recipe describes, or the lock couldn't be reproduced.
+        staged = batch.file(png.name)
+        staged.write_bytes(src.read_bytes())
+        staged_guide = None
+        if args.color:
+            # The lock owns an exact copy of its guide: colorize rewrites the draft guide on every run.
+            staged_guide = batch.file(f"{stem}-guide.png")
+            staged_guide.write_bytes(draft_guide.read_bytes())
+        problems = embedded_problems(staged, manifest, args.seed, load_comfy(args.server), staged_guide)
+        if problems:
+            sys.exit(f"{src.name} is not the render its recipe describes: " + "; ".join(problems))
+        if args.color:
+            manifest["guide"] = str((locked / staged_guide.name).relative_to(WORKBOOK))
+        else:
+            # Mode A color art is used as a raster; only print line art is vectorized.
+            subprocess.run(["bash", str(WORKBOOK / "tools/vectorize-line-art.sh"), str(staged),
+                            str(batch.file(f"{stem}.svg")), "70"], check=True)
+        # The recipe owns exactly the files written beside it, and records their bytes.
+        manifest["files"] = {name: sha256(batch.tmp / name) for name in batch.names}
+        batch.file(recipe.name).write_text(json.dumps(manifest, indent=1))
     extras = " + .svg" if not args.color else " + guide"
     print(f"locked {png.relative_to(WORKBOOK)}{extras} + .recipe.json")
 
@@ -607,6 +643,11 @@ def cmd_reproduce(args):
                    if original.parent == WORKBOOK / "design-source" / l), original.parent)
     out = (Path(args.out) if args.out else drafts / f"{original.stem}.reproduced.png").resolve()
     outputs = Outputs(out.parent, inputs=[original] + ([WORKBOOK / guide] if guide else []))
+    # Every name in design-source has one producer; a reproduction's is <asset>.reproduced.png, so it can never
+    # land on a draft set (Outputs has already refused locked folders and inputs).
+    if (WORKBOOK / "design-source").resolve() in out.parents and not out.name.endswith(".reproduced.png"):
+        sys.exit(f"{out.name}: inside design-source a reproduction is named <asset>.reproduced.png, so it can't "
+                 f"overwrite a draft or a lock")
 
     comfy = load_comfy(args.server)
     if guide_image:

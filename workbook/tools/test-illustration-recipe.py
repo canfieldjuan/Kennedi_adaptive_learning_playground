@@ -8,14 +8,20 @@ fail. No ComfyUI and no GPU: every case is refused, or finishes, before a render
   python3 workbook/tools/test-illustration-recipe.py
 """
 import fcntl
+import hashlib
+import http.server
+import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
+from urllib.parse import parse_qs
 
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
@@ -29,6 +35,86 @@ NEUTRAL = "boss-kennedi/locked-poses/01-neutral.png"     # legacy, rebuilt by a 
 DOG = "animals/locked-poses/dog-01-sitting.png"          # legacy, rebuilt by `reproduce`
 HOUSE = "objects/locked/house.png"
 results = []
+
+
+class FakeComfy:
+    """ComfyUI's HTTP API, as much of it as the tool uses, so the rendering commands run in tests.
+
+    It queues a graph, "renders" a small image from the graph's seed and prompt, and embeds the graph the
+    way ComfyUI does, with an is_changed fingerprint on every LoadImage node. ComfyUI is the external
+    boundary; nothing in the tool is stubbed.
+    """
+
+    def __init__(self):
+        self.uploads, self.images, self.served = {}, {}, 0
+        fake = self
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def reply(self, body, kind="application/json"):
+                body = json.dumps(body).encode() if kind == "application/json" else body
+                self.send_response(200)
+                self.send_header("Content-Type", kind)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_POST(self):
+                body = self.rfile.read(int(self.headers["Content-Length"]))
+                if self.path == "/upload/image":
+                    boundary = self.headers["Content-Type"].split("boundary=")[1].encode()
+                    part = body.split(b"--" + boundary)[1]
+                    head, data = part.split(b"\r\n\r\n", 1)
+                    name = re.search(rb'filename="([^"]+)"', head).group(1).decode()
+                    fake.uploads[name] = data[:-2]
+                    return self.reply({"name": name, "subfolder": "", "type": "input"})
+                graph = json.loads(body)["prompt"]
+                for node in graph.values():
+                    if node["class_type"] == "LoadImage":
+                        image = fake.uploads[node["inputs"]["image"]]
+                        node["is_changed"] = [hashlib.sha256(image).hexdigest()]
+                prompt_id = f"job{len(fake.images)}"
+                fake.images[prompt_id] = fake.render(graph)
+                return self.reply({"prompt_id": prompt_id})
+
+            def do_GET(self):
+                path, _, query = self.path.partition("?")
+                if path.startswith("/history/"):
+                    pid = path.rsplit("/", 1)[1]
+                    return self.reply({pid: {"status": {"status_str": "success"}, "outputs": {
+                        "9": {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "output"}]}}}})
+                if path == "/view":
+                    fake.served += 1
+                    return self.reply(fake.images[parse_qs(query)["filename"][0][:-4]], "image/png")
+                if path == "/system_stats":
+                    return self.reply({"system": {"comfyui_version": "fake"}})
+                if path == "/object_info/ControlNetLoader":
+                    return self.reply({"ControlNetLoader": {"input": {"required": {
+                        "control_net_name": [["diffusion_pytorch_model.safetensors"]]}}}})
+                self.send_error(404)
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    @staticmethod
+    def render(graph):
+        nodes = {n["class_type"]: n["inputs"] for n in graph.values()}
+        digest = hashlib.sha256(f"{nodes['KSampler']['seed']}{json.dumps(graph, sort_keys=True)}".encode()).digest()
+        image = Image.new("RGB", (128, 128), "white")
+        x, y = 16 + digest[0] % 48, 16 + digest[1] % 48
+        image.paste((0, 0, 0), (x, y, x + 48, y + 48))
+        image.paste((255, 255, 255), (x + 6, y + 6, x + 42, y + 42))
+        meta = PngInfo()
+        meta.add_text("prompt", json.dumps(graph))
+        out = io.BytesIO()
+        image.save(out, "PNG", pnginfo=meta)
+        return out.getvalue()
+
+    def close(self):
+        self.server.shutdown()
 
 
 def check(label, ok, detail=""):
@@ -462,6 +548,83 @@ def case_reproduce_reads_a_locked_snapshot(root):
           code and "is not the file its record describes" in out, out.strip()[-200:])
 
 
+def case_render_commands_end_to_end(root):
+    """candidates, lock, colorize, lock --color and reproduce, run against a fake ComfyUI, leave art that checks out."""
+    comfy = FakeComfy()
+    try:
+        steps = [
+            ("candidates", ["candidates", "animal", "kite", "--pose", "flying", "--shading", "the body",
+                            "--accent", "a long tail"]),
+            ("lock", ["lock", "animal", "kite", "--seed", "72"]),
+            ("colorize", ["colorize", root / LOCKED / "kite-01-flying.png", "--colors", "a red kite"]),
+            ("lock --color", ["lock", "animal", "kite", "--seed", "61", "--color"]),
+        ]
+        for label, args in steps:
+            code, out = run(root, "--server", comfy.url, *args)
+            check(f"{label} runs against the fake ComfyUI", not code, out.strip()[-200:])
+        code, out = run(root, "--server", comfy.url, "reproduce", root / LOCKED / "kite-01-flying.png",
+                        "--out", root / DRAFTS / "kite-01-flying.reproduced.png")
+        check("reproduce rebuilds the lock exactly", not code and "pixels differing: 0.000%" in out, out.strip()[-200:])
+        code, out = run(root, "selftest")
+        check("and everything they made checks out", not code, out.strip()[-200:])
+    finally:
+        comfy.close()
+
+
+def case_draft_set_commits_whole(root):
+    """A draft set lands whole or not at all, so overlapping runs can't mix two prompts under one recipe."""
+    comfy = FakeComfy()
+    folder = os.open(root / "design-source", os.O_RDONLY)
+    fcntl.flock(folder, fcntl.LOCK_EX)
+    try:
+        job = subprocess.Popen([sys.executable, "-B", str(TOOL), "--workbook", str(root), "--server", comfy.url,
+                                "candidates", "animal", "kite", "--pose", "flying", "--shading", "the body",
+                                "--accent", "a long tail"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        deadline = time.time() + 60
+        while comfy.served < 4 and time.time() < deadline and job.poll() is None:
+            time.sleep(0.1)
+        time.sleep(1.5)
+        landed = sorted(p.name for p in (root / DRAFTS).glob("kite-*"))
+        check("with all four candidates rendered, none has landed while another process holds the art",
+              comfy.served >= 4 and not landed and job.poll() is None, landed)
+    finally:
+        fcntl.flock(folder, fcntl.LOCK_UN)
+        os.close(folder)
+    out, _ = job.communicate(timeout=120)
+    comfy.close()
+    recipe = json.loads((root / DRAFTS / "kite-recipe.json").read_text()) if (root / DRAFTS / "kite-recipe.json").exists() else {}
+    prompts = {json.loads(Image.open(p).info["prompt"])["4"]["inputs"]["text"]
+               for p in (root / DRAFTS).glob("kite-candidate-*.png")}
+    check("on release the whole set lands, every candidate rendered from its recipe's prompt",
+          job.returncode == 0 and prompts == {recipe.get("prompt")}, out.strip()[-200:])
+
+
+def case_one_namespace(root):
+    """Each draft or reproduction name has one producer, so one asset's run can't overwrite another's files."""
+    code, out = run(root, "--server", "http://127.0.0.1:9", "candidates", "animal", "bunny-color", "--pose", "sitting",
+                    "--shading", "the body", "--accent", "a tail")
+    check("an animal named with the reserved -color suffix is refused", code and "-color" in out and "reserved" in out,
+          out.strip()[-200:])
+    color_recipe = root / DRAFTS / "bunny-color-recipe.json"
+    color_recipe.write_text((root / DRAFTS / "bunny-recipe.json").read_text())
+    code, out = run(root, "lock", "animal", "bunny", "--seed", "72", "--color", "--force")
+    check("lock --color over a line-art draft recipe is refused cleanly",
+          code and "recipe, not animal-color" in out and "Traceback" not in out, out.strip()[-200:])
+    code, out = run(root, "--server", "http://127.0.0.1:9", "reproduce", root / LOCKED / "bunny-01-sitting.png",
+                    "--out", root / DRAFTS / "bunny-candidate-61.png")
+    check("reproduce onto a draft-set name is refused", code and ".reproduced.png" in out, out.strip()[-200:])
+
+
+def case_dependents_of_a_missing_line_art(root):
+    """A color lock rebuilds its guide from its line art's path, so that path is guarded even while the file is gone."""
+    (root / LOCKED / "bunny-01-sitting.png").unlink()
+    before = state(root)
+    code, out = run(root, "lock", "animal", "bunny", "--seed", "61")
+    check("re-locking missing line art a color lock depends on is refused",
+          code and "is the source of" in out, out.strip()[-200:])
+    check("and that refusal changed nothing", state(root) == before)
+
+
 def case_reproduce_outputs(root):
     """reproduce must not write into a locked folder, over its source, or without the guide it needs."""
     source = root / LOCKED / "bunny-01-sitting.png"
@@ -513,7 +676,8 @@ def main():
              case_draft_swapped_mid_validation, case_locked_folders_hold_only_files,
              case_color_source_is_a_managed_lock, case_altered_source_line_art, case_writes_stay_in_real_folders,
              case_documented_records_name_their_asset, case_reproduce_reads_a_locked_snapshot,
-             case_reproduce_outputs, case_selftest_accounts_for_everything]
+             case_render_commands_end_to_end, case_draft_set_commits_whole, case_one_namespace,
+             case_dependents_of_a_missing_line_art, case_reproduce_outputs, case_selftest_accounts_for_everything]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="recipe-test-") as tmp:
