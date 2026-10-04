@@ -162,6 +162,93 @@ now. We can use the stories as our first template."
   `git show 10636b5:engine/models.py` with Python's `ast`. The bedtime code
   never runs, as Must Not Change requires.
 
+- **The character folders are made on first use** (found while building).
+  Git can't hold an empty folder, and a placeholder file in `locked/` would
+  itself fail the "every file has an owner" rule. The tool creates both
+  folders when it first writes, and `selftest` passes when `locked/` doesn't
+  exist yet.
+- **Garments read "wearing a `<garment>`"** (found while building). The
+  canon's garments have no article ("patchwork vest").
+
 ## Cold Diff Audit
 
-To be written after implementation.
+### Gaps
+
+- Change without contract trace: none. `git diff origin/main...HEAD` holds
+  only the canon snapshot, the two tools, the workflow and this contract.
+- Contract requirement not delivered: none.
+  - The empty character folders are covered by the "first use" amendment.
+  - The real renders are planned evidence for after the operator's GPU go,
+    not part of this diff.
+- Protected surface touched: none.
+  - Nothing under `workbook/` changes.
+  - `bedtime_broadcast` was only read: `git show` plus `ast`. Its own
+    status shows two untracked files this session didn't create: the story
+    session's `docs/contracts/character-vector-rig.spec.md`, and its
+    `broadcast.log`.
+
+### Change By Change Reconstruction
+
+- `storybook/canon/moon-berry-forest.json` (new): `WORLD_BIBLE` at
+  `10636b5`, with a `source` block naming the repo, commit, path and
+  method.
+- `storybook/tools/story-recipe.py` (new):
+  - `:42` `MODELS`: the three allowlisted files, with source and licence;
+    `:48` `LOADERS`: the ComfyUI loader node and field for each.
+  - `:51` `SHEET_TEMPLATES` v1 (style and text), `:58` `RENDERS` v1
+    (ComfyUI's Qwen-Image defaults), `:61` `ADDED_KEYS`.
+  - `:72` `character()`: canon characters only, any case.
+  - `:80` `sheet_prompt()`: the optional garment and props clauses.
+  - `:90` `recipe_graph()`: the Qwen-Image graph, built from the recipe
+    alone. The nodes and field names match ComfyUI's source.
+  - `:112` `draft_manifest()`: the one constructor.
+  - `:130` `embedded_problems()`:
+    - the allowlist;
+    - a rebuild from the inputs, compared key by key;
+    - size, seed, and the embedded graph.
+  - `:163` `art_lock()` and `:174` `staging()`: draft sets land whole,
+    under the lock.
+  - `:185` `api()` and `:194` `render()`: the ComfyUI client.
+  - `:223` `cmd_character()`: the allowlisted files must be visible to
+    ComfyUI before any render.
+  - `:246` `cmd_lock()`: everything under the lock, validating the staged
+    copy.
+  - `:282` `locked_problems()` and `:318` `cmd_selftest()`.
+  - `:329` `main()`: `--storybook`; ComfyUI unreachable exits cleanly.
+- `storybook/tools/test-story-recipe.py` (new):
+  - `:40` `FakeComfy`;
+  - six cases at `:133-218` (17 checks).
+- `.github/workflows/storybook-quality.yml` (new): Pillow, `selftest`, the
+  tests.
+
+### Contract Traceability
+
+- Canon snapshot, both tools, workflow: Correct Fix Must Touch.
+- Parsing rather than importing: Amendment 2.
+- "with `<props>`": Amendment 1.
+- Wording of the garment clause: Amendment 4.
+- The folders made on first use: Amendment 3.
+
+### Verification
+
+- `test-story-recipe.py`: 17 of 17 checks, on Python 3.13 with Pillow 11.3
+  and on Python 3.12 with Pillow 10.2:
+  - the end to end run;
+  - the refusals:
+    - an unknown character;
+    - ComfyUI unreachable;
+    - a model ComfyUI can't see;
+    - an unrendered seed;
+    - a lock without `--force`;
+  - a candidate that isn't its recipe's render;
+  - a non-commercial model, which fails `selftest`;
+  - a canon change, which fails the lock drawn from it;
+  - a re-saved PNG;
+  - a stray file, a symlink and a folder in `locked/`.
+- The three generated prompts were read and match the canon: Bramble's
+  lantern and glasses, Pippa's acorn cap and stone, and no garment clause
+  for Barnaby.
+- `selftest` on the real storybook passes, with no locks yet.
+- Not run: a real render. It needs the operator's GPU go, and the Qwen
+  models to finish downloading and be listed in ComfyUI's
+  `extra_model_paths.yaml`.
