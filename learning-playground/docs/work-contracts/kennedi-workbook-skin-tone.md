@@ -138,6 +138,15 @@ Operator decisions, 2026-10-04:
   no scipy. So the 4-connected region labelling and the cross-shaped
   dilation the preview took from `scipy.ndimage` are written out in the
   tool. Its output must equal the approved preview's pixels.
+- **The art-direction proof page leaves scope.**
+  `src/content/proof-pages/page-01-cover-art-proof.mjs` renders to
+  `dist-proof/`, which isn't part of the book. Its committed screenshot
+  came from a separate manual step. Repointing its source without that
+  rebuild would leave the committed proof disagreeing with its source.
+  It stays a historical record of the original integration proof:
+  `page-01-cover-art-proof.mjs` and `dist-proof/` move to Must Not Change.
+  Only `page-01-cover.mjs` (the book's page 1) points at the recolored
+  cover.
 
 ## Cold Diff Audit
 
