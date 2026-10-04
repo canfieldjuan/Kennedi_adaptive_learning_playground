@@ -128,5 +128,9 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 94,
- "source": "design-source/animals/drafts/bear-candidate-94.png"
+ "source": "design-source/animals/drafts/bear-candidate-94.png",
+ "files": {
+  "bear-01-sitting.png": "8c9b4be6c08668c28be67c85206986ee0c57dc512f038ac4aea04b7672daf1ea",
+  "bear-01-sitting.svg": "9432aab84637c54aceb3a72628a0ccb25b8255b6c5a49822a580dbb0eb8526fe"
+ }
 }

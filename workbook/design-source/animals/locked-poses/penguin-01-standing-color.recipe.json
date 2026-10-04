@@ -175,5 +175,9 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 61,
- "source": "design-source/animals/drafts/penguin-color-candidate-61.png"
+ "source": "design-source/animals/drafts/penguin-color-candidate-61.png",
+ "files": {
+  "penguin-01-standing-color.png": "d185df3bfe3a2a570c02120539d3fd288c1a9eea0b1af0b2e90ff8d5978ee464",
+  "penguin-01-standing-color-guide.png": "e19d2a33a02fd501a6f09138ee0ebcc0d93c239b3ce3cb9ff64d75e2400abb19"
+ }
 }

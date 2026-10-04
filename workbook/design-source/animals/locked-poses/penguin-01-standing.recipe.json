@@ -128,5 +128,9 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 61,
- "source": "design-source/animals/drafts/penguin-candidate-61.png"
+ "source": "design-source/animals/drafts/penguin-candidate-61.png",
+ "files": {
+  "penguin-01-standing.png": "6d99bf3d55f34179448ea639e5afbf8e2cf0a5bdfb5ccb31f185893d8ef1e5e0",
+  "penguin-01-standing.svg": "e6ba16c4fb4c85b128fb2a205757800742d3061a7b46c1604ec6bd5c43740f14"
+ }
 }

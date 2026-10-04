@@ -174,5 +174,10 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 72,
- "source": "design-source/animals/drafts/bunny-color-candidate-72.png"
+ "source": "design-source/animals/drafts/bunny-color-candidate-72.png",
+ "recipe_version": "v1",
+ "files": {
+  "bunny-01-sitting-color.png": "faadb72ea1a0109825bed6e67238b9f111468d2ff4f9cfdc45245fbf7d118dc6",
+  "bunny-01-sitting-color-guide.png": "015a4d1c823053223427b690b394417f97bfa6df16b67abce701146130319b5a"
+ }
 }

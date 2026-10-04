@@ -21,6 +21,10 @@ WORKBOOK = Path(__file__).resolve().parents[1]
 TOOL = WORKBOOK / "tools/illustration-recipe.py"
 LOCKED = "design-source/animals/locked-poses"
 DRAFTS = "design-source/animals/drafts"
+BASELINE = "design-source/legacy-locked-assets.json"
+NEUTRAL = "boss-kennedi/locked-poses/01-neutral.png"     # legacy, rebuilt by a documented process
+DOG = "animals/locked-poses/dog-01-sitting.png"          # legacy, rebuilt by `reproduce`
+HOUSE = "objects/locked/house.png"
 results = []
 
 
@@ -30,9 +34,9 @@ def check(label, ok, detail=""):
 
 
 def workbook_copy(root):
-    """A workbook holding one line-art lock, its color lock, their drafts and the tools the commands use."""
+    """A workbook holding one line-art lock, its color lock, their drafts, three legacy assets and the tools."""
     for sub in (LOCKED, DRAFTS, "design-source/objects/locked", "design-source/objects/drafts",
-                "design-source/boss-kennedi/locked-poses", "tools"):
+                "design-source/boss-kennedi/locked-poses", "tools", "docs/art"):
         (root / sub).mkdir(parents=True)
     for tool in ("vectorize-line-art.sh", "comfy-generate.py"):
         shutil.copy(WORKBOOK / "tools" / tool, root / "tools")
@@ -40,19 +44,21 @@ def workbook_copy(root):
         shutil.copy(f, root / LOCKED)
     for f in (WORKBOOK / DRAFTS).glob("bunny-*"):
         shutil.copy(f, root / DRAFTS)
-    shutil.copy(WORKBOOK / "design-source/boss-kennedi/locked-poses/01-neutral.png",
-                root / "design-source/boss-kennedi/locked-poses")
-    # selftest checks the two templates against the dog and the house, locked before recipes existed.
-    shutil.copy(WORKBOOK / f"{LOCKED}/dog-01-sitting.png", root / LOCKED)
-    shutil.copy(WORKBOOK / "design-source/objects/locked/house.png", root / "design-source/objects/locked")
-    (root / "design-source/legacy-locked-assets.json").write_text(json.dumps(
-        ["boss-kennedi/locked-poses/01-neutral.png", "animals/locked-poses/dog-01-sitting.png",
-         "objects/locked/house.png"]))
+    # selftest checks the two templates against the dog and the house, locked before recipes existed. The
+    # legacy entries come from the real baseline, so their recorded bytes are the real ones.
+    real = json.loads((WORKBOOK / BASELINE).read_text())
+    baseline = {key: real[key] for key in (NEUTRAL, DOG, HOUSE)}
+    for key, entry in baseline.items():
+        for name in entry["files"]:
+            shutil.copy(WORKBOOK / "design-source" / key.rsplit("/", 1)[0] / name,
+                        root / "design-source" / key.rsplit("/", 1)[0])
+    shutil.copy(WORKBOOK / "docs/art/asset-provenance.md", root / "docs/art")
+    (root / BASELINE).write_text(json.dumps(baseline))
     return root
 
 
 def run(root, *args):
-    done = subprocess.run([sys.executable, str(TOOL), "--workbook", str(root), *map(str, args)],
+    done = subprocess.run([sys.executable, "-B", str(TOOL), "--workbook", str(root), *map(str, args)],
                           capture_output=True, text=True)
     return done.returncode, done.stdout + done.stderr
 
@@ -61,15 +67,29 @@ def state(root):
     return {p.name: p.read_bytes() for p in (root / LOCKED).iterdir() if p.is_file()}
 
 
+def line(out, start):
+    """The selftest line about one file, so a check can't pass on a message about another."""
+    return next((text for text in out.splitlines() if text.startswith(start)), "")
+
+
+def text_node(graph):
+    return next(n["inputs"] for n in graph.values() if n["class_type"] == "CLIPTextEncode" and n["inputs"]["text"])
+
+
 def reprompt(png, prompt):
     """Rewrite a candidate's embedded prompt, the way an edited recipe would have rendered it."""
     image = Image.open(png)
     graph = json.loads(image.info["prompt"])
-    node = next(n for n in graph.values() if n["class_type"] == "CLIPTextEncode" and n["inputs"]["text"])
-    node["inputs"]["text"] = prompt
+    text_node(graph)["text"] = prompt
     meta = PngInfo()
     meta.add_text("prompt", json.dumps(graph))
     image.save(png, pnginfo=meta)
+
+
+def drop_color_lock(root):
+    """Remove the color lock, so a case about line art is not refused by the dependency rule first."""
+    for f in (root / LOCKED).glob("bunny-01-sitting-color*"):
+        f.unlink()
 
 
 def case_names_that_build_paths(root):
@@ -86,18 +106,13 @@ def case_names_that_build_paths(root):
     check("candidates with a path in the name is refused", code and "must be lowercase" in out, out.strip())
 
 
-def drop_color_lock(root):
-    """Remove the color lock, so a case about line art is not refused by the dependency rule first."""
-    for f in (root / LOCKED).glob("bunny-01-sitting-color*"):
-        f.unlink()
-
-
 def case_pose_punctuation(root):
     """The lock name takes a word from the pose, which is free text."""
     recipe = root / DRAFTS / "bunny-recipe.json"
     manifest = json.loads(recipe.read_text())
     manifest["fields"]["pose"] = "sitting, large and filling most of the frame"
     manifest["prompt"] = manifest["template"].format(**manifest["fields"])
+    text_node(manifest["graph"])["text"] = manifest["prompt"]
     recipe.write_text(json.dumps(manifest))
     reprompt(root / DRAFTS / "bunny-candidate-72.png", manifest["prompt"])
     drop_color_lock(root)
@@ -112,6 +127,25 @@ def case_dependent_color_lock(root):
     code, out = run(root, "lock", "animal", "bunny", "--seed", "61", "--force")
     check("replacing line art a color lock depends on is refused",
           code and "is the source of" in out and "bunny-01-sitting-color.recipe.json" in out, out.strip())
+
+
+def case_lock_replaces_only_its_own_lock(root):
+    """A lock may replace the lock of its own kind at its name, and no other file in a locked folder."""
+    before = state(root)
+    for args, what in [
+        (["--seed", "72", "--color", "--locked-name", "bunny-01-sitting"], "a color lock over the line-art lock"),
+        (["--seed", "61", "--locked-name", "bunny-01-sitting-color"], "a line-art lock over the color lock"),
+        (["--seed", "61", "--locked-name", "bunny-01-sitting-color-guide"], "a line-art lock over a color guide"),
+        (["--seed", "61", "--locked-name", "dog-01-sitting"], "a line-art lock over legacy art"),
+        (["--seed", "72", "--color", "--locked-name", "dog-01-sitting"], "a color lock over legacy art"),
+    ]:
+        code, out = run(root, "lock", "animal", "bunny", *args, "--force")
+        check(f"{what} is refused, even with --force", code and "belongs to" in out, out.strip())
+    check("those refusals changed nothing", state(root) == before)
+    code, out = run(root, "lock", "animal", "bunny", "--seed", "72", "--color", "--force")
+    check("a color lock still replaces the color lock at its own name", not code, out.strip())
+    code, out = run(root, "selftest")
+    check("and the replacement checks out", not code, out.strip()[-200:])
 
 
 def case_failed_vectorizer(root):
@@ -137,6 +171,109 @@ def case_candidate_is_not_its_recipe(root):
     check("that refusal changed nothing", state(root) == before)
 
 
+def case_swapped_svg(root):
+    """Print uses the SVG, so it must be the one its lock wrote, not merely a file with its name."""
+    shutil.copy(WORKBOOK / LOCKED / "bear-01-sitting.svg", root / LOCKED / "bunny-01-sitting.svg")
+    code, out = run(root, "selftest")
+    check("a lock whose SVG is another character's fails selftest",
+          code and "bunny-01-sitting.svg has changed since it was recorded"
+          in line(out, "FAIL recipe   animals/locked-poses/bunny-01-sitting.recipe.json"), out.strip()[-200:])
+
+
+def case_recorded_render_settings(root):
+    """Every value a recipe records must be the one its render used, or one the tool adds."""
+    for name, key, value, expect in [
+        ("bunny-01-sitting", "size", 512, "recorded size"), ("bunny-01-sitting", "steps", 20, "recorded steps"),
+        ("bunny-01-sitting-color", "strength", 0.5, "recorded strength"),
+        ("bunny-01-sitting-color", "end_percent", 0.9, "recorded end_percent"),
+        ("bunny-01-sitting-color", "controlnet", "another-controlnet.safetensors", "recorded controlnet"),
+        ("bunny-01-sitting", "guidance", 2.0, "records guidance, which the tool does not"),
+        # The bunny's guide is v1's blurred one; v2 would rebuild it unblurred, so its pixels can't match.
+        ("bunny-01-sitting-color", "recipe_version", "v2", "recipe v2 no longer rebuilds its guide"),
+    ]:
+        recipe = root / LOCKED / f"{name}.recipe.json"
+        original = recipe.read_text()
+        manifest = json.loads(original)
+        manifest[key] = value
+        recipe.write_text(json.dumps(manifest))
+        code, out = run(root, "selftest")
+        check(f"{name} recording {key}={value} fails selftest",
+              code and expect in line(out, f"FAIL recipe   animals/locked-poses/{name}.recipe.json"),
+              out.strip()[-200:])
+        recipe.write_text(original)
+    recipe = root / LOCKED / "bunny-01-sitting-color.recipe.json"
+    original = recipe.read_text()
+    manifest = json.loads(original)
+    del manifest["source_line_art"]
+    recipe.write_text(json.dumps(manifest))
+    code, out = run(root, "selftest")
+    check("a color recipe that stops recording its source line art fails selftest",
+          code and "does not record source_line_art"
+          in line(out, "FAIL recipe   animals/locked-poses/bunny-01-sitting-color.recipe.json"), out.strip()[-200:])
+    recipe.write_text(original)
+    code, out = run(root, "selftest")
+    check("restored, every recipe passes again", not code, out.strip()[-200:])
+
+
+def case_legacy_records(root):
+    """Art the tool didn't render is checked against the bytes and the rebuild route recorded for it."""
+    baseline_path = root / BASELINE
+    original = baseline_path.read_text()
+    neutral = root / "design-source" / NEUTRAL
+    kept = neutral.read_bytes()
+    image = Image.open(neutral).convert("RGB")
+    image.putpixel((0, 0), (1, 2, 3))
+    image.save(neutral)
+    code, out = run(root, "selftest")
+    check("rewritten legacy art fails selftest",
+          code and "01-neutral.png has changed since it was recorded" in line(out, f"FAIL legacy   {NEUTRAL}"),
+          out.strip()[-200:])
+    neutral.write_bytes(kept)
+
+    outside = root.parent / "outside-record.md"
+    outside.write_text("not part of the workbook")
+    for change, label, expect in [
+        (lambda e: e[NEUTRAL].update(rebuild="reproduce") or e[NEUTRAL].pop("record"),
+         "graphless art recorded as rebuilt by reproduce", "reproduce refuses it: it has no embedded graph"),
+        (lambda e: e[NEUTRAL].update(record="docs/art/no-such-record.md"),
+         "a documented rebuild whose record is missing", "is not a file in the workbook"),
+        (lambda e: e[NEUTRAL].update(record="../outside-record.md"),
+         "a documented rebuild whose record is outside the workbook", "is not a file in the workbook"),
+        (lambda e: e[NEUTRAL].update(rebuild="by hand"),
+         "a rebuild route the tool doesn't know", "must be 'reproduce' or 'documented'"),
+        (lambda e: e[DOG].update(rebuild="reproduce", record="docs/art/asset-provenance.md"),
+         "a record on a reproduce entry", "record applies only to rebuild: documented"),
+    ]:
+        entries = json.loads(original)
+        change(entries)
+        baseline_path.write_text(json.dumps(entries))
+        code, out = run(root, "selftest")
+        check(f"{label} fails selftest", code and expect in out, out.strip()[-200:])
+        baseline_path.write_text(original)
+
+    entries = json.loads(original)
+    entries[DOG]["files"]["bunny-01-sitting.png"] = entries[DOG]["files"]["dog-01-sitting.png"]
+    baseline_path.write_text(json.dumps(entries))
+    code, out = run(root, "selftest")
+    check("a file claimed by a lock and a legacy entry fails selftest",
+          code and "claimed by" in line(out, "FAIL locked   animals/locked-poses/bunny-01-sitting.png"),
+          out.strip()[-200:])
+    baseline_path.write_text(json.dumps(list(json.loads(original))))
+    code, out = run(root, "selftest")
+    check("a baseline in the old list form fails selftest", code and "not an object keyed by PNG path" in out,
+          out.strip()[-200:])
+    baseline_path.write_text(original)
+
+    (root / LOCKED / "stray.svg").write_text("<svg/>")
+    code, out = run(root, "selftest")
+    check("a file no recipe or legacy entry owns fails selftest",
+          code and "no recipe or legacy entry owns it" in line(out, "FAIL locked   animals/locked-poses/stray.svg"),
+          out.strip()[-200:])
+    (root / LOCKED / "stray.svg").unlink()
+    code, out = run(root, "selftest")
+    check("restored, selftest passes again", not code, out.strip()[-200:])
+
+
 def case_reproduce_outputs(root):
     """reproduce must not write into a locked folder, over its source, or without the guide it needs."""
     source = root / LOCKED / "bunny-01-sitting.png"
@@ -154,6 +291,9 @@ def case_reproduce_outputs(root):
     (loose / "alias.png").symlink_to(copy)
     code, out = run(root, "reproduce", str(copy), "--out", str(loose / "alias.png"))
     check("reproduce --out onto a symlink to its source is refused", code and "is an input" in out, out.strip())
+    code, out = run(root, "reproduce", root / "design-source" / NEUTRAL, "--out", loose / "neutral.png")
+    check("reproduce of a PNG with no embedded graph exits with the reason",
+          code and "no embedded graph" in out and "Traceback" not in out, out.strip()[-200:])
 
 
 def case_selftest_accounts_for_everything(root):
@@ -163,13 +303,13 @@ def case_selftest_accounts_for_everything(root):
     (root / LOCKED / "bunny-01-sitting-color.recipe.json").rename(root / "kept.json")
     code, out = run(root, "selftest")
     check("a lock whose recipe is deleted fails selftest",
-          code and "bunny-01-sitting-color.png" in out and "was its recipe deleted?" in out, out.strip()[-200:])
+          code and "was its recipe deleted?" in line(out, "FAIL locked   animals/locked-poses/bunny-01-sitting-color.png"),
+          out.strip()[-200:])
     (root / "kept.json").rename(root / LOCKED / "bunny-01-sitting-color.recipe.json")
-    (root / "design-source/boss-kennedi/locked-poses/01-neutral.png").unlink()
+    (root / "design-source" / NEUTRAL).unlink()
     code, out = run(root, "selftest")
-    check("a baselined asset that is gone fails selftest", code and "not on disk" in out, out.strip()[-200:])
-    shutil.copy(WORKBOOK / "design-source/boss-kennedi/locked-poses/01-neutral.png",
-                root / "design-source/boss-kennedi/locked-poses")
+    check("a legacy asset that is gone fails selftest", code and "not on disk" in out, out.strip()[-200:])
+    shutil.copy(WORKBOOK / "design-source" / NEUTRAL, root / "design-source" / NEUTRAL)
     recipe = root / LOCKED / "bunny-01-sitting.recipe.json"
     manifest = json.loads(recipe.read_text())
     manifest["prompt"] = manifest["prompt"].replace("bunny sitting", "bunny standing")
@@ -179,8 +319,10 @@ def case_selftest_accounts_for_everything(root):
 
 
 def main():
-    cases = [case_names_that_build_paths, case_pose_punctuation, case_dependent_color_lock, case_failed_vectorizer,
-             case_candidate_is_not_its_recipe, case_reproduce_outputs, case_selftest_accounts_for_everything]
+    cases = [case_names_that_build_paths, case_pose_punctuation, case_dependent_color_lock,
+             case_lock_replaces_only_its_own_lock, case_failed_vectorizer, case_candidate_is_not_its_recipe,
+             case_swapped_svg, case_recorded_render_settings, case_legacy_records, case_reproduce_outputs,
+             case_selftest_accounts_for_everything]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="recipe-test-") as tmp:

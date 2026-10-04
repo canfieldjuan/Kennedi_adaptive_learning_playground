@@ -174,5 +174,10 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 94,
- "source": "design-source/animals/drafts/turtle-color-candidate-94.png"
+ "source": "design-source/animals/drafts/turtle-color-candidate-94.png",
+ "recipe_version": "v1",
+ "files": {
+  "turtle-01-walking-color.png": "dfbba34659225139261d00660fce932f636fd8689d49f70addbedcffcb8aed44",
+  "turtle-01-walking-color-guide.png": "29263d0fb51f81aa06e4d928583dbcec5768e2e2eea07270f574bd24aefeb1c0"
+ }
 }

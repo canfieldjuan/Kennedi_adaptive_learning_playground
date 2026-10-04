@@ -175,5 +175,9 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 94,
- "source": "design-source/animals/drafts/fox-color-candidate-94.png"
+ "source": "design-source/animals/drafts/fox-color-candidate-94.png",
+ "files": {
+  "fox-01-sitting-color.png": "798ef9cbcd4ac8ea3074d25fa128dfe805883d871826cb0d94ede24f032760e7",
+  "fox-01-sitting-color-guide.png": "0fe733e9cf005154d9f334cbb7bb7e47b2d0243795e4aabf485d1439107dd044"
+ }
 }

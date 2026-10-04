@@ -128,5 +128,9 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 72,
- "source": "design-source/animals/drafts/bunny-candidate-72.png"
+ "source": "design-source/animals/drafts/bunny-candidate-72.png",
+ "files": {
+  "bunny-01-sitting.png": "fd96cbbc3d80ab2ded6b8abe04b6c3ed8ae05649bf9e3539c9e2af8446fea382",
+  "bunny-01-sitting.svg": "f02a8ecc1d2da63f3f502b62a5b78d60ad4fd5fab69ad312ec6f7927876baf48"
+ }
 }

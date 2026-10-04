@@ -36,16 +36,21 @@ characters today; each item says what it would fix.
   ComfyUI version (0.25.0), not file hashes. Bit-exact reproduction was verified
   on this machine; recording sizes/hashes would make a mismatch detectable
   elsewhere. A ComfyUI upgrade may also change output.
-- **Backfill recipes for the older locked art.** `selftest` checks every asset
-  that has a `.recipe.json`. 39 locked PNGs were made before the tool, so they
-  are only counted: the puppy poses, the dog, the letter animals, the
-  objects and Boss Kennedi. Writing a recipe for each (prompt, seed, graph)
-  would bring them under `selftest` too.
-  - Plain renders can be reproduced today from the graph in the PNG.
-  - Guided ones cannot, until their recipe names the reference image they
-    were rendered from: puppy poses 02-04 (reference `01-sitting.png`) and
-    7 of the 8 Boss Kennedi poses. `reproduce` refuses them rather than
-    rendering with whatever file the server happens to hold.
+- **Backfill recipes for the older locked art.** `selftest` rebuilds every
+  asset that has a `.recipe.json`. The 47 locked PNGs the tool didn't render
+  are entries in `design-source/legacy-locked-assets.json`: the puppy poses,
+  the dog, the letter animals, the objects and Boss Kennedi. Each entry records
+  the SHA-256 of its PNG and SVG and how it is rebuilt, and `selftest` checks
+  both, but not that a re-render matches. Writing a recipe for each (prompt,
+  seed, graph) would bring that under `selftest` too.
+  - `rebuild: reproduce` (36): plain renders. `reproduce` re-renders them
+    from the graph in the PNG.
+  - `rebuild: documented` (11), recorded in `docs/art/asset-provenance.md`:
+    - puppy poses 02-04, Redux renders whose reference image is not in the
+      repo. `reproduce` refuses them rather than rendering with whatever file
+      the server happens to hold.
+    - all 8 Boss Kennedi poses, composited by the face and hair lock (#141),
+      which left no embedded graph.
 - **More poses of one character.** `lock` names assets `<name>-01-<pose>`. A
   second pose needs `-02-`, and should come from FLUX Redux on the locked image
   (same-subject only), not a new text prompt.

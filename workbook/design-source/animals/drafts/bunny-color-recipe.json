@@ -1,6 +1,7 @@
 {
  "kind": "animal-color",
  "name": "bunny",
+ "recipe_version": "v1",
  "template": "Full color flat children's book illustration, warm soft palette, gentle shading and soft shadows, a single cute cartoon {subject} {pose}, {colors}, big round expressive dark eyes, happy smile, clean bold outlines, charming storybook illustration style, pure white background, centered composition, no text",
  "fields": {
   "subject": "bunny",

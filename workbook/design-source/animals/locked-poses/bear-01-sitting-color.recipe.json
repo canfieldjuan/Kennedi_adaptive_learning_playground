@@ -174,5 +174,10 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 94,
- "source": "design-source/animals/drafts/bear-color-candidate-94.png"
+ "source": "design-source/animals/drafts/bear-color-candidate-94.png",
+ "recipe_version": "v1",
+ "files": {
+  "bear-01-sitting-color.png": "26f87103d7d4943b07f21847036ebd3b5697859bbf792121513e1a30ab7c6237",
+  "bear-01-sitting-color-guide.png": "ba030335abaa194f9b59e8ac9611b3937290b09595c9debe6ceec07226b9d64d"
+ }
 }

@@ -128,5 +128,9 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 94,
- "source": "design-source/animals/drafts/fox-candidate-94.png"
+ "source": "design-source/animals/drafts/fox-candidate-94.png",
+ "files": {
+  "fox-01-sitting.png": "737495194a4476076d1506b2140e8d7e9845fb1e2163791fda74f2054394e61b",
+  "fox-01-sitting.svg": "257345100e4f84a2a0c28465f09fbef3078b2d2f51ebac14c44019eb29b47ad0"
+ }
 }

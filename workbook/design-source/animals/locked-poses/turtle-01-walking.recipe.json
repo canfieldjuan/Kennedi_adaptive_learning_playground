@@ -128,5 +128,9 @@
  },
  "comfyui_version": "0.25.0",
  "chosen_seed": 94,
- "source": "design-source/animals/drafts/turtle-candidate-94.png"
+ "source": "design-source/animals/drafts/turtle-candidate-94.png",
+ "files": {
+  "turtle-01-walking.png": "520fe4835d76d567a32cee56e657581d0bc1ae51d33eb6825be4b56753eba197",
+  "turtle-01-walking.svg": "b77c7d5caebad1ab13eed30e87c07e23c9d985121c5605822e48354eff9ecbae"
+ }
 }
