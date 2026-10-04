@@ -629,3 +629,81 @@ Union-Pro 2.0.
   - Not covered here: the guided pre-tool assets still cannot be
     reproduced. That needs `backfill --guide`, which is on the follow-up
     branch; the refinements doc no longer claims otherwise.
+- **PR #138 review round 4.**
+  - Reproduced first, against a copy of the workbook and the unfixed tool:
+    - `lock --color --locked-name bunny-01-sitting --force` exited 0 and
+      overwrote the line-art PNG;
+    - a swapped SVG, a recipe recording `size: 512`, one recording
+      `strength: 0.5`, and a rewritten legacy PNG each left `selftest` at
+      exit 0;
+    - `reproduce` on a graphless Kennedi pose raised `KeyError: 'prompt'`.
+  - `tools/test-illustration-recipe.py`: 51 of 51 checks pass, on Python
+    3.13 with Pillow 11.3 and on Python 3.12 with Pillow 10.2, the runner's
+    apt stack. Against the unfixed tool, 25 fail. The 26 that pass there
+    are the earlier checks, the should-still-work checks (a same-kind
+    re-lock, restored copies), and the `recipe_version` flip, which its byte
+    comparison already caught.
+  - Real workbook: `selftest` exits 0. All ten recipes rebuild key for key,
+    and the 47 legacy entries pass on bytes and rebuild route.
+  - Data:
+    - All 52 locked SVGs were re-vectorized from their PNGs and matched
+      byte for byte before their digests were recorded.
+    - `reproduce`'s own check put exactly 11 legacy assets on
+      `documented`: puppy 02-04 and the eight Kennedi poses.
+    - No PNG or SVG changed.
+  - Not run here: the workbook gate itself, which runs on push.
+
+### Round 4 Change By Change Reconstruction
+
+`illustration-recipe.py`:
+- `COLOR_RECIPES`: each version holds its guide blur, ControlNet, strength
+  and end. The values are unchanged, and the separate constants are gone.
+- `ADDED_KEYS`: the keys a recipe gains outside the constructor.
+- `recipe_graph()`: the render graph built from a recipe alone. It replaces
+  `color_graph()`, and calls `build_graph()` for line art.
+- `draft_manifest()`, `recipe_inputs()`, `guide_recipe()` and
+  `color_guide_name()`: the recipe constructor, and the inputs it rebuilds
+  from. `recipe_inputs()` refuses an unknown kind, fields that are not
+  exactly the template's placeholders, and an unknown recipe version.
+- `cmd_candidates()` and `cmd_colorize()` write `draft_manifest()`'s result
+  and render with `recipe_graph()`.
+- `cmd_lock()`:
+  - refuses any target that is not absent or owned by the same-kind lock at
+    its name;
+  - records `files` with the SHA-256 of each staged file before writing the
+    recipe.
+- `reproduce_inputs()`: `reproduce`'s refusal rules as a function, including
+  a PNG with no embedded graph. `cmd_reproduce()` calls it.
+- `embedded_problems()`:
+  - rebuilds the recipe and compares every key: one not recorded, one that
+    differs, and one the tool does not record each fail;
+  - then compares the embedded graph with the rebuilt recipe's graph at the
+    seed.
+- `file_problems()`: the files a manifest records against the files it
+  should own and their bytes.
+- `check_locked()`: the files, the chosen seed, `embedded_problems()`, and
+  the guide derivation, which now compares pixels.
+- `legacy_entries()`, `legacy_problems()`, `locked_owners()` and
+  `owner_label()`: the baseline object, each entry's files and rebuild
+  route, and the owner map that `selftest` and `lock` share. They replace
+  `account_locked_pngs()`.
+- `cmd_selftest()`: the template checks report a graphless PNG, every
+  legacy entry is checked, and every file in a locked folder needs exactly
+  one owner.
+
+Other files:
+- `.github/workflows/workbook-quality.yml`: installs `python3-numpy`,
+  `python3-pil`, `potrace` and ImageMagick, then runs `selftest` and the
+  tests.
+- `legacy-locked-assets.json`: the list becomes an object with `files`,
+  `rebuild` and, for documented entries, `record`.
+- The ten lock recipes gain `files`. The bunny, bear and turtle color locks
+  and their drafts gain `recipe_version: v1`.
+- `test-illustration-recipe.py`: the copy carries the real baseline entries,
+  their files and the provenance record. It adds cases for each round-4
+  finding, with both sides of each guard.
+- `illustration-recipe-refinements.md`: the backfill item, corrected.
+
+Round 4 traceability: every change above traces to the round-4 amendment
+(A, B, C, D, and "Found while wiring the gate"). The merge from main brought
+#139 and #141 unchanged.
