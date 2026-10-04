@@ -12,7 +12,9 @@ const OBJECTS_LOCKED = path.join(WORKBOOK, 'design-source/objects/locked');
 // composed together), replacing the old 3-SVG bossKennedi/puppy/bird/cat
 // composition. Embedded as a base64 data: URI (not a raw filesystem path)
 // so the generated HTML still opens standalone via file:// on any machine.
-const heroScene = inlineImageFile(path.join(WORKBOOK, 'design-source/scenes/cover-concept-c-final.png'));
+// The golden version is the FLUX render with Kennedi's skin recolored to her approved palette by
+// tools/recolor-kennedi-skin.py (design-source/boss-kennedi/palette.json); only her skin and blush differ.
+const heroScene = inlineImageFile(path.join(WORKBOOK, 'design-source/scenes/cover-concept-c-golden.png'));
 
 // Locked, textured FLUX-generated assets (Art Direction v2 continued,
 // 2026-09-13), replacing the old hand-coded icons.mjs primitives -- see

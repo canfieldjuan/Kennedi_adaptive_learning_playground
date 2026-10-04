@@ -194,7 +194,9 @@ simplistic faces, stiff poses, flat silhouettes, no depth. Reference: PR
 
 - **Mode A (color hero art)** -- cover, certificates, any large/promotional
   use. Full color, gentle shading/soft shadows OK. Source: FLUX.1-dev raster
-  PNG, used as-is (no vectorization needed -- richness is the point).
+  PNG, not vectorized (richness is the point). A committed, deterministic
+  recolor may adjust it, and the result is what's used: Kennedi's skin on the
+  cover goes through `workbook/tools/recolor-kennedi-skin.py`.
 - **Mode B (print interior art)** -- everything on a learning page. Must
   stay home-printer-safe: bold black outlines, white background, no color,
   selective mid-gray/hatching only where it earns its ink. Source:
@@ -219,6 +221,17 @@ simplistic faces, stiff poses, flat silhouettes, no depth. Reference: PR
    See asset-provenance.md's "Tooling note."
 
 ### Canonical character: Boss Kennedi
+
+**Skin (owner, 2026-10-04): Kennedi is light golden brown.**
+- The palette is `design-source/boss-kennedi/palette.json`:
+  - skin `#D9A774`;
+  - shading in the same hue, only darker, with no salmon or red cast;
+  - a faint blush: rose `#D68468` at 35%, soft-edged.
+- It applies wherever she appears in color (Mode A).
+- Color prompts carry the `<SKIN>` term (`docs/art/asset-provenance.md`).
+  Line-art (Mode B) prompts don't, since her skin there is an uncolored
+  outline for the child to color.
+- The cover was recolored to this palette; see Mode A above.
 
 Four concept directions were generated and compared (contact sheet:
 `docs/art/concept-contact-sheet.png`):

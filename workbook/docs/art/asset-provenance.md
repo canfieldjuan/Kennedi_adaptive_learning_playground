@@ -128,8 +128,23 @@ Redux (single generation, no cross-pose consistency needed for one hero
 image). The previous-slice cover had an unreported stray glyph (looked like
 "Y") inside the badge, found during this slice's verification pass and fixed
 by regenerating with explicit "plain round badge, simple star only, no
-letters/numbers" language. Seed: new generation, not recorded (accepted on
-first attempt after the badge-language fix).
+letters/numbers" language. Seed `1503776796`, 32 steps. Both are in the
+graph embedded in the PNG; an earlier version of this note said the seed
+wasn't recorded. Accepted on first attempt after the badge-language fix.
+
+**Kennedi's skin, recolored (2026-10-04).** No prompt named her skin, so
+this render drew her at the model's default (`#FDC89A`) with bright pink
+cheeks.
+- `cover-concept-c-golden.png` is this file with her skin, its shading and
+  her blush recolored to `design-source/boss-kennedi/palette.json`. It is
+  made by `tools/recolor-kennedi-skin.py
+  design-source/scenes/cover-concept-c-final.recolor.json`.
+- 64,621 pixels change; every other pixel is identical to this file, which
+  stays as the recolor's input.
+- A re-render couldn't do this: naming her skin in the prompt changes the
+  conditioning, and the same seed then draws a different picture.
+- Page 1 uses the golden version, and the workbook gate runs the tool's
+  `--check`.
 
 **Print-size test sheet**: `dist-proof/print-size-test.html` /
 `dist-proof/print-size-test.pdf` / `dist-proof/pdf-raster/size-test-*.png`
@@ -300,6 +315,13 @@ two long smooth wavy pigtails at the sides of her head each tied with a small
 round hair tie; a round chubby face, big round dark eyes with white shine dots
 and long curled eyelashes on the outer corners, thin arched eyebrows, a tiny
 two-stroke nose, four small diagonal blush lines on each cheek.
+`<SKIN>` (color prompts only, never with `<STYLE>`) = light golden-brown skin
+with soft, darker golden-brown shading and a faint rosy-tan blush on the
+cheeks. Added 2026-10-04: Kennedi is golden brown, and no prompt named her
+skin before, so the model drew its default. The exact values live in
+`design-source/boss-kennedi/palette.json` (skin `#D9A774`). Line-art prompts
+stay without it, because skin wording in a no-color prompt risks gray skin
+shading in print art.
 
 **Derived files.** All 8 locked SVGs re-traced with
 `tools/vectorize-line-art.sh`; simplified-tier 02/04/05 re-traced with the

@@ -67,6 +67,11 @@ jobs:
       - name: Re-run the recipe tool's reproduced failures
         run: python3 -B tools/test-illustration-recipe.py
 
+      # The cover's Kennedi is recolored to her approved palette; the committed image must stay what the
+      # palette and the cover's recolor spec produce.
+      - name: Check the recolored cover against Kennedi's palette
+        run: python3 -B tools/recolor-kennedi-skin.py design-source/scenes/cover-concept-c-final.recolor.json --check
+
       # Runs build (which doesn't touch dist/pdf/) then verify BEFORE the
       # next step's npm run pdf overwrites the committed PDF -- verify.mjs's
       # existing pdfinfo/pdftotext/sourcehash checks therefore run against
