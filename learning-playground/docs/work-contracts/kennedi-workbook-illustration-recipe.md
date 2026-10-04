@@ -946,3 +946,38 @@ Round 4 traceability: every change above traces to the round-4 amendment
   - `test-illustration-recipe.py`: four new cases and a `source` entry.
     The two older record cases take the new wording, and one now deletes
     the real record.
+
+### Round 7 Verification and Reconstruction
+
+- Reproduced first, as test cases run against `e1044c7`. All six failed:
+  - with the test holding the lock, `candidates` landed all four
+    candidates anyway, file by file;
+  - `candidates animal bunny-color` was accepted;
+  - `lock --color` over a line-art draft recipe raised `KeyError`;
+  - `reproduce --out` onto `bunny-candidate-61.png` was accepted;
+  - a line-art lock re-rendered missing line art under its dependent color
+    lock and changed the lock folder.
+- After the fix: 88 of 88 checks pass, on Python 3.13 with Pillow 11.3 and
+  on Python 3.12 with Pillow 10.2. Against `e1044c7`, exactly those six
+  fail.
+  - The new end-to-end case also passes against `e1044c7`, so the fake
+    ComfyUI matches what the tool already expected:
+    `candidates -> lock -> colorize -> lock --color -> reproduce` (0.000%
+    differing) `-> selftest`.
+- Real workbook: `selftest` exits 0, with 12 OK and no failures.
+- Change by change:
+  - `art_lock()`: re-entrant within a process (`_ART_LOCK_HELD`); refuses
+    to upgrade shared to exclusive.
+  - `Outputs.staging()`: renames under `art_lock(exclusive)` when the
+    folder is in `design-source`.
+  - `asset_name()`: `safe_name()` plus the reserved `-color` suffix.
+  - `cmd_candidates()` and `cmd_colorize()`: one staging folder for the
+    whole set; the guide uploads from its staged bytes.
+  - `cmd_lock()` and `lock_drafted()`: the whole run under the exclusive
+    lock; the draft recipe's kind must match the mode; dependents are
+    checked by path whatever the PNG's state; the loop variable no longer
+    shadows the name.
+  - `cmd_reproduce()`: inside `design-source`, the output must be
+    `.reproduced.png`, checked after `Outputs`.
+  - `test-illustration-recipe.py`: `FakeComfy`, and four cases: end to
+    end, whole draft set, one namespace, dependents of missing line art.
