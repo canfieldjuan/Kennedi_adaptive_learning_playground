@@ -10,6 +10,72 @@ Book 1 (`src/content/book-1.mjs`) currently has 6 pages. The `src/components/`
 and `src/illustrations/` libraries are the reusable design system for every
 future page/book in the series.
 
+## Illustrated alphabet practice: separate uppercase/lowercase rows
+
+The new row-format workbook follows A, a, B, b through Z, z. It has two
+letters per US Letter sheet (13 sheets), a solid manuscript model followed
+by five dotted-stroke copies and a blank try space on each row. Capital
+guides are 0.75in high; descenders have their own space below the baseline.
+The existing animal line-art SVGs provide small picture cues, not quizzes.
+These are letter-name/handwriting cues, not phonics instruction: for example
+X-ray fish illustrates the letter X, not an initial /ks/ sound lesson.
+
+From this directory, after `npm ci`:
+
+```bash
+npm run alphabet:all       # build + PDF + screenshots + PDF rasters + verify
+npm run alphabet:test      # targeted source tests
+```
+
+For individual steps:
+
+```bash
+npm run alphabet:build
+npm run alphabet:pdf
+npm run alphabet:screenshots
+npm run alphabet:rasterize
+npm run alphabet:verify
+```
+
+Open `dist-alphabet/preview.html` directly in a browser. The combined PDF is
+`dist-alphabet/pdf/kennedi-alphabet-practice-a-z.pdf`. Standalone HTML and
+PDF pages live in `dist-alphabet/pages/` and `dist-alphabet/pdf/pages/`.
+`pdf-raster/` contains actual 150-DPI PDF images; `contact-sheet.png` is the
+whole-set overview. Print at **actual size / 100%** on US Letter paper.
+The 0.5in safe margins are built into the layout.
+
+To put all outputs somewhere durable outside a disposable checkout:
+
+```bash
+npm run alphabet:all -- --out /absolute/path/to/alphabet-output
+npm run alphabet:verify -- --out /absolute/path/to/alphabet-output
+```
+
+Code and editable content:
+
+- `src/content/alphabet-practice.mjs`: ordered A-Z cue words and SVG paths.
+- `src/components/manuscript-glyphs.mjs`: shared letter strokes and guides.
+- `src/components/alphabet-practice.mjs`: row and page composition.
+- `src/styles/alphabet-practice.css`: styles scoped to this format only.
+- `scripts/alphabet.mjs`: exports and verification using the existing
+  self-contained document renderer, Chrome/Playwright and Poppler.
+
+Change a cue/asset in the content catalog, then regenerate. The build crops
+empty SVG canvas with measured bounds and padding; it never edits the art
+itself. Artwork paths and source SHA256 hashes are recorded in the manifest.
+No color-candidate drafts are consumed. The layout/art pairing awaits owner
+visual review; reuse does not newly approve any artwork family.
+
+Verification checks exact A-Z/a-z order, four rows per sheet, five trace
+copies, blank try cells, actual glyph bounds and lowercase guide alignment,
+0.75in cap guides, safe margins, horizontal/vertical overflow, browser
+errors, PDF count/dimensions (including individual PDFs), current artwork,
+and current code/content/styles versus generated HTML and PDF hashes.
+It requires the screenshots and raster stages first. Browser screenshots
+are supplementary; inspect the actual PDF rasters before approving prints.
+
+This format leaves Book 1, Book 2 and all source illustrations unchanged.
+
 ## How it works
 
 - **`src/illustrations/`** — SVG primitives, bold black-outline-on-white, no
