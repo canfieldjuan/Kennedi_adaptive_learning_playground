@@ -40,7 +40,7 @@
     "workbook:verify": "node scripts/workbook.mjs verify",
     "workbook:validate": "node scripts/workbook.mjs validate",
     "workbook:catalog": "node scripts/workbook.mjs catalog",
-    "workbook:test": "node --test tests/recipes.test.mjs tests/counting-practice.test.mjs tests/alphabet-practice.test.mjs"
+    "workbook:test": "node --test tests/recipes.test.mjs tests/counting-practice.test.mjs tests/alphabet-practice.test.mjs tests/publication-assets.test.mjs"
   },
   "devDependencies": {
     "fontkit": "^2.0.4",

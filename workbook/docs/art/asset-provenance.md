@@ -4,13 +4,68 @@ Tracks every AI-generated or AI-assisted illustration asset in `workbook/`.
 Companion to `docs/design-system.md`'s Art Direction v2 section. Mirrors the
 convention used by the main app's `learning-playground/docs/art/`.
 
+## 2026-10-04: Main-based workbook dependency import
+
+Only the missing illustrations used by the workbook catalogs were imported
+from the existing tracked alphabet-art/workbook lane at
+`0fefa71296893f42d9e4efd806965d96b37e7204`. Source PNGs and editable SVGs below
+are byte-identical copies, not newly generated or manually modified artwork.
+No color variants, draft candidates, obsolete recipe sidecars or art-tool
+changes were imported. Publication authorization does not imply final visual
+approval of the artwork family or change the original six-page book.
+
+Original source/tool: AI-generated locally by ComfyUI / FLUX.1-dev,
+`flux1-dev-Q8_0.gguf`, `t5xxl_fp8_e4m3fn.safetensors`, `clip_l.safetensors`,
+`ae.safetensors`; 1024 x 1024, 28 steps. Every PNG retains its exact prompt,
+graph and seed. SVGs are existing black/white ImageMagick + potrace exports;
+no new vectorization or Inkscape edits in this slice. Import date: 2026-10-04.
+Original generation date is not inferred from file timestamps.
+
+Source/editor and consumed print assets are
+`design-source/animals/locked-poses/<name>.png` and `<name>.svg`.
+Runtime rendering uses the SVG; generated inline exports go to the selected
+output directory. Main's unchanged legacy accounting records each pair's
+exact SHA256 and embedded-graph `reproduce` route, not a newly managed lock.
+Hashes are in `design-source/legacy-locked-assets.json` and exported manifests.
+
+| Imported source pair | Embedded seed |
+| --- | --- |
+| alligator-01-walking.{png,svg} | 72 |
+| hippo-01-standing.{png,svg} | 72 |
+| iguana-01-standing.{png,svg} | 61 |
+| kangaroo-01-standing.{png,svg} | 94 |
+| monkey-01-sitting.{png,svg} | 94 |
+| narwhal-01-swimming.{png,svg} | 83 |
+| raccoon-01-sitting.{png,svg} | 94 |
+| shark-01-swimming.{png,svg} | 94 |
+| sloth-01-hanging.{png,svg} | 94 |
+| unicorn-01-standing.{png,svg} | 94 |
+| vulture-01-perched.{png,svg} | 94 |
+| xrayfish-01-swimming.{png,svg} | 94 |
+| yak-01-standing.{png,svg} | 72 |
+
+CPU-only record check (does not contact ComfyUI or load GPU models):
+
+```bash
+python3 -B tools/illustration-recipe.py selftest
+```
+
+If a local art runtime is restored later, the retained PNG graph is replayed
+by the existing `reproduce` command; print SVGs can be recreated separately
+with the unchanged `tools/vectorize-line-art.sh` at its 70 percent threshold.
+Neither art re-generation nor exact model-weight reproduction was exercised
+by this publication slice. Approval: draft reuse / owner visual approval
+required. Current-main fixes and every existing asset owner remain intact.
+
 ## 2026-10-04: Separate-row alphabet workbook reuse
 
 The new `src/content/alphabet-practice.mjs` catalog reuses existing tracked
 line-art SVGs under `design-source/animals/locked-poses/` from alligator to
 zebra (queen is the existing Q cue). No images were generated, regenerated,
 recolored, vectorized or manually modified for this workbook slice. Existing
-AI-generation recipes and original provenance remain with the source assets.
+generation graphs and original provenance remain with the source assets;
+the imported pairs above use main's legacy accounting rather than obsolete
+recipe sidecars from the earlier branch.
 The original manuscript letter strokes in `components/manuscript-glyphs.mjs`
 are assistant-authored, AI-assisted deterministic SVG tracing geometry, not
 human-drawn illustrations or new generative character artwork.

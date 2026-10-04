@@ -322,6 +322,10 @@ numbers workbook and all other books remain unchanged.
 Recipes are ordinary UTF-8 JSON data, not code. No model runtime, network,
 ComfyUI or image-generation GPU is needed. Run from this checkout's `workbook/`:
 
+`workbook:test` also checks imported-art records using Python 3 with Pillow
+and NumPy, the existing CPU-only art-check dependencies installed by CI.
+These checks do not contact ComfyUI or load image models.
+
 ```bash
 npm ci
 npm run workbook:test
