@@ -244,8 +244,20 @@ Operator decisions, 2026-10-04:
 
 - The tool's output equals the approved preview's algorithm, run with
   scipy, pixel for pixel (0 differing).
-- 64,621 pixels change, in rows 163-1094 and columns 260-682: Kennedi's
-  area, above the ground row.
+- First version: 64,621 pixels changed, in rows 163-1094 and columns
+  260-682. Row 163 was the pencil tip, which Codex caught in round 2.
+- After the seeds (round 2): 62,895 pixels change, in rows 340-1094 and
+  columns 278-682. Those are her face, ears, neck, arms and legs only.
+  - The 1,726 pixels that no longer change are all back to the original
+    source: pencil 57, collars 126 and 331, crease 72, shirt by the
+    clipboard 1,085, and 55 edge pixels.
+  - Every skin pixel is identical to the approved version.
+- Round 2 refusals: a spec naming itself, the palette or the source as its
+  output; an RGBA source; a seed off gated skin. Each exits 1 and writes
+  nothing.
+- A seed placed on the pencil is accepted, by design. The gates can't tell
+  wood from skin; the seeds are the author's statement of which regions are
+  her.
 - `--check` passes on Python 3.13 with Pillow 11.3 and on Python 3.12 with
   Pillow 10.2. With the palette skin off by one (`#D9A775`) it fails, and
   restored it passes.
