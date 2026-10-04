@@ -5,8 +5,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { createCountingBook, DEFAULT_SEED, describeGroup, isMonotonic, validateSeed } from '../src/content/counting-practice.mjs';
-import { countAndTrace } from '../src/components/count-and-trace.mjs';
+import { createCountingBook, DEFAULT_SEED, describeGroup, isMonotonic, renderPage, validateMode, validateSeed } from '../src/content/counting-practice.mjs';
 import { numberGlyph } from '../src/components/number-glyphs.mjs';
 import { renderDocument } from '../src/render.mjs';
 import { inlineSvgFile, inlineImageFile } from '../src/content/asset-inline.mjs';
@@ -16,18 +15,19 @@ const args = process.argv.slice(2);
 const stage = args.shift() ?? 'all';
 const stages = ['build', 'pdf', 'screenshots', 'rasterize', 'verify', 'all'];
 const options = {};
-const usage = 'Usage: node scripts/counting.mjs [build|pdf|screenshots|rasterize|verify|all] [--out DIRECTORY] [--seed UINT32]';
+const usage = 'Usage: node scripts/counting.mjs [build|pdf|screenshots|rasterize|verify|all] [--out DIRECTORY] [--seed UINT32] [--mode choice|guided]';
 if (!stages.includes(stage)) throw new Error(usage);
 for (let i = 0; i < args.length; i += 2) {
   const flag = args[i], value = args[i + 1];
-  if (!['--out', '--seed'].includes(flag) || !value || value.startsWith('--') || flag in options) throw new Error(usage);
+  if (!['--out', '--seed', '--mode'].includes(flag) || !value || value.startsWith('--') || flag in options) throw new Error(usage);
   options[flag] = value;
 }
 if (options['--seed'] !== undefined && !/^(0|[1-9]\d*)$/.test(options['--seed'])) throw new Error(usage);
 const seed = validateSeed(options['--seed'] === undefined ? DEFAULT_SEED : Number(options['--seed']));
-const { pages, assets } = createCountingBook(seed);
-const out = path.resolve(options['--out'] ?? path.join(root, 'dist-counting'));
-const pdfPath = path.join(out, 'pdf', 'kennedi-mixed-count-and-trace.pdf');
+const mode = validateMode(options['--mode'] ?? 'choice');
+const { pages, assets } = createCountingBook(seed, mode);
+const out = path.resolve(options['--out'] ?? path.join(root, mode === 'choice' ? 'dist-counting-choice' : 'dist-counting'));
+const pdfPath = path.join(out, 'pdf', mode === 'choice' ? 'kennedi-count-circle-and-trace.pdf' : 'kennedi-mixed-count-and-trace.pdf');
 const num = n => String(n).padStart(2, '0');
 const htmlPath = n => path.join(out, 'pages', `page-${num(n)}.html`);
 const singlePdf = n => path.join(out, 'pdf', 'pages', `page-${num(n)}.pdf`);
@@ -70,13 +70,13 @@ async function build() {
       return [assets[index], [b.x - b.width * .06, b.y - b.height * .06, b.width * 1.12, b.height * 1.12].map(n => n.toFixed(2)).join(' ')];
     }));
   });
-  const manifest = { seed, pages: pages.map(page => page.meta),
+  const manifest = { seed, mode, pages: pages.map(page => page.meta),
     artwork: assets.map(asset => ({ path: asset, viewBox: crops[asset], sha256: hash(readFileSync(path.join(root, asset))) })) };
   const rendered = documents(crops);
   rendered.singles.forEach((document, index) => save(htmlPath(index + 1), document));
   save(path.join(out, 'preview.html'), rendered.preview);
   save(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2));
-  console.log(`Built ${pages.length} mixed count-and-trace sheets / ${pages.length * 3} groups / seed ${seed}.`);
+  console.log(`Built ${pages.length} ${mode} count-and-trace sheets / ${pages.reduce((sum, page) => sum + page.meta.groups.length, 0)} groups / seed ${seed}.`);
 }
 async function pdf() {
   await withBrowser(async browser => {
@@ -122,7 +122,7 @@ async function rasterize() {
   images.forEach(file => chmodSync(path.join(directory, file), 0o600));
   const contact = `<!doctype html><html><head><meta charset="utf-8"><title>Count-and-trace PDF overview</title>
     <style>*{box-sizing:border-box}body{margin:0;padding:24px;background:#eee;font:16px sans-serif}h1{margin:0 0 16px;font-size:24px}main{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}figure{margin:0}img{width:100%;display:block}figcaption{padding:8px 0}</style></head><body>
-    <h1>Mixed animal counting / traceable answers / seed ${seed}</h1><main>${images.map((file, index) => `<figure><img src="${inlineImageFile(path.join(directory, file))}"><figcaption>Page ${index + 1}: ${pages[index].meta.groups.map(describeGroup).join(', ')}</figcaption></figure>`).join('')}</main></body></html>`;
+    <h1>Mixed animal counting / ${mode === 'choice' ? 'three traceable choices' : 'traceable answers'} / seed ${seed}</h1><main>${images.map((file, index) => `<figure><img src="${inlineImageFile(path.join(directory, file))}"><figcaption>Page ${index + 1}: ${pages[index].meta.groups.map(describeGroup).join(', ')}</figcaption></figure>`).join('')}</main></body></html>`;
   save(path.join(out, 'contact-sheet.html'), contact);
   await withBrowser(async browser => {
     const page = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
@@ -142,11 +142,17 @@ async function measure(page) {
   return page.evaluate(() => {
     const sheet = document.querySelector('.ct-sheet'), rect = sheet.getBoundingClientRect();
     const groups = [...sheet.querySelectorAll('.ct-group')];
-    const boxes = [...sheet.querySelectorAll('header, footer, .ct-group, .ct-pictures, .ct-picture, .ct-answer')];
+    const boxes = [...sheet.querySelectorAll('header, footer, .ct-group, .ct-pictures, .ct-picture, .ct-answer, .ct-choice')];
     return { title: sheet.querySelector('h1').textContent, width: rect.width, height: rect.height,
       pictures: groups.map(group => group.querySelectorAll('.ct-picture').length),
-      answers: groups.map(group => Number(group.querySelector('.ct-answer-guide').dataset.answer)),
-      tracePaths: groups.map(group => [...group.querySelectorAll('.ct-trace path')].map(p => p.getAttribute('d'))),
+      answers: groups.map(group => [...group.querySelectorAll('.ct-answer-guide')].map(svg => Number(svg.dataset.answer))),
+      tracePaths: groups.map(group => [...group.querySelectorAll('.ct-answer-guide')].map(svg => [...svg.querySelectorAll('.ct-trace path')].map(p => p.getAttribute('d')))),
+      choiceCards: groups.map(group => group.querySelectorAll('.ct-choice').length),
+      choiceAppearance: groups.map(group => [...group.querySelectorAll('.ct-choice')].map(card => {
+        const style = getComputedStyle(card), trace = getComputedStyle(card.querySelector('.ct-trace'));
+        return [style.backgroundColor, style.borderColor, style.borderWidth, trace.stroke, trace.strokeWidth, trace.strokeDasharray];
+      })),
+      choiceCardInches: [...sheet.querySelectorAll('.ct-choice')].map(card => { const r = card.getBoundingClientRect(); return [r.width / 96, r.height / 96]; }),
       animals: groups.map(group => group.dataset.animal),
       tileInches: [...sheet.querySelectorAll('.ct-picture')].map(tile => tile.getBoundingClientRect().width / 96),
       answerInches: [...sheet.querySelectorAll('.ct-answer-guide')].map(svg => 72 * svg.getBoundingClientRect().height / 140 / 96),
@@ -163,22 +169,42 @@ function assertLayout(m, label) {
   assert.deepEqual([m.width, m.height], [816, 1056]);
   assert.ok(m.safeMargins && m.noOverflow && m.glyphsFit, `Layout failure ${label}: ${JSON.stringify(m)}`);
   assert.ok(m.tileInches.every(height => height >= .75));
-  assert.ok(m.answerInches.every(height => Math.abs(height - .75) < .001));
+  const expectedHeight = mode === 'choice' ? .46875 : .75;
+  assert.ok(m.answerInches.every(height => Math.abs(height - expectedHeight) < .001));
+  assert.ok(m.choiceCardInches.every(([width, height]) => width >= 1 && height >= .95));
+  for (const appearances of m.choiceAppearance) {
+    assert.ok(appearances.every(appearance => JSON.stringify(appearance) === JSON.stringify(appearances[0])), 'One choice has distinctive answer styling.');
+  }
 }
 async function verify() {
   const counts = pages.flatMap(page => page.meta.groups.map(group => group.count));
   assert.deepEqual([...new Set(counts)].sort((a, b) => a - b), Array.from({ length: 20 }, (_, i) => i + 1));
   assert.equal(counts.length, 24);
+  assert.equal(isMonotonic(counts), false);
+  assert.equal(pages.length, mode === 'choice' ? 12 : 8);
+  const perPage = mode === 'choice' ? 2 : 3;
+  const correctPositions = [0, 0, 0];
   for (const { meta } of pages) {
-    assert.equal(isMonotonic(meta.groups.map(group => group.count)), false);
-    assert.equal(new Set(meta.groups.map(group => group.animal)).size, 3);
+    if (mode === 'guided') assert.equal(isMonotonic(meta.groups.map(group => group.count)), false);
+    assert.equal(meta.groups.length, perPage);
+    assert.equal(new Set(meta.groups.map(group => group.animal)).size, perPage);
+    if (mode === 'choice') for (const group of meta.groups) {
+      assert.equal(group.choices.length, 3);
+      assert.equal(new Set(group.choices).size, 3);
+      group.choices.forEach(numberGlyph);
+      assert.equal(group.choices.filter(n => n === group.count).length, 1);
+      correctPositions[group.choices.indexOf(group.count)]++;
+    }
   }
+  if (mode === 'choice') assert.deepEqual(correctPositions, [8, 8, 8]);
   const manifest = JSON.parse(readFileSync(path.join(out, 'manifest.json'), 'utf8'));
   assert.equal(manifest.seed, seed);
+  assert.equal(manifest.mode, mode);
   assert.deepEqual(manifest.pages, pages.map(page => page.meta));
   assert.deepEqual(manifest.artwork.map(asset => asset.path), assets);
   for (const asset of manifest.artwork) assert.equal(hash(readFileSync(path.join(root, asset.path))), asset.sha256);
-  const current = documents(Object.fromEntries(manifest.artwork.map(asset => [asset.path, asset.viewBox])));
+  const crops = Object.fromEntries(manifest.artwork.map(asset => [asset.path, asset.viewBox]));
+  const current = documents(crops);
   assert.equal(hash(readFileSync(path.join(out, 'preview.html'))), hash(current.preview), 'Stale combined HTML.');
   assertPdf(pdfPath, current.preview, pages.length);
   const physical = execFileSync('/usr/bin/pdfinfo', ['-f', '1', '-l', String(pages.length), pdfPath], { encoding: 'utf8' });
@@ -202,26 +228,31 @@ async function verify() {
       const m = await measure(page);
       assert.equal(m.title, meta.title);
       assert.deepEqual(m.pictures, meta.groups.map(group => group.count));
-      assert.deepEqual(m.answers, m.pictures);
+      const expectedAnswers = meta.groups.map(group => group.choices ?? [group.count]);
+      assert.deepEqual(m.answers, expectedAnswers);
+      assert.deepEqual(m.choiceCards, meta.groups.map(() => mode === 'choice' ? 3 : 0));
       assert.deepEqual(m.animals, meta.groups.map(group => group.animal));
-      assert.deepEqual(m.tracePaths, meta.groups.map(group => [...numberGlyph(group.count).matchAll(/d="([^"]+)"/g)].map(match => match[1])));
+      assert.deepEqual(m.tracePaths, expectedAnswers.map(choices => choices.map(n => [...numberGlyph(n).matchAll(/d="([^"]+)"/g)].map(match => match[1]))));
       assertLayout(m, `on page ${meta.pageNumber}`);
       measurements.push({ page: meta.pageNumber, ...m });
     }
     // Stress the origin layout with the densest legal groups, independent of seed.
-    const svg = inlineSvgFile(path.join(root, assets[0]));
-    await page.setContent(wrap(`<section class="sheet ct-sheet"><header class="ct-header"><p class="ct-brand">KENNEDI'S WORKBOOK</p><h1>Count and trace</h1><p class="ct-direction">Count the animals. Trace how many.</p></header><main class="ct-groups">${Array.from({ length: 3 }, () => countAndTrace({ count: 20, animal: 'bear', plural: 'bears', svg })).join('')}</main><footer class="ct-footer"><span>Touch each animal as you count.</span><span>Page test</span></footer></section>`));
+    const stressMeta = { ...pages[0].meta, groups: Array.from({ length: perPage }, () => ({ ...pages[0].meta.groups[0], count: 20,
+      ...(mode === 'choice' ? { choices: [18, 20, 19] } : {}) })) };
+    await page.setContent(wrap(renderPage(stressMeta, crops)));
     await page.evaluate(() => document.fonts.ready);
     const stress = await measure(page);
-    assertLayout(stress, 'with three maximum-count groups');
-    assert.deepEqual(stress.pictures, [20, 20, 20]);
+    assertLayout(stress, `with ${perPage} maximum-count groups`);
+    assert.deepEqual(stress.pictures, Array(perPage).fill(20));
+    assert.deepEqual(stress.choiceCards, Array(perPage).fill(mode === 'choice' ? 3 : 0));
     return { measurements, stress };
   });
   assert.deepEqual(errors, []);
-  save(path.join(out, 'verification.json'), JSON.stringify({ status: 'PASS', seed, pages: pages.length,
+  save(path.join(out, 'verification.json'), JSON.stringify({ status: 'PASS', seed, mode, pages: pages.length,
     groups: counts.length, quantities: [...new Set(counts)].sort((a, b) => a - b), pdf: pdfPath,
+    correctPositions: mode === 'choice' ? correctPositions : null,
     pdfSha256: hash(readFileSync(pdfPath)), dimensionsPoints: [612, 792], browserErrors: errors, ...results }, null, 2));
-  console.log(`PASS: ${pages.length} US Letter pages; ${counts.length} shuffled groups; quantities 1-20; exact pictures and dotted answers; .75-inch tiles/answer guides; safe margins; no overflow/browser errors; maximum-density stress passed.`);
+  console.log(`PASS: ${pages.length} US Letter pages; ${counts.length} shuffled groups; quantities 1-20; exact pictures and ${mode === 'choice' ? 'three unique dotted choices, correct positions 8/8/8, .46875-inch numeral guides' : 'dotted answers, .75-inch numeral guides'}; .75-inch animal tiles; safe margins; no overflow/browser errors; maximum-density stress passed.`);
 }
 const operations = { build, pdf, screenshots, rasterize, verify };
 if (stage === 'all') for (const operation of Object.values(operations)) await operation();
