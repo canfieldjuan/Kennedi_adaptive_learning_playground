@@ -191,6 +191,7 @@ def case_recorded_render_settings(root):
         ("bunny-01-sitting-color", "end_percent", 0.9, "recorded end_percent"),
         ("bunny-01-sitting-color", "controlnet", "another-controlnet.safetensors", "recorded controlnet"),
         ("bunny-01-sitting", "guidance", 2.0, "records guidance, which the tool does not"),
+        ("bunny-01-sitting", "source", "design-source/animals/drafts/bunny-candidate-83.png", "recorded source"),
         # The bunny's guide is v1's blurred one; v2 would rebuild it unblurred, so its pixels can't match.
         ("bunny-01-sitting-color", "recipe_version", "v2", "recipe v2 no longer rebuilds its guide"),
     ]:
@@ -239,9 +240,9 @@ def case_legacy_records(root):
         (lambda e: e[NEUTRAL].update(rebuild="reproduce") or e[NEUTRAL].pop("record"),
          "graphless art recorded as rebuilt by reproduce", "reproduce refuses it: it has no embedded graph"),
         (lambda e: e[NEUTRAL].update(record="docs/art/no-such-record.md"),
-         "a documented rebuild whose record is missing", "is not a file in the workbook"),
+         "a documented rebuild whose record is not a provenance record", "is not one of the provenance records"),
         (lambda e: e[NEUTRAL].update(record="../outside-record.md"),
-         "a documented rebuild whose record is outside the workbook", "is not a file in the workbook"),
+         "a documented rebuild whose record is outside the workbook", "is not one of the provenance records"),
         (lambda e: e[NEUTRAL].update(rebuild="by hand"),
          "a rebuild route the tool doesn't know", "must be 'reproduce' or 'documented'"),
         (lambda e: e[DOG].update(rebuild="reproduce", record="docs/art/asset-provenance.md"),
@@ -369,6 +370,98 @@ def case_color_source_is_a_managed_lock(root):
           in line(out, "FAIL recipe   animals/locked-poses/bunny-01-sitting-color.recipe.json"), out.strip()[-200:])
 
 
+def alter_below_guide_threshold(png):
+    """Change one white pixel to near-white, keeping the embedded graph: the bytes change, the guide doesn't."""
+    image = Image.open(png)
+    meta = PngInfo()
+    for key, value in image.info.items():
+        if isinstance(value, str):
+            meta.add_text(key, value)
+    pixels = image.convert("RGB")
+    pixels.putpixel((0, 0), (250, 250, 250))
+    pixels.save(png, pnginfo=meta)
+
+
+def case_altered_source_line_art(root):
+    """Color art is built from its line art, so that line art must be the bytes its lock recorded."""
+    png = root / LOCKED / "bunny-01-sitting.png"
+    alter_below_guide_threshold(png)
+    code, out = run(root, "--server", "http://127.0.0.1:9", "colorize", png, "--colors", "soft white fur")
+    check("colorize from line art altered since its lock is refused before rendering",
+          code and "has changed since its lock recorded it" in out, out.strip()[-200:])
+    before = state(root)
+    code, out = run(root, "lock", "animal", "bunny", "--seed", "61", "--color", "--force")
+    check("lock --color from line art altered since its lock is refused",
+          code and "has changed since its lock recorded it" in out, out.strip()[-200:])
+    check("and that refusal changed nothing", state(root) == before)
+
+
+def case_writes_stay_in_real_folders(root):
+    """The tool writes only into the workbook's own folders, never through a symlink to somewhere else."""
+    drafts, outside = root / DRAFTS, root.parent / "outside-drafts"
+    shutil.move(drafts, outside)
+    drafts.symlink_to(outside, target_is_directory=True)
+    code, out = run(root, "--server", "http://127.0.0.1:9", "candidates", "animal", "kite", "--pose", "flying",
+                    "--shading", "the body", "--accent", "a tail")
+    check("candidates into a symlinked drafts folder is refused before rendering",
+          code and "goes through a symlink" in out, out.strip()[-200:])
+    drafts.unlink()
+    shutil.move(outside, drafts)
+    locked, outside = root / LOCKED, root.parent / "outside-locked"
+    shutil.move(locked, outside)
+    locked.symlink_to(outside, target_is_directory=True)
+    before = {p.name: p.read_bytes() for p in outside.iterdir()}
+    code, out = run(root, "lock", "animal", "bunny", "--seed", "61", "--color", "--force")
+    check("lock into a symlinked locked folder is refused", code and "goes through a symlink" in out,
+          out.strip()[-200:])
+    check("and nothing outside the workbook changed", {p.name: p.read_bytes() for p in outside.iterdir()} == before)
+
+
+def case_documented_records_name_their_asset(root):
+    """A documented rebuild is only as good as its record, so the record must be provenance that names the asset."""
+    baseline_path, record = root / BASELINE, root / "docs/art/asset-provenance.md"
+    original, kept = baseline_path.read_text(), record.read_text()
+    entries = json.loads(original)
+    entries[NEUTRAL]["record"] = "tools/comfy-generate.py"
+    baseline_path.write_text(json.dumps(entries))
+    code, out = run(root, "selftest")
+    check("a documented entry whose record is an unrelated file fails selftest",
+          code and "provenance record" in line(out, f"FAIL legacy   {NEUTRAL}"), out.strip()[-200:])
+    baseline_path.write_text(original)
+    record.write_text(kept.replace("01-neutral", "first-pose"))
+    code, out = run(root, "selftest")
+    check("a documented entry whose record doesn't name it fails selftest",
+          code and "does not name 01-neutral" in line(out, f"FAIL legacy   {NEUTRAL}"), out.strip()[-200:])
+    record.unlink()
+    code, out = run(root, "selftest")
+    check("a documented entry whose provenance record is gone fails selftest",
+          code and "provenance record" in line(out, f"FAIL legacy   {NEUTRAL}"), out.strip()[-200:])
+    record.write_text(kept)
+    code, out = run(root, "selftest")
+    check("restored, selftest passes again", not code, out.strip()[-200:])
+
+
+def case_reproduce_reads_a_locked_snapshot(root):
+    """reproduce reads locked art under the lock, and only the bytes its record describes."""
+    loose = root.parent / "loose"
+    loose.mkdir()
+    folder = os.open(root / "design-source", os.O_RDONLY)
+    fcntl.flock(folder, fcntl.LOCK_EX)
+    job = subprocess.Popen([sys.executable, "-B", str(TOOL), "--workbook", str(root), "--server", "http://127.0.0.1:9",
+                            "reproduce", str(root / LOCKED / "bunny-01-sitting.png"), "--out", str(loose / "out.png")],
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    time.sleep(3)
+    check("reproduce waits while another process holds locked art", job.poll() is None)
+    fcntl.flock(folder, fcntl.LOCK_UN)
+    os.close(folder)
+    job.communicate(timeout=120)
+    alter_below_guide_threshold(root / LOCKED / "bunny-01-sitting.png")
+    code, out = run(root, "--server", "http://127.0.0.1:9", "reproduce", root / LOCKED / "bunny-01-sitting.png",
+                    "--out", loose / "out.png")
+    check("reproduce of a locked PNG that no longer matches its record is refused before rendering",
+          code and "is not the file its record describes" in out, out.strip()[-200:])
+
+
 def case_reproduce_outputs(root):
     """reproduce must not write into a locked folder, over its source, or without the guide it needs."""
     source = root / LOCKED / "bunny-01-sitting.png"
@@ -418,7 +511,9 @@ def main():
              case_lock_replaces_only_its_own_lock, case_failed_vectorizer, case_candidate_is_not_its_recipe,
              case_swapped_svg, case_recorded_render_settings, case_legacy_records, case_lock_is_serialized,
              case_draft_swapped_mid_validation, case_locked_folders_hold_only_files,
-             case_color_source_is_a_managed_lock, case_reproduce_outputs, case_selftest_accounts_for_everything]
+             case_color_source_is_a_managed_lock, case_altered_source_line_art, case_writes_stay_in_real_folders,
+             case_documented_records_name_their_asset, case_reproduce_reads_a_locked_snapshot,
+             case_reproduce_outputs, case_selftest_accounts_for_everything]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="recipe-test-") as tmp:

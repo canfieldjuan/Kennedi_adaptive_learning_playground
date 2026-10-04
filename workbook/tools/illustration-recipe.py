@@ -27,6 +27,7 @@ import contextlib
 import fcntl
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import re
@@ -91,6 +92,8 @@ ADDED_KEYS = {"comfyui_version", "chosen_seed", "source", "files"}
 # locked folder has exactly one owner, a lock's recipe or one of these entries, so a deleted recipe or a
 # rewritten file can't slip past selftest.
 LEGACY_BASELINE = "design-source/legacy-locked-assets.json"
+# Where a legacy entry made by a documented process may point for that process.
+PROVENANCE_RECORDS = ("docs/art/asset-provenance.md",)
 
 # Locked before the tool wrote recipes: the templates must still rebuild their prompts.
 LEGACY_TEMPLATE_CHECKS = [
@@ -112,10 +115,11 @@ def load_comfy(server):
     return mod
 
 
-def upload(comfy, path, name):
+def upload(comfy, image, name):
+    """Upload image bytes to ComfyUI under name: the caller's snapshot, never a file re-read here."""
     boundary = uuid.uuid4().hex
     body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"image\"; filename=\"{name}\"\r\n"
-            f"Content-Type: image/png\r\n\r\n").encode() + Path(path).read_bytes() + \
+            f"Content-Type: image/png\r\n\r\n").encode() + image + \
         f"\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"overwrite\"\r\n\r\ntrue\r\n--{boundary}--\r\n".encode()
     req = urllib.request.Request(f"{comfy.COMFY}/upload/image", data=body,
                                  headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
@@ -178,8 +182,8 @@ def locked_tree():
     """
     files, strays = [], []
     for root in locked_folders():
-        if root.is_symlink() or not root.is_dir():
-            strays.append((root, "is not a real folder"))
+        if root.is_symlink() or not root.is_dir() or root.resolve() != root:
+            strays.append((root, "is not a real folder in the workbook (missing, or reached through a symlink)"))
             continue
         pending = [root]
         while pending:
@@ -216,7 +220,13 @@ class Outputs:
     """
 
     def __init__(self, folder, inputs=(), into_locked=False):
-        self.folder = Path(folder).resolve()
+        # A workbook folder must be the real one: through a symlink, its writes would land somewhere else.
+        # Checked on the path as given, before anything is resolved or created.
+        lexical = Path(os.path.abspath(folder))
+        if (lexical == WORKBOOK or WORKBOOK in lexical.parents) and lexical.resolve() != lexical:
+            sys.exit(f"{lexical} goes through a symlink to {lexical.resolve()}; this tool writes only into the "
+                     f"workbook's real folders")
+        self.folder = lexical.resolve()
         locked = [f.resolve() for f in locked_folders()]
         inside_locked = self.folder in locked or any(f in self.folder.parents for f in locked)
         if into_locked and self.folder not in locked:
@@ -416,11 +426,15 @@ def cmd_colorize(args):
     if WORKBOOK not in line_art.parents:
         sys.exit(f"{line_art} is outside {WORKBOOK}; the recipe records workbook-relative paths")
     rel = line_art.relative_to(WORKBOOK).as_posix()
-    problems = line_art_problems(rel)
-    if problems:
-        sys.exit(f"colorize works from a line-art lock this tool manages: {'; '.join(problems)}")
     source_recipe = line_art.with_suffix(".recipe.json")
-    source = json.loads(source_recipe.read_text())
+    # The line art is checked and read once, under the shared lock; the guide and contact sheet come from that
+    # snapshot, so a lock replacing the file mid-run can't leave them built from two different versions.
+    with art_lock(exclusive=False):
+        problems = line_art_problems(rel)
+        if problems:
+            sys.exit(f"colorize works from a line-art lock this tool manages: {'; '.join(problems)}")
+        source = json.loads(source_recipe.read_text())
+        snapshot = line_art.read_bytes()
     name = safe_name(source["name"], f"the name in {source_recipe.name}")
     color_fields = dict(subject=source["fields"]["subject"], pose=source["fields"]["pose"], colors=args.colors)
     drafts = WORKBOOK / "design-source" / FOLDERS["animal"][0]
@@ -432,8 +446,8 @@ def cmd_colorize(args):
         sys.exit(f"ControlNet {manifest['controlnet']} is not visible to ComfyUI -- check extra_model_paths.yaml")
 
     blur = COLOR_RECIPES[args.recipe]["guide_blur"]
-    guide = outputs.write(color_guide_name(name), lambda p: make_guide(line_art, blur, p))
-    upload(comfy, guide, guide.name)
+    guide = outputs.write(color_guide_name(name), lambda p: make_guide(io.BytesIO(snapshot), blur, p))
+    upload(comfy, guide.read_bytes(), guide.name)
 
     paths = []
     for seed in SEEDS:
@@ -443,7 +457,7 @@ def cmd_colorize(args):
         print(f"wrote {out.relative_to(WORKBOOK)}")
 
     sheet_path = outputs.write(f"{name}-color-contact-sheet.png", lambda p: contact_sheet(
-        [("locked line art", line_art)] + [(f"color seed {s}", c) for s, c in zip(SEEDS, paths)], p))
+        [("locked line art", io.BytesIO(snapshot))] + [(f"color seed {s}", c) for s, c in zip(SEEDS, paths)], p))
     stats = comfy.api("/system_stats", timeout=10).get("system", {})
     manifest.update(guide=str(guide.relative_to(WORKBOOK)), comfyui_version=stats.get("comfyui_version"))
     outputs.write(f"{name}-color-recipe.json", lambda p: p.write_text(json.dumps(manifest, indent=1)))
@@ -501,7 +515,7 @@ def cmd_lock(args):
             # A colour lock's guide is rebuilt from this line art, so replacing it would break that lock.
             rel = str(png.relative_to(WORKBOOK))
             dependents = [r.name for r in sorted(locked.glob("*.recipe.json"))
-                          if json.loads(r.read_text()).get("source_line_art") == rel]
+                          if not r.is_symlink() and json.loads(r.read_text()).get("source_line_art") == rel]
             if dependents:
                 sys.exit(f"{rel} is the source of {', '.join(dependents)}; re-run colorize and lock those after "
                          f"replacing it, or delete them first")
@@ -563,11 +577,30 @@ def reproduce_inputs(png):
     return graph, guide, None
 
 
+def recorded_digest(path):
+    """The SHA-256 the one manifest owning a locked file recorded for it, or None when no single owner does."""
+    claims = locked_owners().get(path, [])
+    if len(claims) != 1:
+        return None
+    owner = claims[0]
+    entry = json.loads(owner.read_text()) if isinstance(owner, Path) else (legacy_entries() or {}).get(owner, {})
+    files = entry.get("files") if isinstance(entry, dict) else None
+    return files.get(path.name) if isinstance(files, dict) else None
+
+
 def cmd_reproduce(args):
     original = Path(args.png).resolve()
-    graph, guide, refused = reproduce_inputs(original)
-    if refused:
-        sys.exit(f"{original.name}: {refused} -- refusing to render")
+    # Locked art is read once, under the shared lock, and a locked file must be the bytes its record describes.
+    # The render and the comparison use that snapshot, so a lock committing mid-run can't mix two versions.
+    with art_lock(exclusive=False):
+        graph, guide, refused = reproduce_inputs(original)
+        if refused:
+            sys.exit(f"{original.name}: {refused} -- refusing to render")
+        image = original.read_bytes()
+        guide_image = (WORKBOOK / guide).read_bytes() if guide else None
+        if original.parent in set(locked_folders()) and recorded_digest(original) != hashlib.sha256(image).hexdigest():
+            sys.exit(f"{original.name} is not the file its record describes (no single owner records these bytes) "
+                     f"-- refusing to render")
 
     # A locked asset's reproduction belongs in that kind's drafts folder: Outputs refuses a locked one.
     drafts = next((WORKBOOK / "design-source" / d for d, l in FOLDERS.values()
@@ -576,15 +609,15 @@ def cmd_reproduce(args):
     outputs = Outputs(out.parent, inputs=[original] + ([WORKBOOK / guide] if guide else []))
 
     comfy = load_comfy(args.server)
-    if guide:
+    if guide_image:
         for node in graph.values():
             if node["class_type"] == "LoadImage":
-                upload(comfy, WORKBOOK / guide, node["inputs"]["image"])
+                upload(comfy, guide_image, node["inputs"]["image"])
     outputs.write(out.name, lambda p: render(comfy, without_cache_keys(graph), p), validate=False)
-    a = np.asarray(Image.open(original).convert("RGBA"), dtype=int)
+    a = np.asarray(Image.open(io.BytesIO(image)).convert("RGBA"), dtype=int)
     b = np.asarray(Image.open(out).convert("RGBA"), dtype=int)
     diff = np.abs(a - b).max(axis=-1)    # every channel, so a hue change that keeps brightness still counts
-    ink_a = np.asarray(Image.open(original).convert("L")) < 180    # the vectorizer's 70% threshold
+    ink_a = np.asarray(Image.open(io.BytesIO(image)).convert("L")) < 180    # the vectorizer's 70% threshold
     ink_b = np.asarray(Image.open(out).convert("L")) < 180
     print(f"wrote {out}")
     print(f"pixels differing: {100 * (diff > 0).mean():.3f}% | max diff {diff.max()} | mean diff {diff.mean():.3f}")
@@ -671,6 +704,8 @@ def line_art_problems(rel):
     files = manifest.get("files")
     if manifest.get("kind") != "animal" or not isinstance(files, dict) or png.name not in files:
         return [f"its source line art {rel} is not a line-art lock: no animal recipe beside it records it"]
+    if sha256(png) != files[png.name]:
+        return [f"its source line art {rel} has changed since its lock recorded it (sha256 differs)"]
     return []
 
 
@@ -701,6 +736,13 @@ def check_locked(recipe_path, comfy):
         return problems
     if manifest.get("chosen_seed") not in SEEDS:
         problems.append(f"its chosen_seed {manifest.get('chosen_seed')!r} is not one of the rendered seeds")
+    # `source` is the draft `lock` copied: recorded, so it must be the one this kind, name and seed come from.
+    kind = "animal" if color else manifest.get("kind")
+    tag = f"{manifest.get('name')}-color" if color else manifest.get("name")
+    source = (f"design-source/{FOLDERS[kind][0]}/{tag}-candidate-{manifest.get('chosen_seed')}.png"
+              if kind in FOLDERS else None)
+    if manifest.get("source") != source:
+        problems.append(f"its recorded source {manifest.get('source')!r} is not the draft lock copies for it")
     return problems + embedded_problems(png, manifest, manifest.get("chosen_seed"), comfy, guide)
 
 
@@ -727,9 +769,15 @@ def legacy_problems(key, entry):
         if refused:
             problems.append(f"it is recorded as rebuilt by `reproduce`, but reproduce refuses it: {refused}")
     elif rebuild == "documented":
-        path = (WORKBOOK / record).resolve() if isinstance(record, str) and record else None
-        if path is None or WORKBOOK not in path.parents or not path.is_file():
-            problems.append(f"its rebuild record {record!r} is not a file in the workbook")
+        # The record is the only description of how the asset was made, so it must be one of the workbook's
+        # provenance records, and it must name this asset.
+        path = WORKBOOK / record if record in PROVENANCE_RECORDS else None
+        named = rf"(?<![\w-]){re.escape(png.stem)}\.(?:png|svg|\{{png,svg\}})"
+        if path is None or path.is_symlink() or not path.is_file():
+            problems.append(f"its rebuild record {record!r} is not one of the provenance records "
+                            f"{list(PROVENANCE_RECORDS)}")
+        elif not re.search(named, path.read_text()):
+            problems.append(f"its rebuild record {record} does not name {png.stem} ({png.name} or {png.stem}.svg)")
     else:
         problems.append(f"its rebuild is {rebuild!r}; it must be 'reproduce' or 'documented'")
     return problems
@@ -762,6 +810,16 @@ def owner_label(owner):
 
 
 def cmd_selftest(args):
+    comfy = load_comfy(args.server)     # only for its graph builder; nothing is sent to ComfyUI
+    # Every read of locked art, the template checks included, happens under the shared lock: selftest never
+    # reads a lock another process is half-way through committing.
+    with art_lock(exclusive=False):
+        ok = template_checks_ok() & locked_art_ok(comfy)
+    sys.exit(0 if ok else 1)
+
+
+def template_checks_ok():
+    """The templates must still rebuild the prompts of the dog and the house, locked before recipes existed."""
     ok = True
     for kind, rel, f in LEGACY_TEMPLATE_CHECKS:
         png = WORKBOOK / "design-source" / rel
@@ -777,11 +835,7 @@ def cmd_selftest(args):
         match = TEMPLATES[kind].format(**f) == prompt and sampler["seed"] in SEEDS and sampler["steps"] == STEPS
         ok &= match
         print(f"{'OK  ' if match else 'FAIL'} template {rel} (seed {sampler['seed']}, made before recipes)")
-
-    comfy = load_comfy(args.server)     # only for its graph builder; nothing is sent to ComfyUI
-    with art_lock(exclusive=False):     # never read a lock another process is half-way through committing
-        ok &= locked_art_ok(comfy)
-    sys.exit(0 if ok else 1)
+    return ok
 
 
 def locked_art_ok(comfy):
