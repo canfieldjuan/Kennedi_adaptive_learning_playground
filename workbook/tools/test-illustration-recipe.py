@@ -7,11 +7,14 @@ fail. No ComfyUI and no GPU: every case is refused, or finishes, before a render
 
   python3 workbook/tools/test-illustration-recipe.py
 """
+import fcntl
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 from PIL import Image
@@ -274,6 +277,98 @@ def case_legacy_records(root):
     check("restored, selftest passes again", not code, out.strip()[-200:])
 
 
+def case_lock_is_serialized(root):
+    """Two locks must not interleave their renames, so a lock waits while another holds locked art."""
+    folder = os.open(root / "design-source", os.O_RDONLY)
+    fcntl.flock(folder, fcntl.LOCK_EX)
+    lock = subprocess.Popen([sys.executable, "-B", str(TOOL), "--workbook", str(root), "lock", "animal", "bunny",
+                             "--seed", "72", "--color", "--force"],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    time.sleep(3)
+    check("lock waits while another process holds locked art", lock.poll() is None)
+    fcntl.flock(folder, fcntl.LOCK_UN)
+    os.close(folder)
+    out, _ = lock.communicate(timeout=120)
+    check("and completes once that process lets go", lock.returncode == 0, out.strip()[-160:])
+
+
+def case_draft_swapped_mid_validation(root):
+    """lock must commit the bytes it validated, even if the draft is replaced while it validates."""
+    drop_color_lock(root)
+    # The validator calls build_graph twice: rebuilding the recipe, then the graph to compare after reading the
+    # PNG. The second call swaps another seed's render into the draft, as a concurrent `candidates` run would,
+    # landing between the validator's read and anything read later.
+    with open(root / "tools/comfy-generate.py", "a") as module:
+        module.write(
+            "\n_build_graph = build_graph\n\n\n"
+            "def build_graph(*args):\n"
+            "    marker = os.path.join(os.path.dirname(__file__), 'swapped')\n"
+            "    calls = os.path.join(os.path.dirname(__file__), 'build-graph-calls')\n"
+            "    count = (os.path.getsize(calls) if os.path.exists(calls) else 0) + 1\n"
+            "    with open(calls, 'a') as tally:\n"
+            "        tally.write('.')\n"
+            "    if count == 2 and not os.path.exists(marker):\n"
+            "        open(marker, 'w').close()\n"
+            "        drafts = os.path.join(os.path.dirname(__file__), '..', 'design-source', 'animals', 'drafts')\n"
+            "        with open(os.path.join(drafts, 'bunny-candidate-83.png'), 'rb') as other:\n"
+            "            swapped = other.read()\n"
+            "        with open(os.path.join(drafts, 'bunny-candidate-61.png'), 'wb') as candidate:\n"
+            "            candidate.write(swapped)\n"
+            "    return _build_graph(*args)\n")
+    before = state(root)
+    code, out = run(root, "lock", "animal", "bunny", "--seed", "61", "--force")
+    check("the injected swap happened during the lock", (root / "tools/swapped").exists())
+    if code:
+        check("a lock refused mid-swap changed nothing", state(root) == before, out.strip()[-160:])
+    else:
+        scode, sout = run(root, "selftest")
+        check("a lock that succeeds mid-swap still checks out", not scode, sout.strip()[-200:])
+
+
+def case_locked_folders_hold_only_files(root):
+    """Every name in a locked folder needs its own record: no nested folders, no symlink aliases."""
+    nested = root / LOCKED / "untracked"
+    nested.mkdir()
+    shutil.copy(root / LOCKED / "bunny-01-sitting.png", nested / "rogue.png")
+    code, out = run(root, "selftest")
+    check("a folder inside a locked folder fails selftest",
+          code and "is a folder" in line(out, "FAIL locked   animals/locked-poses/untracked"), out.strip()[-200:])
+    check("and the file inside it needs an owner",
+          "no recipe or legacy entry owns it" in line(out, "FAIL locked   animals/locked-poses/untracked/rogue.png"))
+    shutil.rmtree(nested)
+    (root / LOCKED / "alias.png").symlink_to("bunny-01-sitting.png")
+    code, out = run(root, "selftest")
+    check("a symlink alias in a locked folder fails selftest",
+          code and "is a symlink" in line(out, "FAIL locked   animals/locked-poses/alias.png"), out.strip()[-200:])
+    (root / LOCKED / "alias.png").unlink()
+    code, out = run(root, "selftest")
+    check("removed, selftest passes again", not code, out.strip()[-200:])
+
+
+def case_color_source_is_a_managed_lock(root):
+    """A color asset's guide is rebuilt from its source, so the source must be a line-art lock the tool owns."""
+    scratch = root / "design-source/scratch"
+    scratch.mkdir()
+    for name in ("bunny-01-sitting.png", "bunny-01-sitting.recipe.json"):
+        shutil.copy(root / LOCKED / name, scratch)
+    code, out = run(root, "--server", "http://127.0.0.1:9", "colorize", scratch / "bunny-01-sitting.png",
+                    "--colors", "soft white fur")
+    check("colorize from a copy outside the locked folder is refused before rendering",
+          code and "is not a PNG in design-source/animals/locked-poses" in out, out.strip()[-200:])
+    code, out = run(root, "--server", "http://127.0.0.1:9", "colorize", root / LOCKED / "bunny-01-sitting.png",
+                    "--colors", "soft white fur")
+    check("colorize from the managed lock gets past that check (then finds no ComfyUI)",
+          code and "is not a PNG in" not in out and "line-art lock" not in out, out.strip()[-200:])
+    recipe = root / LOCKED / "bunny-01-sitting-color.recipe.json"
+    manifest = json.loads(recipe.read_text())
+    manifest["source_line_art"] = "design-source/scratch/bunny-01-sitting.png"
+    recipe.write_text(json.dumps(manifest))
+    code, out = run(root, "selftest")
+    check("a color lock whose source is the scratch copy fails selftest",
+          code and "is not a PNG in design-source/animals/locked-poses"
+          in line(out, "FAIL recipe   animals/locked-poses/bunny-01-sitting-color.recipe.json"), out.strip()[-200:])
+
+
 def case_reproduce_outputs(root):
     """reproduce must not write into a locked folder, over its source, or without the guide it needs."""
     source = root / LOCKED / "bunny-01-sitting.png"
@@ -321,8 +416,9 @@ def case_selftest_accounts_for_everything(root):
 def main():
     cases = [case_names_that_build_paths, case_pose_punctuation, case_dependent_color_lock,
              case_lock_replaces_only_its_own_lock, case_failed_vectorizer, case_candidate_is_not_its_recipe,
-             case_swapped_svg, case_recorded_render_settings, case_legacy_records, case_reproduce_outputs,
-             case_selftest_accounts_for_everything]
+             case_swapped_svg, case_recorded_render_settings, case_legacy_records, case_lock_is_serialized,
+             case_draft_swapped_mid_validation, case_locked_folders_hold_only_files,
+             case_color_source_is_a_managed_lock, case_reproduce_outputs, case_selftest_accounts_for_everything]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="recipe-test-") as tmp:

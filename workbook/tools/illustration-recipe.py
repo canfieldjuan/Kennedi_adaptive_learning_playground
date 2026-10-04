@@ -24,6 +24,7 @@ and reproduce render on a running ComfyUI (--server, default http://127.0.0.1:81
 """
 import argparse
 import contextlib
+import fcntl
 import hashlib
 import importlib.util
 import json
@@ -152,6 +153,48 @@ def file_identity(path):
 
 def locked_folders():
     return [WORKBOOK / "design-source" / rel for rel in LOCKED_ROOTS]
+
+
+@contextlib.contextmanager
+def art_lock(exclusive):
+    """Locked art changes under one lock, taken on the design-source folder.
+
+    `lock` holds it exclusively from its ownership check to its last rename, so two locks can't interleave
+    their files; `selftest` holds it shared, so it never reads a half-committed lock.
+    """
+    folder = os.open(WORKBOOK / "design-source", os.O_RDONLY)
+    try:
+        fcntl.flock(folder, fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH)
+        yield
+    finally:
+        os.close(folder)        # closing the descriptor releases the lock
+
+
+def locked_tree():
+    """(every regular file in the locked roots, [(path, why) for anything else there]).
+
+    Every name in a locked folder needs its own record, so a folder, a symlink, or anything that isn't a
+    regular file has no place in one; the files inside a folder are still listed, and still need owners.
+    """
+    files, strays = [], []
+    for root in locked_folders():
+        if root.is_symlink() or not root.is_dir():
+            strays.append((root, "is not a real folder"))
+            continue
+        pending = [root]
+        while pending:
+            for entry in os.scandir(pending.pop()):
+                path = Path(entry.path)
+                if entry.is_symlink():
+                    strays.append((path, "is a symlink; every locked file must be a real file with its own record"))
+                elif entry.is_dir(follow_symlinks=False):
+                    strays.append((path, "is a folder; locked folders hold only files"))
+                    pending.append(path)
+                elif entry.is_file(follow_symlinks=False):
+                    files.append(path)
+                else:
+                    strays.append((path, "is not a regular file"))
+    return sorted(files), sorted(strays)
 
 
 def safe_name(value, what):
@@ -368,22 +411,22 @@ def cmd_candidates(args):
 
 
 def cmd_colorize(args):
-    line_art = Path(args.png).resolve()
+    # Folders on the way may be symlinks; the file itself may not, so it is not resolved.
+    line_art = Path(args.png).absolute().parent.resolve() / Path(args.png).name
     if WORKBOOK not in line_art.parents:
         sys.exit(f"{line_art} is outside {WORKBOOK}; the recipe records workbook-relative paths")
+    rel = line_art.relative_to(WORKBOOK).as_posix()
+    problems = line_art_problems(rel)
+    if problems:
+        sys.exit(f"colorize works from a line-art lock this tool manages: {'; '.join(problems)}")
     source_recipe = line_art.with_suffix(".recipe.json")
-    if not source_recipe.exists():
-        sys.exit(f"{source_recipe} not found -- colorize works from an asset locked by this tool")
     source = json.loads(source_recipe.read_text())
-    if source["kind"] != "animal":
-        sys.exit(f"colorize supports animals only (the color template needs a pose); this is {source['kind']!r}")
     name = safe_name(source["name"], f"the name in {source_recipe.name}")
     color_fields = dict(subject=source["fields"]["subject"], pose=source["fields"]["pose"], colors=args.colors)
     drafts = WORKBOOK / "design-source" / FOLDERS["animal"][0]
     outputs = Outputs(drafts, inputs=[line_art])
     comfy = load_comfy(args.server)
-    manifest = draft_manifest("animal-color", name, color_fields, comfy, args.recipe,
-                              str(line_art.relative_to(WORKBOOK)))
+    manifest = draft_manifest("animal-color", name, color_fields, comfy, args.recipe, rel)
     controlnets = comfy.api("/object_info/ControlNetLoader")["ControlNetLoader"]["input"]["required"]
     if manifest["controlnet"] not in controlnets["control_net_name"][0]:
         sys.exit(f"ControlNet {manifest['controlnet']} is not visible to ComfyUI -- check extra_model_paths.yaml")
@@ -431,52 +474,67 @@ def cmd_lock(args):
         stem = args.name
     outputs = Outputs(locked, inputs=[src], into_locked=True)
     png = outputs.target(f"{stem}.png")
-    if png.exists() and not args.force:
-        sys.exit(f"{png.relative_to(WORKBOOK)} already exists (use --force to replace)")
-    # A lock replaces only the lock of its own kind at this name. Any other file there belongs to another
-    # asset: line art, a color lock, its guide, or legacy art. --force does not reach those.
     recipe = locked / f"{stem}.recipe.json"
-    own = recipe if recipe.exists() and json.loads(recipe.read_text()).get("kind") == manifest["kind"] else None
-    owners = locked_owners()
-    for name in [png.name, f"{stem}-guide.png" if args.color else f"{stem}.svg", recipe.name]:
-        target = outputs.target(name)
-        claims = owners.get(target.resolve(), [])
-        if (target.exists() or claims) and (own is None or claims != [own]):
-            held_by = ", ".join(owner_label(c) for c in claims) or "nothing (it has no owner)"
-            sys.exit(f"{target.relative_to(WORKBOOK)} belongs to {held_by}, not to a {manifest['kind']} lock at "
-                     f"{stem}; a lock replaces only its own files -- choose another --locked-name")
-    if png.exists() and not args.color:
-        # A colour lock's guide is rebuilt from this line art, so replacing it would break that lock.
-        rel = str(png.relative_to(WORKBOOK))
-        dependents = [r.name for r in sorted(locked.glob("*.recipe.json"))
-                      if json.loads(r.read_text()).get("source_line_art") == rel]
-        if dependents:
-            sys.exit(f"{rel} is the source of {', '.join(dependents)}; re-run colorize and lock those after "
-                     f"replacing it, or delete them first")
-    if not src.exists():
-        sys.exit(f"{src.relative_to(WORKBOOK)} is missing -- re-run the candidates")
-    manifest.update(chosen_seed=args.seed, source=str(src.relative_to(WORKBOOK)))
-    # The candidate must be exactly the render this recipe describes: a re-render, a stale manifest or a
-    # rewritten draft guide would otherwise lock an asset its recipe can't reproduce.
     draft_guide = WORKBOOK / manifest["guide"] if args.color else None
-    problems = embedded_problems(src, manifest, args.seed, load_comfy(args.server), draft_guide)
-    if problems:
-        sys.exit(f"{src.name} is not the render its recipe describes: " + "; ".join(problems))
-    # The whole lock set is built aside and moves into place together, so a failed vectorizer or write
-    # never leaves an approved lock half-replaced.
-    with outputs.staging() as batch:
-        batch.file(f"{stem}.png").write_bytes(src.read_bytes())
-        if args.color:
-            # The lock owns an exact copy of its guide: colorize rewrites the draft guide on every run.
-            batch.file(f"{stem}-guide.png").write_bytes(draft_guide.read_bytes())
-            manifest["guide"] = str((locked / f"{stem}-guide.png").relative_to(WORKBOOK))
-        # Mode A color art is used as a raster; only print line art is vectorized.
-        if not args.color:
-            subprocess.run(["bash", str(WORKBOOK / "tools/vectorize-line-art.sh"), str(batch.tmp / f"{stem}.png"),
-                            str(batch.file(f"{stem}.svg")), "70"], check=True)
-        # The recipe owns exactly the files written beside it, and records their bytes.
-        manifest["files"] = {name: sha256(batch.tmp / name) for name in batch.names}
-        batch.file(recipe.name).write_text(json.dumps(manifest, indent=1))
+    # Locked art changes under one lock, held from the ownership check to the last rename: two locks can't
+    # interleave their files, and selftest never reads a half-committed one.
+    with art_lock(exclusive=True):
+        if os.path.lexists(png) and not args.force:
+            sys.exit(f"{png.relative_to(WORKBOOK)} already exists (use --force to replace)")
+        # A lock replaces only the lock of its own kind at this name. Any other file there belongs to another
+        # asset: line art, a color lock, its guide, or legacy art. --force does not reach those. Ownership is
+        # by the name in the folder, so a symlink is refused rather than followed.
+        own = (recipe if recipe.is_file() and not recipe.is_symlink()
+               and json.loads(recipe.read_text()).get("kind") == manifest["kind"] else None)
+        owners = locked_owners()
+        for name in [png.name, f"{stem}-guide.png" if args.color else f"{stem}.svg", recipe.name]:
+            outputs.target(name)
+            target = locked / name
+            if target.is_symlink():
+                sys.exit(f"{target.relative_to(WORKBOOK)} is a symlink; a lock writes only real files")
+            claims = owners.get(target, [])
+            if (target.exists() or claims) and (own is None or claims != [own]):
+                held_by = ", ".join(owner_label(c) for c in claims) or "nothing (it has no owner)"
+                sys.exit(f"{target.relative_to(WORKBOOK)} belongs to {held_by}, not to a {manifest['kind']} lock "
+                         f"at {stem}; a lock replaces only its own files -- choose another --locked-name")
+        if png.exists() and not args.color:
+            # A colour lock's guide is rebuilt from this line art, so replacing it would break that lock.
+            rel = str(png.relative_to(WORKBOOK))
+            dependents = [r.name for r in sorted(locked.glob("*.recipe.json"))
+                          if json.loads(r.read_text()).get("source_line_art") == rel]
+            if dependents:
+                sys.exit(f"{rel} is the source of {', '.join(dependents)}; re-run colorize and lock those after "
+                         f"replacing it, or delete them first")
+        if not src.exists():
+            sys.exit(f"{src.relative_to(WORKBOOK)} is missing -- re-run the candidates")
+        if args.color and not draft_guide.exists():
+            sys.exit(f"{manifest['guide']} is missing -- re-run colorize")
+        manifest.update(chosen_seed=args.seed, source=str(src.relative_to(WORKBOOK)))
+        # The whole lock set is built aside and moves into place together, so a failed vectorizer or write
+        # never leaves an approved lock half-replaced.
+        with outputs.staging() as batch:
+            # Each draft is read once, into staging, and the staged copies are what gets validated: a draft
+            # that `candidates` or `colorize` replaces mid-lock can't be committed unvalidated. The candidate
+            # must be exactly the render its recipe describes, or the lock couldn't be reproduced.
+            staged = batch.file(png.name)
+            staged.write_bytes(src.read_bytes())
+            staged_guide = None
+            if args.color:
+                # The lock owns an exact copy of its guide: colorize rewrites the draft guide on every run.
+                staged_guide = batch.file(f"{stem}-guide.png")
+                staged_guide.write_bytes(draft_guide.read_bytes())
+            problems = embedded_problems(staged, manifest, args.seed, load_comfy(args.server), staged_guide)
+            if problems:
+                sys.exit(f"{src.name} is not the render its recipe describes: " + "; ".join(problems))
+            if args.color:
+                manifest["guide"] = str((locked / staged_guide.name).relative_to(WORKBOOK))
+            else:
+                # Mode A color art is used as a raster; only print line art is vectorized.
+                subprocess.run(["bash", str(WORKBOOK / "tools/vectorize-line-art.sh"), str(staged),
+                                str(batch.file(f"{stem}.svg")), "70"], check=True)
+            # The recipe owns exactly the files written beside it, and records their bytes.
+            manifest["files"] = {name: sha256(batch.tmp / name) for name in batch.names}
+            batch.file(recipe.name).write_text(json.dumps(manifest, indent=1))
     extras = " + .svg" if not args.color else " + guide"
     print(f"locked {png.relative_to(WORKBOOK)}{extras} + .recipe.json")
 
@@ -572,12 +630,48 @@ def embedded_problems(png, manifest, seed, comfy, guide=None):
                             nodes.get("SaveImage", {}).get("filename_prefix"))
     if without_cache_keys(graph) != without_cache_keys(rendered):
         problems.append(f"its embedded graph is not the one its recipe renders at seed {seed}")
-    if color:
-        if guide is None or not guide.exists():
-            problems.append(f"its guide {manifest.get('guide')} is missing")
-        elif not check_guide(graph, guide):
-            problems.append(f"guide {guide.relative_to(WORKBOOK)} is not the file it was rendered from")
+    if not color:
+        return problems
+    source = line_art_problems(manifest.get("source_line_art"))
+    if guide is None or not guide.exists():
+        return problems + source + [f"its guide {manifest.get('guide')} is missing"]
+    if not check_guide(graph, guide):
+        problems.append(f"guide {guide.relative_to(WORKBOOK)} is not the file it was rendered from")
+    if source:
+        return problems + source
+    # The guide itself must come back from the line art, by the recipe version's own rule. Pixels, not bytes:
+    # the guide's bytes are bound by its fingerprint and recorded digest, and another machine's PNG encoder can
+    # write the same pixels differently.
+    version = manifest["recipe_version"]
+    with tempfile.TemporaryDirectory() as tmp:
+        rebuilt = Path(tmp) / "guide.png"
+        make_guide(WORKBOOK / manifest["source_line_art"], COLOR_RECIPES[version]["guide_blur"], rebuilt)
+        a, b = Image.open(rebuilt), Image.open(guide)
+        if (a.mode, a.size) != (b.mode, b.size) or not np.array_equal(np.asarray(a), np.asarray(b)):
+            problems.append(f"recipe {version} no longer rebuilds its guide from {manifest['source_line_art']}")
     return problems
+
+
+def line_art_problems(rel):
+    """Why rel is not a line-art lock this tool manages; an empty list when it is.
+
+    A color asset's guide is rebuilt from its source line art, so the source must be an approved lock: a PNG
+    directly in the animal locked folder, not a symlink, owned by an `animal` recipe that records it.
+    `colorize` checks this before rendering, and embedded_problems() for every color recipe, so `lock` and
+    `selftest` check it too.
+    """
+    folder = Path("design-source") / FOLDERS["animal"][1]
+    path = Path(rel) if isinstance(rel, str) else None
+    if path is None or path.parent != folder or path.suffix != ".png" or not SAFE_FILE.fullmatch(path.name):
+        return [f"its source line art {rel!r} is not a PNG in {folder.as_posix()}"]
+    png, recipe = WORKBOOK / path, WORKBOOK / path.with_suffix(".recipe.json")
+    if png.is_symlink() or not png.is_file():
+        return [f"its source line art {rel} is missing"]
+    manifest = json.loads(recipe.read_text()) if recipe.is_file() and not recipe.is_symlink() else {}
+    files = manifest.get("files")
+    if manifest.get("kind") != "animal" or not isinstance(files, dict) or png.name not in files:
+        return [f"its source line art {rel} is not a line-art lock: no animal recipe beside it records it"]
+    return []
 
 
 def file_problems(folder, files, owns):
@@ -607,23 +701,7 @@ def check_locked(recipe_path, comfy):
         return problems
     if manifest.get("chosen_seed") not in SEEDS:
         problems.append(f"its chosen_seed {manifest.get('chosen_seed')!r} is not one of the rendered seeds")
-    problems += embedded_problems(png, manifest, manifest.get("chosen_seed"), comfy, guide)
-    if not color or not guide.exists() or manifest.get("recipe_version") not in COLOR_RECIPES:
-        return problems
-    # The guide itself must come back from the line art, by the recipe version's own rule.
-    line_art = WORKBOOK / str(manifest.get("source_line_art"))
-    if not line_art.is_file():
-        return problems + [f"its source line art {manifest.get('source_line_art')} is missing"]
-    # Pixels, not bytes: the guide's bytes are already bound by its fingerprint and its recorded digest, and a
-    # PNG encoder on another machine can write the same pixels differently.
-    version = manifest["recipe_version"]
-    with tempfile.TemporaryDirectory() as tmp:
-        rebuilt = Path(tmp) / "guide.png"
-        make_guide(line_art, COLOR_RECIPES[version]["guide_blur"], rebuilt)
-        a, b = Image.open(rebuilt), Image.open(guide)
-        if (a.mode, a.size) != (b.mode, b.size) or not np.array_equal(np.asarray(a), np.asarray(b)):
-            problems.append(f"recipe {version} no longer rebuilds its guide from {manifest['source_line_art']}")
-    return problems
+    return problems + embedded_problems(png, manifest, manifest.get("chosen_seed"), comfy, guide)
 
 
 def legacy_entries():
@@ -634,8 +712,8 @@ def legacy_entries():
 def legacy_problems(key, entry):
     """What is wrong with one legacy entry: its files, or the way it says they are rebuilt."""
     png = WORKBOOK / "design-source" / key
-    if png.suffix != ".png" or png.parent.resolve() not in {f.resolve() for f in locked_folders()}:
-        return [f"{key} is not a PNG in a locked folder"]
+    if Path(key).parent.as_posix() not in LOCKED_ROOTS or png.suffix != ".png" or not SAFE_FILE.fullmatch(png.name):
+        return [f"{key} is not a PNG directly in a locked folder"]
     if not isinstance(entry, dict) or set(entry) - {"files", "rebuild", "record"}:
         return ["an entry records only files, rebuild and, when documented, record"]
     svg = png.with_suffix(".svg")
@@ -661,20 +739,21 @@ def locked_owners():
     """{file: [owners]} for every file a manifest claims in the locked folders.
 
     An owner is a lock's recipe (as a path) or a legacy entry (as its key). A lock owns its recipe and the
-    files the recipe records; a legacy entry owns the files it records. selftest needs exactly one owner for
-    every file in a locked folder, and `lock` writes only files the lock it replaces owns.
+    files the recipe records; a legacy entry owns the files it records. Files are keyed by their own path in
+    the folder, never by what they resolve to, so a symlink can't borrow its target's record. selftest needs
+    exactly one owner for every file in a locked folder, and `lock` writes only files the lock it replaces owns.
     """
     claims = {}
     for folder in locked_folders():
-        for recipe in sorted(folder.glob("*.recipe.json")):
+        for recipe in sorted(r for r in folder.glob("*.recipe.json") if not r.is_symlink()):
             files = json.loads(recipe.read_text()).get("files")
             for path in [recipe] + [folder / name for name in (files if isinstance(files, dict) else {})]:
-                claims.setdefault(path.resolve(), []).append(recipe)
+                claims.setdefault(path, []).append(recipe)
     entries = legacy_entries()
     for key, entry in sorted(entries.items() if isinstance(entries, dict) else []):
         files = entry.get("files") if isinstance(entry, dict) else None
         for name in files if isinstance(files, dict) else {}:
-            claims.setdefault(((WORKBOOK / "design-source" / key).parent / name).resolve(), []).append(key)
+            claims.setdefault(WORKBOOK / "design-source" / Path(key).parent / name, []).append(key)
     return claims
 
 
@@ -700,8 +779,17 @@ def cmd_selftest(args):
         print(f"{'OK  ' if match else 'FAIL'} template {rel} (seed {sampler['seed']}, made before recipes)")
 
     comfy = load_comfy(args.server)     # only for its graph builder; nothing is sent to ComfyUI
-    source = WORKBOOK / "design-source"
-    for recipe in sorted(r for folder in locked_folders() for r in folder.glob("*.recipe.json")):
+    with art_lock(exclusive=False):     # never read a lock another process is half-way through committing
+        ok &= locked_art_ok(comfy)
+    sys.exit(0 if ok else 1)
+
+
+def locked_art_ok(comfy):
+    """Check every recipe, every legacy entry and every name in the locked folders; print each failure."""
+    ok, source = True, WORKBOOK / "design-source"
+    files, strays = locked_tree()
+    roots = set(locked_folders())
+    for recipe in (p for p in files if p.parent in roots and p.name.endswith(".recipe.json")):
         problems = check_locked(recipe, comfy)
         ok &= not problems
         print(f"{'FAIL' if problems else 'OK  '} recipe   {recipe.relative_to(source)}"
@@ -719,9 +807,12 @@ def cmd_selftest(args):
         if problems:
             print(f"FAIL legacy   {key}: " + "; ".join(problems))
 
+    for path, why in strays:
+        ok = False
+        print(f"FAIL locked   {path.relative_to(source)}: {why}")
     owners = locked_owners()
-    for path in sorted(p for folder in locked_folders() if folder.is_dir() for p in folder.iterdir() if p.is_file()):
-        claims = owners.get(path.resolve(), [])
+    for path in files:
+        claims = owners.get(path, [])
         if len(claims) != 1:
             ok = False
             print(f"FAIL locked   {path.relative_to(source)}: " + (
@@ -729,7 +820,7 @@ def cmd_selftest(args):
                 else "claimed by " + " and ".join(owner_label(c) for c in claims)))
     print(f"{len(entries)} legacy assets in {LEGACY_BASELINE}: their bytes and rebuild route are checked, "
           f"their renders are not")
-    sys.exit(0 if ok else 1)
+    return ok
 
 
 def main():
