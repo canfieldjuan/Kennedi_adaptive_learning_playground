@@ -1,11 +1,58 @@
 {
- "about": "How tools/recolor-kennedi-skin.py finds Kennedi's skin in the cover. Gates are hue in degrees, saturation and value in 0-1.",
+ "about": "How tools/recolor-kennedi-skin.py finds Kennedi's skin in the cover. Gates are hue in degrees, saturation and value in 0-1. Only the regions holding a skin seed are recolored: the gates alone also match the pencil's wood and the beige shading on her shirt.",
  "source": "design-source/scenes/cover-concept-c-final.png",
  "output": "design-source/scenes/cover-concept-c-golden.png",
  "palette": "design-source/boss-kennedi/palette.json",
  "source_skin": "#FDC89A",
- "skin_gate": {"hue": [14, 40], "saturation": [0.25, 0.52], "value_min": 0.8},
- "shading_gate": {"hue": [6, 40], "saturation": [0.25, 0.70], "value_min": 0.70},
+ "skin_gate": {
+  "hue": [
+   14,
+   40
+  ],
+  "saturation": [
+   0.25,
+   0.52
+  ],
+  "value_min": 0.8
+ },
+ "shading_gate": {
+  "hue": [
+   6,
+   40
+  ],
+  "saturation": [
+   0.25,
+   0.7
+  ],
+  "value_min": 0.7
+ },
  "ground_row": 1120,
- "blush_hue_max": 14
+ "blush_hue_max": 14,
+ "skin_seeds": [
+  {
+   "where": "face, ears and neck",
+   "x": 520,
+   "y": 475
+  },
+  {
+   "where": "raised arm and hand",
+   "x": 353,
+   "y": 543
+  },
+  {
+   "where": "arm and hand holding the clipboard",
+   "x": 617,
+   "y": 781
+  },
+  {
+   "where": "left leg",
+   "x": 482,
+   "y": 1055
+  },
+  {
+   "where": "right leg",
+   "x": 603,
+   "y": 1051
+  }
+ ]
 }

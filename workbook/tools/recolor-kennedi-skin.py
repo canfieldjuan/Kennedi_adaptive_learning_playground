@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Recolor Kennedi's skin in a color (Mode A) image to her approved palette.
 
-  python3 workbook/tools/recolor-kennedi-skin.py design-source/scenes/cover-concept-c-final.recolor.json
-      Write the spec's output from its source.
+  python3 workbook/tools/recolor-kennedi-skin.py workbook/design-source/scenes/cover-concept-c-final.recolor.json
+      Write the spec's output from its source. (Paths inside a spec are relative to workbook/.)
   python3 workbook/tools/recolor-kennedi-skin.py SPEC.json --check
       Recompute the output and compare its pixels with the committed file; exit 1 on any difference.
 
 The palette is design-source/boss-kennedi/palette.json. A spec names the source, the output, the source's own
-skin color, and the gates that pick her skin out of that image. Only her skin, its shading and her blush
-change; every other pixel is copied from the source. Needs numpy and Pillow.
+skin color, the gates that match skin-colored pixels, and a seed point inside each region of her skin: the
+gates alone also match things that aren't her (a pencil's wood, beige shading on her shirt), so only the
+regions holding a seed change. Every other pixel is copied from the source. RGB images only. Needs numpy
+and Pillow.
 """
 import argparse
 import json
@@ -23,8 +25,7 @@ from PIL import Image, ImageFilter
 
 WORKBOOK = Path(__file__).resolve().parents[1]
 LUMA = np.array([0.299, 0.587, 0.114])
-MIN_REGION = 40            # px: smaller skin-colored specks are not skin
-SKIN_SHARE = 0.5           # a region counts as skin when at least half of it is flat skin
+SKIN_SHARE = 0.5           # a seeded region must be at least half flat skin, or the seed is misplaced
 EDGE_SATURATION = 0.2      # the 1 px edge into the outline: anti-aliased skin, at least this saturated
 LIT = 0.95                 # value above which a pixel is in full light (flat skin or blush, not shading)
 CHEEK_RIM = 6              # px: the source blush's darker rim, flattened with it
@@ -86,8 +87,14 @@ def recolor(source, spec, palette):
     labels, count = regions(flat | shading)
     size = np.bincount(labels.ravel(), minlength=count + 1)
     flat_share = np.bincount(labels.ravel(), weights=flat.ravel(), minlength=count + 1) / np.maximum(size, 1)
-    keep = (flat_share >= SKIN_SHARE) & (size >= MIN_REGION)
-    keep[0] = False
+    keep = np.zeros(count + 1, bool)
+    for seed in spec["skin_seeds"]:
+        x, y = seed["x"], seed["y"]
+        inside = 0 <= y < labels.shape[0] and 0 <= x < labels.shape[1]
+        region = labels[y, x] if inside else 0
+        if not region or flat_share[region] < SKIN_SHARE:
+            sys.exit(f"skin seed {seed.get('where', '')!r} at ({x}, {y}) is not on her skin under these gates")
+        keep[region] = True
     body = keep[labels]
     hue = spec["shading_gate"]["hue"]
     mask = body | (grow(body, 1) & (h >= hue[0]) & (h <= hue[1]) & (s >= EDGE_SATURATION))
@@ -110,15 +117,16 @@ def load(spec_path):
     except (OSError, ValueError) as error:
         sys.exit(f"{spec_path}: {error}")
     required = {"source", "output", "palette", "source_skin", "skin_gate", "shading_gate", "ground_row",
-                "blush_hue_max"}
+                "blush_hue_max", "skin_seeds"}
     if missing := sorted(required - set(spec)):
         sys.exit(f"{spec_path} is missing {', '.join(missing)}")
     paths = {key: (WORKBOOK / spec[key]).resolve() for key in ("source", "output", "palette")}
     for key, path in paths.items():
         if WORKBOOK not in path.parents:
             sys.exit(f"{spec_path}: {key} {spec[key]} is outside the workbook")
-    if paths["output"] == paths["source"]:
-        sys.exit(f"{spec_path}: the output is the source; the source stays as the recolor's input")
+    if paths["output"] in (paths["source"], paths["palette"], Path(spec_path).resolve()):
+        sys.exit(f"{spec_path}: the output {spec['output']} is one of the recolor's inputs (the source, the palette "
+                 f"or this spec); writing it would destroy that input")
     for key in ("source", "palette"):
         if not paths[key].is_file():
             sys.exit(f"{spec_path}: {key} {spec[key]} is missing")
@@ -131,7 +139,9 @@ def main():
     ap.add_argument("--check", action="store_true", help="compare the committed output instead of writing it")
     args = ap.parse_args()
     spec, paths = load(args.spec)
-    source = Image.open(paths["source"]).convert("RGB")
+    source = Image.open(paths["source"])
+    if source.mode != "RGB":
+        sys.exit(f"{spec['source']} is {source.mode}; the recolor handles RGB images only and would drop the rest")
     pixels, mask = recolor(source, spec, json.loads(paths["palette"].read_text()))
     changed = (pixels != np.asarray(source)).any(axis=-1)
     rel = paths["output"].relative_to(WORKBOOK)
