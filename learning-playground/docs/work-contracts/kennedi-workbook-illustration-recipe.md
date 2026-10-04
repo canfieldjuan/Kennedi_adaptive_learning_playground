@@ -760,3 +760,46 @@ Other files:
 Round 4 traceability: every change above traces to the round-4 amendment
 (A, B, C, D, and "Found while wiring the gate"). The merge from main brought
 #139 and #141 unchanged.
+
+### Round 5 Verification and Reconstruction
+
+- Reproduced first, as test cases run against `45297cc`. All seven failed:
+  - a `lock` started while the test held the lock finished anyway;
+  - a draft swapped between the validator's read and the staging copy
+    (injected through the copy's `build_graph`) was committed: `lock`
+    exited 0, and `selftest` then failed with "rendered at seed 83, not 61";
+  - a nested `untracked/rogue.png`, the file inside it, and a symlink
+    `alias.png` all passed `selftest`;
+  - `colorize` on a scratch copy got past validation (it failed only on
+    reaching ComfyUI), and a color recipe pointing at that copy passed
+    `selftest`.
+- After the fix: 62 of 62 checks pass, on Python 3.13 with Pillow 11.3 and
+  on Python 3.12 with Pillow 10.2. Against `45297cc`, exactly those seven
+  fail and the other 55 pass.
+  - In the swap case the swap still fires mid-lock, but the lock commits the
+    staged seed-61 bytes it validated, and `selftest` passes.
+- Real workbook: `selftest` exits 0, with 12 OK (2 template checks and 10
+  recipes) and no failures.
+- `a5abd83`, change by change:
+  - `art_lock()`: `flock` on `design-source`, exclusive or shared.
+  - `locked_tree()`: a recursive scan returning the regular files and the
+    strays (folders, symlinks, non-regular files).
+  - `cmd_lock()`:
+    - holds `art_lock(exclusive=True)` from the existence check to the last
+      rename;
+    - looks up owners by the file's path in the folder, and refuses a
+      symlink target;
+    - stages the candidate and guide before validating the staged copies.
+  - `cmd_colorize()`: resolves the folders on the way but not the file, then
+    refuses anything `line_art_problems()` rejects, before ComfyUI.
+  - `embedded_problems()`: for color, adds `line_art_problems()` and the
+    pixel check that the guide rebuilds from the line art, moved here from
+    `check_locked()`.
+  - `line_art_problems()`: new. Its rules are in the round-5 amendment, C.
+  - `legacy_problems()`: the key's folder must be a locked root, lexically.
+  - `locked_owners()`: keys by path in the folder, and skips symlinked
+    recipes.
+  - `cmd_selftest()` and `locked_art_ok()`: hold the shared lock; recipes
+    come from the scan; every stray fails.
+  - `test-illustration-recipe.py`: four cases, one per class, with the
+    second side of each.
