@@ -150,4 +150,85 @@ Operator decisions, 2026-10-04:
 
 ## Cold Diff Audit
 
-To be written after implementation.
+### Gaps
+
+- Change without contract trace: none. Every file in
+  `git diff origin/main...HEAD` is in Correct Fix Must Touch, as amended.
+- Contract requirement not delivered: none. The proof page left scope by
+  amendment.
+- Protected surface touched: none. The diff touches nothing in:
+  - `proof-pages/`, `dist-proof/`, `tokens.css`;
+  - the locked or simplified-tier folders;
+  - the original `cover-concept-c-final.png`, `illustration-recipe.py`;
+  - pages 2-6 or their `dist/`.
+
+### Change By Change Reconstruction
+
+- `workbook/tools/recolor-kennedi-skin.py` (new):
+  - `:26-33`: the structural constants (minimum region, skin share, edge
+    saturation, full-light value, cheek rim, rim floor, blush softening,
+    maximum brightening).
+  - `grow()` `:40`: dilation by the 4-neighbour cross, which equals
+    `scipy.ndimage.binary_dilation`.
+  - `regions()` `:53`: 4-connected labelling by breadth-first search.
+  - `recolor()` `:73`:
+    - gates flat skin and its shading above the ground row;
+    - keeps regions at least half flat skin, plus a 1 px edge;
+    - maps skin and shading to the palette skin by luminance;
+    - flattens the cheeks and their rim, then blends in the palette blush
+      through a 4 px Gaussian weight;
+    - copies every other pixel.
+  - `load()` `:107`: requires every spec key, refuses paths outside the
+    workbook and an output equal to the source, and requires the source and
+    palette to exist.
+  - `main()` `:128`: `--check` compares mode, size and pixels with the
+    committed output. Otherwise it writes through a temp file and
+    `os.replace`, and prints the count and bounds of the changed pixels.
+- `workbook/design-source/boss-kennedi/palette.json` (new): skin
+  `#D9A774`, blush `#D68468`, strength 0.35.
+- `workbook/design-source/scenes/cover-concept-c-final.recolor.json` (new):
+  the source and output, the source skin `#FDC89A`, the skin and shading
+  gates, ground row 1120, and blush hue at most 14 degrees.
+- `workbook/design-source/scenes/cover-concept-c-golden.png` (new): the
+  tool's output.
+- `workbook/src/content/pages/page-01-cover.mjs:17`: page 1 inlines the
+  golden cover, with a comment on how it is made.
+- Page 1's `workbook/dist` output: the rebuilt HTML, screenshot, raster,
+  PDF and source hash, and the preview.
+- `.github/workflows/workbook-quality.yml:72`: runs the recolor `--check`.
+- `workbook/docs/design-system.md`:
+  - `:197`: Mode A allows a committed, deterministic recolor;
+  - `:225`: the canonical character's skin and palette.
+- `workbook/docs/art/asset-provenance.md`:
+  - `:131`: the cover's seed, corrected;
+  - `:135`: the recolor entry;
+  - `:318`: the `<SKIN>` term.
+
+### Contract Traceability
+
+- Tool, palette, spec, golden cover, `page-01-cover.mjs`, `dist`, workflow,
+  and both docs: Correct Fix Must Touch.
+- The provenance seed correction: Contract Amendment 1.
+- The tool having no scipy: Contract Amendment 2.
+- The proof page left untouched: Contract Amendment 3.
+
+### Verification
+
+- The tool's output equals the approved preview's algorithm, run with
+  scipy, pixel for pixel (0 differing).
+- 64,621 pixels change, in rows 163-1094 and columns 260-682: Kennedi's
+  area, above the ground row.
+- `--check` passes on Python 3.13 with Pillow 11.3 and on Python 3.12 with
+  Pillow 10.2. With the palette skin off by one (`#D9A775`) it fails, and
+  restored it passes.
+- Refusals, each writing nothing:
+  - an output equal to the source;
+  - a spec missing `ground_row`;
+  - an output outside the workbook.
+- `npm run all`: `VERIFY PASSED`, run twice with the same `dist` result.
+- Page 1's screenshot looked at directly: Kennedi is golden brown with a
+  faint blush, and the composition, outfit, animals and text are
+  unchanged.
+- The gate's other steps, run locally: `selftest` exits 0, and
+  `test-illustration-recipe.py` passes 88 of 88.
+- Not run here: the gate itself, which runs on push.
