@@ -473,6 +473,55 @@ does not change scope.
       refused;
     - the untouched copy still passing.
 
+- **PR #138 review round 6** (Codex on `2ccc521`, four findings, all
+  confirmed). Rounds 4-6 each found another read or write of locked art
+  that an earlier rule didn't reach. So this round closes the table of
+  every operation's reads and writes, not just the four threads.
+
+  | Operation | Reads of locked art | Writes |
+  |---|---|---|
+  | `candidates` | none | drafts |
+  | `colorize` | the source line art and its recipe | drafts |
+  | `lock` | ownership, recipes, baseline, source line art | a locked folder |
+  | `reproduce` | the PNG, its recipe, its guide | `--out` (drafts by default) |
+  | `selftest` | everything, including the dog/house template checks | nothing |
+
+  - **A. Every read of locked art happens under the shared lock, from one
+    snapshot, and is checked against its recorded digest.**
+    - `colorize` reads the source line art once under
+      `art_lock(shared)`, checks it, and builds the guide and contact sheet
+      from that snapshot.
+    - `line_art_problems()` now also fails a source whose bytes differ from
+      its recipe's recorded digest. `colorize`, `lock --color` and
+      `selftest` share it.
+    - `reproduce` reads the PNG and guide once under the shared lock. A PNG
+      in a locked folder must match its owner's recorded digest. The render
+      upload and the comparison use the snapshots.
+    - `selftest`'s dog/house template checks move inside the lock.
+  - **B. Writes go only into real workbook folders.** `Outputs` refuses a
+    folder inside the workbook whose path goes through a symlink; the check
+    is lexical, before resolving or creating anything. `locked_tree()`
+    also fails a locked root that resolves elsewhere through a symlinked
+    parent.
+  - **C. Every recorded value is bound, including the last two.**
+    - A documented legacy entry's `record` must be one of the workbook's
+      provenance documents (`docs/art/asset-provenance.md`), a real file
+      that names the asset (`<stem>.png`, `.svg` or `.{png,svg}`).
+    - A lock recipe's `source` must be the draft path `lock` records for
+      its name and seed.
+    - The dependents scan in `lock` skips symlinked recipes, as
+      `locked_owners()` does.
+  - **Settling evidence (planned):** each finding reproduced against
+    `2ccc521`:
+    - a source line art altered below the guide threshold, refused by
+      `colorize` and by `lock --color`;
+    - a symlinked drafts folder and a symlinked locked folder, each refused
+      before anything is written, with the outside folder unchanged;
+    - an unrelated record, and the real record minus the asset's name;
+    - `reproduce` waiting while the lock is held, and refusing a locked PNG
+      that no longer matches its record;
+    - a recipe with a wrong `source`.
+
 ## Cold Diff Audit
 
 ### Gaps
