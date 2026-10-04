@@ -1,0 +1,71 @@
+{
+ "source": {
+  "repo": "bedtime_broadcast",
+  "commit": "10636b529fe52411fec25ad00ebe420e1d3a5efc",
+  "path": "engine/models.py",
+  "object": "WORLD_BIBLE",
+  "how": "parsed with ast at that commit; nothing in bedtime_broadcast is imported or run"
+ },
+ "name": "Moon Berry Forest",
+ "description": "A gentle forest lit by soft moonlight and dotted with sweet berries, where small everyday discoveries become quiet bedtime adventures.",
+ "characters": [
+  {
+   "name": "Bramble",
+   "description": "A patient, practical badger who likes to fix small woodland things and reassures the little ones with calm, steady words.",
+   "appearance": {
+    "species": "badger",
+    "build": "sturdy, medium",
+    "base_colors": "classic badger colouring -- a black-and-white striped face and a dark-grey body",
+    "signature_garment": "patchwork vest",
+    "signature_props": [
+     "a small lantern",
+     "round glasses"
+    ],
+    "accent_notes": "fur-texture lines on the striped face and paws"
+   }
+  },
+  {
+   "name": "Pippa",
+   "description": "A tiny, energetic dormouse who gets excited easily and is gradually learning how to slow down at bedtime.",
+   "appearance": {
+    "species": "dormouse",
+    "build": "tiny",
+    "base_colors": "warm sandy-brown fur, a cream chest and belly, and large dark round eyes",
+    "signature_garment": "red acorn cap with a short brown stem",
+    "signature_props": [
+     "a smooth stone wrapped in a fern leaf"
+    ],
+    "accent_notes": "soft fur-texture lines on the ears, cheeks, and tail"
+   }
+  },
+  {
+   "name": "Barnaby",
+   "description": "A gentle old bear who tells quiet stories and keeps a calm, warm presence on his porch swing.",
+   "appearance": {
+    "species": "bear",
+    "build": "large, old",
+    "base_colors": "warm brown fur",
+    "signature_garment": "",
+    "signature_props": [
+     "a porch swing",
+     "a steaming mug of chamomile tea"
+    ],
+    "accent_notes": "soft fur-texture lines on the shoulders and ears"
+   }
+  }
+ ],
+ "pacing": "daytime curiosity -> slowing activity -> low golden evening light -> warm and cozy sensory details -> quiet breathing and stillness",
+ "avoid": [
+  "graphic violence",
+  "injury",
+  "death",
+  "abandonment",
+  "threatening villains",
+  "weapons",
+  "intense danger",
+  "frightening monsters",
+  "disturbing imagery",
+  "cruelty",
+  "punishment-driven narratives"
+ ]
+}

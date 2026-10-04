@@ -1,0 +1,45 @@
+name: Storybook Quality
+
+on:
+  pull_request:
+    paths:
+      - "storybook/**"
+      - ".github/workflows/storybook-quality.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "storybook/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: storybook-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  storybook-quality-gate:
+    name: storybook-quality-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: storybook
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install Pillow
+        run: sudo apt-get update && sudo apt-get install --yes python3-pil
+
+      # Every character lock must rebuild from its recipe and the current canon, keep its recorded bytes, and
+      # name only licence-allowlisted (apache-2.0) models: a lock is the book's sell-safe reference art.
+      - name: Check every character lock against its record
+        run: python3 -B tools/story-recipe.py selftest
+
+      # The tool's commands, run against a copy and a fake ComfyUI. CPU only: no GPU, no models.
+      - name: Run the story-recipe tests
+        run: python3 -B tools/test-story-recipe.py
