@@ -852,3 +852,45 @@ Round 4 traceability: every change above traces to the round-4 amendment
     come from the scan; every stray fails.
   - `test-illustration-recipe.py`: four cases, one per class, with the
     second side of each.
+
+### Round 6 Verification and Reconstruction
+
+- Reproduced first, as test cases run against `2ccc521`. All 11 failed:
+  - line art altered below the guide threshold was accepted by `colorize`
+    (it reached ComfyUI), and `lock --color` committed a color lock from it;
+  - `candidates` into a symlinked drafts folder got past `Outputs`;
+  - `lock` into a symlinked locked folder wrote into the folder outside the
+    workbook, then crashed;
+  - an unrelated record, a record that doesn't name the asset, and a
+    deleted record each passed (the last two in their round-6 form);
+  - `reproduce` didn't wait for a held lock, and accepted a locked PNG that
+    no longer matched its record;
+  - a recipe recording another seed's `source` passed.
+- After the fix: 75 of 75 checks pass, on Python 3.13 with Pillow 11.3 and
+  on Python 3.12 with Pillow 10.2. Against `2ccc521`, 14 fail: those 11,
+  plus 3 record checks whose inputs the old tool also rejected, under its
+  older wording.
+- Real workbook: `selftest` exits 0, with 12 OK and no failures.
+- `5c41714`, change by change:
+  - `Outputs.__init__()`: refuses a workbook folder whose lexical path
+    resolves elsewhere, before resolving or creating anything.
+  - `locked_tree()`: a locked root must resolve to itself.
+  - `upload()`: takes bytes, so callers upload their snapshot.
+  - `cmd_colorize()`: checks the source and reads its bytes under the
+    shared lock; the guide and contact sheet come from those bytes.
+  - `line_art_problems()`: the source PNG's SHA-256 must equal its recipe's
+    record.
+  - `recorded_digest()`: the digest a locked file's single owner records.
+  - `cmd_reproduce()`: checks and snapshots under the shared lock; a PNG in
+    a locked folder must match `recorded_digest()`; it uploads and compares
+    the snapshots.
+  - `legacy_problems()`: `PROVENANCE_RECORDS`, and the record must name the
+    asset's stem as `.png`, `.svg` or `.{png,svg}`.
+  - `check_locked()`: `source` must be the draft path for the kind, name
+    and chosen seed.
+  - `cmd_lock()`: the dependents scan skips symlinked recipes.
+  - `cmd_selftest()` and `template_checks_ok()`: the template checks run
+    under the shared lock.
+  - `test-illustration-recipe.py`: four new cases and a `source` entry.
+    The two older record cases take the new wording, and one now deletes
+    the real record.
