@@ -252,3 +252,53 @@ consumer of `src/illustrations/`.
 `npm run numbers:all -- --out /absolute/output/directory` builds ten number-practice sheets and two counting/coloring breaks for a four-year-old. Each number has a solid model, three dotted copies and a blank try space, plus an exact dot quantity and reused animal line art. The output includes a combined US Letter PDF, individual pages, actual PDF rasters, contact sheet and verification. Print at Actual size / 100%.
 
 Edit numbers and activities in `src/content/numbers-practice.mjs`, numeral strokes in `src/components/number-glyphs.mjs`, and scoped styles in `src/styles/numbers-practice.css`. Existing books and illustration files are unchanged. This layout awaits owner visual review; it is not a new illustration-approval claim.
+
+## Mixed animal counting with traceable answers
+
+From this checkout's `workbook/` directory:
+
+```bash
+npm ci
+npm run counting:test
+npm run counting:all
+```
+
+Open `dist-counting/preview.html` in a browser. Print
+`dist-counting/pdf/kennedi-mixed-count-and-trace.pdf` at Actual size / 100%.
+There are eight US Letter sheets, three animal groups per sheet, covering
+every quantity 1-20 with four extra practice groups. Each has one large dotted
+answer. Count together first, then trace: these visible answers make this
+guided practice, not an independent counting assessment.
+
+To make another reproducible mix without overwriting the first:
+
+```bash
+npm run counting:all -- --seed 42 --out /absolute/path/to/another-pack
+```
+
+Seeds are integers from 0 through 4294967295. Use the same seed and output
+directory for each separate stage:
+
+```bash
+npm run counting:build
+npm run counting:pdf
+npm run counting:screenshots
+npm run counting:rasterize
+npm run counting:verify
+```
+
+`--out /absolute/path` and `--seed 42` work on every stage. Verification rejects
+stale output from a different seed, changed art, changed rendered content/styles
+or altered PDF.
+Outputs include individual HTML/PDF pages, screenshots, actual grayscale PDF
+rasters, contact sheet, manifest (seed/groups/art hashes) and `verification.json`.
+Chromium/Chrome, `pdfinfo` and `pdftoppm` are required, as in the numbers book.
+
+Edit `src/content/counting-practice.mjs` for group selection; the animal catalog
+reuses the original numbers book's tracked SVG paths. The reusable activity is
+`src/components/count-and-trace.mjs`, the unchanged numeral strokes are in
+`src/components/number-glyphs.mjs`, the scoped print styles are in
+`src/styles/counting-practice.css`, and the export/check pipeline is
+`scripts/counting.mjs`. No new illustrations were generated. This layout is
+ready for owner visual review, not a new art-approval claim. The original
+numbers workbook and all other books remain unchanged.
