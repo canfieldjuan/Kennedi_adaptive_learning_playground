@@ -324,3 +324,31 @@ Each exits before anything is written:
   The Edit model's Hub digest is recorded, and the local copy matched it.
 - #146.
 - Wiring to `bedtime_broadcast`.
+
+## Contract Amendments
+
+Accepted 2026-10-04 ("accept"). Found while building:
+
+- **Story names are lowercase words joined by hyphens.** `page` and
+  `lock-page` take a story name that becomes a file path, so anything else
+  (`../canon/moon-berry-forest`, for one) is refused as "not a story".
+  `selftest` fails a story file with any other name.
+- **A page entry is exactly `cast`, `place`, `time` and `scene`.** An entry
+  with a missing or extra key fails the plan check, so the plan can't grow
+  fields that the template silently ignores.
+- **A page folder with no passing story fails `selftest`.** Page locks under
+  `design-source/pages/<name>/locked/` must belong to a story in `stories/`
+  that passes its check. Otherwise they can't be rebuilt, and `selftest`
+  says so instead of skipping them.
+- **The character lock code is now shared with pages, without changing its
+  behaviour.** Three helpers are shared:
+  - committing a lock;
+  - checking a locked folder (regular files, digests, one owner each);
+  - comparing a rebuilt recipe.
+
+  Every slice 1 message and rule is unchanged. The evidence for that is
+  under Verification.
+- **An upload must come back with the name it was sent under**, with no
+  subfolder. Without overwrite, ComfyUI renames a file whose name is
+  already taken. The tool always sends overwrite, and still checks the name
+  it gets back.
