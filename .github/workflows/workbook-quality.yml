@@ -53,6 +53,20 @@ jobs:
       - name: Install poppler-utils
         run: sudo apt-get update && sudo apt-get install --yes poppler-utils
 
+      # Locked illustrations are approved art: every file in a locked folder must be the one its recipe or
+      # legacy entry recorded, and every recipe must still describe its render. Nothing else in this gate
+      # reads design-source/, so without this step a PR can replace approved art unremarked. The tests then
+      # re-run every failure the recipe tool was fixed for. CPU only: no ComfyUI, no GPU. potrace and
+      # ImageMagick are for the one test that locks line art, which vectorizes it.
+      - name: Install the illustration tools' dependencies
+        run: sudo apt-get install --yes python3-numpy python3-pil potrace imagemagick
+
+      - name: Check every locked illustration against its record
+        run: python3 -B tools/illustration-recipe.py selftest
+
+      - name: Re-run the recipe tool's reproduced failures
+        run: python3 -B tools/test-illustration-recipe.py
+
       # Runs build (which doesn't touch dist/pdf/) then verify BEFORE the
       # next step's npm run pdf overwrites the committed PDF -- verify.mjs's
       # existing pdfinfo/pdftotext/sourcehash checks therefore run against

@@ -1,0 +1,983 @@
+# Kennedi Workbook: Reproducible Illustration Recipe
+
+Branch `feat/illustration-recipe`. The recipe tool (`63c82f5`) and the
+turtle, bear and penguin (`b7de2d2`) were committed before this contract
+existed; the Before Code sections record the scope they were built to. The
+color step (`colorize`) is new work and is built to this contract. The
+operator accepted its scope ("lock seed 72, add colorize so the other
+characters use the same method") before the contract was written.
+
+## Before Code
+
+### Root Cause
+
+Workbook art was made with one-off FLUX prompts, and nothing recorded how a
+locked asset was made. New characters drifted from the established style, and
+a locked asset could not be rebuilt or extended. Color versions for Mode A
+(cover, certificates, promo) had no method at all. A fresh text prompt draws
+a different animal, so a color character would not match its black-and-white
+page version.
+
+### Correct Fix Must Touch
+
+- `workbook/tools/illustration-recipe.py`:
+  - Existing: prompt templates, the fixed seeds, `candidates`, `lock`,
+    `reproduce` and `selftest`.
+  - New:
+    - `colorize` renders Mode A color candidates, using the locked line art
+      as a soft-edge ControlNet guide.
+    - `lock --color` locks a color pick.
+    - `reproduce` uploads a color asset's guide image before re-rendering.
+    - `selftest` covers the color template.
+- `workbook/design-source/animals/drafts/` and `.../locked-poses/`: the
+  bunny, turtle, bear and penguin candidates and locks. As amended below,
+  also the color candidates, guides and locks of the bunny, bear, turtle,
+  penguin and fox; the fox's line-art candidates and lock; and
+  `design-source/legacy-locked-assets.json`.
+- `workbook/docs/art/illustration-recipe-refinements.md`: the running list of
+  deferred improvements.
+- This contract.
+
+### Must Not Change
+
+- `workbook/tools/comfy-generate.py`, `comfy-generate-redux.py` and
+  `vectorize-line-art.sh`. The recipe loads and calls them; it does not edit
+  them.
+- Existing locked assets (dog, house, apple, Boss Kennedi). They are read
+  only, by `selftest` and `reproduce`.
+- `workbook/src/**`, `workbook/dist/**`, the page files and
+  `docs/design-system.md`. No page uses the new characters yet.
+
+## Behaviour (colorize)
+
+- `colorize LOCKED.png --colors "<fur and feature colors>"`:
+  - Reads subject and pose from `LOCKED.recipe.json`.
+  - Builds the guide in `drafts/`: pixels darker than 180 grey (the print
+    vectorizer's threshold) become white lines on black, blurred by 1.5 px.
+  - Renders the four standard seeds with the `animal-color` template, at
+    ControlNet strength 0.7 ending at 0.8, over 28 steps.
+  - Writes the candidates, a contact sheet (the locked line art first) and
+    `<name>-color-recipe.json`.
+- `lock animal <name> --seed N --color`:
+  - Copies the chosen candidate to `locked-poses/<line-art-stem>-color.png`.
+  - Writes `<line-art-stem>-color.recipe.json`, recording the guide path.
+  - Does not vectorize, because Mode A art is used as a raster.
+- `reproduce`: when the embedded graph loads an image, it uploads the guide
+  named in the sibling `.recipe.json` under the name the graph expects, and
+  then re-renders.
+- Invariants:
+  - The template text is the recipe. The `animal-color` template must
+    rebuild the locked color bunny's prompt character for character.
+  - The graph the tool builds must equal the one embedded in that PNG,
+    apart from the output filename prefix.
+- Failure cases, each exiting with a message before any render:
+  - no `.recipe.json` next to the locked line art;
+  - the ControlNet model not visible to ComfyUI;
+  - locking a seed that wasn't rendered;
+  - an existing locked color asset without `--force`;
+  - `reproduce` of a guided asset whose guide file is missing.
+- Concurrency: one operator, and ComfyUI runs its queue in order. The tool
+  queues its seeds and polls each one, so no two invocations are expected to
+  run at once.
+
+## Settling Evidence (planned)
+
+- `selftest` passes for the dog, the house and the locked color bunny.
+- `colorize` on the bunny, run through the tool, reproduces the seed-72 pick
+  (made by the exploratory script) with 0 differing pixels.
+- `reproduce` on the locked color bunny reports 0 differing pixels.
+
+## Known Limitation
+
+The v1 color template gave faint, outline-less results on 3 of 4 bunny seeds
+(61, 83 and 94). Stronger outline wording would be a template v2. Changing v1
+would stop the locked color bunny rebuilding from its template, so v2 is left
+to the refinements list.
+
+Resolved by recipe v2, and not in the way expected here. The cause was the
+guide blur, not the wording; see the correction amendment below.
+
+## Contract Amendments
+
+Both amendments were found while building. Each tightens a failure case and
+does not change scope.
+
+- **Guide fingerprint.** When ComfyUI saves a graph into a PNG, it stamps the
+  image-loading node with `is_changed`, which is the SHA-256 of the guide it
+  loaded. For the locked color bunny, that value equals the committed guide's
+  hash.
+  - `selftest` now requires the committed guide to match that fingerprint.
+  - `reproduce` refuses to re-render when the guide differs, because a
+    different guide would silently produce a different image.
+  - `selftest` compares graphs with that ComfyUI-added key removed.
+- **Line art outside the workbook.** `colorize` now refuses line art from
+  outside `workbook/` before rendering. The manifest records paths relative
+  to the workbook, and the old code only found out after rendering all four
+  seeds.
+
+- **Color template v2** (added after the bunny, bear and turtle locks):
+  - The v1 wording ("clean bold outlines") gave soft, near-outline-less
+    renders on 3 of 4 seeds for the bunny, the bear and the turtle. On the
+    penguin all 4 seeds were soft; the operator judged the penguin
+    "blurry".
+  - The cause is the outline wording, which applies to every character, so
+    the fix is a new template version, not re-rolling seeds.
+  - Behaviour:
+    - `COLOR_TEMPLATES` holds `v1` unchanged, plus `v2`. `v2` replaces
+      "clean bold outlines" with the black-and-white recipe's proven phrase
+      ("confident clean bold black outline of uniform thickness") and asks
+      for crisp edges that are not faint or blurry.
+    - `colorize --template {v1,v2}` defaults to `v2`, and the manifest
+      records `template_version`.
+  - Invariant: the existing color locks (bunny, bear, turtle) stay on
+    `v1` and still rebuild from it, and `selftest` keeps checking the `v1`
+    bunny.
+  - Settling evidence: the penguin re-run on `v2`, judged by the operator
+    on the contact sheet.
+- **Correction to the v2 amendment above: the wording was not the cause.**
+  - The penguin re-run with the stronger wording barely changed: each seed
+    moved by 1.5-3.3/255 on average, and edge sharpness stayed at 2-4.
+    Sharp locks score 13-19.
+  - One factor at a time on penguin seed 83 found the real cause, the 1.5 px
+    blur on the guide. Without the blur, sharpness rose from 2.4 to 134.7,
+    with crisp edges and no artifacts. ControlNet strength 0.5, an end of
+    0.5, or both, left it at 2.4-2.5.
+  - v2 is therefore a *recipe* version, not a template version. It keeps v1's
+    wording and ControlNet settings and stops blurring the guide.
+    `colorize --recipe {v1,v2}` defaults to `v2`, and the manifest records
+    `recipe_version` and the guide recipe. The wording change is dropped.
+  - Invariant check: the v1 recipe regenerates the committed bunny, bear and
+    turtle guides byte for byte, so those locks are untouched. Manifests
+    written before versioning are v1, and their `guide_recipe` records the
+    1.5 px blur.
+
+- **`selftest` checks every locked recipe.** Added at the operator's request
+  after the penguin lock. Until now each lock was checked by a one-off
+  snippet, because `selftest` only knew three hard-coded assets.
+  - `selftest` finds every `*.recipe.json` in the locked folders and checks
+    each asset:
+    - the PNG is present, and for line art so is the SVG;
+    - the manifest's template equals the tool's current template for that
+      kind, since templates must never be edited;
+    - the template and fields rebuild the embedded prompt;
+    - the embedded seed and steps match the recipe;
+    - the embedded graph equals the graph the tool builds.
+  - Color assets also get guide checks:
+    - the committed guide matches the SHA-256 fingerprint in the PNG;
+    - the recorded recipe version regenerates that guide byte for byte
+      from the source line art. Unrecorded means `v1`.
+  - The dog and the house stay as the template checks for assets made
+    before the tool. Locked PNGs without a recipe are counted and reported,
+    not checked.
+  - Any problem prints a `FAIL` line with its reasons, and `selftest` exits 1.
+  - Needs no ComfyUI and no GPU.
+  - Settling evidence: all 8 recipe assets pass. Tampered copies each fail
+    with the right reason: changed fields, an edited template, the wrong
+    seed, a different guide, the wrong recipe version, a missing SVG, and a
+    missing PNG.
+
+- **The fox: a new character as the end-to-end test.** Added at the
+  operator's request, after PR #138 opened, to see whether the tool can make
+  a new character. The scope grows to include the fox's drafts and locks
+  under `design-source/animals/`.
+  - The fox was made with `candidates`, then `lock` on seed 94, then
+    `colorize` with recipe v2, then `lock --color` on seed 94. The operator
+    picked both seeds.
+  - Settling evidence: `selftest` passes `fox-01-sitting` and
+    `fox-01-sitting-color`.
+
+- **PR #138 review round 1** (Codex on `deda041`, nine findings, all
+  confirmed). They fall into three classes, and each class is closed across
+  every command in one pass, not finding by finding.
+  - **A. Locked assets are immutable and self-contained.**
+    - Each lock owns its guide. `lock --color` copies the exact draft guide
+      to `locked-poses/<stem>-guide.png` and records that path. Before this,
+      locks pointed at `drafts/<name>-color-guide.png`, and the next
+      `colorize` run rewrote it.
+    - The five existing color locks are migrated to guide copies. The bytes
+      are the same, so the fingerprints are unchanged.
+    - `lock` builds every output in a temporary directory inside the locked
+      folder, and moves them into place only after every step has
+      succeeded. A failed vectorizer or manifest write under `--force`
+      leaves the previous lock set untouched.
+    - `reproduce` writes by default to the kind's `drafts/`, never beside the
+      locked asset. It refuses an `--out` that is the same file as its
+      source PNG or its guide, compared by resolved path or, for existing
+      files, device and inode. This is the input-overwrite class from PR
+      #136, which this tool had not been swept for.
+  - **B. Checks fail closed.**
+    - `reproduce` compares full RGB(A) values. Greyscale is used only for
+      the print-ink line.
+    - A guided node whose `is_changed` fingerprint is missing or malformed
+      fails `check_guide`.
+    - `check_locked` compares the embedded steps with the manifest's
+      `steps`, and separately with the tool's `STEPS`.
+    - `reproduce` of a PNG whose graph loads an image requires a sibling
+      recipe that names its guide. Otherwise it exits before queueing, so it
+      never renders with a stale guide left on the server.
+  - **C. Packaging.** The docstring names NumPy as well as Pillow, and the
+    script is executable like the other `workbook/tools` scripts.
+  - Settling evidence:
+    - each fix has a probe that fails before the fix and passes after;
+    - `selftest` passes every recipe after the guide migration;
+    - `reproduce` keeps its 0-difference result, re-checked in RGB.
+    
+    The existing color bunny and penguin re-renders were already re-checked
+    in RGB on the CPU: 0 of 1,048,576 pixels differ, max channel
+    difference 0.
+
+- **PR #138 review round 2** (Codex on `34768a8`, three findings, all
+  confirmed). Two are gaps in classes that round 1 was meant to close, so
+  this time each class is closed at its single enforcement point.
+  - **B, continued: every file in a locked folder is accounted for.**
+    `selftest` fails any PNG in a locked folder that is not one of these:
+    - a recipe-managed asset;
+    - a guide referenced by a recipe in that folder;
+    - an entry in `design-source/legacy-locked-assets.json`, the 39
+      pre-tool PNGs.
+
+    Before this, a managed asset whose recipe was deleted fell silently into
+    the legacy count. A missing baseline file also fails.
+  - **A, continued: one validator for "this PNG is the render its recipe
+    describes".** `embedded_problems()` checks the template, the prompt,
+    the seed and steps, the graph, and for color the guide fingerprint. It
+    is used by `selftest` on locked assets and by `lock` on the candidate
+    before anything is staged, so a stale or mismatched candidate can't be
+    locked. It replaces round 1's guide-only check in `lock`.
+  - **Scope and traceability.** Correct Fix Must Touch covers the color
+    drafts, guides and locks of the bunny, bear, turtle, penguin and fox,
+    and the fox's line art (its own amendment above). The audit's
+    traceability names each group.
+  - Settling evidence: probes for a deleted recipe, an orphan guide, a
+    missing baseline, and a mismatched candidate at lock time; `selftest`
+    passes on the real workbook.
+
+- **PR #138 review round 3** (Codex on `d95df1e`, five findings, all
+  confirmed). Three classes again, and each is closed at one enforcement
+  point.
+  - **A. Every name the tool builds a path from is validated.**
+    `--locked-name /tmp/report` was accepted as a stem, so `locked / stem`
+    escaped the workbook and `--force` overwrote an unrelated file. The same
+    hole put a comma in `shark-01-swimming,.png`, because the lock stem
+    takes the first word of the pose verbatim.
+    - `safe_name()` accepts only lowercase letters, digits and hyphens.
+    - It guards the character name, `--locked-name`, and the word taken from
+      the pose, which is stripped of punctuation first.
+  - **B. The locked state is complete and consistent.**
+    - `locked_folders()` covers every locked root, including
+      `boss-kennedi/locked-poses`, which `reproduce` previously treated as
+      an ordinary folder and wrote into. Its 8 PNGs join the baseline.
+    - `account_locked_pngs()` fails for a baseline entry whose file is gone,
+      not just for files that are not on the baseline.
+    - `lock --force` refuses to replace line art that a color recipe names
+      as its source, because the color guide is rebuilt from that line art
+      and would no longer match. The message names the dependent locks.
+  - **C. Guided art locked before the tool.** The puppy poses 02-04 are
+    Redux renders whose reference image is `01-sitting.png`; their embedded
+    fingerprints match that file byte for byte. They have no recipe, so the
+    fail-closed guide rule refuses to reproduce them, while
+    `illustration-recipe-refinements.md` claimed every pre-tool asset could
+    be reproduced.
+    - The claim is corrected here: guided pre-tool art needs a recipe naming
+      its reference image first.
+    - Writing those recipes needs the `backfill` command, which is on the
+      follow-up branch, so the mapping lands there rather than being
+      hand-written twice. The guard stays fail-closed meanwhile.
+  - Settling evidence: probes for each refusal and each new failure, and
+    `selftest` passing with the wider baseline.
+
+- **One seam instead of per-command checks** (operator: "use a shareable
+  seam if possible... fix it at the source, stop patching").
+  - Three review rounds each found another write path missing a check,
+    because every command built its own paths and carried its own
+    validation. The checks were right; their placement was not.
+  - `Outputs` is now the only place this tool writes a file. A command
+    declares the folder it may write to and the files it read; `Outputs`
+    then refuses a generated name that is not a plain file name, a folder
+    that is locked (except for `lock`), and any target that is one of the
+    command's inputs, and it lands every write by rename from a staging
+    folder beside the target. `candidates`, `colorize`, `lock` and
+    `reproduce` all go through it, so the per-command copies are deleted.
+  - `--workbook` makes the workbook root an argument. The tests run the
+    real command line against a copy, instead of reaching into the module
+    to swap a global.
+  - `tools/test-illustration-recipe.py` reproduces every reported issue
+    against such a copy: names that build paths, a pose with punctuation, a
+    dependent color lock, a failing vectorizer, a candidate that is not its
+    recipe's render, the `reproduce` output rules, and the `selftest`
+    accounting. It needs no ComfyUI and no GPU.
+  - Writing those tests found one more gap and it is fixed: a recipe's
+    recorded `prompt` could drift from the prompt embedded in the PNG while
+    the template and fields still rebuilt it. `selftest` now compares it.
+
+- **PR #138 review round 4, and main's rewritten Kennedi poses.** Codex on
+  `85d7cbb`, three findings, all confirmed; plus one found while merging
+  main (#139, #141).
+  - **The findings.**
+    - A color lock can be named after a line-art lock
+      (`lock animal bunny --seed 72 --color --locked-name bunny-01-sitting
+      --force`) and overwrite its PNG and recipe.
+    - A line-art lock's SVG is checked only for existence, so a swapped
+      SVG passes `selftest`.
+    - A recipe can record a different `size`, `strength`, `end_percent` or
+      ControlNet and still pass: the expected graph is built from the
+      tool's constants, not from the recipe.
+    - The legacy baseline lists names only. #141 rewrote all eight Boss
+      Kennedi poses (a canonical head composited through a feathered mask),
+      and the new PNGs carry no embedded graph. `selftest` stays green
+      over assets `reproduce` can no longer rebuild.
+  - **One cause.** A recipe or a baseline entry states facts about files,
+    and the tool checks only the facts someone listed. Every round found
+    another unlisted one. The fix closes the category instead of listing
+    the next fact.
+  - **A. One constructor writes a recipe, and the checker rebuilds it.**
+    - `COLOR_RECIPES` versions hold every color render parameter: the
+      guide blur, the ControlNet, its strength and its end. No value
+      changes.
+    - `draft_manifest()` builds everything a recipe records about how it
+      renders, from its inputs alone: kind, name and fields, plus the
+      recipe version and the source line art for color. `candidates` and
+      `colorize` write what it returns.
+    - `recipe_graph()` builds a render graph from a recipe alone. The tool
+      renders with it, so it cannot render something its recipe doesn't
+      say.
+    - `embedded_problems()` rebuilds the recipe from its inputs and
+      compares every key. A key the tool does not record fails, apart from
+      the ones a lock adds (`chosen_seed`, `source`, `files`, `guide`) and
+      `comfyui_version`. The embedded graph must then equal `recipe_graph()`
+      at the chosen seed. The guide image name and output prefix don't
+      change pixels, so they are still read from the embedded graph.
+    - A value a future version records is checked as soon as the
+      constructor records it.
+  - **B. Every file in a locked folder has one owner, and its bytes are
+    recorded.**
+    - A lock's recipe records `files`, the SHA-256 of each file the lock
+      wrote: its PNG and SVG, or its PNG and guide.
+    - The legacy baseline becomes an object keyed by PNG path. Each entry
+      records `files` (its PNG and SVG digests) and how it is rebuilt:
+      - `rebuild: reproduce`: `reproduce` accepts it. This is checked with
+        the same function `reproduce` runs before it renders.
+      - `rebuild: documented` with `record`: a workbook-relative document
+        holds the process, and must exist.
+      - Any other value fails.
+    - `locked_owners()` maps every file in a locked folder to the manifests
+      that claim it.
+      - `selftest`: each file has exactly one owner, and each owned file
+        exists with its recorded digest.
+      - `lock`: every file it would write must be absent, or owned by the
+        lock of the same kind at that stem. `--force` replaces only that
+        lock.
+    - This closes the alias in both directions, as well as a lock over a
+      legacy file or over another lock's guide. It also catches a swapped
+      SVG, and any rewrite of approved bytes that doesn't update its
+      record.
+  - **C. `reproduce` on a PNG with no embedded graph exits with the
+    reason.** It raised `KeyError` before.
+  - **D. The gate runs it.** `.github/workflows/workbook-quality.yml` runs
+    `selftest` and `tools/test-illustration-recipe.py` on every workbook
+    PR. Nothing ran `selftest` at PR time, which is how #141 replaced eight
+    baselined assets unremarked.
+  - **Data.**
+    - Legacy baseline: 36 entries are `rebuild: reproduce`. The puppy poses
+      02-04 (Redux from a reference not in the repo) and the eight Kennedi
+      poses (the face and hair composite) are `rebuild: documented`, with
+      `record: docs/art/asset-provenance.md`.
+    - The ten locks gain `files`. The bunny, bear and turtle color locks
+      gain `recipe_version: v1`, which is what its absence meant.
+    - Before an SVG's digest is recorded, it is re-vectorized from its PNG
+      and must be byte-identical.
+  - **Limits.**
+    - `rebuild: reproduce` proves `reproduce` will run, not that the render
+      matches. An exact re-render needs the GPU. It was proven for the
+      puppy and the color locks in earlier rounds, not for every legacy
+      asset.
+    - Changing locked art now means updating its recorded digests, on
+      purpose and in the same PR.
+  - **Found while wiring the gate.**
+    - `check_locked()` compared a rebuilt guide with the committed one byte
+      for byte. Encoded PNG bytes depend on the Pillow and zlib that wrote
+      them, so a correct guide could fail on the CI runner's stack. It now
+      compares pixels: mode, size and every value. The guide's bytes stay
+      bound by its fingerprint and its recorded digest.
+    - The bunny, bear and turtle color *draft* recipes also lack
+      `recipe_version`, so they could not be re-locked. Each gains the
+      version its own recorded `guide_recipe` names (blur 1.5 is v1).
+  - **Scope added to Correct Fix Must Touch:**
+    `.github/workflows/workbook-quality.yml`, the ten lock recipes, the three
+    color draft recipes above, the baseline, `tools/test-illustration-recipe.py`,
+    and the refinements doc's backfill item, which said legacy assets are only
+    counted and that seven Kennedi poses are guided.
+  - **Settling evidence (planned):**
+    - A test case for each finding, with both sides of each guard:
+      - every alias direction refused, while a same-kind `--force`
+        replacement still works;
+      - a swapped SVG, a changed `size` or `strength`, and an unknown key
+        each fail;
+      - a rewritten legacy file, a `reproduce` claim on a PNG without a
+        graph, a missing record, an orphan file and a doubly claimed file
+        each fail;
+      - `reproduce` on a graphless PNG exits with a message.
+    - `selftest` passes on the real workbook.
+    - The gate runs both and is green.
+
+- **PR #138 review round 5** (Codex on `45297cc`, five findings, all
+  confirmed). Three classes, each closed at one point.
+  - **A. Locked art changes under one lock, and `lock` commits what it
+    validated.**
+    - The findings:
+      - two `lock --force` runs on one name can interleave their renames
+        and leave one lock's files under the other's recipe;
+      - `lock` validates the draft candidate and guide, then reads them
+        again to stage them, so a draft replaced in between is committed
+        unvalidated.
+    - `art_lock()` takes `flock` on the `design-source` folder. `lock`
+      holds it exclusively from its ownership check to its last rename;
+      `selftest` holds it shared, so it never reads a half-committed lock.
+    - `lock` copies the candidate (and the guide) into its staging folder
+      first, then validates the staged copies, so the files it commits are
+      the files it checked.
+    - A crash between renames can still leave a partial set. `selftest`
+      catches that, because each file's digest is recorded; an atomic swap
+      would need a folder or symlink per lock, which B forbids.
+  - **B. Locked folders hold only regular files, owned by their own path.**
+    - The findings:
+      - the scan saw only top-level files, so `animals/locked-poses/x/rogue.png`
+        passed;
+      - ownership was looked up by resolved path, so a symlink named
+        `alias.png` inherited the bunny's recipe.
+    - `locked_tree()` walks every locked root recursively. A folder, a
+      symlink, or anything else that isn't a regular file fails `selftest`,
+      and the files inside a folder still need owners.
+    - Ownership is keyed by the file's path in its root, not by what it
+      resolves to. A legacy key must name a file directly in a locked root.
+    - `lock` refuses to write over a symlink.
+  - **C. A color asset's source is a managed line-art lock.**
+    - The finding: `colorize` accepted any PNG with a recipe beside it, so a
+      copy outside the locked folder could become the source of approved
+      color art.
+    - `line_art_problems()` requires a PNG directly in
+      `animals/locked-poses`, not a symlink, owned by an `animal` recipe
+      whose `files` include it. `colorize` runs it before contacting
+      ComfyUI. `embedded_problems()` runs it for every color recipe, so
+      `lock` and `selftest` check it too.
+    - The guide-from-line-art check moves from `check_locked()` into
+      `embedded_problems()`, so `lock --color` refuses a candidate that
+      `selftest` would fail, instead of locking it.
+  - **Settling evidence (planned):** each finding reproduced against
+    `45297cc` first:
+    - a `lock` that blocks while another holder has the lock, and completes
+      after release;
+    - a draft swapped mid-validation (injected through the copy's
+      `build_graph`) that never yields a lock `selftest` rejects;
+    - a nested folder, a symlink alias and a scratch-copy color source each
+      refused;
+    - the untouched copy still passing.
+
+- **PR #138 review round 6** (Codex on `2ccc521`, four findings, all
+  confirmed). Rounds 4-6 each found another read or write of locked art
+  that an earlier rule didn't reach. So this round closes the table of
+  every operation's reads and writes, not just the four threads.
+
+  | Operation | Reads of locked art | Writes |
+  |---|---|---|
+  | `candidates` | none | drafts |
+  | `colorize` | the source line art and its recipe | drafts |
+  | `lock` | ownership, recipes, baseline, source line art | a locked folder |
+  | `reproduce` | the PNG, its recipe, its guide | `--out` (drafts by default) |
+  | `selftest` | everything, including the dog/house template checks | nothing |
+
+  - **A. Every read of locked art happens under the shared lock, from one
+    snapshot, and is checked against its recorded digest.**
+    - `colorize` reads the source line art once under
+      `art_lock(shared)`, checks it, and builds the guide and contact sheet
+      from that snapshot.
+    - `line_art_problems()` now also fails a source whose bytes differ from
+      its recipe's recorded digest. `colorize`, `lock --color` and
+      `selftest` share it.
+    - `reproduce` reads the PNG and guide once under the shared lock. A PNG
+      in a locked folder must match its owner's recorded digest. The render
+      upload and the comparison use the snapshots.
+    - `selftest`'s dog/house template checks move inside the lock.
+  - **B. Writes go only into real workbook folders.** `Outputs` refuses a
+    folder inside the workbook whose path goes through a symlink; the check
+    is lexical, before resolving or creating anything. `locked_tree()`
+    also fails a locked root that resolves elsewhere through a symlinked
+    parent.
+  - **C. Every recorded value is bound, including the last two.**
+    - A documented legacy entry's `record` must be one of the workbook's
+      provenance documents (`docs/art/asset-provenance.md`), a real file
+      that names the asset (`<stem>.png`, `.svg` or `.{png,svg}`).
+    - A lock recipe's `source` must be the draft path `lock` records for
+      its name and seed.
+    - The dependents scan in `lock` skips symlinked recipes, as
+      `locked_owners()` does.
+  - **Settling evidence (planned):** each finding reproduced against
+    `2ccc521`:
+    - a source line art altered below the guide threshold, refused by
+      `colorize` and by `lock --color`;
+    - a symlinked drafts folder and a symlinked locked folder, each refused
+      before anything is written, with the outside folder unchanged;
+    - an unrelated record, and the real record minus the asset's name;
+    - `reproduce` waiting while the lock is held, and refusing a locked PNG
+      that no longer matches its record;
+    - a recipe with a wrong `source`.
+
+- **PR #138 review round 7** (Codex on `e1044c7`, three findings, all
+  confirmed). They reach the drafts side of the round-6 table, so this
+  round closes that side too.
+
+  | Draft files | Written by | Read by |
+  |---|---|---|
+  | `<name>-candidate-<seed>.png`, `-contact-sheet.png`, `-recipe.json` | `candidates` | `lock` |
+  | `<name>-color-candidate-<seed>.png`, `-color-contact-sheet.png`, `-color-recipe.json`, `-color-guide.png` | `colorize` | `lock --color` |
+  | `<locked stem>.reproduced.png` | `reproduce` | the operator |
+
+  - **A. A draft set is committed whole, and commits are serialized.**
+    - The finding: two overlapping `candidates` (or `colorize`) runs
+      replaced each file as it rendered, so the set could end up mixing
+      both runs under one recipe.
+    - Both commands now render every file of the set into one staging
+      folder, then commit it together.
+    - Every commit into `design-source` (drafts, reproductions, locks)
+      takes `art_lock(exclusive)` for its renames. The lock is re-entrant
+      within one process, since `lock` already holds it.
+    - `lock` reads the draft recipe inside its lock too, so the recipe and
+      the candidate it stages come from one committed set.
+  - **B. One namespace, each name with one producer.**
+    - The finding: an animal named `bunny-color` writes exactly bunny's
+      color draft names.
+    - The `-color` suffix is reserved: `candidates` and `lock` refuse an
+      asset name ending in it.
+    - `lock` checks that the draft recipe's kind matches the mode, and
+      refuses cleanly instead of raising `KeyError`.
+    - `reproduce --out` inside `design-source` must end in
+      `.reproduced.png`, so it can't overwrite a draft-set file.
+  - **C. Dependents are checked by name, not by presence.** A line-art
+    `lock` refuses whenever a color recipe names its path as the source,
+    whether the PNG is there or not. A missing PNG is restored from git,
+    not re-rendered under a color lock that depends on it.
+  - **D. The rendering commands run in the tests.**
+    - `test-illustration-recipe.py` gains a fake ComfyUI. It speaks the
+      HTTP endpoints the tool uses, "renders" a small image from the seed
+      and prompt, and embeds the graph with `is_changed` fingerprints on
+      `LoadImage` nodes, as ComfyUI does.
+    - So `candidates`, `colorize` and `reproduce` run end to end on CPU.
+    - ComfyUI is the external boundary, and only it is faked.
+  - **Settling evidence (planned):** reproduced against `e1044c7`:
+    - a `candidates` run that, while the test holds the lock, renders all
+      its candidates and lands none of them, then commits a consistent set
+      on release;
+    - `candidates animal bunny-color` refused;
+    - `lock --color` over a line-art recipe refused cleanly;
+    - a line-art lock refused while a color lock depends on the missing PNG;
+    - `reproduce --out` onto a draft name refused;
+    - an end-to-end run: `candidates`, `lock`, `colorize`, `lock --color`,
+      `reproduce` (0 differing pixels) and `selftest`.
+
+## Cold Diff Audit
+
+### Gaps
+
+- change without contract trace: none.
+- contract requirement not delivered: none.
+- protected surface touched: none. The implementation commit touches only
+  `workbook/tools/illustration-recipe.py`,
+  `workbook/docs/art/illustration-recipe-refinements.md`, the bunny color
+  files under `workbook/design-source/animals/` and this contract.
+
+### Change By Change Reconstruction
+
+`illustration-recipe.py`:
+- `:57-69`: `COLOR_TEMPLATE` (the cover's Mode A wording), the color recipe
+  versions (`COLOR_RECIPES`: `v1` blurs the guide 1.5 px, `v2` doesn't;
+  default `v2`), the guide threshold, the ControlNet strength and end, and
+  the model name.
+- `:71-73` `LEGACY_BASELINE`: the path of the pre-tool PNG list.
+- `:75-83` `LEGACY_TEMPLATE_CHECKS`: template checks for the dog and the
+  house, which were locked before recipes existed.
+- `:95-105` `upload()`: a multipart upload to ComfyUI. It exits if ComfyUI
+  stores the file under another name or in a subfolder.
+- `:108-131` `without_cache_keys()`, `check_guide()`, `file_identity()` and
+  `locked_folders()`:
+  - `check_guide()` passes only when every guided node's `is_changed`
+    equals the guide's SHA-256. A missing or malformed fingerprint fails.
+  - `file_identity()` is the resolved path, or the device and inode for a
+    file that exists.
+- `:155-175` `color_graph()`: the soft-edge ControlNet graph. It is
+  identical, node for node, to the graph embedded in the seed-72 PNG.
+- `:178-182` `make_guide()`: the locked art's print lines as white on black,
+  blurred only when the recipe says so.
+- `:185-191` `contact_sheet()`: the existing sheet code, moved into a helper
+  that `candidates` (`:216`) and `colorize` (`:259`) share. The layout is
+  unchanged: 480 px tiles with a label strip.
+- `:227-274` `cmd_colorize()`:
+  - Exits unless the line art is inside the workbook, has a
+    `.recipe.json`, is an animal, and the ControlNet is visible.
+  - Builds the guide with the chosen recipe's blur (`:248`), uploads it,
+    renders the four seeds, and writes the
+    contact sheet (line art first) and the manifest.
+- `:277-326` `cmd_lock()`:
+  - Refuses a missing candidate. Refuses one that `embedded_problems()`
+    says is not its recipe's render at that seed (`:297-305`), before
+    staging anything.
+  - Stages the whole lock set in a `.lock-*` temporary folder inside the
+    locked folder, then moves it into place with `os.replace`, recipe last.
+  - `--color`:
+    - reads `<name>-color-recipe.json`;
+    - names the lock `<line-art-stem>-color`;
+    - the draft guide must pass the candidate's fingerprint, which is
+      part of the same check;
+    - copies that guide into the lock as `<stem>-guide.png`, and records
+      that path.
+  - It skips vectorizing for color (`:318`).
+- `:329-368` `cmd_reproduce()`:
+  - A graph that loads an image needs a sibling recipe naming its guide
+    (`:336-338`).
+  - The guide must exist and match its fingerprint.
+  - The output defaults to the kind's `drafts/`. It is refused if it sits
+    inside a locked folder, or is the same file as the source or the guide
+    (`:345-353`).
+  - Only then does it upload the guide, render, and compare full RGBA,
+    with greyscale used only for the print-ink line.
+- `:371-403` `embedded_graph()` and `embedded_problems()`: the one
+  validator for "this PNG is the render its recipe describes at this seed".
+  It checks the template, the prompt, the seed and steps (against the
+  recipe, then against the tool), the graph, and for color the guide
+  fingerprint. `lock` and `check_locked()` both use it.
+- `:406-429` `check_locked()`: `embedded_problems()` on the locked asset,
+  plus the SVG for line art. For color it also needs the guide to live in
+  the lock folder (`:418-419`), and to rebuild byte for byte from the
+  recorded recipe version (`:422-428`).
+- `:432-447` `account_locked_pngs()`: every PNG in a locked folder must be
+  recipe-managed, a guide some recipe names, or on the legacy baseline. It
+  returns the unaccounted PNGs, the legacy count, and whether the baseline
+  exists.
+- `:450-474` `cmd_selftest()`:
+  - runs the two legacy template checks;
+  - runs `check_locked()` on every `*.recipe.json` in the locked folders;
+  - fails a missing baseline and every unaccounted PNG, and counts the
+    legacy ones;
+  - exits 1 on any failure.
+- `:488-499`: the `colorize` subcommand (with `--recipe`) and the
+  `lock --color` flag.
+
+Other files:
+- `design-source/animals/drafts/bunny-color-*`: the four candidates, the
+  guide, the contact sheet and the manifest, all written by the tool.
+- `design-source/animals/locked-poses/bunny-01-sitting-color.{png,recipe.json}`:
+  the lock of seed 72.
+- `illustration-recipe-refinements.md`: marks colorize as built, and adds
+  the v2 outline-wording item and the per-character colour note.
+
+### Contract Traceability
+
+- `illustration-recipe.py`: Correct Fix Must Touch (the new colorize
+  pieces), plus the two amendments.
+- `design-source/animals/` drafts and locks: Correct Fix Must Touch, as
+  amended.
+  - Line art: bunny, turtle, bear and penguin (original scope); fox (fox
+    amendment).
+  - Color drafts, guides and locks: bunny (original scope); bear, turtle,
+    penguin and fox (round-2 scope amendment). Guide copies came in round 1.
+- `design-source/legacy-locked-assets.json`: round 2, B continued. It lists
+  the 39 pre-tool locked PNGs, generated from the locked folders minus
+  recipe-managed assets and referenced guides.
+- The refinements doc: Correct Fix Must Touch.
+- This file: Correct Fix Must Touch (contract).
+
+### Verification
+
+Renders ran on ComfyUI 0.25.0 at `:8189`, with FLUX.1-dev Q8 and
+Union-Pro 2.0.
+
+- **Settling evidence 1:** `colorize` run through the tool reproduced the
+  exploratory run of the same bunny. All four seeds had 0 differing pixels,
+  and the guide was byte-identical.
+- **Settling evidence 2:** `lock animal bunny --seed 72 --color`, then
+  `selftest` printed `OK` for the dog, the house and the color bunny.
+- **Settling evidence 3:** `reproduce` on the locked color bunny printed
+  `pixels differing: 0.000% | max diff 0`.
+- **Failure cases:** each exits 1 before rendering, with the ComfyUI queue
+  empty and no output file written:
+  - locking seed 50;
+  - locking again over the existing color lock without `--force`;
+  - `lock --color` for an object;
+  - `colorize` on line art with no recipe (the dog);
+  - `colorize` on an object;
+  - `colorize` on line art outside the workbook;
+  - `reproduce` with a different guide file;
+  - `reproduce` with the guide missing.
+- **Not run:** `candidates` and the line-art `lock` were not re-rendered. Their
+  code changed only by the `contact_sheet()` extraction and the `lock`
+  branching, and the line-art path through both is unchanged. `selftest`
+  still passes for the dog and the house.
+- **`selftest` over every recipe** (no ComfyUI or GPU needed):
+  - Real assets: it passes all 8 locked recipes and the 2 legacy template
+    checks, and reports the 39 locked PNGs that have no recipe.
+  - Tampered copies run through `check_locked()`. Each fails with the right
+    reason:
+    - changed colors;
+    - edited template text;
+    - the wrong seed;
+    - a different guide;
+    - a v2 asset recorded as v1, and a v1 asset recorded as v2;
+    - a missing SVG;
+    - a missing PNG;
+    - the tool's own template edited in code.
+  - Untouched copies pass.
+  - Run in-process with the color template edited in memory, all four color
+    recipes fail, the line art still passes, and it exits 1.
+- **PR #138 review round 1.**
+  - 22 of 22 probes pass, run against a scratch copy of the workbook with
+    mocked failures, so no GPU was used:
+    - a failing vectorizer under `lock --force` leaves the old lock set
+      byte-identical and no staging folder;
+    - a successful `--force` replaces the set;
+    - `lock --color` owns a byte-identical guide copy, survives the draft
+      guide being rewritten, and refuses a mismatched draft guide;
+    - missing and malformed fingerprints fail;
+    - recipe steps 29 against embedded 28 fails;
+    - a guide outside the lock folder fails;
+    - `reproduce` refuses `--out` as the source, a symlink to it, or the
+      guide, and refuses a guided PNG with no recipe;
+    - an RGB change that keeps brightness (the greyscale of both blocks
+      was 76) is caught;
+    - identical renders report 0, and default output goes to `drafts/`.
+  - Real workbook: before the guide migration, `selftest` failed exactly the
+    five color locks with "outside the lock folder". After it, all recipes
+    pass.
+- **PR #138 review round 2.**
+  - 30 of 30 probes pass: the 22 above plus 8 new ones.
+    - `lock` refuses a candidate that is another seed's re-render
+      (embedded 72 against recipe 61), and leaves the lock untouched.
+    - It refuses a candidate whose manifest changed after it rendered, and
+      a missing candidate.
+    - With a baseline, everything is accounted for.
+    - A managed PNG whose recipe is deleted becomes unaccounted.
+    - A deleted color recipe leaves its PNG and guide unaccounted.
+    - A missing baseline is reported.
+  - Real workbook:
+    - With no baseline file, `selftest` fails: the missing file plus the
+      39 pre-tool PNGs.
+    - With the generated baseline, it passes: every recipe OK, and 39
+      legacy PNGs listed.
+- **The seam refactor.** `tools/test-illustration-recipe.py` passes 22 of
+  22 checks, each running the real command line against a copy of the
+  workbook. `selftest` passes on the real workbook.
+- **PR #138 review round 3.**
+  - 11 of 11 probes pass against a scratch copy of the workbook:
+    - `--locked-name` as an absolute path, `../escape`, `Bad_Name` or
+      `with space` is refused, and a file outside the workbook stays
+      byte-identical;
+    - `candidates` with a path in the name is refused;
+    - a pose with punctuation still locks `bunny-01-sitting.png`, with no
+      comma in the name;
+    - replacing line art a color lock names as its source is refused, and
+      the message names that lock;
+    - baseline entries that exist are counted, and one whose file is gone
+      is reported;
+    - `reproduce` on a plain asset in `boss-kennedi/locked-poses` refuses to
+      default its output into that locked folder.
+  - Real workbook: `selftest` first failed the 8 Boss Kennedi poses as
+    unaccounted, then passed with them on the baseline (47 entries).
+  - Not covered here: the guided pre-tool assets still cannot be
+    reproduced. That needs `backfill --guide`, which is on the follow-up
+    branch; the refinements doc no longer claims otherwise.
+- **PR #138 review round 4.**
+  - Reproduced first, against a copy of the workbook and the unfixed tool:
+    - `lock --color --locked-name bunny-01-sitting --force` exited 0 and
+      overwrote the line-art PNG;
+    - a swapped SVG, a recipe recording `size: 512`, one recording
+      `strength: 0.5`, and a rewritten legacy PNG each left `selftest` at
+      exit 0;
+    - `reproduce` on a graphless Kennedi pose raised `KeyError: 'prompt'`.
+  - `tools/test-illustration-recipe.py`: 51 of 51 checks pass, on Python
+    3.13 with Pillow 11.3 and on Python 3.12 with Pillow 10.2, the runner's
+    apt stack. Against the unfixed tool, 25 fail. The 26 that pass there
+    are the earlier checks, the should-still-work checks (a same-kind
+    re-lock, restored copies), and the `recipe_version` flip, which its byte
+    comparison already caught.
+  - Real workbook: `selftest` exits 0. All ten recipes rebuild key for key,
+    and the 47 legacy entries pass on bytes and rebuild route.
+  - Data:
+    - All 52 locked SVGs were re-vectorized from their PNGs and matched
+      byte for byte before their digests were recorded.
+    - `reproduce`'s own check put exactly 11 legacy assets on
+      `documented`: puppy 02-04 and the eight Kennedi poses.
+    - No PNG or SVG changed.
+  - Not run here: the workbook gate itself, which runs on push.
+
+### Round 4 Change By Change Reconstruction
+
+`illustration-recipe.py`:
+- `COLOR_RECIPES`: each version holds its guide blur, ControlNet, strength
+  and end. The values are unchanged, and the separate constants are gone.
+- `ADDED_KEYS`: the keys a recipe gains outside the constructor.
+- `recipe_graph()`: the render graph built from a recipe alone. It replaces
+  `color_graph()`, and calls `build_graph()` for line art.
+- `draft_manifest()`, `recipe_inputs()`, `guide_recipe()` and
+  `color_guide_name()`: the recipe constructor, and the inputs it rebuilds
+  from. `recipe_inputs()` refuses an unknown kind, fields that are not
+  exactly the template's placeholders, and an unknown recipe version.
+- `cmd_candidates()` and `cmd_colorize()` write `draft_manifest()`'s result
+  and render with `recipe_graph()`.
+- `cmd_lock()`:
+  - refuses any target that is not absent or owned by the same-kind lock at
+    its name;
+  - records `files` with the SHA-256 of each staged file before writing the
+    recipe.
+- `reproduce_inputs()`: `reproduce`'s refusal rules as a function, including
+  a PNG with no embedded graph. `cmd_reproduce()` calls it.
+- `embedded_problems()`:
+  - rebuilds the recipe and compares every key: one not recorded, one that
+    differs, and one the tool does not record each fail;
+  - then compares the embedded graph with the rebuilt recipe's graph at the
+    seed.
+- `file_problems()`: the files a manifest records against the files it
+  should own and their bytes.
+- `check_locked()`: the files, the chosen seed, `embedded_problems()`, and
+  the guide derivation, which now compares pixels.
+- `legacy_entries()`, `legacy_problems()`, `locked_owners()` and
+  `owner_label()`: the baseline object, each entry's files and rebuild
+  route, and the owner map that `selftest` and `lock` share. They replace
+  `account_locked_pngs()`.
+- `cmd_selftest()`: the template checks report a graphless PNG, every
+  legacy entry is checked, and every file in a locked folder needs exactly
+  one owner.
+
+Other files:
+- `.github/workflows/workbook-quality.yml`: installs `python3-numpy`,
+  `python3-pil`, `potrace` and ImageMagick, then runs `selftest` and the
+  tests.
+- `legacy-locked-assets.json`: the list becomes an object with `files`,
+  `rebuild` and, for documented entries, `record`.
+- The ten lock recipes gain `files`. The bunny, bear and turtle color locks
+  and their drafts gain `recipe_version: v1`.
+- `test-illustration-recipe.py`: the copy carries the real baseline entries,
+  their files and the provenance record. It adds cases for each round-4
+  finding, with both sides of each guard.
+- `illustration-recipe-refinements.md`: the backfill item, corrected.
+
+Round 4 traceability: every change above traces to the round-4 amendment
+(A, B, C, D, and "Found while wiring the gate"). The merge from main brought
+#139 and #141 unchanged.
+
+### Round 5 Verification and Reconstruction
+
+- Reproduced first, as test cases run against `45297cc`. All seven failed:
+  - a `lock` started while the test held the lock finished anyway;
+  - a draft swapped between the validator's read and the staging copy
+    (injected through the copy's `build_graph`) was committed: `lock`
+    exited 0, and `selftest` then failed with "rendered at seed 83, not 61";
+  - a nested `untracked/rogue.png`, the file inside it, and a symlink
+    `alias.png` all passed `selftest`;
+  - `colorize` on a scratch copy got past validation (it failed only on
+    reaching ComfyUI), and a color recipe pointing at that copy passed
+    `selftest`.
+- After the fix: 62 of 62 checks pass, on Python 3.13 with Pillow 11.3 and
+  on Python 3.12 with Pillow 10.2. Against `45297cc`, exactly those seven
+  fail and the other 55 pass.
+  - In the swap case the swap still fires mid-lock, but the lock commits the
+    staged seed-61 bytes it validated, and `selftest` passes.
+- Real workbook: `selftest` exits 0, with 12 OK (2 template checks and 10
+  recipes) and no failures.
+- `a5abd83`, change by change:
+  - `art_lock()`: `flock` on `design-source`, exclusive or shared.
+  - `locked_tree()`: a recursive scan returning the regular files and the
+    strays (folders, symlinks, non-regular files).
+  - `cmd_lock()`:
+    - holds `art_lock(exclusive=True)` from the existence check to the last
+      rename;
+    - looks up owners by the file's path in the folder, and refuses a
+      symlink target;
+    - stages the candidate and guide before validating the staged copies.
+  - `cmd_colorize()`: resolves the folders on the way but not the file, then
+    refuses anything `line_art_problems()` rejects, before ComfyUI.
+  - `embedded_problems()`: for color, adds `line_art_problems()` and the
+    pixel check that the guide rebuilds from the line art, moved here from
+    `check_locked()`.
+  - `line_art_problems()`: new. Its rules are in the round-5 amendment, C.
+  - `legacy_problems()`: the key's folder must be a locked root, lexically.
+  - `locked_owners()`: keys by path in the folder, and skips symlinked
+    recipes.
+  - `cmd_selftest()` and `locked_art_ok()`: hold the shared lock; recipes
+    come from the scan; every stray fails.
+  - `test-illustration-recipe.py`: four cases, one per class, with the
+    second side of each.
+
+### Round 6 Verification and Reconstruction
+
+- Reproduced first, as test cases run against `2ccc521`. All 11 failed:
+  - line art altered below the guide threshold was accepted by `colorize`
+    (it reached ComfyUI), and `lock --color` committed a color lock from it;
+  - `candidates` into a symlinked drafts folder got past `Outputs`;
+  - `lock` into a symlinked locked folder wrote into the folder outside the
+    workbook, then crashed;
+  - an unrelated record, a record that doesn't name the asset, and a
+    deleted record each passed (the last two in their round-6 form);
+  - `reproduce` didn't wait for a held lock, and accepted a locked PNG that
+    no longer matched its record;
+  - a recipe recording another seed's `source` passed.
+- After the fix: 75 of 75 checks pass, on Python 3.13 with Pillow 11.3 and
+  on Python 3.12 with Pillow 10.2. Against `2ccc521`, 14 fail: those 11,
+  plus 3 record checks whose inputs the old tool also rejected, under its
+  older wording.
+- Real workbook: `selftest` exits 0, with 12 OK and no failures.
+- `5c41714`, change by change:
+  - `Outputs.__init__()`: refuses a workbook folder whose lexical path
+    resolves elsewhere, before resolving or creating anything.
+  - `locked_tree()`: a locked root must resolve to itself.
+  - `upload()`: takes bytes, so callers upload their snapshot.
+  - `cmd_colorize()`: checks the source and reads its bytes under the
+    shared lock; the guide and contact sheet come from those bytes.
+  - `line_art_problems()`: the source PNG's SHA-256 must equal its recipe's
+    record.
+  - `recorded_digest()`: the digest a locked file's single owner records.
+  - `cmd_reproduce()`: checks and snapshots under the shared lock; a PNG in
+    a locked folder must match `recorded_digest()`; it uploads and compares
+    the snapshots.
+  - `legacy_problems()`: `PROVENANCE_RECORDS`, and the record must name the
+    asset's stem as `.png`, `.svg` or `.{png,svg}`.
+  - `check_locked()`: `source` must be the draft path for the kind, name
+    and chosen seed.
+  - `cmd_lock()`: the dependents scan skips symlinked recipes.
+  - `cmd_selftest()` and `template_checks_ok()`: the template checks run
+    under the shared lock.
+  - `test-illustration-recipe.py`: four new cases and a `source` entry.
+    The two older record cases take the new wording, and one now deletes
+    the real record.
+
+### Round 7 Verification and Reconstruction
+
+- Reproduced first, as test cases run against `e1044c7`. All six failed:
+  - with the test holding the lock, `candidates` landed all four
+    candidates anyway, file by file;
+  - `candidates animal bunny-color` was accepted;
+  - `lock --color` over a line-art draft recipe raised `KeyError`;
+  - `reproduce --out` onto `bunny-candidate-61.png` was accepted;
+  - a line-art lock re-rendered missing line art under its dependent color
+    lock and changed the lock folder.
+- After the fix: 88 of 88 checks pass, on Python 3.13 with Pillow 11.3 and
+  on Python 3.12 with Pillow 10.2. Against `e1044c7`, exactly those six
+  fail.
+  - The new end-to-end case also passes against `e1044c7`, so the fake
+    ComfyUI matches what the tool already expected:
+    `candidates -> lock -> colorize -> lock --color -> reproduce` (0.000%
+    differing) `-> selftest`.
+- Real workbook: `selftest` exits 0, with 12 OK and no failures.
+- Change by change:
+  - `art_lock()`: re-entrant within a process (`_ART_LOCK_HELD`); refuses
+    to upgrade shared to exclusive.
+  - `Outputs.staging()`: renames under `art_lock(exclusive)` when the
+    folder is in `design-source`.
+  - `asset_name()`: `safe_name()` plus the reserved `-color` suffix.
+  - `cmd_candidates()` and `cmd_colorize()`: one staging folder for the
+    whole set; the guide uploads from its staged bytes.
+  - `cmd_lock()` and `lock_drafted()`: the whole run under the exclusive
+    lock; the draft recipe's kind must match the mode; dependents are
+    checked by path whatever the PNG's state; the loop variable no longer
+    shadows the name.
+  - `cmd_reproduce()`: inside `design-source`, the output must be
+    `.reproduced.png`, checked after `Outputs`.
+  - `test-illustration-recipe.py`: `FakeComfy`, and four cases: end to
+    end, whole draft set, one namespace, dependents of missing line art.

@@ -1,0 +1,342 @@
+{
+ "animals/locked-poses/01-sitting.png": {
+  "files": {
+   "01-sitting.png": "bdc43c0f2c906989a7ae1de49263f1ea6d35aad5061f82c384c259d51a0e0a5a",
+   "01-sitting.svg": "1c03c352d450dabed70d13dc459775a13547d9ae26c5c401ef3bc1de22c16c5c"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/02-reaching.png": {
+  "files": {
+   "02-reaching.png": "025bd1bde2c04ad8d78534363c3986af0156ea46761d07b7255b1725133f04d0",
+   "02-reaching.svg": "6aaf31c0dc0b0162251e979bd6eb8aa92c7f93bc5521cb2c1d666a000d837694"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "animals/locked-poses/03-happy-alert.png": {
+  "files": {
+   "03-happy-alert.png": "dda4836a04d77f31a378b6f6bb8b5b91923ee97ad4b22159a30d7bf3046f13f4",
+   "03-happy-alert.svg": "6daf05c92f8feb879b4266e3bf12d5deb9fe4e7ecf64fdb2e93e4abd39cd89da"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "animals/locked-poses/04-playing.png": {
+  "files": {
+   "04-playing.png": "2ad32b2cf673b361d7e1b005ebffdce8f8d84095eea65b82ccae31a8e8191417",
+   "04-playing.svg": "fa8cbcdc8fc124335d912d9df17bb7cd0babddb3888ef4cd9d76eed3234c48d8"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "animals/locked-poses/bird-01-perched.png": {
+  "files": {
+   "bird-01-perched.png": "6642a8a0656715604beea6deb81600325b6632b8f424e1a3348acbe6112aa55c",
+   "bird-01-perched.svg": "ff22d0243db91f5714a11f4dd0ceeb90237c8384cadf0ee2ea865905b2f83434"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/cat-01-sleeping.png": {
+  "files": {
+   "cat-01-sleeping.png": "4bb0d9a05e1e5f58343f1f874e70c240b57196285c43a79c79a6ea0521194d06",
+   "cat-01-sleeping.svg": "78f5cd9f3788954113ed4e07ea91c5ac8ded0c074b187e5446ec9b65e1ca8a04"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/dog-01-sitting.png": {
+  "files": {
+   "dog-01-sitting.png": "4f0e60b49b38b34ddd86098cd83de01ef119097136015c805d17a816458ad572",
+   "dog-01-sitting.svg": "04d341055942dc819ee0cb0311bb3c9316d965a66907af37db0f18b6c404aa38"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/elephant-01-standing.png": {
+  "files": {
+   "elephant-01-standing.png": "a5b171c74831c9830d6a153af0fa991c87ffe28581a415248560114e9199687a",
+   "elephant-01-standing.svg": "0c1234d51bb1a61f28b43014c2d15375931063cab9353e2965fe002cadf5fb9f"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/fish-01-swimming.png": {
+  "files": {
+   "fish-01-swimming.png": "a0e9ddc3100d51535eef9e0168f0f676678c596098de5e523fb037ee03b10a07",
+   "fish-01-swimming.svg": "6840b9dcfdabac067cb3de199564153920111f4a5a51d9b1c09ec19284c46151"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/giraffe-01-standing.png": {
+  "files": {
+   "giraffe-01-standing.png": "de6dad29c7c1c42260bbf74db4fd857207ca44e818349afd79b0633b516f06bc",
+   "giraffe-01-standing.svg": "e88fb953255e0268bb9f32d08152a3a79ebb916bbc3de95a2b806683d94d2ea7"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/jellyfish-01-floating.png": {
+  "files": {
+   "jellyfish-01-floating.png": "2ccf5feab037559e69b20181b117986d4ebc3cb26c42c9b7ffa2ddf3a2c4651c",
+   "jellyfish-01-floating.svg": "7142441d0662d53869c02fd2fc7d3a3039027f5ace256f4531e68385a2152a96"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/lion-01-sitting.png": {
+  "files": {
+   "lion-01-sitting.png": "69e2b7d040f65a5f7b7551c40cffcad67c57b403a96740e20933c3404e7a2878",
+   "lion-01-sitting.svg": "e84baf39d9cb0061ccced4e498e59293b408e648cde577cef8abf9222377bf72"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/owl-01-perched.png": {
+  "files": {
+   "owl-01-perched.png": "1b1b6c050dadc15e18362d67831c3867555d44cd25772e33767710e3fa2b4568",
+   "owl-01-perched.svg": "d7d09cb9f250e3c340a7a58f6f83efad8600100a81eaad7f2e05b7397ccb2dee"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/queen-01-standing.png": {
+  "files": {
+   "queen-01-standing.png": "16641beb2f3a6e3efdc73ef4ba575637011b937d39b4142511c261bacb089098",
+   "queen-01-standing.svg": "e0fa3d3efeb0d7a8d7f3329ebfcc91463e1ac240ac82d48332a91f8c3e29621c"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/whale-01-swimming.png": {
+  "files": {
+   "whale-01-swimming.png": "e5834ec2e58c6a07919a6485986c444b7f0b866a8bf5d2bc017ef627281609b0",
+   "whale-01-swimming.svg": "302babb8d7f8ca139f5dc28e05f25cdbdbed6e455c83e5c9e3209b02ba88d880"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/zebra-01-standing.png": {
+  "files": {
+   "zebra-01-standing.png": "73d323b81e2149a493a66e86546fc4d7ca749486d1931cab213273de31c903fb",
+   "zebra-01-standing.svg": "c1f16425462eda004dfda8b185f5921fee077034f01357d68afc7da8454aa9fe"
+  },
+  "rebuild": "reproduce"
+ },
+ "boss-kennedi/locked-poses/01-neutral.png": {
+  "files": {
+   "01-neutral.png": "2b4e3f5d640515da1b1693e7e05e7e4d51696f87c2a1b5741bbdd041476c44c8",
+   "01-neutral.svg": "38a900f49125d8731612544a53d51e7830f23caa2b17d68e4c453ae2d79f9328"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "boss-kennedi/locked-poses/02-hero-clipboard.png": {
+  "files": {
+   "02-hero-clipboard.png": "191965b28586a2b58f7da2947c4105b25e29dea8786df2d00d6e593b9ae54258",
+   "02-hero-clipboard.svg": "acdd66d4597199a2e41e75f9c9955d0c6c0b5d77e47ccee1516844b5f22e36b4"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "boss-kennedi/locked-poses/03-waving.png": {
+  "files": {
+   "03-waving.png": "4ea6cd39ad416da324f32c8e51a44195d5385c9cb02dd712c31c7ca57afa3e8b",
+   "03-waving.svg": "9b1f5ffbd1f538f1b528de6fec1a937ab99f23d212aa7028b5c67af6f92d19ae"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "boss-kennedi/locked-poses/04-helping.png": {
+  "files": {
+   "04-helping.png": "47e239d6744b35c5576da4ef3582491aa1b5267e1c7c184f801409b9454ce5c9",
+   "04-helping.svg": "80dab7e82ad6824075e0bb3de45a55b22cc4765da062b9597ef1955e53917927"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "boss-kennedi/locked-poses/05-pointing.png": {
+  "files": {
+   "05-pointing.png": "fc037121d1515105e323011168089e54963ce96c6847c5b48e342715d886d825",
+   "05-pointing.svg": "2ce6d7b3207b7d2bd00a3d682549d8e19b3dd95b97dbf3390e24a6de307d448e"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "boss-kennedi/locked-poses/06-sitting-writing.png": {
+  "files": {
+   "06-sitting-writing.png": "23a354ba72d2f4d9653b68c7e05360686f0ffdc73fa50c80f6abd762f0161b64",
+   "06-sitting-writing.svg": "e11dd82c0b460890077e56888b160511b8d25b091889c692dea3fc9f94b18501"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "boss-kennedi/locked-poses/07-thinking.png": {
+  "files": {
+   "07-thinking.png": "524cfade23e91688c026fe24cb87248e394c9ef21797c29ef3d7d308780e3c46",
+   "07-thinking.svg": "eb1cd59a6937e7f62e3ed34c4af76a3482843c81ce83b4192d1958fa53d05143"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "boss-kennedi/locked-poses/08-celebrating.png": {
+  "files": {
+   "08-celebrating.png": "ec30a61d2381eb070dc7d9d0be9792f54c132b99d97bcfb14a7837fcf9e6119f",
+   "08-celebrating.svg": "b17739c57fd211f28b72af11c2b721ec1a2e72eb6e4b98e01f6624ac2be15240"
+  },
+  "rebuild": "documented",
+  "record": "docs/art/asset-provenance.md"
+ },
+ "objects/locked/apple.png": {
+  "files": {
+   "apple.png": "a690768d94414b3c620e1f71df471544df156f547f74be35308a671c05100d16",
+   "apple.svg": "231f2d6d05780a3d5c3c676dfb00669270348fec45f52dfcbf019abe6cd7eaae"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/badge.png": {
+  "files": {
+   "badge.png": "b5d57fafc6664a1c53edbedde5c260c1723c34e4fe813315f73ec22e61a47681",
+   "badge.svg": "21db0873ecd84126fe815152a645d0db56f6fe7bc1ff8818fa49191932484c80"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/ball-behind-box.png": {
+  "files": {
+   "ball-behind-box.png": "e376284091a615b6185ce2af6abd9fe4a7fcd95ba206451734d585144f0af8f7",
+   "ball-behind-box.svg": "edd0390917dc69e174d0a2e42822011a3ceb611be4592a9ebf8fc5b1b36f2fd3"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/ball.png": {
+  "files": {
+   "ball.png": "fb8fe2f3fd77153401e5b497ba56c9761af887af61c78f447ede00a6a6054d71",
+   "ball.svg": "33c97702cd738ffcd9ee2fc2275f4454cee09fd589c53ac2d80330d6a0145da7"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/bed.png": {
+  "files": {
+   "bed.png": "b687e8ebd03815953ee23e5b13c2aaa538f566011818c7536b6c2d4d752a5c83",
+   "bed.svg": "5d2754c28ad6c2cf9cb084a42adde9a137343ce0afdf3556bbc8e58b527522e2"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/clipboard.png": {
+  "files": {
+   "clipboard.png": "6cb59c13fee63466e31bc6d5d2a1a96305a54ee64d549c37b9e78e0ad2b73f5a",
+   "clipboard.svg": "12893bb85325366deb5b2b9757dd91c1b3ca846fc6e9a6257f4107caac3d9649"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/door-arrow.png": {
+  "files": {
+   "door-arrow.png": "b4a23eb5557f5e80408dbd657a0cf8d28c2aba0bf8705da9dbe3abeaa5ebd53c",
+   "door-arrow.svg": "a197420423cacd98c97b962e7fe1b0c5e4c76ec3943b09959a147c207498e5c8"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/house.png": {
+  "files": {
+   "house.png": "9adb4bbba423422a13038779f304e96c841b39ef26955cb4c3d30ce7ca4c81ea",
+   "house.svg": "b9ee64fbe314ececee232e0db7260ecb8b0ce74ae2aaae67e7620d90ea7a2dfd"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/igloo.png": {
+  "files": {
+   "igloo.png": "801cfbf780dca2dc2db7c8bcb42a750503fdaeb87308521d2cfd2740f1aff769",
+   "igloo.svg": "483868a6f3b3104ff8278ceac71e60b0e475004c72c2d66894e3affbb5666f14"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/kite.png": {
+  "files": {
+   "kite.png": "4febd94c7193492cfabcff09b72f8ac7afbb53017be330df4d79fffac7141cb0",
+   "kite.svg": "7288564a5755d7f501fb6361642f072c623f210a04588b7d8bb85cd24c28eed4"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/magnifying-glass.png": {
+  "files": {
+   "magnifying-glass.png": "2341b0d694e5a535dc63de35a37bc934c4e647218360ff7faecb895dd4475365",
+   "magnifying-glass.svg": "810d8df6c149d0eb29c82b606c20f31a6d7178aba5376cb7330fb283610d3907"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/moon.png": {
+  "files": {
+   "moon.png": "1834dbdbfc330997d59d0d6505663ad639ddbad38d276a3fcbaf231b436c7e9b",
+   "moon.svg": "d1930a8ee4c2e2fa3267329eb10cb1314b2cfdeb0dd8082d5e067e854159c901"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/nest.png": {
+  "files": {
+   "nest.png": "eaad15ed5724c7852dd62b3453f5176e453fd1836d443a8392acaa9ec6fd458d",
+   "nest.svg": "a0078c30345fd6e5db9c51261b0a9dd06e5105954ee84194c9f4c615461f497d"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/paintbrush.png": {
+  "files": {
+   "paintbrush.png": "fd021024bd96131fe98a8aef012ac4ad51506fcbc016f3133aae04335d135742",
+   "paintbrush.svg": "77cfbcdee5fa72a40f3da6c232733866a17a9fce27c9dd04797ba513f41880b9"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/paper.png": {
+  "files": {
+   "paper.png": "01efdb0ad8a2c84116c9c4becab1601e7ad6755187e8ef057118fccce983db1e",
+   "paper.svg": "a8a1aa719bf0981cfc68395f47f64252ac31a26a112be2a687a1cafaec9359df"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/pencil.png": {
+  "files": {
+   "pencil.png": "889e22c492a1714f9310e3410fb428eab2cc0c35c505c946b48dbf60caebfef2",
+   "pencil.svg": "1d19089eafef3f7027d91455b9e87b6f6286045d81ba93745c3c4b1c3724d2e6"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/rainbow.png": {
+  "files": {
+   "rainbow.png": "1cd5defaeac19125a5fbbb53668f42f9e755471eb6e85fa514680c73edefddd6",
+   "rainbow.svg": "654b085ba3d347638bcaa81b3576a9cd2f238a2be385de02272cc86ad0a90eee"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/sun.png": {
+  "files": {
+   "sun.png": "caa33d9200b14a0a27f931a1ccf978d0a134714216d9204b89a740224308954b",
+   "sun.svg": "d0086c8485f2fb58f2099adba6138a6d8bd36c0d4b14db6fbb45da5c03f36f2f"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/tree.png": {
+  "files": {
+   "tree.png": "c31e81144f2b17677ad4d8fbf6aa4bead72c98415b3f69a9cbcc0b78908fe7d0",
+   "tree.svg": "0386ad0122c84036910a2c772892789bf985d4b60358ff6a31c5961261a469ad"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/umbrella.png": {
+  "files": {
+   "umbrella.png": "09d48994f9d8b2cd0081fd7892ecdb34d84f082a97b7c9f10432ef15cc101f77",
+   "umbrella.svg": "6e8535ee4c00072b9391d3c2ffc70f0c48396d27763d15d4b5c41099caa89911"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/violin.png": {
+  "files": {
+   "violin.png": "653fd5e37ba0f9b387a29c3815b94b396f84551e18f74c5a0001bd2b2d2087a9",
+   "violin.svg": "98d9f90e6ac72591c823372928a5a7d76d615aea04a38045a540e9c13102c2db"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/xylophone.png": {
+  "files": {
+   "xylophone.png": "9e50e3280dc4f9039cb138a8e31b0c414b0214edf6271f7fdb23e37c959b2129",
+   "xylophone.svg": "1feab4620298dcd68168c72aac1145b85450f0bebab4fd759702d2b600f1eed0"
+  },
+  "rebuild": "reproduce"
+ },
+ "objects/locked/yoyo.png": {
+  "files": {
+   "yoyo.png": "29be890efd62f3146f50d91e3327f8471e83e1403a2c3a768d1d53fd9b0fced4",
+   "yoyo.svg": "eddb86009afb2444796fe7216683cfe80a6a65b4268ca3bdefde3c63825e7149"
+  },
+  "rebuild": "reproduce"
+ }
+}
