@@ -25,9 +25,13 @@ Operator decisions, 2026-10-04:
 - The interior pages are Mode B line art. Her skin there is an uncolored
   outline for the child to color in, so they show no skin tone and are not
   wrong.
-- The cover can't be fixed by re-rendering it. Its provenance records
-  "Seed: new generation, not recorded", and a new render would be a
-  different picture of a composition the operator has already approved.
+- The cover can't be fixed by re-rendering it. Its PNG embeds its graph
+  (seed `1503776796`, 32 steps), so it is reproducible. But adding her skin
+  to that prompt changes the conditioning, and the same seed then draws a
+  different picture: the composition the operator approved would not
+  survive. Only recoloring the existing image keeps it. (Its provenance
+  entry says "Seed: new generation, not recorded"; that is wrong, and this
+  slice corrects it.)
 
 ### Correct Fix Must Touch
 
@@ -124,7 +128,16 @@ Operator decisions, 2026-10-04:
 
 ## Contract Amendments
 
-None yet.
+- **Root cause corrected before any code** (2026-10-04). The first version
+  quoted the provenance entry's "seed not recorded" as the reason the cover
+  can't be re-rendered. Reading the PNG showed its seed is embedded. The
+  reason is now the true one: a changed prompt redraws the image. Scope
+  gains one line, already inside the provenance item: the cover's entry
+  records its seed.
+- **The tool needs only numpy and Pillow.** The workbook gate's Python has
+  no scipy. So the 4-connected region labelling and the cross-shaped
+  dilation the preview took from `scipy.ndimage` are written out in the
+  tool. Its output must equal the approved preview's pixels.
 
 ## Cold Diff Audit
 
