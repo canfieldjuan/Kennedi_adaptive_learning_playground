@@ -175,6 +175,29 @@ Operator decisions, 2026-10-04:
     palette (this replaces the "same mode" invariant with "RGB in, RGB
     out");
   - the usage example now gives paths that work from the repository root.
+- **Clothing touching a seeded region is excluded (Codex, PR #143, round
+  3; the operator chose to fix before merging).**
+  - Where no outline separates skin from clothing, a seed's region runs on
+    into the clothing. Codex found the underside of the raised sleeve.
+  - Clustering every recolored pixel with a source hue above 32 found three
+    clothing patches:
+
+    | Patch | Size | Box | Hue |
+    |---|---|---|---|
+    | Raised sleeve's underside | 3,079 px | x 354-440, y 581-665 | 36.7-39.5 |
+    | Clipboard sleeve's underside | 257 px | x 608-631, y 684-728 | 33.9-39.5 |
+    | Skirt hem above the left leg | 60 px | x 514-537, y 995-1000 | -- |
+
+  - Her skin in full light peaks at hue 29.6. The 161 remaining clusters of
+    20 px or fewer (299 px) are anti-aliased skin edges, and stay.
+  - The spec gains `clothing`: named boxes, each with a hue floor. Inside a
+    box, pixels at or above the floor are clothing and keep their source
+    color. A plain hue cap would also cut her skin's anti-aliased edges and
+    leave pale fringes.
+  - Evidence:
+    - only pixels inside those boxes, at or above the floor, may differ from
+      the previous output, each back to the source;
+    - every other recolored pixel is unchanged.
 
 ## Cold Diff Audit
 
