@@ -389,3 +389,24 @@ night, and a moon belongs there.
     knows, not only from a dropped connection.
   - Not in this class, so unchanged: the tool's own recipe and story files
     are still parsed as they were in slices 1 and 2.
+  - **Round 3 evidence:**
+    - 92 of 92 checks on both stacks. The six new checks:
+      - a server with no version, an empty version, or a `system` field
+        that isn't an object renders nothing and writes nothing;
+      - an `/object_info` reply of an unknown shape exits plainly before
+        rendering;
+      - a `/history` entry without an image file exits plainly and keeps
+        seed 61;
+      - the real render with an embedded graph of `{` is never recorded;
+      - a lock whose embedded graph isn't JSON fails `selftest` as a
+        problem, with no traceback.
+    - Breaking each guard fails its checks:
+
+      | Guard removed | Checks failing |
+      |---|---|
+      | known-build exit | 3 |
+      | embedded-graph guard | 2 (recording and `selftest`) |
+      | `/history` guard | 1 |
+      | `/object_info` guard | 1 |
+      | `system` guard | 1 |
+      | empty-version guard | 1 |
