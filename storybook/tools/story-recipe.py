@@ -508,6 +508,11 @@ def contact_sheet(tiles, out, tile=480, references=(), reference_tile=240):
     sheet.save(out)
 
 
+def server_version(server):
+    """The ComfyUI build serving now, as /system_stats reports it (None when it doesn't say)."""
+    return api(server, "/system_stats", timeout=10).get("system", {}).get("comfyui_version")
+
+
 def candidate_problem(path, size):
     """Why the bytes ComfyUI returned can't be recorded as a candidate, or None: they must decode fully as a PNG of
     the recipe's size. A recorded candidate is kept by its digest on every re-run, so an error page, an empty or
@@ -552,12 +557,13 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
     """Render the recipe's seeds into drafts_rel as <stem>-candidate-<seed>.png, one seed at a time.
 
     After each seed, its candidate and the draft recipe, which records every seed rendered so far, land in the
-    drafts folder together under the art lock. So a ComfyUI lost mid-set keeps what finished, and a run that fails
-    before its first seed leaves the previous set as it was. A set already there for the same recipe and ComfyUI
+    drafts folder together under the art lock, once the bytes are a valid candidate and the ComfyUI build is still the
+    set's. So a ComfyUI lost mid-set keeps what finished, and a run that fails before its first seed leaves the
+    previous set as it was. A set already there for the same recipe and ComfyUI
     version is resumed: its seeds are kept, not re-rendered. The contact sheet is written once every seed is in.
     """
     drafts = real_folder(drafts_rel)
-    version = api(server, "/system_stats", timeout=10).get("system", {}).get("comfyui_version")
+    version = server_version(server)
     with art_lock():
         kept = kept_candidates(drafts, stem, manifest, version)
     recipe = {**manifest, "comfyui_version": version, "candidates": dict(kept)}
@@ -575,6 +581,12 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
                 problem = candidate_problem(out, manifest["settings"]["size"])
                 if problem:
                     raise RenderFailed(problem)
+                # Every recorded seed comes from the set's build: a ComfyUI restarted or upgraded between seeds
+                # would otherwise add the new build's renders under the old version.
+                now = server_version(server)
+                if now != version:
+                    raise RenderFailed(f"ComfyUI changed from {version!r} to {now!r} during the set, so this seed "
+                                       f"isn't recorded; the next run starts a fresh set")
             except (*LOST_COMFY, RenderFailed) as error:
                 done = sorted(recipe["candidates"])
                 sys.exit(f"lost the render of seed {seed} ({error}); " + (

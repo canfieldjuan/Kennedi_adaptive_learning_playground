@@ -62,10 +62,11 @@ class FakeComfy:
     loads, and embeds the graph as ComfyUI does. rename_uploads stores uploads under another name, as ComfyUI
     does without overwrite; die_after=N drops the connection while the (N+1)th render is polled, as a ComfyUI that
     stops mid-set does; version is what /system_stats reports (None: no version); bad_history and bad_view map a
-    render's index to the broken reply its /history poll or /view download gets instead."""
+    render's index to the broken reply its /history poll or /view download gets instead; upgrade_after=N reports
+    another version once more than N renders have been queued, as a ComfyUI restarted on a new build does."""
 
     def __init__(self, models=MODEL_FILES, nodes=NODES, rename_uploads=False, die_after=None, version="fake",
-                 bad_history=None, bad_view=None):
+                 bad_history=None, bad_view=None, upgrade_after=None):
         self.images, self.uploads, fake = {}, {}, self
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -111,7 +112,8 @@ class FakeComfy:
                     pid = parse_qs(query)["filename"][0][:-4]
                     return self.reply((bad_view or {}).get(int(pid[3:]), fake.images[pid]), "image/png")
                 if path == "/system_stats":
-                    return self.reply({"system": {"comfyui_version": version}})
+                    upgraded = upgrade_after is not None and len(fake.images) > upgrade_after
+                    return self.reply({"system": {"comfyui_version": f"{version}-new" if upgraded else version}})
                 if path.startswith("/object_info/"):
                     node = path.rsplit("/", 1)[1]
                     if node not in nodes:
@@ -713,6 +715,16 @@ def case_bad_replies_are_not_kept(root):
         code, out = run(root, "--server", comfy.url, "page", STORY, 1)
         check("with no ComfyUI version, nothing is resumed: all four render fresh",
               not code and renders(comfy) == 4 and "kept" not in out, f"{renders(comfy)} renders: {out.strip()[-120:]}")
+    finally:
+        comfy.close()
+    comfy = FakeComfy(upgrade_after=1)
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 2)
+        recipe = json.loads((root / PAGE_DRAFTS / "page-02-recipe.json").read_text())
+        check("a ComfyUI upgraded between seeds: the new build's seed isn't recorded, the run exits plainly",
+              code and "changed from 'fake' to 'fake-new'" in out and "Traceback" not in out
+              and sorted(recipe["candidates"]) == ["page-02-candidate-61.png"] and recipe["comfyui_version"] == "fake",
+              out.strip()[-200:])
     finally:
         comfy.close()
     comfy = FakeComfy(bad_history={1: b"{"})
