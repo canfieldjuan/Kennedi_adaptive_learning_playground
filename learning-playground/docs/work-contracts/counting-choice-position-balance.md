@@ -54,3 +54,39 @@ learn "circle the middle one" instead of counting.
   reordered to 3/3/2 pass. `all` on a balanced explicit recipe passes `verify`.
 - The default `counting-mixed` recipe still verifies 8/8/8. The `counting-custom` recipe (seeded choices) still
   verifies.
+
+## Implementation summary
+
+Implemented in `2811693`:
+
+- `workbook/src/content/counting-practice.mjs`:
+  - adds the exported `assertBalancedChoicePositions(groups)`, which counts the correct-answer position across all
+    groups and enforces the limit `ceil(groups / 3) + 1`;
+  - `createCountingBookFromGroups()` calls it in choice mode, after seeded choices are filled in.
+
+  Explicit choices are not reordered.
+- `workbook/scripts/counting.mjs`: verify applies the same helper to custom-group choice books. The default book keeps
+  its exact 8/8/8 assertion.
+- `workbook/tests/recipes.test.mjs` adds one test:
+  - the observed 1/6/1 shape is rejected with its counts;
+  - 8 groups: 2/4/2 passes at the limit, and 1/5/2 fails at the limit + 1;
+  - 3 groups: 2/1/0 passes, and 3/0/0 fails;
+  - a balanced explicit recipe keeps its exact order.
+
+## Verification
+
+- `npm run workbook:test`: 29 tests, 29 pass. `npm run counting:test`: 11 tests, 11 pass. The new test failed before
+  the fix.
+- The Qwen Code + Strata recipe from 2026-10-05 (`counting-choice-v2.json`) fails `validate`: `Correct answers bunch
+  in one choice box (1/6/1 by position); reorder explicit choices so no box holds the answer more than 4 times.`
+- The same numbers, with the answer moved to position `i % 3`, pass `validate`. `all` then exits 0, and verify
+  reports `correct positions 3/3/2`.
+- `all` on `recipes/counting-mixed.json` still verifies `8/8/8`. `all` on `recipes/counting-custom.json` still
+  verifies `2/2/2`.
+
+## Gap audit
+
+DONE. Every "must touch" item is in `2811693`, and nothing in "must not change" moved:
+- explicit order and the lock tests are unchanged;
+- no schema, rendering or seeded-placement changes;
+- no checked-in recipe has explicit choices.
