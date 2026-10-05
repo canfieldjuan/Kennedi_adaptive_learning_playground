@@ -147,44 +147,79 @@ palette, clean confident outlines, cozy picture-book style.
     They are left for the first page renders to judge. A change to either
     is a plan or template change.
 
+- **The operator's picks are locked in this PR (operator, 2026-10-04: "lock
+  them").** The picks are Pippa seed 72, Bramble seed 83 and Barnaby
+  seed 61, from the final v2.
+  - Their locks go in this PR, so CI checks them from the first merge.
+  - Their draft sets go in too: the four candidates, the contact sheet and
+    the recipe for each, as the workbook commits its drafts. A lock records
+    its draft as `source`, and the draft recipe records each candidate's
+    SHA-256.
+
 ## Cold Diff Audit
 
 ### Gaps
 
 - **Change without contract trace:** none. `git diff origin/main...HEAD`
   holds:
-  - the two v2 templates;
+  - sheet v2 and page v2;
   - the two version switches;
-  - three new test checks;
+  - three test checks;
+  - the three locks and their draft sets (amendment 3);
   - this contract.
-- **Contract requirement not delivered:** none. The real v2 renders are
-  recorded below.
+- **Contract requirement not delivered:** none.
 - **Protected surface touched:** none.
-  - v1 is byte-identical. Sheet v1 and page v1 were compared with
-    `origin/main`'s values: both are identical.
+  - v1 is byte-identical. The sheet v1 and page v1 templates, all three v1
+    sheet recipes and a v1 page recipe were each rebuilt with this branch's
+    tool and with `origin/main`'s, and came out identical.
+  - The graph builders end unchanged from `origin/main`. The negative-prompt
+    support added in amendment 1 was removed in amendment 2.
   - Render settings, the canon and the story are untouched.
 
 ### Change By Change Reconstruction
 
 - `storybook/tools/story-recipe.py`:
-  - `:75` `SHEET_TEMPLATES` now holds v1 (re-indented, same strings) and,
-    at `:82`, v2.
-  - `:92` `TEMPLATE` is `"v2"`.
-  - `:104` `PAGE_TEMPLATES["v2"]` is page v1 with the v2 style. It is the
-    only key that differs.
-  - `:109` `PAGE_TEMPLATE` is `"v2"`.
+  - `:76` `SHEET_TEMPLATES` holds v1 (re-indented, same strings) and, at
+    `:83`, v2. v2 has the style without "moonlit", the upright text, and no
+    moon words.
+  - `:93` `TEMPLATE` is `"v2"`.
+  - `:105` `PAGE_TEMPLATES["v2"]` is page v1 with the v2 style.
+  - `:110` `PAGE_TEMPLATE` is `"v2"`.
 - `storybook/tools/test-story-recipe.py`, three checks:
-  - `:189`: a new sheet is v2, upright, with no moon and no "moonlit";
-  - `:197`: all three characters' sheet prompts are upright and rule out a
-    moon;
-  - `:408`: a new page is v2, with no "moonlit".
+  - `:189`: a new sheet is v2, upright, and never names the moon;
+  - `:196`: all three characters' sheet prompts are upright and never name
+    the moon;
+  - `:407`: a new page is v2, with no "moonlit".
+- `storybook/design-source/characters/locked/`: `pippa`, `bramble` and
+  `barnaby`, each a `.png` and a `.recipe.json` (template v2, render v1,
+  ComfyUI 0.25.0).
+- `storybook/design-source/characters/drafts/`: each character's four
+  candidates, contact sheet and recipe.
 
 ## Verification
 
-- `test-story-recipe.py`: 67 of 67 checks, on Python 3.13 with Pillow 11.3
-  and on Python 3.12 with Pillow 10.2. That is the 64 from before plus the
-  three new ones.
-- **v1 locks still pass.** `origin/main`'s tool (v1) locked Pippa and
-  Bramble, and page 4, against the fake ComfyUI. This branch's `selftest` on
-  that tree: "2 character locks, 1 stories and 1 page locks … 0 problems".
-- `selftest` on the real storybook: 0 problems.
+- `test-story-recipe.py`: 67 of 67 checks on the final code, on
+  Python 3.13 with Pillow 11.3. The 3.12 stack passed 67 of 67 on the first
+  v2 code.
+- **v1 locks still pass.** `origin/main`'s tool (v1) locked Pippa, Bramble
+  and page 4 against the fake ComfyUI, and this branch's `selftest` found
+  0 problems.
+- `selftest` on this branch, with the three real locks: "3 character
+  locks, 1 stories and 0 page locks checked against
+  canon/moon-berry-forest.json; 0 problems".
+- **Real renders on the 3090** (Qwen-Image Q8 GGUF, 20 steps, 1328²), four
+  seeds per character, about 95 seconds per image:
+
+  | Template | Moons | Bramble with six limbs | Colours |
+  |---|---|---|---|
+  | v1 | 9 of 12 | 4 of 4 | canon |
+  | v2, "no moon" in the text (Pippa and Bramble only) | 8 of 8 | 0 of 4 | canon |
+  | v2, moon in the negative prompt | 0 of 12 | 0 of 4 | orange cast |
+  | **v2, final: no moon words** | **0 of 12** | **0 of 4** | **canon** |
+
+  - Final per-character times: Barnaby 441s, Pippa 396s and Bramble 451s,
+    for four seeds each.
+- **The operator's picks:** Pippa 72, Bramble 83 and Barnaby 61, locked.
+- **Left for the page renders:**
+  - Pippa's tail is bare and pink, not furry;
+  - Bramble's tail has raccoon-style rings.
