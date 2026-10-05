@@ -453,19 +453,7 @@ def render(server, graph, out, timeout=1800):
             query = urllib.parse.urlencode({"filename": item["filename"], "subfolder": item.get("subfolder", ""),
                                             "type": "output"})
             with urllib.request.urlopen(f"{server}/view?{query}", timeout=60) as response:
-                data = response.read()
-            # Only a PNG ComfyUI rendered is recorded: an error page or an empty body would otherwise be kept by
-            # its digest on every re-run.
-            try:
-                with Image.open(io.BytesIO(data)) as image:
-                    image.load()
-                    kind = image.format
-            except (OSError, SyntaxError, ValueError) as error:
-                raise RenderFailed(f"ComfyUI returned {len(data)} bytes that aren't an image "
-                                   f"({type(error).__name__})") from None
-            if kind != "PNG":
-                raise RenderFailed(f"ComfyUI returned a {kind} image, not the PNG SaveImage writes")
-            out.write_bytes(data)
+                out.write_bytes(response.read())
             return
         time.sleep(2)
     raise RenderFailed(f"timed out after {timeout}s")
@@ -520,6 +508,23 @@ def contact_sheet(tiles, out, tile=480, references=(), reference_tile=240):
     sheet.save(out)
 
 
+def candidate_problem(path, size):
+    """Why the bytes ComfyUI returned can't be recorded as a candidate, or None: they must decode fully as a PNG of
+    the recipe's size. A recorded candidate is kept by its digest on every re-run, so an error page, an empty or
+    cut-off body, or the wrong image must never be recorded."""
+    try:
+        with Image.open(path) as image:
+            image.load()
+            kind, dimensions = image.format, image.size
+    except (OSError, SyntaxError, ValueError) as error:
+        return f"ComfyUI returned {path.stat().st_size} bytes that aren't an image ({type(error).__name__})"
+    if kind != "PNG":
+        return f"ComfyUI returned a {kind} image, not the PNG SaveImage writes"
+    if dimensions != (size, size):
+        return f"ComfyUI returned a {dimensions[0]}x{dimensions[1]} image, not the recipe's {size} square"
+    return None
+
+
 def kept_candidates(drafts, stem, manifest, version):
     """The candidates of the draft set already in drafts that this run can keep: none unless its recipe rebuilds to
     this one (every key but the render-time ones), it was rendered by the same, known ComfyUI version, and each candidate
@@ -567,10 +572,9 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
             out, started = Path(tmp) / name, time.time()
             try:
                 render(server, build_graph(manifest, seed, f"{prefix}-{seed}"), out)
-                with Image.open(out) as image:
-                    if image.size != (manifest["settings"]["size"],) * 2:
-                        raise RenderFailed(f"ComfyUI returned a {image.size[0]}x{image.size[1]} image, not the "
-                                           f"recipe's {manifest['settings']['size']} square")
+                problem = candidate_problem(out, manifest["settings"]["size"])
+                if problem:
+                    raise RenderFailed(problem)
             except (*LOST_COMFY, RenderFailed) as error:
                 done = sorted(recipe["candidates"])
                 sys.exit(f"lost the render of seed {seed} ({error}); " + (
