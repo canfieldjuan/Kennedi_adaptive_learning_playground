@@ -186,6 +186,16 @@ def case_character_lock_selftest(root):
         recipe = json.loads((root / DRAFTS / "pippa-recipe.json").read_text())
         check("the recipe records Pippa's canon and only apache-2.0 models",
               recipe["canon"]["species"] == "dormouse" and {m["license"] for m in recipe["models"]} == {"apache-2.0"})
+        check("a new sheet is template v2: upright on two hind legs, and no moon",
+              recipe["template_version"] == "v2" and "standing upright on two hind legs" in recipe["prompt"]
+              and "with no moon and no scenery" in recipe["prompt"] and "moonlit" not in recipe["prompt"],
+              recipe["prompt"])
+        for name in ("bramble", "barnaby"):
+            run(root, "--server", comfy.url, "character", name)
+        prompts = [json.loads((root / DRAFTS / f"{n}-recipe.json").read_text())["prompt"]
+                   for n in ("pippa", "bramble", "barnaby")]
+        check("every character's sheet prompt stands it upright and rules out a moon",
+              all("standing upright on two hind legs" in p and "no moon" in p for p in prompts), prompts)
         check("a character recipe names exactly the three base-model files, never the edit model",
               [(m["role"], m["file"]) for m in recipe["models"]] == [
                   ("unet", "qwen-image-Q8_0.gguf"), ("clip", "qwen_2.5_vl_7b_fp8_scaled.safetensors"),
@@ -395,6 +405,8 @@ def case_page_lock_selftest(root):
               "their picture. Bramble steps out from behind a willow" in recipe["prompt"]
               and "in gentle autumn, warm golden late-afternoon light through the trees" in recipe["prompt"],
               recipe["prompt"])
+        check("a new page is template v2, with no 'moonlit' in its style",
+              recipe["template_version"] == "v2" and "moonlit" not in recipe["prompt"], recipe["prompt"])
         check("the recipe records the references it drew on",
               recipe["references"] == [{"name": "pippa", "sha256": sha(sheets["pippa"])},
                                        {"name": "bramble", "sha256": sha(sheets["bramble"])}])

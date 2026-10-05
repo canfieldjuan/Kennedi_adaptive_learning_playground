@@ -70,15 +70,26 @@ LOADERS = {"unet": ("UnetLoaderGGUF", "unet_name"), "clip": ("CLIPLoader", "clip
 SHEET_ROLES, PAGE_ROLES = ("unet", "clip", "vae"), ("edit_unet", "clip", "vae")
 
 # Versions are never edited: a lock must keep rebuilding from its recipe, so a change is a new version.
-SHEET_TEMPLATES = {"v1": {
-    "style": ("soft storybook watercolor illustration, gentle warm moonlit palette, clean confident outlines, "
-              "cozy picture-book style"),
-    "text": ("{style}. A single {build} {species} standing in a relaxed three-quarter view, {base_colors}{garment}"
-             "{props}, {accent}, plain soft cream background, full body, centered, no text"),
-}}
+# v2 (2026-10-04, after the first real renders): "moonlit" drew a moon in 9 of 12 v1 sheets, and Bramble came out
+# with four legs and two arms; sheets now stand upright on two hind legs, with no moon or scenery.
+SHEET_TEMPLATES = {
+    "v1": {
+        "style": ("soft storybook watercolor illustration, gentle warm moonlit palette, clean confident outlines, "
+                  "cozy picture-book style"),
+        "text": ("{style}. A single {build} {species} standing in a relaxed three-quarter view, {base_colors}{garment}"
+                 "{props}, {accent}, plain soft cream background, full body, centered, no text"),
+    },
+    "v2": {
+        "style": ("soft storybook watercolor illustration, gentle warm palette, clean confident outlines, "
+                  "cozy picture-book style"),
+        "text": ("{style}. A single {build} {species} standing upright on two hind legs in a relaxed three-quarter "
+                 "view, {base_colors}{garment}{props}, {accent}, plain soft cream background with no moon and no "
+                 "scenery, full body, centered, no text"),
+    },
+}
 # ComfyUI's own Qwen-Image defaults (its "Text to Image (Qwen-Image)" blueprint).
 RENDERS = {"v1": {"size": 1328, "shift": 3.1, "steps": 20, "cfg": 4.0, "sampler": "euler", "scheduler": "simple"}}
-TEMPLATE, RENDER = "v1", "v1"
+TEMPLATE, RENDER = "v2", "v1"
 # A page names its cast by picture number: ComfyUI's encoder puts "Picture 1:", "Picture 2:" before the reference
 # images. The times are a closed set, wide enough for the later stories, so they don't force a new version.
 PAGE_TEMPLATES = {"v1": {
@@ -89,11 +100,13 @@ PAGE_TEMPLATES = {"v1": {
                "late-afternoon": "warm golden late-afternoon light through the trees", "dusk": "deep amber dusk light",
                "evening": "soft blue evening light", "night": "quiet silver moonlight"},
 }}
+# v2: the same text and times with the v2 style, so a page's moonlight comes only from its time of day (night).
+PAGE_TEMPLATES["v2"] = {**PAGE_TEMPLATES["v1"], "style": SHEET_TEMPLATES["v2"]["style"]}
 # ComfyUI's "Image Edit (Qwen 2511)" blueprint, except that the page size is the recipe's (an empty latent) rather
 # than image1's, and the model is the GGUF; the reference method is the one its note says repackaged files need.
 PAGE_RENDERS = {"v1": {"size": 1328, "shift": 3.1, "cfg_norm": 1.0, "reference_method": "index_timestep_zero",
                        "steps": 40, "cfg": 4.0, "sampler": "euler", "scheduler": "simple"}}
-PAGE_TEMPLATE, PAGE_RENDER = "v1", "v1"
+PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"
 PAGE_KEYS = {"cast", "place", "time", "scene"}
 # Keys a recipe gains outside draft_manifest(): the ComfyUI version and the candidates' SHA-256, noted at render
 # time, and what `lock` adds.
