@@ -224,8 +224,11 @@ def rebuild_problems(png, manifest, expected, seed, build_graph, what):
         return problems + [f"{png.name} has no embedded graph"]
     if image.size != (expected["settings"]["size"],) * 2:
         problems.append(f"{png.name} is {image.size[0]}x{image.size[1]}, not the recipe's size")
-    graph = json.loads(image.info["prompt"])
-    nodes = {node["class_type"]: node["inputs"] for node in graph.values()}
+    try:
+        graph = json.loads(image.info["prompt"])
+        nodes = {node["class_type"]: node["inputs"] for node in graph.values()}
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return problems + [f"{png.name}'s embedded graph isn't a ComfyUI graph"]
     if nodes.get("KSampler", {}).get("seed") != seed:
         problems.append(f"it was rendered at seed {nodes.get('KSampler', {}).get('seed')}, not {seed}")
     if graph != build_graph(expected, seed, nodes.get("SaveImage", {}).get("filename_prefix")):
@@ -441,17 +444,23 @@ class RenderFailed(Exception):
 
 def render(server, graph, out, timeout=1800):
     pid = api(server, "/prompt", {"prompt": graph, "client_id": "story-recipe"}).get("prompt_id")
-    if not pid:
+    if not isinstance(pid, str) or not pid:
         raise RenderFailed("ComfyUI rejected the graph")
     start = time.time()
     while time.time() - start < timeout:
         entry = api(server, f"/history/{pid}", timeout=10).get(pid)
         if entry:
-            if entry.get("status", {}).get("status_str") == "error":
+            # The history entry is ComfyUI's reply too: a shape the tool doesn't know is a BadReply, not a crash.
+            try:
+                failed = entry.get("status", {}).get("status_str") == "error"
+                if not failed:
+                    item = next(i for o in entry["outputs"].values() for i in o.get("images", []))
+                    query = urllib.parse.urlencode({"filename": item["filename"], "subfolder": item.get("subfolder", ""),
+                                                    "type": "output"})
+            except (AttributeError, KeyError, TypeError, StopIteration):
+                raise BadReply(f"/history/{pid} isn't a finished job with an image") from None
+            if failed:
                 raise RenderFailed(f"render failed: {json.dumps(entry['status'])[:600]}")
-            item = next(i for o in entry["outputs"].values() for i in o.get("images", []))
-            query = urllib.parse.urlencode({"filename": item["filename"], "subfolder": item.get("subfolder", ""),
-                                            "type": "output"})
             with urllib.request.urlopen(f"{server}/view?{query}", timeout=60) as response:
                 out.write_bytes(response.read())
             return
@@ -463,8 +472,12 @@ def require_models(server, roles):
     """Every model must be one ComfyUI actually loads under the allowlisted name, or the render isn't the recipe."""
     for role in roles:
         node, field = LOADERS[role]
-        options = api(server, f"/object_info/{node}")[node]["input"]["required"][field][0]
-        if MODELS[role]["file"] not in options:
+        try:
+            options = api(server, f"/object_info/{node}")[node]["input"]["required"][field][0]
+            listed = MODELS[role]["file"] in options
+        except (KeyError, IndexError, TypeError):
+            raise BadReply(f"/object_info/{node} doesn't list {field}'s options") from None
+        if not listed:
             sys.exit(f"ComfyUI can't see {MODELS[role]['file']} ({node}) -- check extra_model_paths.yaml")
 
 
@@ -509,8 +522,10 @@ def contact_sheet(tiles, out, tile=480, references=(), reference_tile=240):
 
 
 def server_version(server):
-    """The ComfyUI build serving now, as /system_stats reports it (None when it doesn't say)."""
-    return api(server, "/system_stats", timeout=10).get("system", {}).get("comfyui_version")
+    """The ComfyUI build serving now, as /system_stats reports it: a non-empty string, or None when it doesn't say."""
+    system = api(server, "/system_stats", timeout=10).get("system")
+    version = system.get("comfyui_version") if isinstance(system, dict) else None
+    return version if isinstance(version, str) and version else None
 
 
 def candidate_problem(path, manifest, seed, build_graph):
@@ -533,17 +548,15 @@ def candidate_problem(path, manifest, seed, build_graph):
 
 def kept_candidates(drafts, stem, manifest, version):
     """The candidates of the draft set already in drafts that this run can keep: none unless its recipe rebuilds to
-    this one (every key but the render-time ones), it was rendered by the same, known ComfyUI version, and each candidate
-    it records is still on disk with its recorded SHA-256."""
+    this one (every key but the render-time ones), it was rendered by the same ComfyUI version (render_set only calls
+    this with a known one), and each candidate it records is still on disk with its recorded SHA-256."""
     path = drafts / f"{stem}-recipe.json"
     try:
         earlier = json.loads(path.read_text()) if path.is_file() else None
     except ValueError:
         return {}
     candidates = earlier.get("candidates") if isinstance(earlier, dict) else None
-    # A set is only resumed by the same, known ComfyUI build: with no version to compare, two builds could mix.
-    if (not isinstance(candidates, dict) or not isinstance(version, str) or not version
-            or earlier.get("comfyui_version") != version
+    if (not isinstance(candidates, dict) or earlier.get("comfyui_version") != version
             or {key: value for key, value in earlier.items() if key not in ADDED_KEYS} != manifest
             or not set(candidates) <= {f"{stem}-candidate-{seed}.png" for seed in SEEDS}):
         return {}
@@ -565,6 +578,10 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
     """
     drafts = real_folder(drafts_rel)
     version = server_version(server)
+    if version is None:
+        # Every seed of a set must come from one known build; with no version there is nothing to compare.
+        sys.exit(f"ComfyUI at {server} doesn't report its version (/system_stats system.comfyui_version), so a set "
+                 f"can't be tied to one build; nothing was written")
     with art_lock():
         kept = kept_candidates(drafts, stem, manifest, version)
     recipe = {**manifest, "comfyui_version": version, "candidates": dict(kept)}
@@ -849,7 +866,7 @@ def main():
         {"character": cmd_character, "lock": cmd_lock, "page": cmd_page, "lock-page": cmd_lock_page,
          "selftest": cmd_selftest}[args.cmd](args)
     except LOST_COMFY as error:
-        sys.exit(f"ComfyUI at {args.server} is unreachable or dropped the connection "
+        sys.exit(f"ComfyUI at {args.server} is unreachable or answered badly "
                  f"({getattr(error, 'reason', error)}); nothing was written")
 
 

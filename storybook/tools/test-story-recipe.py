@@ -64,10 +64,11 @@ class FakeComfy:
     stops mid-set does; version is what /system_stats reports (None: no version); bad_history and bad_view map a
     render's index to the broken reply its /history poll or /view download gets instead (a job id string serves
     that job's image; a function gets the real image and returns what is served); upgrade_after=N reports
-    another version once more than N renders have been queued, as a ComfyUI restarted on a new build does."""
+    another version once more than N renders have been queued, as a ComfyUI restarted on a new build does; stats
+    replaces the whole /system_stats reply."""
 
     def __init__(self, models=MODEL_FILES, nodes=NODES, rename_uploads=False, die_after=None, version="fake",
-                 bad_history=None, bad_view=None, upgrade_after=None):
+                 bad_history=None, bad_view=None, upgrade_after=None, stats=None):
         self.images, self.uploads, fake = {}, {}, self
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -115,6 +116,8 @@ class FakeComfy:
                     served = fake.images[served] if isinstance(served, str) else served
                     return self.reply(served(fake.images[pid]) if callable(served) else served, "image/png")
                 if path == "/system_stats":
+                    if stats is not None:
+                        return self.reply(stats)
                     upgraded = upgrade_after is not None and len(fake.images) > upgrade_after
                     return self.reply({"system": {"comfyui_version": f"{version}-new" if upgraded else version}})
                 if path.startswith("/object_info/"):
@@ -350,6 +353,18 @@ def case_locked_folder_holds_only_records(root):
     """Every file in the locked folder is a lock's, and its bytes are the ones it locked."""
     drawn(root)
     locked = root / LOCKED
+    original = (locked / "pippa.png").read_bytes(), (locked / "pippa.recipe.json").read_text()
+    meta = PngInfo()
+    meta.add_text("prompt", "{")
+    Image.open(locked / "pippa.png").save(locked / "pippa.png", pnginfo=meta)
+    recipe = json.loads(original[1])
+    recipe["files"] = {"pippa.png": hashlib.sha256((locked / "pippa.png").read_bytes()).hexdigest()}
+    (locked / "pippa.recipe.json").write_text(json.dumps(recipe))
+    code, out = run(root, "selftest")
+    check("a lock whose embedded graph isn't JSON fails selftest with a problem, not a traceback",
+          code and "embedded graph isn't a ComfyUI graph" in out and "Traceback" not in out, out.strip()[-200:])
+    (locked / "pippa.png").write_bytes(original[0])
+    (locked / "pippa.recipe.json").write_text(original[1])
     Image.open(locked / "pippa.png").convert("RGB").save(locked / "pippa.png")    # same pixels, graph dropped
     code, out = run(root, "selftest")
     check("a lock whose PNG was re-saved fails selftest", code and "changed since it was locked" in out,
@@ -708,18 +723,41 @@ def case_bad_replies_are_not_kept(root):
     """Resume needs a known ComfyUI version; a reply that isn't JSON is a lost server; a render must be a PNG of the
     recipe's size before it is recorded."""
     drawn(root, "pippa")
-    comfy = FakeComfy(die_after=2, version=None)
-    try:
-        run(root, "--server", comfy.url, "page", STORY, 1)
-    finally:
-        comfy.close()
     comfy = FakeComfy(version=None)
     try:
         code, out = run(root, "--server", comfy.url, "page", STORY, 1)
-        check("with no ComfyUI version, nothing is resumed: all four render fresh",
-              not code and renders(comfy) == 4 and "kept" not in out, f"{renders(comfy)} renders: {out.strip()[-120:]}")
+        check("a ComfyUI that doesn't report its version renders nothing: a set needs one known build",
+              code and "doesn't report its version" in out and renders(comfy) == 0 and not page_drafts(root),
+              f"{renders(comfy)} renders: {out.strip()[-160:]}")
     finally:
         comfy.close()
+    for label, comfy in [("an empty version", FakeComfy(version="")),
+                         ("a system field that isn't an object", FakeComfy(stats={"system": "broken"}))]:
+        try:
+            code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+            check(f"{label} in /system_stats is no known build: nothing renders, no traceback",
+                  code and "doesn't report its version" in out and "Traceback" not in out and renders(comfy) == 0,
+                  out.strip()[-160:])
+        finally:
+            comfy.close()
+    comfy = FakeComfy(models={**MODEL_FILES, "CLIPLoader": (None, [])})
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "bramble")
+        check("an /object_info reply of an unknown shape exits plainly before rendering",
+              code and "Traceback" not in out and "doesn't list clip_name" in out and renders(comfy) == 0,
+              out.strip()[-160:])
+    finally:
+        comfy.close()
+    comfy = FakeComfy(bad_history={1: b'{"job1": {"status": {}, "outputs": {"10": {"images": [{}]}}}}'})
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "bramble")
+        check("a /history entry without an image file exits plainly, keeping the seed that finished",
+              code and "Traceback" not in out and "isn't a finished job with an image" in out
+              and "kept bramble-candidate-61.png" in out, out.strip()[-200:])
+    finally:
+        comfy.close()
+    for leftover in (root / DRAFTS).glob("bramble-*"):
+        leftover.unlink()
     comfy = FakeComfy(upgrade_after=1)
     try:
         code, out = run(root, "--server", comfy.url, "page", STORY, 2)
@@ -742,10 +780,17 @@ def case_bad_replies_are_not_kept(root):
     Image.new("RGB", (64, 64), "white").save(small, "PNG")
     Image.new("RGB", (1328, 1328), "white").save(jpeg, "JPEG")
     cut = lambda real: real[:len(real) - 200]       # the real render, its embedded graph intact, the pixels cut off
+
+    def garbled(real):                              # the real pixels, with an embedded graph that isn't JSON
+        meta, out = PngInfo(), io.BytesIO()
+        meta.add_text("prompt", "{")
+        Image.open(io.BytesIO(real)).save(out, "PNG", pnginfo=meta)
+        return out.getvalue()
     for label, broken in [("an HTTP 200 error page", b"<html>500 Internal Server Error</html>"), ("an empty body", b""),
                           ("a PNG of the wrong size", small.getvalue()), ("the real render cut off mid-file", cut),
                           ("a JPEG instead of SaveImage's PNG", jpeg.getvalue()),
-                          ("seed 61's image served again for seed 72", "job0")]:
+                          ("seed 61's image served again for seed 72", "job0"),
+                          ("the real render with a garbled embedded graph", garbled)]:
         drafts = root / DRAFTS
         for leftover in drafts.glob("barnaby-*"):
             leftover.unlink()
