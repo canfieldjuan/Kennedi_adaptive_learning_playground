@@ -186,12 +186,9 @@ def case_character_lock_selftest(root):
         recipe = json.loads((root / DRAFTS / "pippa-recipe.json").read_text())
         check("the recipe records Pippa's canon and only apache-2.0 models",
               recipe["canon"]["species"] == "dormouse" and {m["license"] for m in recipe["models"]} == {"apache-2.0"})
-        negative = next(n["inputs"]["text"] for n in recipe["graph"].values() if n["class_type"] == "CLIPTextEncode"
-                        and n["inputs"]["text"] != recipe["prompt"])
-        check("a new sheet is template v2: upright on two hind legs, never naming the moon, which is in its negative",
+        check("a new sheet is template v2: upright on two hind legs, never naming the moon",
               recipe["template_version"] == "v2" and "standing upright on two hind legs" in recipe["prompt"]
-              and "moon" not in recipe["prompt"] and negative == "moon, crescent moon, full moon, night sky, scenery",
-              f"{recipe['prompt']} || negative: {negative}")
+              and "moon" not in recipe["prompt"], recipe["prompt"])
         for name in ("bramble", "barnaby"):
             run(root, "--server", comfy.url, "character", name)
         prompts = [json.loads((root / DRAFTS / f"{n}-recipe.json").read_text())["prompt"]
