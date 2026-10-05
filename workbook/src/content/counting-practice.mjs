@@ -102,7 +102,21 @@ export function createCountingBookFromGroups(seed, mode, input) {
     return { count: group.count, ...entry,
       ...(Object.hasOwn(group, 'choices') ? { choices: [...group.choices] } : {}) };
   });
-  return countingPages(seed, mode, groups);
+  const book = countingPages(seed, mode, groups);
+  if (mode === 'choice') assertBalancedChoicePositions(groups);
+  return book;
+}
+
+// Explicit choices keep the author's order, but the correct answer must not bunch in one box, or a child can
+// learn the position instead of counting. No position may hold it more than ceil(groups / 3) + 1 times.
+export function assertBalancedChoicePositions(groups) {
+  const positions = [0, 0, 0];
+  for (const group of groups) positions[group.choices.indexOf(group.count)]++;
+  const limit = Math.ceil(groups.length / 3) + 1;
+  if (Math.max(...positions) > limit) {
+    throw new TypeError(`Correct answers bunch in one choice box (${positions.join('/')} by position); `
+      + `reorder explicit choices so no box holds the answer more than ${limit} times.`);
+  }
 }
 
 function countingPages(seed, mode, groups) {

@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-import { createCountingBook, DEFAULT_SEED, describeGroup, isMonotonic, renderPage, validateMode, validateSeed } from '../src/content/counting-practice.mjs';
+import { assertBalancedChoicePositions, createCountingBook, DEFAULT_SEED, describeGroup, isMonotonic, renderPage, validateMode, validateSeed } from '../src/content/counting-practice.mjs';
 import { numberGlyph } from '../src/components/number-glyphs.mjs';
 import { renderDocument } from '../src/render.mjs';
 import { inlineSvgFile, inlineImageFile } from '../src/content/asset-inline.mjs';
@@ -210,6 +210,7 @@ async function verify() {
     }
   }
   if (mode === 'choice' && !customGroups) assert.deepEqual(correctPositions, [8, 8, 8]);
+  if (mode === 'choice' && customGroups) assertBalancedChoicePositions(pages.flatMap(page => page.meta.groups));
   const manifest = JSON.parse(readFileSync(path.join(out, 'manifest.json'), 'utf8'));
   assert.equal(manifest.seed, seed);
   assert.equal(manifest.mode, mode);

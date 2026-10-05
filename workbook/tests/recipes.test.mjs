@@ -94,6 +94,27 @@ test('groups reject unsafe/unknown assets, bad counts, duplicates and invalid ch
   assert.doesNotThrow(() => resolveRecipe(counting({ groups: [group({ count: 20, choices: [1, 20, 19] })] })));
 });
 
+test('explicit choices keep their order but may not bunch the correct answer in one box', () => {
+  const names = ['bear', 'dog', 'giraffe', 'hippo', 'owl', 'raccoon', 'monkey', 'lion'];
+  // Group i counts i + 2 and puts the correct answer at positions[i] among two distractors.
+  const explicit = positions => positions.map((position, index) => {
+    const count = index + 2, choices = [count + 10, count + 11];
+    choices.splice(position, 0, count);
+    return group({ animal: names[index], count, choices });
+  });
+  // The observed lopsided shape: answer in the middle 6 of 8 times.
+  assert.throws(() => resolveRecipe(counting({ groups: explicit([0, 1, 1, 1, 1, 2, 1, 1]) })), /bunch[^]*1\/6\/1/);
+  // 8 groups allow at most ceil(8 / 3) + 1 = 4 in one box: 2/4/2 passes, 1/5/2 fails.
+  assert.doesNotThrow(() => resolveRecipe(counting({ groups: explicit([1, 1, 1, 1, 0, 0, 2, 2]) })));
+  assert.throws(() => resolveRecipe(counting({ groups: explicit([1, 1, 1, 1, 1, 0, 2, 2]) })), /bunch[^]*1\/5\/2/);
+  // 3 groups allow at most 2: 2/1/0 passes, 3/0/0 fails.
+  assert.doesNotThrow(() => resolveRecipe(counting({ groups: explicit([0, 0, 1]) })));
+  assert.throws(() => createCountingBookFromGroups(0, 'choice', explicit([0, 0, 0])), /bunch[^]*3\/0\/0/);
+  // A balanced explicit recipe keeps the author's exact order.
+  const balanced = explicit([0, 1, 2, 0, 1, 2, 0, 1]);
+  assert.deepEqual(resolveRecipe(counting({ groups: balanced })).recipe.groups.map(g => g.choices), balanced.map(g => g.choices));
+});
+
 test('locks reject changed content, renderer/art hashes, missing/mixed/duplicate/unknown assets', () => {
   const saved = resolveRecipe(counting({ groups: [group()] })).recipe;
   const invalid = [];
