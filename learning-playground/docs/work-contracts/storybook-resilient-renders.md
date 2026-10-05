@@ -329,3 +329,18 @@ night, and a moon belongs there.
       from 'fake' to 'fake-new'"), keeps only seed 61 under the old version,
       and exits plainly.
     - Removing the recheck fails that check.
+
+- **Closing the class: a recorded seed passes `lock`'s render checks
+  (consolidation after round 2).**
+  - Rounds 1 and 2 found the same class twice: something recorded at render
+    time that `lock` would later reject, which every re-run then keeps and
+    nobody can lock (bad bytes, then a changed build).
+  - The source is that recording and locking checked different things. So
+    `candidate_problem()` now runs `lock`'s own render checks,
+    `rebuild_problems()`: the embedded graph is there, it was rendered at
+    this seed, it is the recipe's graph, and it is the recipe's size. It
+    still requires the bytes to decode fully as a PNG, which `lock`'s
+    lazy open doesn't.
+  - That covers what wasn't raised yet: ComfyUI handing back another job's
+    image (another seed's, or another recipe's) is now refused at
+    recording, not at `lock`.
