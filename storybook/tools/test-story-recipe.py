@@ -61,9 +61,11 @@ class FakeComfy:
     uploaded images, queues a graph, "renders" an image of the requested size from the graph and the images it
     loads, and embeds the graph as ComfyUI does. rename_uploads stores uploads under another name, as ComfyUI
     does without overwrite; die_after=N drops the connection while the (N+1)th render is polled, as a ComfyUI that
-    stops mid-set does; version is what /system_stats reports."""
+    stops mid-set does; version is what /system_stats reports (None: no version); bad_history and bad_view map a
+    render's index to the broken reply its /history poll or /view download gets instead."""
 
-    def __init__(self, models=MODEL_FILES, nodes=NODES, rename_uploads=False, die_after=None, version="fake"):
+    def __init__(self, models=MODEL_FILES, nodes=NODES, rename_uploads=False, die_after=None, version="fake",
+                 bad_history=None, bad_view=None):
         self.images, self.uploads, fake = {}, {}, self
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -101,10 +103,13 @@ class FakeComfy:
                     if die_after is not None and int(pid[3:]) >= die_after:
                         self.close_connection = True        # no reply at all: the client sees the server go away
                         return
+                    if int(pid[3:]) in (bad_history or {}):
+                        return self.reply(bad_history[int(pid[3:])], "application/json; charset=utf-8")  # raw bytes
                     return self.reply({pid: {"status": {"status_str": "success"}, "outputs": {
                         "10": {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "output"}]}}}})
                 if path == "/view":
-                    return self.reply(fake.images[parse_qs(query)["filename"][0][:-4]], "image/png")
+                    pid = parse_qs(query)["filename"][0][:-4]
+                    return self.reply((bad_view or {}).get(int(pid[3:]), fake.images[pid]), "image/png")
                 if path == "/system_stats":
                     return self.reply({"system": {"comfyui_version": version}})
                 if path.startswith("/object_info/"):
@@ -694,12 +699,64 @@ def case_character_sets_resume_too(root):
         comfy.close()
 
 
+def case_bad_replies_are_not_kept(root):
+    """Resume needs a known ComfyUI version; a reply that isn't JSON is a lost server; a render must be a PNG of the
+    recipe's size before it is recorded."""
+    drawn(root, "pippa")
+    comfy = FakeComfy(die_after=2, version=None)
+    try:
+        run(root, "--server", comfy.url, "page", STORY, 1)
+    finally:
+        comfy.close()
+    comfy = FakeComfy(version=None)
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        check("with no ComfyUI version, nothing is resumed: all four render fresh",
+              not code and renders(comfy) == 4 and "kept" not in out, f"{renders(comfy)} renders: {out.strip()[-120:]}")
+    finally:
+        comfy.close()
+    comfy = FakeComfy(bad_history={1: b"{"})
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "bramble")
+        check("a /history reply cut off mid-set exits plainly, keeping the seed that finished",
+              code and "Traceback" not in out and "isn't JSON" in out and "kept bramble-candidate-61.png" in out,
+              out.strip()[-200:])
+    finally:
+        comfy.close()
+    small, jpeg, full = io.BytesIO(), io.BytesIO(), io.BytesIO()
+    Image.new("RGB", (64, 64), "white").save(small, "PNG")
+    Image.new("RGB", (1328, 1328), "white").save(jpeg, "JPEG")
+    Image.effect_noise((1328, 1328), 64).convert("RGB").save(full, "PNG")
+    cut = full.getvalue()[:len(full.getvalue()) // 2]          # a right-size PNG header, its pixels cut off
+    for label, broken in [("an HTTP 200 error page", b"<html>500 Internal Server Error</html>"), ("an empty body", b""),
+                          ("a PNG of the wrong size", small.getvalue()), ("a PNG cut off mid-file", cut),
+                          ("a JPEG instead of SaveImage's PNG", jpeg.getvalue())]:
+        drafts = root / DRAFTS
+        for leftover in drafts.glob("barnaby-*"):
+            leftover.unlink()
+        comfy = FakeComfy(bad_view={1: broken})
+        try:
+            code, out = run(root, "--server", comfy.url, "character", "barnaby")
+        finally:
+            comfy.close()
+        recipe = json.loads((drafts / "barnaby-recipe.json").read_text())
+        comfy = FakeComfy()
+        try:
+            code2, out2 = run(root, "--server", comfy.url, "character", "barnaby")
+            check(f"{label} from /view is never recorded, and a re-run renders that seed",
+                  code and "Traceback" not in out and sorted(recipe["candidates"]) == ["barnaby-candidate-61.png"]
+                  and not code2 and renders(comfy) == 3, f"{out.strip()[-140:]} | {renders(comfy)} renders")
+        finally:
+            comfy.close()
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
              case_locked_folder_holds_only_records, case_page_lock_selftest, case_page_refusals,
              case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check,
-             case_lost_comfy_keeps_finished_seeds, case_resume_needs_the_same_recipe, case_character_sets_resume_too]
+             case_lost_comfy_keeps_finished_seeds, case_resume_needs_the_same_recipe, case_character_sets_resume_too,
+             case_bad_replies_are_not_kept]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:

@@ -113,9 +113,14 @@ PAGE_RENDERS = {"v1": {"size": 1328, "shift": 3.1, "cfg_norm": 1.0, "reference_m
                        "steps": 40, "cfg": 4.0, "sampler": "euler", "scheduler": "simple"}}
 PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"
 PAGE_KEYS = {"cast", "place", "time", "scene"}
-# What a ComfyUI that can't be reached, or goes away mid-run, raises: refused or dropped connections, timeouts and
-# broken HTTP replies. Not OSError at large, so a local disk error is never reported as a lost server.
-LOST_COMFY = (urllib.error.URLError, ConnectionError, TimeoutError, http.client.HTTPException)
+class BadReply(Exception):
+    """ComfyUI answered with something that isn't the JSON object its API sends (a body cut off mid-reply)."""
+
+
+# What a ComfyUI that can't be reached, or goes away mid-run, raises: refused or dropped connections, timeouts,
+# broken HTTP replies and replies that aren't JSON. Not OSError at large, so a local disk error is never reported
+# as a lost server.
+LOST_COMFY = (urllib.error.URLError, ConnectionError, TimeoutError, http.client.HTTPException, BadReply)
 # Keys a recipe gains outside draft_manifest(): the ComfyUI version and the candidates' SHA-256, noted at render
 # time, and what `lock` adds.
 ADDED_KEYS = {"comfyui_version", "candidates", "chosen_seed", "source", "files"}
@@ -410,13 +415,24 @@ def art_lock():
         os.close(folder)
 
 
+def reply_json(body, path):
+    """ComfyUI's reply as the JSON object its API sends; anything else is a BadReply, a server failure, kept apart
+    from decoding the tool's own files."""
+    try:
+        reply = json.loads(body) if body else {}
+    except ValueError as error:
+        raise BadReply(f"{path} sent a reply that isn't JSON ({error})") from None
+    if not isinstance(reply, dict):
+        raise BadReply(f"{path} sent {type(reply).__name__}, not a JSON object")
+    return reply
+
+
 def api(server, path, payload=None, timeout=30):
     data = json.dumps(payload).encode() if payload is not None else None
     request = urllib.request.Request(server + path, data=data,
                                      headers={"Content-Type": "application/json"} if data else {})
     with urllib.request.urlopen(request, timeout=timeout) as response:
-        body = response.read()
-        return json.loads(body) if body else {}
+        return reply_json(response.read(), path)
 
 
 class RenderFailed(Exception):
@@ -437,7 +453,19 @@ def render(server, graph, out, timeout=1800):
             query = urllib.parse.urlencode({"filename": item["filename"], "subfolder": item.get("subfolder", ""),
                                             "type": "output"})
             with urllib.request.urlopen(f"{server}/view?{query}", timeout=60) as response:
-                out.write_bytes(response.read())
+                data = response.read()
+            # Only a PNG ComfyUI rendered is recorded: an error page or an empty body would otherwise be kept by
+            # its digest on every re-run.
+            try:
+                with Image.open(io.BytesIO(data)) as image:
+                    image.load()
+                    kind = image.format
+            except (OSError, SyntaxError, ValueError) as error:
+                raise RenderFailed(f"ComfyUI returned {len(data)} bytes that aren't an image "
+                                   f"({type(error).__name__})") from None
+            if kind != "PNG":
+                raise RenderFailed(f"ComfyUI returned a {kind} image, not the PNG SaveImage writes")
+            out.write_bytes(data)
             return
         time.sleep(2)
     raise RenderFailed(f"timed out after {timeout}s")
@@ -470,7 +498,7 @@ def upload(server, data, name):
     request = urllib.request.Request(server + "/upload/image", data=body,
                                      headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
     with urllib.request.urlopen(request, timeout=60) as response:
-        stored = json.loads(response.read())
+        stored = reply_json(response.read(), "/upload/image")
     if stored.get("name") != name or stored.get("subfolder", "") != "":
         sys.exit(f"ComfyUI stored the reference {name} as {stored.get('subfolder')!r}/{stored.get('name')!r}, so "
                  f"the graph would load something else; nothing was rendered")
@@ -494,7 +522,7 @@ def contact_sheet(tiles, out, tile=480, references=(), reference_tile=240):
 
 def kept_candidates(drafts, stem, manifest, version):
     """The candidates of the draft set already in drafts that this run can keep: none unless its recipe rebuilds to
-    this one (every key but the render-time ones), it was rendered by the same ComfyUI version, and each candidate
+    this one (every key but the render-time ones), it was rendered by the same, known ComfyUI version, and each candidate
     it records is still on disk with its recorded SHA-256."""
     path = drafts / f"{stem}-recipe.json"
     try:
@@ -502,7 +530,9 @@ def kept_candidates(drafts, stem, manifest, version):
     except ValueError:
         return {}
     candidates = earlier.get("candidates") if isinstance(earlier, dict) else None
-    if (not isinstance(candidates, dict) or earlier.get("comfyui_version") != version
+    # A set is only resumed by the same, known ComfyUI build: with no version to compare, two builds could mix.
+    if (not isinstance(candidates, dict) or not isinstance(version, str) or not version
+            or earlier.get("comfyui_version") != version
             or {key: value for key, value in earlier.items() if key not in ADDED_KEYS} != manifest
             or not set(candidates) <= {f"{stem}-candidate-{seed}.png" for seed in SEEDS}):
         return {}
@@ -537,6 +567,10 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
             out, started = Path(tmp) / name, time.time()
             try:
                 render(server, build_graph(manifest, seed, f"{prefix}-{seed}"), out)
+                with Image.open(out) as image:
+                    if image.size != (manifest["settings"]["size"],) * 2:
+                        raise RenderFailed(f"ComfyUI returned a {image.size[0]}x{image.size[1]} image, not the "
+                                           f"recipe's {manifest['settings']['size']} square")
             except (*LOST_COMFY, RenderFailed) as error:
                 done = sorted(recipe["candidates"])
                 sys.exit(f"lost the render of seed {seed} ({error}); " + (
