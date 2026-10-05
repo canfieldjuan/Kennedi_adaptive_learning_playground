@@ -1,0 +1,30 @@
+/* Three calm count-and-trace activities; all measurements are print sizes. */
+.ct-sheet { overflow: visible; color: #111; }
+.ct-header { flex: 0 0 auto; border-bottom: 1.5px solid #111; padding-bottom: 10px; }
+.ct-brand { margin: 0; font: 800 12px/1.4 'Nunito', sans-serif; letter-spacing: 1px; }
+.ct-header h1 { margin: 2px 0; font: 700 36px/1.25 'Baloo 2', sans-serif; }
+.ct-direction { margin: 0; font: 700 20px/1.4 'Nunito', sans-serif; }
+.ct-groups { display: flex; flex: 1 1 auto; flex-direction: column; justify-content: space-evenly; gap: 10px; min-height: 0; }
+.ct-group { flex: 0 0 auto; padding: 4px 0; border-bottom: 1px dashed #666; }
+.ct-group:last-child { border-bottom: none; }
+.ct-group h2 { margin: 0 0 6px; font: 800 21px/1.25 'Nunito', sans-serif; }
+.ct-group-body { display: grid; grid-template-columns: 536px 160px; gap: 24px; align-items: center; min-height: 140px; }
+.ct-pictures { display: grid; grid-template-columns: repeat(var(--columns), 72px); gap: 4px; align-items: center; }
+.ct-picture { width: 72px; height: 72px; }
+.ct-picture > svg { width: 100%; height: 100%; }
+.ct-answer { width: 160px; }
+.ct-answer p { margin: 0; text-align: center; font: 800 15px/1.4 'Nunito', sans-serif; }
+.ct-answer-guide { width: 160px; height: 140px; }
+.ct-footer { display: flex; flex: 0 0 auto; justify-content: space-between; border-top: 1px solid #666; padding-top: 8px; font: 700 12px/1.4 'Nunito', sans-serif; }
+
+/* Choice mode: two groups, unchanged .75in animals, three equal .47in numerals. */
+.ct-sheet-choice .ct-groups { gap: 8px; }
+.ct-sheet-choice .ct-group { padding: 2px 0; }
+.ct-sheet-choice .ct-group h2 { margin-bottom: 4px; }
+.ct-sheet-choice .ct-group-body { grid-template-columns: 376px 328px; gap: 16px; }
+.ct-sheet-choice .ct-pictures { gap: 3px 4px; }
+.ct-answer-choices { width: 328px; }
+.ct-answer-choices p { margin-bottom: 8px; }
+.ct-choices { display: grid; grid-template-columns: repeat(3, 104px); gap: 8px; }
+.ct-choice { padding: 1px 0; border: 1.5px solid #111; border-radius: 10px; }
+.ct-choice .ct-answer-guide { width: 100px; height: 87.5px; margin: 0 auto; }

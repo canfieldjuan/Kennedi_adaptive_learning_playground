@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kennedi workbook recipe v1",
+  "description": "Data only. No HTML, paths, code or model runtime. Layouts use existing versioned templates.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "template", "seed", "mode"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "template": {"const": "count-and-trace-v1"},
+        "seed": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+        "mode": {"enum": ["choice", "guided"]},
+        "groups": {"type": "array", "minItems": 1, "maxItems": 60, "items": {"$ref": "#/$defs/group"}},
+        "lock": {"$ref": "#/$defs/lock"}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "template"],
+      "properties": {
+        "schemaVersion": {"const": 1},
+        "template": {"enum": ["alphabet-rows-v1", "numbers-1-20-v1"]},
+        "lock": {"$ref": "#/$defs/lock"}
+      }
+    }
+  ],
+  "$defs": {
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["animal", "count"],
+      "properties": {
+        "animal": {"enum": ["bear", "cat", "dog", "fox", "turtle", "elephant", "giraffe", "hippo", "owl", "penguin", "raccoon", "whale", "monkey", "lion", "kangaroo", "narwhal", "sloth", "unicorn", "zebra", "alligator"]},
+        "count": {"type": "integer", "minimum": 1, "maximum": 20},
+        "choices": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "integer", "minimum": 1, "maximum": 20}}
+      }
+    },
+    "lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceSha256", "contentSha256", "artwork"],
+      "properties": {
+        "sourceSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "contentSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "artwork": {
+          "type": "array", "minItems": 1, "maxItems": 27,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["asset", "sha256"],
+            "properties": {
+              "asset": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,80}$"},
+              "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

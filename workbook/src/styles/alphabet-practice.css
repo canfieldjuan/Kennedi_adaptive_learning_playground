@@ -1,0 +1,17 @@
+/* Scoped to the new row-format workbook; existing books stay unchanged. */
+.ap-sheet { overflow: visible; color: #111; }
+.ap-header { flex: none; }
+.ap-brand { margin: 0; font: 800 12px/1.2 'Nunito', sans-serif; letter-spacing: 1.8px; }
+.ap-header h1 { margin: 4px 0 0; font: 700 36px/1.25 'Baloo 2', sans-serif; }
+.ap-direction { margin: 0; font: 700 20px/1.4 'Nunito', sans-serif; }
+.ap-columns { display: grid; grid-template-columns: 1fr 5fr 1fr; margin-top: 12px; text-align: center; font: 800 13px/1.3 'Nunito', sans-serif; }
+.ap-practice { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 6px 0; }
+.ap-pair { flex: none; }
+.ap-pair h2 { margin: 0; font: 800 18px/1.3 'Nunito', sans-serif; }
+.ap-pair-heading { display: flex; align-items: center; justify-content: space-between; height: .8in; gap: 16px; }
+.ap-cue { display: flex; align-items: center; gap: 12px; font: 700 18px/1.3 'Nunito', sans-serif; }
+.ap-art { width: .8in; height: .8in; flex: none; }
+.ap-art > svg { width: 100%; height: 100%; }
+.ap-guide { display: block; width: 100%; height: auto; }
+.ap-lower-heading { margin-top: 4px !important; }
+.ap-footer { flex: none; display: flex; justify-content: space-between; align-items: center; padding-top: 9px; border-top: 1px solid #666; font: 700 12px/1.3 'Nunito', sans-serif; }

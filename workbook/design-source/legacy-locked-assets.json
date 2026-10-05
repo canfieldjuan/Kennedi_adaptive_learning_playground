@@ -1,4 +1,95 @@
 {
+ "animals/locked-poses/sloth-01-hanging.png": {
+  "files": {
+   "sloth-01-hanging.png": "ac7becdafcaa4a46c45246a515a61e7b492425c639dfc3e506ddfa690ef7c46b",
+   "sloth-01-hanging.svg": "668ced69ce6db40fbb998358b8f21b1fa4de0c89b97b1512025a747d1da7db0d"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/alligator-01-walking.png": {
+  "files": {
+   "alligator-01-walking.png": "c3e51dfd0ae6b4e39ab7149804afe65a37732227b41c2ad08923f990e1a7f135",
+   "alligator-01-walking.svg": "7f37b48638d443506b1651e0dd9264690d0b3afea8b0ded206214d2a92fc9e80"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/hippo-01-standing.png": {
+  "files": {
+   "hippo-01-standing.png": "ef1906b683ea11d3c39599bc3882cc05533ba3b296d13327507ec93d5cee8e14",
+   "hippo-01-standing.svg": "80c3f0f103f8e882a1171ca3ddea471e56b899be265d43ff12b80a318e5b90c4"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/iguana-01-standing.png": {
+  "files": {
+   "iguana-01-standing.png": "a7878d8dffeb187409da1b5b90ffa1746b3a332d656cdf9f712a4fc0c067ff18",
+   "iguana-01-standing.svg": "ac55f463966729b11ab12006a1747b460bc69e590585aeeda3400eb867299875"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/kangaroo-01-standing.png": {
+  "files": {
+   "kangaroo-01-standing.png": "0a29f1a37d8a04ea9328d06af256b8e91350129a709335f8ba8647ed24abc64f",
+   "kangaroo-01-standing.svg": "294d6e4479b3314b179911a26b4fd9835dd57a73f1e0405db63ee8f7275b2a3f"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/monkey-01-sitting.png": {
+  "files": {
+   "monkey-01-sitting.png": "ed4362c41901bebf51d3c14f72cd3ccbe766781576af94dce6fa25eb2c42c786",
+   "monkey-01-sitting.svg": "3a7b141e4ec7c6f170ac543fca7a3be24d54b0f24c10032410142d2705657549"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/narwhal-01-swimming.png": {
+  "files": {
+   "narwhal-01-swimming.png": "608a7dd401d8fed500c2b3a97607f85949313414c2cb2954af23915d1309f058",
+   "narwhal-01-swimming.svg": "1abd67408590652d48fc13459990cfb79d7737c8fc6517e4e3f54e2d3c18e68c"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/raccoon-01-sitting.png": {
+  "files": {
+   "raccoon-01-sitting.png": "ff3cce34c316afd687bcbfa464b3cae8db2efd7996fa26bb24583ab9bdd4fd1d",
+   "raccoon-01-sitting.svg": "b36b65d3dd6455264257dfa0e0c6349933df4253530b05a73fc703ed1c1d13ee"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/shark-01-swimming.png": {
+  "files": {
+   "shark-01-swimming.png": "2c2b33a315d55ba899caa19bd9bd07afe78c8eaf98fc1259f2a9809c319b2e23",
+   "shark-01-swimming.svg": "75bfb99b967cf21e4ac9c3dfcfe50a88ce92ed47fee9e8f08bb671d3eaeb7519"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/unicorn-01-standing.png": {
+  "files": {
+   "unicorn-01-standing.png": "15b80cfef3eaffc2156290d53e2d9b5b6a76859f74a2e01bebae16a24ad57256",
+   "unicorn-01-standing.svg": "b3423310defd702e3fcd79e663d526d410bb41d4b7a187b3683558ec1b82d0ea"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/vulture-01-perched.png": {
+  "files": {
+   "vulture-01-perched.png": "e66eae90563c18b6da09da65baca461ce54e54cb04abe4d31273801cececff0d",
+   "vulture-01-perched.svg": "a6047172c05cc3933d89c16d375b3101ae62f334fab5ed68b87741e65924a243"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/xrayfish-01-swimming.png": {
+  "files": {
+   "xrayfish-01-swimming.png": "d0ed711e069a3c44fd94b6b3b90a9a2bf1019af971f93e300d36e99811da1c63",
+   "xrayfish-01-swimming.svg": "c628374895c9c81bb8ba510375f9d8d2b441a24cf1d91a4ea604bf2eb0f2df00"
+  },
+  "rebuild": "reproduce"
+ },
+ "animals/locked-poses/yak-01-standing.png": {
+  "files": {
+   "yak-01-standing.png": "4871bfbe7c253dca0ce588161ba32d36f2719ba00f4bf772ea071475de8e9264",
+   "yak-01-standing.svg": "f8d0cea105a4645e5d191f58d053f54dd53eb131c6ecd56a767b492bc62026bd"
+  },
+  "rebuild": "reproduce"
+ },
  "animals/locked-poses/01-sitting.png": {
   "files": {
    "01-sitting.png": "bdc43c0f2c906989a7ae1de49263f1ea6d35aad5061f82c384c259d51a0e0a5a",
