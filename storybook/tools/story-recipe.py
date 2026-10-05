@@ -121,9 +121,13 @@ class BadReply(Exception):
 # broken HTTP replies and replies that aren't JSON. Not OSError at large, so a local disk error is never reported
 # as a lost server.
 LOST_COMFY = (urllib.error.URLError, ConnectionError, TimeoutError, http.client.HTTPException, BadReply)
-# Keys a recipe gains outside draft_manifest(): the ComfyUI version and the candidates' SHA-256, noted at render
-# time, and what `lock` adds.
-ADDED_KEYS = {"comfyui_version", "candidates", "chosen_seed", "source", "files"}
+# The set writer, recorded in every draft recipe it writes. Only a set recorded seed by seed -- each seed's bytes and
+# ComfyUI build checked before it is recorded -- can be resumed; a recipe from an earlier writer, which read the
+# build once after all four renders, starts a fresh set. A change to how sets are recorded is a new number.
+SET_WRITER = 1
+# Keys a recipe gains outside draft_manifest(): the set writer, the ComfyUI version and the candidates' SHA-256,
+# noted at render time, and what `lock` adds.
+ADDED_KEYS = {"set_writer", "comfyui_version", "candidates", "chosen_seed", "source", "files"}
 
 
 def sha256(path):
@@ -208,6 +212,20 @@ def allowlist_problems(manifest):
             if not isinstance(model, dict) or model.get("file") not in allowed]
 
 
+def comfy_graph(text):
+    """An embedded graph as ComfyUI writes it -- {node id: {"class_type": str, "inputs": {...}}} -- or None when the
+    text isn't one. The one place the tool decides that, so nothing reads a node it hasn't checked."""
+    try:
+        graph = json.loads(text)
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(graph, dict) or not all(
+            isinstance(node, dict) and isinstance(node.get("class_type"), str) and isinstance(node.get("inputs"), dict)
+            for node in graph.values()):
+        return None
+    return graph
+
+
 def rebuild_problems(png, manifest, expected, seed, build_graph, what):
     """Why png and its recipe are not what the tool rebuilds from the recipe's inputs (expected) at this seed; an
     empty list when they are. build_graph is the graph builder for this kind of recipe."""
@@ -224,11 +242,10 @@ def rebuild_problems(png, manifest, expected, seed, build_graph, what):
         return problems + [f"{png.name} has no embedded graph"]
     if image.size != (expected["settings"]["size"],) * 2:
         problems.append(f"{png.name} is {image.size[0]}x{image.size[1]}, not the recipe's size")
-    try:
-        graph = json.loads(image.info["prompt"])
-        nodes = {node["class_type"]: node["inputs"] for node in graph.values()}
-    except (ValueError, TypeError, KeyError, AttributeError):
+    graph = comfy_graph(image.info["prompt"])
+    if graph is None:
         return problems + [f"{png.name}'s embedded graph isn't a ComfyUI graph"]
+    nodes = {node["class_type"]: node["inputs"] for node in graph.values()}
     if nodes.get("KSampler", {}).get("seed") != seed:
         problems.append(f"it was rendered at seed {nodes.get('KSampler', {}).get('seed')}, not {seed}")
     if graph != build_graph(expected, seed, nodes.get("SaveImage", {}).get("filename_prefix")):
@@ -548,15 +565,17 @@ def candidate_problem(path, manifest, seed, build_graph):
 
 def kept_candidates(drafts, stem, manifest, version):
     """The candidates of the draft set already in drafts that this run can keep: none unless its recipe rebuilds to
-    this one (every key but the render-time ones), it was rendered by the same ComfyUI version (render_set only calls
-    this with a known one), and each candidate it records is still on disk with its recorded SHA-256."""
+    this one (every key but the render-time ones), it was written by this set writer and rendered by the same ComfyUI
+    version (render_set only calls this with a known one), and each candidate it records is still on disk with its
+    recorded SHA-256."""
     path = drafts / f"{stem}-recipe.json"
     try:
         earlier = json.loads(path.read_text()) if path.is_file() else None
     except ValueError:
         return {}
     candidates = earlier.get("candidates") if isinstance(earlier, dict) else None
-    if (not isinstance(candidates, dict) or earlier.get("comfyui_version") != version
+    if (not isinstance(candidates, dict) or earlier.get("set_writer") != SET_WRITER
+            or earlier.get("comfyui_version") != version
             or {key: value for key, value in earlier.items() if key not in ADDED_KEYS} != manifest
             or not set(candidates) <= {f"{stem}-candidate-{seed}.png" for seed in SEEDS}):
         return {}
@@ -584,7 +603,7 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
                  f"can't be tied to one build; nothing was written")
     with art_lock():
         kept = kept_candidates(drafts, stem, manifest, version)
-    recipe = {**manifest, "comfyui_version": version, "candidates": dict(kept)}
+    recipe = {**manifest, "set_writer": SET_WRITER, "comfyui_version": version, "candidates": dict(kept)}
     for name in sorted(kept):
         print(f"kept {name} from an earlier run")
     drafts.mkdir(parents=True, exist_ok=True)

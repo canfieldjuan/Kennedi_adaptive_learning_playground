@@ -363,6 +363,14 @@ def case_locked_folder_holds_only_records(root):
     code, out = run(root, "selftest")
     check("a lock whose embedded graph isn't JSON fails selftest with a problem, not a traceback",
           code and "embedded graph isn't a ComfyUI graph" in out and "Traceback" not in out, out.strip()[-200:])
+    meta = PngInfo()
+    meta.add_text("prompt", json.dumps({"8": {"class_type": "KSampler", "inputs": "seed 72"}}))
+    Image.open(locked / "pippa.png").save(locked / "pippa.png", pnginfo=meta)
+    recipe["files"] = {"pippa.png": hashlib.sha256((locked / "pippa.png").read_bytes()).hexdigest()}
+    (locked / "pippa.recipe.json").write_text(json.dumps(recipe))
+    code, out = run(root, "selftest")
+    check("a lock whose embedded KSampler inputs aren't an object fails selftest with a problem, not a traceback",
+          code and "embedded graph isn't a ComfyUI graph" in out and "Traceback" not in out, out.strip()[-200:])
     (locked / "pippa.png").write_bytes(original[0])
     (locked / "pippa.recipe.json").write_text(original[1])
     Image.open(locked / "pippa.png").convert("RGB").save(locked / "pippa.png")    # same pixels, graph dropped
@@ -647,6 +655,18 @@ def case_resume_needs_the_same_recipe(root):
         run(root, "--server", comfy.url, "page", STORY, 1)
     finally:
         comfy.close()
+    recipe_path = root / PAGE_DRAFTS / "page-01-recipe.json"
+    current = recipe_path.read_text()
+    legacy = json.loads(current)
+    del legacy["set_writer"]                        # as the writer before #151 recorded a set: after all four renders
+    recipe_path.write_text(json.dumps(legacy))
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        check("a set recorded by the earlier writer is never resumed: all four render fresh",
+              not code and renders(comfy) == 4 and "kept" not in out, f"{renders(comfy)} renders")
+    finally:
+        comfy.close()
     before = {name: (root / PAGE_DRAFTS / name).read_bytes() for name in page_drafts(root)}
     comfy = FakeComfy()
     try:
@@ -781,16 +801,20 @@ def case_bad_replies_are_not_kept(root):
     Image.new("RGB", (1328, 1328), "white").save(jpeg, "JPEG")
     cut = lambda real: real[:len(real) - 200]       # the real render, its embedded graph intact, the pixels cut off
 
-    def garbled(real):                              # the real pixels, with an embedded graph that isn't JSON
-        meta, out = PngInfo(), io.BytesIO()
-        meta.add_text("prompt", "{")
-        Image.open(io.BytesIO(real)).save(out, "PNG", pnginfo=meta)
-        return out.getvalue()
+    def regraphed(text):                            # the real pixels, with another embedded graph
+        def serve(real):
+            meta, out = PngInfo(), io.BytesIO()
+            meta.add_text("prompt", text)
+            Image.open(io.BytesIO(real)).save(out, "PNG", pnginfo=meta)
+            return out.getvalue()
+        return serve
     for label, broken in [("an HTTP 200 error page", b"<html>500 Internal Server Error</html>"), ("an empty body", b""),
                           ("a PNG of the wrong size", small.getvalue()), ("the real render cut off mid-file", cut),
                           ("a JPEG instead of SaveImage's PNG", jpeg.getvalue()),
                           ("seed 61's image served again for seed 72", "job0"),
-                          ("the real render with a garbled embedded graph", garbled)]:
+                          ("the real render with a garbled embedded graph", regraphed("{")),
+                          ("the real render with a KSampler whose inputs are a list",
+                           regraphed(json.dumps({"11": {"class_type": "KSampler", "inputs": [72]}})))]:
         drafts = root / DRAFTS
         for leftover in drafts.glob("barnaby-*"):
             leftover.unlink()
