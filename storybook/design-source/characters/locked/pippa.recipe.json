@@ -1,0 +1,180 @@
+{
+ "kind": "character-sheet",
+ "name": "pippa",
+ "template_version": "v2",
+ "render_version": "v1",
+ "canon": {
+  "species": "dormouse",
+  "build": "tiny",
+  "base_colors": "warm sandy-brown fur, a cream chest and belly, and large dark round eyes",
+  "signature_garment": "red acorn cap with a short brown stem",
+  "signature_props": [
+   "a smooth stone wrapped in a fern leaf"
+  ],
+  "accent_notes": "soft fur-texture lines on the ears, cheeks, and tail"
+ },
+ "template": {
+  "style": "soft storybook watercolor illustration, gentle warm palette, clean confident outlines, cozy picture-book style",
+  "text": "{style}. A single {build} {species} standing upright on two hind legs in a relaxed three-quarter view, {base_colors}{garment}{props}, {accent}, plain soft cream background, full body, centered, no text"
+ },
+ "prompt": "soft storybook watercolor illustration, gentle warm palette, clean confident outlines, cozy picture-book style. A single tiny dormouse standing upright on two hind legs in a relaxed three-quarter view, warm sandy-brown fur, a cream chest and belly, and large dark round eyes, wearing a red acorn cap with a short brown stem, with a smooth stone wrapped in a fern leaf, soft fur-texture lines on the ears, cheeks, and tail, plain soft cream background, full body, centered, no text",
+ "settings": {
+  "size": 1328,
+  "shift": 3.1,
+  "steps": 20,
+  "cfg": 4.0,
+  "sampler": "euler",
+  "scheduler": "simple"
+ },
+ "models": [
+  {
+   "role": "unet",
+   "file": "qwen-image-Q8_0.gguf",
+   "source": "city96/Qwen-Image-gguf",
+   "license": "apache-2.0",
+   "sha256": "43142b32778dc0568c27395abc6f8291ac53f1de0b98eed919712cf161f248de"
+  },
+  {
+   "role": "clip",
+   "file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "source": "Comfy-Org/Qwen-Image_ComfyUI (from Qwen/Qwen2.5-VL-7B-Instruct)",
+   "license": "apache-2.0",
+   "sha256": "cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4"
+  },
+  {
+   "role": "vae",
+   "file": "qwen_image_vae.safetensors",
+   "source": "Comfy-Org/Qwen-Image_ComfyUI",
+   "license": "apache-2.0",
+   "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f"
+  }
+ ],
+ "seeds": [
+  61,
+  72,
+  83,
+  94
+ ],
+ "graph": {
+  "1": {
+   "class_type": "UnetLoaderGGUF",
+   "inputs": {
+    "unet_name": "qwen-image-Q8_0.gguf"
+   }
+  },
+  "2": {
+   "class_type": "CLIPLoader",
+   "inputs": {
+    "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "type": "qwen_image",
+    "device": "default"
+   }
+  },
+  "3": {
+   "class_type": "VAELoader",
+   "inputs": {
+    "vae_name": "qwen_image_vae.safetensors"
+   }
+  },
+  "4": {
+   "class_type": "ModelSamplingAuraFlow",
+   "inputs": {
+    "model": [
+     "1",
+     0
+    ],
+    "shift": 3.1
+   }
+  },
+  "5": {
+   "class_type": "CLIPTextEncode",
+   "inputs": {
+    "clip": [
+     "2",
+     0
+    ],
+    "text": "soft storybook watercolor illustration, gentle warm palette, clean confident outlines, cozy picture-book style. A single tiny dormouse standing upright on two hind legs in a relaxed three-quarter view, warm sandy-brown fur, a cream chest and belly, and large dark round eyes, wearing a red acorn cap with a short brown stem, with a smooth stone wrapped in a fern leaf, soft fur-texture lines on the ears, cheeks, and tail, plain soft cream background, full body, centered, no text"
+   }
+  },
+  "6": {
+   "class_type": "CLIPTextEncode",
+   "inputs": {
+    "clip": [
+     "2",
+     0
+    ],
+    "text": ""
+   }
+  },
+  "7": {
+   "class_type": "EmptySD3LatentImage",
+   "inputs": {
+    "width": 1328,
+    "height": 1328,
+    "batch_size": 1
+   }
+  },
+  "8": {
+   "class_type": "KSampler",
+   "inputs": {
+    "model": [
+     "4",
+     0
+    ],
+    "positive": [
+     "5",
+     0
+    ],
+    "negative": [
+     "6",
+     0
+    ],
+    "latent_image": [
+     "7",
+     0
+    ],
+    "seed": 0,
+    "steps": 20,
+    "cfg": 4.0,
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "denoise": 1.0
+   }
+  },
+  "9": {
+   "class_type": "VAEDecode",
+   "inputs": {
+    "samples": [
+     "8",
+     0
+    ],
+    "vae": [
+     "3",
+     0
+    ]
+   }
+  },
+  "10": {
+   "class_type": "SaveImage",
+   "inputs": {
+    "images": [
+     "9",
+     0
+    ],
+    "filename_prefix": "storybook/pippa"
+   }
+  }
+ },
+ "comfyui_version": "0.25.0",
+ "candidates": {
+  "pippa-candidate-61.png": "6d6d517ec6d3c26023dbbbdeb8e3341da163da97e41a0c2e81478a661b5dcaa0",
+  "pippa-candidate-72.png": "47ceb624456a6facd8a85307e40dfe96bce6058c5bc86f448def4417028f3d94",
+  "pippa-candidate-83.png": "26e5895e407ba8607bc552e93b83392c4c524f77246b0161891b073e4bd0b69d",
+  "pippa-candidate-94.png": "d0fef207ad357dacd406f91f4ae695641b92b60155cd4f41ceb3f85ebba82ec4"
+ },
+ "chosen_seed": 72,
+ "source": "design-source/characters/drafts/pippa-candidate-72.png",
+ "files": {
+  "pippa.png": "47ceb624456a6facd8a85307e40dfe96bce6058c5bc86f448def4417028f3d94"
+ }
+}

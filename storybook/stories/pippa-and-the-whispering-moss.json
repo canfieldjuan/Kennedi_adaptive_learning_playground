@@ -1,0 +1,78 @@
+{
+ "source": {
+  "repo": "bedtime_broadcast",
+  "file": "bedtime.db",
+  "table": "stories",
+  "id": 9,
+  "publish_date": "2026-09-14",
+  "how": "SQLite opened read-only (mode=ro); nothing in bedtime_broadcast is imported, run or written",
+  "content_sha256": "25185b28a2b64fa8770602dbafa9cd46862e4e3fd2d186d0a3bd61b243cf5eee",
+  "season": "world_state version 2, the story's resulting world state"
+ },
+ "title": "Pippa and the Whispering Moss",
+ "refrain": "The lanterns dim, and the forest grows hushed.",
+ "primary_character": "Pippa",
+ "season": "gentle autumn",
+ "text": "The golden light of late afternoon slipped through the trees of Moon Berry Forest, painting the leaves in honey and rust. Pippa, tiny in her red acorn cap, scurried over a fallen log, her paws tapping a quick rhythm. She was on a mission—finding the softest moss in all the forest. She had been listening to the wind hum through the brambles, and it whispered, 'Look beneath the stone, little one.'\n\nShe paused at the edge of the Moonlit Glade, where the grass turned silver and the air smelled like warm earth. There, tucked under a mossy rock near the Berry Brook, she saw it—a patch of moss so pale and fine it looked like spun moonlight. Pippa knelt, her breath catching. She reached out, one tiny finger brushing the top.\n\nIt felt like a cloud made of velvet, cool and gentle. She giggled, tucking her nose into it. The forest seemed to sigh around her. [pause] The lanterns dim, and the forest grows hushed.\n\nBramble appeared from behind a willow, his patchwork vest rustling. 'Ah, Pippa,' he said softly. 'You’ve found the moss that sings in the quiet.' He handed her a small, smooth stone wrapped in soft fern. 'For your collection,' he said. 'It’s not the softest thing, but it holds warmth.'\n\nPippa tucked the stone into her cap, her heart full. She sat with Bramble, watching fireflies rise like tiny stars. The air grew still, and the golden light faded to deep amber. [gentle pat] The lanterns dim, and the forest grows hushed.\n\nBarnaby’s porch swing creaked softly as he sipped tea. He waved a slow hello. Pippa waved back, her eyes heavy. She knew the forest was safe, and she had found her treasure—not just the moss, but the peace of stillness.\n\nTonight, she would dream of moss that glowed like stars. And tomorrow, she wondered… what if the moss near the old stone bridge hums when the wind blows just right? [yawn] The lanterns dim, and the forest grows hushed.",
+ "pages": [
+  {
+   "cast": [
+    "Pippa"
+   ],
+   "place": "a fallen log among the trees of Moon Berry Forest",
+   "time": "late-afternoon",
+   "scene": "Pippa scurries along a fallen log, her paws empty, the leaves around her glowing honey and rust"
+  },
+  {
+   "cast": [
+    "Pippa"
+   ],
+   "place": "the edge of the Moonlit Glade, by a mossy rock near the Berry Brook",
+   "time": "late-afternoon",
+   "scene": "Pippa kneels at a mossy rock in the silver grass, reaching one tiny finger toward a patch of pale, fine moss like spun moonlight, her paws otherwise empty"
+  },
+  {
+   "cast": [
+    "Pippa"
+   ],
+   "place": "a mossy rock near the Berry Brook",
+   "time": "late-afternoon",
+   "scene": "Pippa giggles with her nose tucked into the pale, velvety moss, eyes closed, her paws empty"
+  },
+  {
+   "cast": [
+    "Pippa",
+    "Bramble"
+   ],
+   "place": "beside a willow near the Berry Brook",
+   "time": "late-afternoon",
+   "scene": "Bramble steps out from behind a willow and holds out a small smooth stone wrapped in a soft fern leaf to Pippa"
+  },
+  {
+   "cast": [
+    "Pippa",
+    "Bramble"
+   ],
+   "place": "the mossy rock near the Berry Brook",
+   "time": "dusk",
+   "scene": "Pippa and Bramble sit side by side, watching fireflies rise like tiny stars, the fern-wrapped stone tucked under Pippa's cap"
+  },
+  {
+   "cast": [
+    "Pippa",
+    "Barnaby"
+   ],
+   "place": "Barnaby's Porch",
+   "time": "evening",
+   "scene": "Barnaby sits on his porch swing with a mug of tea, waving a slow hello, and a sleepy-eyed Pippa waves back from the path below"
+  },
+  {
+   "cast": [
+    "Pippa"
+   ],
+   "place": "a soft bed of moss under the trees",
+   "time": "night",
+   "scene": "Pippa sleeps curled up on soft moss, dreaming, the moss around her glowing like stars"
+  }
+ ]
+}

@@ -35,9 +35,10 @@ jobs:
       - name: Install Pillow
         run: sudo apt-get update && sudo apt-get install --yes python3-pil
 
-      # Every character lock must rebuild from its recipe and the current canon, keep its recorded bytes, and
-      # name only licence-allowlisted (apache-2.0) models: a lock is the book's sell-safe reference art.
-      - name: Check every character lock against its record
+      # Every story's page plan must match its snapshot, and every character and page lock must rebuild from its
+      # recipe, the current canon, story and locked sheets, keep its recorded bytes, and name only
+      # licence-allowlisted (apache-2.0) models: a lock is the book's reference art.
+      - name: Check every story, and every lock against its record
         run: python3 -B tools/story-recipe.py selftest
 
       # The tool's commands, run against a copy and a fake ComfyUI. CPU only: no GPU, no models.
