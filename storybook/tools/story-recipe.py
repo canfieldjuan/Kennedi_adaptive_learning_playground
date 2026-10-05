@@ -17,6 +17,9 @@ stack.
       locked sheets, that its files match their digests, that every file in a locked folder has one owner, and
       that every model it names is on the licence allowlist. No ComfyUI needed.
 
+`character` and `page` write their four seeds one at a time: a ComfyUI lost mid-set keeps the seeds that finished,
+and running the same command again renders only the missing ones (for the same recipe and ComfyUI version).
+
 The canon is storybook/canon/moon-berry-forest.json, a snapshot of bedtime_broadcast's WORLD_BIBLE; the stories
 in storybook/stories/ are snapshots of its published stories, each with a page plan. Renders need a running
 ComfyUI (--server, default http://127.0.0.1:8188) that can see the allowlisted models. Needs Pillow. One operator
@@ -27,6 +30,7 @@ import argparse
 import contextlib
 import fcntl
 import hashlib
+import http.client
 import io
 import json
 import os
@@ -109,9 +113,21 @@ PAGE_RENDERS = {"v1": {"size": 1328, "shift": 3.1, "cfg_norm": 1.0, "reference_m
                        "steps": 40, "cfg": 4.0, "sampler": "euler", "scheduler": "simple"}}
 PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"
 PAGE_KEYS = {"cast", "place", "time", "scene"}
-# Keys a recipe gains outside draft_manifest(): the ComfyUI version and the candidates' SHA-256, noted at render
-# time, and what `lock` adds.
-ADDED_KEYS = {"comfyui_version", "candidates", "chosen_seed", "source", "files"}
+class BadReply(Exception):
+    """ComfyUI answered with something that isn't the JSON object its API sends (a body cut off mid-reply)."""
+
+
+# What a ComfyUI that can't be reached, or goes away mid-run, raises: refused or dropped connections, timeouts,
+# broken HTTP replies and replies that aren't JSON. Not OSError at large, so a local disk error is never reported
+# as a lost server.
+LOST_COMFY = (urllib.error.URLError, ConnectionError, TimeoutError, http.client.HTTPException, BadReply)
+# The set writer, recorded in every draft recipe it writes. Only a set recorded seed by seed -- each seed's bytes and
+# ComfyUI build checked before it is recorded -- can be resumed; a recipe from an earlier writer, which read the
+# build once after all four renders, starts a fresh set. A change to how sets are recorded is a new number.
+SET_WRITER = 1
+# Keys a recipe gains outside draft_manifest(): the set writer, the ComfyUI version and the candidates' SHA-256,
+# noted at render time, and what `lock` adds.
+ADDED_KEYS = {"set_writer", "comfyui_version", "candidates", "chosen_seed", "source", "files"}
 
 
 def sha256(path):
@@ -196,6 +212,20 @@ def allowlist_problems(manifest):
             if not isinstance(model, dict) or model.get("file") not in allowed]
 
 
+def comfy_graph(text):
+    """An embedded graph as ComfyUI writes it -- {node id: {"class_type": str, "inputs": {...}}} -- or None when the
+    text isn't one. The one place the tool decides that, so nothing reads a node it hasn't checked."""
+    try:
+        graph = json.loads(text)
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(graph, dict) or not all(
+            isinstance(node, dict) and isinstance(node.get("class_type"), str) and isinstance(node.get("inputs"), dict)
+            for node in graph.values()):
+        return None
+    return graph
+
+
 def rebuild_problems(png, manifest, expected, seed, build_graph, what):
     """Why png and its recipe are not what the tool rebuilds from the recipe's inputs (expected) at this seed; an
     empty list when they are. build_graph is the graph builder for this kind of recipe."""
@@ -212,7 +242,9 @@ def rebuild_problems(png, manifest, expected, seed, build_graph, what):
         return problems + [f"{png.name} has no embedded graph"]
     if image.size != (expected["settings"]["size"],) * 2:
         problems.append(f"{png.name} is {image.size[0]}x{image.size[1]}, not the recipe's size")
-    graph = json.loads(image.info["prompt"])
+    graph = comfy_graph(image.info["prompt"])
+    if graph is None:
+        return problems + [f"{png.name}'s embedded graph isn't a ComfyUI graph"]
     nodes = {node["class_type"]: node["inputs"] for node in graph.values()}
     if nodes.get("KSampler", {}).get("seed") != seed:
         problems.append(f"it was rendered at seed {nodes.get('KSampler', {}).get('seed')}, not {seed}")
@@ -403,16 +435,16 @@ def art_lock():
         os.close(folder)
 
 
-@contextlib.contextmanager
-def staging(folder):
-    """Files written to the yielded folder move into `folder` together, under the art lock, if the block ends
-    without an exception; otherwise none of them do."""
-    folder.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=folder, prefix=".staging-") as tmp:
-        yield Path(tmp)
-        with art_lock():
-            for path in sorted(Path(tmp).iterdir()):
-                os.replace(path, folder / path.name)
+def reply_json(body, path):
+    """ComfyUI's reply as the JSON object its API sends; anything else is a BadReply, a server failure, kept apart
+    from decoding the tool's own files."""
+    try:
+        reply = json.loads(body) if body else {}
+    except ValueError as error:
+        raise BadReply(f"{path} sent a reply that isn't JSON ({error})") from None
+    if not isinstance(reply, dict):
+        raise BadReply(f"{path} sent {type(reply).__name__}, not a JSON object")
+    return reply
 
 
 def api(server, path, payload=None, timeout=30):
@@ -420,36 +452,49 @@ def api(server, path, payload=None, timeout=30):
     request = urllib.request.Request(server + path, data=data,
                                      headers={"Content-Type": "application/json"} if data else {})
     with urllib.request.urlopen(request, timeout=timeout) as response:
-        body = response.read()
-        return json.loads(body) if body else {}
+        return reply_json(response.read(), path)
+
+
+class RenderFailed(Exception):
+    """ComfyUI answered, but didn't produce the render."""
 
 
 def render(server, graph, out, timeout=1800):
     pid = api(server, "/prompt", {"prompt": graph, "client_id": "story-recipe"}).get("prompt_id")
-    if not pid:
-        sys.exit("ComfyUI rejected the graph")
+    if not isinstance(pid, str) or not pid:
+        raise RenderFailed("ComfyUI rejected the graph")
     start = time.time()
     while time.time() - start < timeout:
         entry = api(server, f"/history/{pid}", timeout=10).get(pid)
         if entry:
-            if entry.get("status", {}).get("status_str") == "error":
-                sys.exit(f"render failed: {json.dumps(entry['status'])[:600]}")
-            item = next(i for o in entry["outputs"].values() for i in o.get("images", []))
-            query = urllib.parse.urlencode({"filename": item["filename"], "subfolder": item.get("subfolder", ""),
-                                            "type": "output"})
+            # The history entry is ComfyUI's reply too: a shape the tool doesn't know is a BadReply, not a crash.
+            try:
+                failed = entry.get("status", {}).get("status_str") == "error"
+                if not failed:
+                    item = next(i for o in entry["outputs"].values() for i in o.get("images", []))
+                    query = urllib.parse.urlencode({"filename": item["filename"], "subfolder": item.get("subfolder", ""),
+                                                    "type": "output"})
+            except (AttributeError, KeyError, TypeError, StopIteration):
+                raise BadReply(f"/history/{pid} isn't a finished job with an image") from None
+            if failed:
+                raise RenderFailed(f"render failed: {json.dumps(entry['status'])[:600]}")
             with urllib.request.urlopen(f"{server}/view?{query}", timeout=60) as response:
                 out.write_bytes(response.read())
             return
         time.sleep(2)
-    sys.exit(f"timed out after {timeout}s")
+    raise RenderFailed(f"timed out after {timeout}s")
 
 
 def require_models(server, roles):
     """Every model must be one ComfyUI actually loads under the allowlisted name, or the render isn't the recipe."""
     for role in roles:
         node, field = LOADERS[role]
-        options = api(server, f"/object_info/{node}")[node]["input"]["required"][field][0]
-        if MODELS[role]["file"] not in options:
+        try:
+            options = api(server, f"/object_info/{node}")[node]["input"]["required"][field][0]
+            listed = MODELS[role]["file"] in options
+        except (KeyError, IndexError, TypeError):
+            raise BadReply(f"/object_info/{node} doesn't list {field}'s options") from None
+        if not listed:
             sys.exit(f"ComfyUI can't see {MODELS[role]['file']} ({node}) -- check extra_model_paths.yaml")
 
 
@@ -471,7 +516,7 @@ def upload(server, data, name):
     request = urllib.request.Request(server + "/upload/image", data=body,
                                      headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
     with urllib.request.urlopen(request, timeout=60) as response:
-        stored = json.loads(response.read())
+        stored = reply_json(response.read(), "/upload/image")
     if stored.get("name") != name or stored.get("subfolder", "") != "":
         sys.exit(f"ComfyUI stored the reference {name} as {stored.get('subfolder')!r}/{stored.get('name')!r}, so "
                  f"the graph would load something else; nothing was rendered")
@@ -493,24 +538,124 @@ def contact_sheet(tiles, out, tile=480, references=(), reference_tile=240):
     sheet.save(out)
 
 
+def server_version(server):
+    """The ComfyUI build serving now, as /system_stats reports it: a non-empty string, or None when it doesn't say."""
+    system = api(server, "/system_stats", timeout=10).get("system")
+    version = system.get("comfyui_version") if isinstance(system, dict) else None
+    return version if isinstance(version, str) and version else None
+
+
+def candidate_problem(path, manifest, seed, build_graph):
+    """Why the bytes ComfyUI returned for this seed can't be recorded as a candidate, or None.
+
+    A recorded candidate is kept by its digest on every re-run, so it must be one `lock` can accept on its render:
+    the bytes decode fully (lock's open is lazy, so a cut-off body would pass it), and they pass lock's own render
+    checks -- the embedded graph is there, rendered at this seed, and is the recipe's graph, at the recipe's size.
+    An error page, an empty or cut-off body, another format, or another job's image is refused here rather than
+    kept and then refused by `lock`.
+    """
+    try:
+        with Image.open(path) as image:
+            image.load()
+    except (OSError, SyntaxError, ValueError) as error:
+        return f"ComfyUI returned {path.stat().st_size} bytes that aren't an image ({type(error).__name__})"
+    problems = rebuild_problems(path, manifest, manifest, seed, build_graph, "the recipe it was rendered from")
+    return f"ComfyUI's image for seed {seed} isn't this recipe's render: " + "; ".join(problems) if problems else None
+
+
+def kept_candidates(drafts, stem, manifest, version):
+    """The candidates of the draft set already in drafts that this run can keep: none unless its recipe rebuilds to
+    this one (every key but the render-time ones), it was written by this set writer and rendered by the same ComfyUI
+    version (render_set only calls this with a known one), and each candidate it records is still on disk with its
+    recorded SHA-256."""
+    path = drafts / f"{stem}-recipe.json"
+    try:
+        earlier = json.loads(path.read_text()) if path.is_file() else None
+    except ValueError:
+        return {}
+    candidates = earlier.get("candidates") if isinstance(earlier, dict) else None
+    if (not isinstance(candidates, dict) or earlier.get("set_writer") != SET_WRITER
+            or earlier.get("comfyui_version") != version
+            or {key: value for key, value in earlier.items() if key not in ADDED_KEYS} != manifest
+            or not set(candidates) <= {f"{stem}-candidate-{seed}.png" for seed in SEEDS}):
+        return {}
+    for name, digest in candidates.items():
+        candidate = drafts / name
+        if candidate.is_symlink() or not candidate.is_file() or sha256(candidate) != digest:
+            return {}
+    return dict(candidates)
+
+
+def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, references=()):
+    """Render the recipe's seeds into drafts_rel as <stem>-candidate-<seed>.png, one seed at a time.
+
+    After each seed, its candidate and the draft recipe, which records every seed rendered so far, land in the
+    drafts folder together under the art lock, once the bytes are a valid candidate and the ComfyUI build is still the
+    set's. So a ComfyUI lost mid-set keeps what finished, and a run that fails before its first seed leaves the
+    previous set as it was. A set already there for the same recipe and ComfyUI
+    version is resumed: its seeds are kept, not re-rendered. The contact sheet is written once every seed is in.
+    """
+    drafts = real_folder(drafts_rel)
+    version = server_version(server)
+    if version is None:
+        # Every seed of a set must come from one known build; with no version there is nothing to compare.
+        sys.exit(f"ComfyUI at {server} doesn't report its version (/system_stats system.comfyui_version), so a set "
+                 f"can't be tied to one build; nothing was written")
+    with art_lock():
+        kept = kept_candidates(drafts, stem, manifest, version)
+    recipe = {**manifest, "set_writer": SET_WRITER, "comfyui_version": version, "candidates": dict(kept)}
+    for name in sorted(kept):
+        print(f"kept {name} from an earlier run")
+    drafts.mkdir(parents=True, exist_ok=True)
+    for seed in SEEDS:
+        name = f"{stem}-candidate-{seed}.png"
+        if name in kept:
+            continue
+        with tempfile.TemporaryDirectory(dir=drafts, prefix=".staging-") as tmp:
+            out, started = Path(tmp) / name, time.time()
+            try:
+                render(server, build_graph(manifest, seed, f"{prefix}-{seed}"), out)
+                problem = candidate_problem(out, manifest, seed, build_graph)
+                if problem:
+                    raise RenderFailed(problem)
+                # Every recorded seed comes from the set's build: a ComfyUI restarted or upgraded between seeds
+                # would otherwise add the new build's renders under the old version.
+                now = server_version(server)
+                if now != version:
+                    raise RenderFailed(f"ComfyUI changed from {version!r} to {now!r} during the set, so this seed "
+                                       f"isn't recorded; the next run starts a fresh set")
+            except (*LOST_COMFY, RenderFailed) as error:
+                done = sorted(recipe["candidates"])
+                sys.exit(f"lost the render of seed {seed} ({error}); " + (
+                    f"kept {', '.join(done)} in {drafts_rel} -- run the same command again to render the rest"
+                    if done else "nothing was written"))
+            # The bytes ComfyUI returned, so `lock` can refuse a candidate edited afterwards.
+            recipe["candidates"][name] = sha256(out)
+            (Path(tmp) / f"{stem}-recipe.json").write_text(json.dumps(recipe, indent=1))
+            with art_lock():
+                if not kept and len(recipe["candidates"]) == 1:
+                    # A fresh set: the old contact sheet shows a set this recipe no longer describes.
+                    (drafts / f"{stem}-contact-sheet.png").unlink(missing_ok=True)
+                os.replace(out, drafts / name)
+                os.replace(Path(tmp) / f"{stem}-recipe.json", drafts / f"{stem}-recipe.json")
+        print(f"rendered seed {seed} in {time.time() - started:.0f}s")
+    if kept and len(kept) == len(SEEDS):
+        print("every seed of this recipe was already rendered; nothing to render")
+    with tempfile.TemporaryDirectory(dir=drafts, prefix=".staging-") as tmp:
+        sheet = Path(tmp) / f"{stem}-contact-sheet.png"
+        contact_sheet([(f"seed {seed}", drafts / f"{stem}-candidate-{seed}.png") for seed in SEEDS], sheet,
+                      references=references)
+        with art_lock():
+            os.replace(sheet, drafts / sheet.name)
+
+
 def cmd_character(args):
     canon = load_canon()
     name = character(canon, args.name)["name"].lower()
     manifest = draft_manifest(name, TEMPLATE, RENDER, canon)
     require_models(args.server, SHEET_ROLES)
-    drafts = real_folder(DRAFTS)
-    with staging(drafts) as tmp:
-        paths = []
-        for seed in SEEDS:
-            paths.append(tmp / f"{name}-candidate-{seed}.png")
-            render(args.server, recipe_graph(manifest, seed, f"storybook/{name}-{seed}"), paths[-1])
-            print(f"rendered seed {seed}")
-        contact_sheet([(f"seed {s}", p) for s, p in zip(SEEDS, paths)], tmp / f"{name}-contact-sheet.png")
-        manifest["comfyui_version"] = api(args.server, "/system_stats", timeout=10).get("system", {}).get(
-            "comfyui_version")
-        # The bytes ComfyUI returned, so `lock` can refuse a candidate edited afterwards.
-        manifest["candidates"] = {path.name: sha256(path) for path in paths}
-        (tmp / f"{name}-recipe.json").write_text(json.dumps(manifest, indent=1))
+    real_folder(DRAFTS)
+    render_set(args.server, DRAFTS, name, manifest, recipe_graph, f"storybook/{name}")
     print(f"wrote {name}'s candidates, contact sheet and recipe to {DRAFTS} -- pick a seed, then `lock {name}`")
 
 
@@ -522,7 +667,7 @@ def cmd_page(args):
         sys.exit(f"{STORIES}/{args.story}.json can't be drawn from: " + "; ".join(problems))
     number = page_number(args.story, story, args.number)
     stem, cast = page_stem(number), [member.lower() for member in story["pages"][number - 1]["cast"]]
-    drafts = real_folder(page_folder(args.story, "drafts"))
+    real_folder(page_folder(args.story, "drafts"))
     with art_lock():
         # Each sheet is read once, under the lock, after its lock checks out: the bytes checked are the bytes
         # uploaded and recorded.
@@ -543,19 +688,8 @@ def cmd_page(args):
     require_models(args.server, PAGE_ROLES)
     for reference in manifest["references"]:
         upload(args.server, sheets[reference["name"]], reference_name(reference["sha256"]))
-    with staging(drafts) as tmp:
-        paths = []
-        for seed in SEEDS:
-            paths.append(tmp / f"{stem}-candidate-{seed}.png")
-            started = time.time()
-            render(args.server, page_graph(manifest, seed, f"storybook/{args.story}/{stem}-{seed}"), paths[-1])
-            print(f"rendered seed {seed} in {time.time() - started:.0f}s")
-        contact_sheet([(f"seed {s}", p) for s, p in zip(SEEDS, paths)], tmp / f"{stem}-contact-sheet.png",
-                      references=[(member, sheets[member]) for member in cast])
-        manifest["comfyui_version"] = api(args.server, "/system_stats", timeout=10).get("system", {}).get(
-            "comfyui_version")
-        manifest["candidates"] = {path.name: sha256(path) for path in paths}
-        (tmp / f"{stem}-recipe.json").write_text(json.dumps(manifest, indent=1))
+    render_set(args.server, page_folder(args.story, "drafts"), stem, manifest, page_graph,
+               f"storybook/{args.story}/{stem}", references=[(member, sheets[member]) for member in cast])
     print(f"wrote page {number}'s candidates, contact sheet and recipe to {page_folder(args.story, 'drafts')} -- "
           f"pick a seed, then `lock-page {args.story} {number}`")
 
@@ -750,8 +884,9 @@ def main():
     try:
         {"character": cmd_character, "lock": cmd_lock, "page": cmd_page, "lock-page": cmd_lock_page,
          "selftest": cmd_selftest}[args.cmd](args)
-    except urllib.error.URLError as error:
-        sys.exit(f"ComfyUI at {args.server} is unreachable ({error.reason}); nothing was written")
+    except LOST_COMFY as error:
+        sys.exit(f"ComfyUI at {args.server} is unreachable or answered badly "
+                 f"({getattr(error, 'reason', error)}); nothing was written")
 
 
 if __name__ == "__main__":

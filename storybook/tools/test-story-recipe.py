@@ -60,9 +60,15 @@ class FakeComfy:
     """ComfyUI's HTTP API, as much of it as the tool uses: it lists the allowlisted models and its nodes, keeps
     uploaded images, queues a graph, "renders" an image of the requested size from the graph and the images it
     loads, and embeds the graph as ComfyUI does. rename_uploads stores uploads under another name, as ComfyUI
-    does without overwrite."""
+    does without overwrite; die_after=N drops the connection while the (N+1)th render is polled, as a ComfyUI that
+    stops mid-set does; version is what /system_stats reports (None: no version); bad_history and bad_view map a
+    render's index to the broken reply its /history poll or /view download gets instead (a job id string serves
+    that job's image; a function gets the real image and returns what is served); upgrade_after=N reports
+    another version once more than N renders have been queued, as a ComfyUI restarted on a new build does; stats
+    replaces the whole /system_stats reply."""
 
-    def __init__(self, models=MODEL_FILES, nodes=NODES, rename_uploads=False):
+    def __init__(self, models=MODEL_FILES, nodes=NODES, rename_uploads=False, die_after=None, version="fake",
+                 bad_history=None, bad_view=None, upgrade_after=None, stats=None):
         self.images, self.uploads, fake = {}, {}, self
 
         class Handler(http.server.BaseHTTPRequestHandler):
@@ -97,12 +103,23 @@ class FakeComfy:
                 path, _, query = self.path.partition("?")
                 if path.startswith("/history/"):
                     pid = path.rsplit("/", 1)[1]
+                    if die_after is not None and int(pid[3:]) >= die_after:
+                        self.close_connection = True        # no reply at all: the client sees the server go away
+                        return
+                    if int(pid[3:]) in (bad_history or {}):
+                        return self.reply(bad_history[int(pid[3:])], "application/json; charset=utf-8")  # raw bytes
                     return self.reply({pid: {"status": {"status_str": "success"}, "outputs": {
                         "10": {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "output"}]}}}})
                 if path == "/view":
-                    return self.reply(fake.images[parse_qs(query)["filename"][0][:-4]], "image/png")
+                    pid = parse_qs(query)["filename"][0][:-4]
+                    served = (bad_view or {}).get(int(pid[3:]), fake.images[pid])
+                    served = fake.images[served] if isinstance(served, str) else served
+                    return self.reply(served(fake.images[pid]) if callable(served) else served, "image/png")
                 if path == "/system_stats":
-                    return self.reply({"system": {"comfyui_version": "fake"}})
+                    if stats is not None:
+                        return self.reply(stats)
+                    upgraded = upgrade_after is not None and len(fake.images) > upgrade_after
+                    return self.reply({"system": {"comfyui_version": f"{version}-new" if upgraded else version}})
                 if path.startswith("/object_info/"):
                     node = path.rsplit("/", 1)[1]
                     if node not in nodes:
@@ -336,6 +353,26 @@ def case_locked_folder_holds_only_records(root):
     """Every file in the locked folder is a lock's, and its bytes are the ones it locked."""
     drawn(root)
     locked = root / LOCKED
+    original = (locked / "pippa.png").read_bytes(), (locked / "pippa.recipe.json").read_text()
+    meta = PngInfo()
+    meta.add_text("prompt", "{")
+    Image.open(locked / "pippa.png").save(locked / "pippa.png", pnginfo=meta)
+    recipe = json.loads(original[1])
+    recipe["files"] = {"pippa.png": hashlib.sha256((locked / "pippa.png").read_bytes()).hexdigest()}
+    (locked / "pippa.recipe.json").write_text(json.dumps(recipe))
+    code, out = run(root, "selftest")
+    check("a lock whose embedded graph isn't JSON fails selftest with a problem, not a traceback",
+          code and "embedded graph isn't a ComfyUI graph" in out and "Traceback" not in out, out.strip()[-200:])
+    meta = PngInfo()
+    meta.add_text("prompt", json.dumps({"8": {"class_type": "KSampler", "inputs": "seed 72"}}))
+    Image.open(locked / "pippa.png").save(locked / "pippa.png", pnginfo=meta)
+    recipe["files"] = {"pippa.png": hashlib.sha256((locked / "pippa.png").read_bytes()).hexdigest()}
+    (locked / "pippa.recipe.json").write_text(json.dumps(recipe))
+    code, out = run(root, "selftest")
+    check("a lock whose embedded KSampler inputs aren't an object fails selftest with a problem, not a traceback",
+          code and "embedded graph isn't a ComfyUI graph" in out and "Traceback" not in out, out.strip()[-200:])
+    (locked / "pippa.png").write_bytes(original[0])
+    (locked / "pippa.recipe.json").write_text(original[1])
     Image.open(locked / "pippa.png").convert("RGB").save(locked / "pippa.png")    # same pixels, graph dropped
     code, out = run(root, "selftest")
     check("a lock whose PNG was re-saved fails selftest", code and "changed since it was locked" in out,
@@ -569,11 +606,241 @@ def case_plan_check(root):
     check("the plan as committed passes", not code and "1 stories" in out, out.strip()[-160:])
 
 
+def renders(comfy):
+    return len(comfy.images)
+
+
+def page_drafts(root):
+    folder = root / PAGE_DRAFTS
+    return sorted(p.name for p in folder.iterdir()) if folder.is_dir() else []
+
+
+def case_lost_comfy_keeps_finished_seeds(root):
+    """A ComfyUI lost mid-set keeps the seeds that finished, and a re-run renders only the rest."""
+    drawn(root, "pippa")
+    comfy = FakeComfy(die_after=2)
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+    finally:
+        comfy.close()
+    check("losing ComfyUI after two seeds exits non-zero with a plain message, not a traceback",
+          code and "Traceback" not in out and "lost the render of seed 83" in out
+          and "kept page-01-candidate-61.png, page-01-candidate-72.png" in out, out.strip()[-240:])
+    recipe = json.loads((root / PAGE_DRAFTS / "page-01-recipe.json").read_text())
+    check("the two finished candidates and a recipe recording exactly them are in drafts",
+          page_drafts(root) == ["page-01-candidate-61.png", "page-01-candidate-72.png", "page-01-recipe.json"]
+          and sorted(recipe["candidates"]) == ["page-01-candidate-61.png", "page-01-candidate-72.png"]
+          and all(recipe["candidates"][n] == sha((root / PAGE_DRAFTS / n).read_bytes()) for n in recipe["candidates"]),
+          page_drafts(root))
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        check("a re-run renders only seeds 83 and 94, and writes the contact sheet",
+              not code and renders(comfy) == 2 and "kept page-01-candidate-61.png from an earlier run" in out
+              and "nothing to render" not in out and "page-01-contact-sheet.png" in page_drafts(root),
+              f"{renders(comfy)} renders: {out.strip()[-200:]}")
+    finally:
+        comfy.close()
+    code, out = run(root, "lock-page", STORY, 1, "--seed", 61)
+    code2, out2 = run(root, "selftest")
+    check("a seed kept from the first run locks, and selftest passes", not code and not code2,
+          (out + out2).strip()[-200:])
+
+
+def case_resume_needs_the_same_recipe(root):
+    """A set is resumed only for the same recipe and ComfyUI version; otherwise every seed renders fresh."""
+    drawn(root, "pippa")
+    comfy = FakeComfy()
+    try:
+        run(root, "--server", comfy.url, "page", STORY, 1)
+    finally:
+        comfy.close()
+    recipe_path = root / PAGE_DRAFTS / "page-01-recipe.json"
+    current = recipe_path.read_text()
+    legacy = json.loads(current)
+    del legacy["set_writer"]                        # as the writer before #151 recorded a set: after all four renders
+    recipe_path.write_text(json.dumps(legacy))
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        check("a set recorded by the earlier writer is never resumed: all four render fresh",
+              not code and renders(comfy) == 4 and "kept" not in out, f"{renders(comfy)} renders")
+    finally:
+        comfy.close()
+    before = {name: (root / PAGE_DRAFTS / name).read_bytes() for name in page_drafts(root)}
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        check("with all four seeds in for this recipe, a re-run renders nothing and says so",
+              not code and renders(comfy) == 0 and "nothing to render" in out, out.strip()[-160:])
+    finally:
+        comfy.close()
+    comfy = FakeComfy(die_after=0, version="other")     # another version means a fresh set, which dies at once
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+    finally:
+        comfy.close()
+    after = {name: (root / PAGE_DRAFTS / name).read_bytes() for name in page_drafts(root)}
+    comfy = FakeComfy(version="other")
+    try:
+        code2, out2 = run(root, "--server", comfy.url, "page", STORY, 1)
+        check("a run that fails before its first seed leaves the earlier set as it was; another ComfyUI version "
+              "renders all four fresh", code and after == before and not code2 and renders(comfy) == 4
+              and "nothing to render" not in out2,
+              f"{out.strip()[-120:]} | {renders(comfy)} renders")
+    finally:
+        comfy.close()
+    story_path = root / "stories" / f"{STORY}.json"
+    story = json.loads(story_path.read_text())
+    story["pages"][0]["scene"] = "Pippa hops along a fallen log, her paws empty"
+    story_path.write_text(json.dumps(story))
+    comfy = FakeComfy(die_after=1, version="other")     # the same version as the set on disk: only the plan changed
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        check("after a plan change the set starts fresh: one new seed, and the old contact sheet is gone",
+              code and renders(comfy) >= 1 and "kept page-01-candidate-61.png in" in out
+              and "page-01-contact-sheet.png" not in page_drafts(root), out.strip()[-200:])
+    finally:
+        comfy.close()
+    code, out = run(root, "lock-page", STORY, 1, "--seed", 72)
+    check("a stale candidate from the old set is refused by lock-page",
+          code and "is not the bytes `page` rendered" in out, out.strip()[-160:])
+
+
+def case_character_sets_resume_too(root):
+    """character writes and resumes its sets through the same writer as page."""
+    comfy = FakeComfy(die_after=1)
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "barnaby")
+    finally:
+        comfy.close()
+    comfy = FakeComfy()
+    try:
+        code2, out2 = run(root, "--server", comfy.url, "character", "barnaby")
+        drafts = sorted(p.name for p in (root / DRAFTS).iterdir())
+        check("a character set lost after one seed keeps it, and a re-run renders the other three",
+              code and "kept barnaby-candidate-61.png" in out and not code2 and renders(comfy) == 3
+              and "barnaby-contact-sheet.png" in drafts, f"{out.strip()[-120:]} | {out2.strip()[-120:]}")
+    finally:
+        comfy.close()
+    comfy = FakeComfy(die_after=1)
+    try:
+        run(root, "--server", comfy.url, "character", "bramble")
+    finally:
+        comfy.close()
+    kept = root / DRAFTS / "bramble-candidate-61.png"
+    Image.open(kept).convert("RGB").save(kept)              # edited after rendering: no longer the recorded bytes
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "bramble")
+        check("a kept candidate edited since it rendered isn't kept: the re-run renders all four fresh",
+              not code and renders(comfy) == 4 and "kept" not in out, out.strip()[-160:])
+    finally:
+        comfy.close()
+
+
+def case_bad_replies_are_not_kept(root):
+    """Resume needs a known ComfyUI version; a reply that isn't JSON is a lost server; a render must be a PNG of the
+    recipe's size before it is recorded."""
+    drawn(root, "pippa")
+    comfy = FakeComfy(version=None)
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        check("a ComfyUI that doesn't report its version renders nothing: a set needs one known build",
+              code and "doesn't report its version" in out and renders(comfy) == 0 and not page_drafts(root),
+              f"{renders(comfy)} renders: {out.strip()[-160:]}")
+    finally:
+        comfy.close()
+    for label, comfy in [("an empty version", FakeComfy(version="")),
+                         ("a system field that isn't an object", FakeComfy(stats={"system": "broken"}))]:
+        try:
+            code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+            check(f"{label} in /system_stats is no known build: nothing renders, no traceback",
+                  code and "doesn't report its version" in out and "Traceback" not in out and renders(comfy) == 0,
+                  out.strip()[-160:])
+        finally:
+            comfy.close()
+    comfy = FakeComfy(models={**MODEL_FILES, "CLIPLoader": (None, [])})
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "bramble")
+        check("an /object_info reply of an unknown shape exits plainly before rendering",
+              code and "Traceback" not in out and "doesn't list clip_name" in out and renders(comfy) == 0,
+              out.strip()[-160:])
+    finally:
+        comfy.close()
+    comfy = FakeComfy(bad_history={1: b'{"job1": {"status": {}, "outputs": {"10": {"images": [{}]}}}}'})
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "bramble")
+        check("a /history entry without an image file exits plainly, keeping the seed that finished",
+              code and "Traceback" not in out and "isn't a finished job with an image" in out
+              and "kept bramble-candidate-61.png" in out, out.strip()[-200:])
+    finally:
+        comfy.close()
+    for leftover in (root / DRAFTS).glob("bramble-*"):
+        leftover.unlink()
+    comfy = FakeComfy(upgrade_after=1)
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 2)
+        recipe = json.loads((root / PAGE_DRAFTS / "page-02-recipe.json").read_text())
+        check("a ComfyUI upgraded between seeds: the new build's seed isn't recorded, the run exits plainly",
+              code and "changed from 'fake' to 'fake-new'" in out and "Traceback" not in out
+              and sorted(recipe["candidates"]) == ["page-02-candidate-61.png"] and recipe["comfyui_version"] == "fake",
+              out.strip()[-200:])
+    finally:
+        comfy.close()
+    comfy = FakeComfy(bad_history={1: b"{"})
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "bramble")
+        check("a /history reply cut off mid-set exits plainly, keeping the seed that finished",
+              code and "Traceback" not in out and "isn't JSON" in out and "kept bramble-candidate-61.png" in out,
+              out.strip()[-200:])
+    finally:
+        comfy.close()
+    small, jpeg = io.BytesIO(), io.BytesIO()
+    Image.new("RGB", (64, 64), "white").save(small, "PNG")
+    Image.new("RGB", (1328, 1328), "white").save(jpeg, "JPEG")
+    cut = lambda real: real[:len(real) - 200]       # the real render, its embedded graph intact, the pixels cut off
+
+    def regraphed(text):                            # the real pixels, with another embedded graph
+        def serve(real):
+            meta, out = PngInfo(), io.BytesIO()
+            meta.add_text("prompt", text)
+            Image.open(io.BytesIO(real)).save(out, "PNG", pnginfo=meta)
+            return out.getvalue()
+        return serve
+    for label, broken in [("an HTTP 200 error page", b"<html>500 Internal Server Error</html>"), ("an empty body", b""),
+                          ("a PNG of the wrong size", small.getvalue()), ("the real render cut off mid-file", cut),
+                          ("a JPEG instead of SaveImage's PNG", jpeg.getvalue()),
+                          ("seed 61's image served again for seed 72", "job0"),
+                          ("the real render with a garbled embedded graph", regraphed("{")),
+                          ("the real render with a KSampler whose inputs are a list",
+                           regraphed(json.dumps({"11": {"class_type": "KSampler", "inputs": [72]}})))]:
+        drafts = root / DRAFTS
+        for leftover in drafts.glob("barnaby-*"):
+            leftover.unlink()
+        comfy = FakeComfy(bad_view={1: broken})
+        try:
+            code, out = run(root, "--server", comfy.url, "character", "barnaby")
+        finally:
+            comfy.close()
+        recipe = json.loads((drafts / "barnaby-recipe.json").read_text())
+        comfy = FakeComfy()
+        try:
+            code2, out2 = run(root, "--server", comfy.url, "character", "barnaby")
+            check(f"{label} from /view is never recorded, and a re-run renders that seed",
+                  code and "Traceback" not in out and sorted(recipe["candidates"]) == ["barnaby-candidate-61.png"]
+                  and not code2 and renders(comfy) == 3, f"{out.strip()[-140:]} | {renders(comfy)} renders")
+        finally:
+            comfy.close()
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
              case_locked_folder_holds_only_records, case_page_lock_selftest, case_page_refusals,
-             case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check]
+             case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check,
+             case_lost_comfy_keeps_finished_seeds, case_resume_needs_the_same_recipe, case_character_sets_resume_too,
+             case_bad_replies_are_not_kept]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
