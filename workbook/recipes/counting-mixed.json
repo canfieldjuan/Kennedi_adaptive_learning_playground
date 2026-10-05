@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "template": "count-and-trace-v1",
+  "seed": 1042026,
+  "mode": "choice"
+}

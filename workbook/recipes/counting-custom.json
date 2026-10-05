@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "template": "count-and-trace-v1",
+  "seed": 42,
+  "mode": "choice",
+  "groups": [
+    {"animal": "turtle", "count": 3},
+    {"animal": "elephant", "count": 5},
+    {"animal": "fox", "count": 1},
+    {"animal": "penguin", "count": 12},
+    {"animal": "whale", "count": 20},
+    {"animal": "cat", "count": 8}
+  ]
+}

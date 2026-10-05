@@ -64,6 +64,9 @@ jobs:
       - name: Check every locked illustration against its record
         run: python3 -B tools/illustration-recipe.py selftest
 
+      - name: Test workbook recipes, tracing and imported artwork
+        run: npm run workbook:test
+
       - name: Re-run the recipe tool's reproduced failures
         run: python3 -B tools/test-illustration-recipe.py
 

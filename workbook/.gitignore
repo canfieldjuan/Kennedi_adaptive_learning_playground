@@ -1,1 +1,6 @@
 node_modules/
+dist-alphabet/
+dist-numbers/
+dist-counting/
+dist-counting-choice/
+dist-recipes/
