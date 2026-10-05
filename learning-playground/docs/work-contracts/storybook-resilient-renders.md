@@ -301,3 +301,10 @@ night, and a moon belongs there.
   the cut-off PNG and JPEG cases didn't exist yet. They were added because
   of that.
 - `selftest` on this branch: 3 character locks, 0 problems.
+- **The candidate rule has one owner.** "What can be recorded" had been split
+  between `render()` (decodes as a PNG) and `render_set()` (the size). It now
+  lives entirely in `candidate_problem()`, which `render_set()` calls once
+  before recording a seed; `render()` only fetches the bytes.
+  - Still 84 of 84 on both stacks.
+  - Removing `load()`, the format check or the size check from
+    `candidate_problem()` fails one check each; skipping the call fails 5.
