@@ -323,3 +323,9 @@ night, and a moon belongs there.
     `render_set()` holds the rule "every recorded seed came from the set's
     version", and `kept_candidates()` applies the same equality when
     resuming.
+  - Round 2 evidence:
+    - 85 of 85 checks on both stacks, including one new check: a ComfyUI
+      that reports a new build after seed 61 has seed 72 refused ("changed
+      from 'fake' to 'fake-new'"), keeps only seed 61 under the old version,
+      and exits plainly.
+    - Removing the recheck fails that check.
