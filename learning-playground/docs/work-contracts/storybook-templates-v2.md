@@ -121,6 +121,32 @@ palette, clean confident outlines, cozy picture-book style.
   - the 8 draft candidates it rendered now fail `lock` (their recipe no
     longer rebuilds), and they are re-rendered.
 
+- **No moon words at all, and no negative prompt (operator, 2026-10-04:
+  "lets remove the terms moon and moon lit from the prompts and retry").**
+  - With the negative prompt, all 12 candidates came out moon-free and
+    upright. But every colour swung warm and orange:
+    - Barnaby is bright orange instead of "warm brown";
+    - three of Bramble's four vests are plain orange;
+    - Pippa is ginger rather than sandy.
+  - The likely cause is "night sky" in the negative prompt, which steers
+    away from cool colours and overshoots.
+  - So v2 is revised again, still before merge:
+    - the sheet template has no `negative` prompt;
+    - the graph builders go back to an empty negative;
+    - neither "moon" nor "moonlit" appears in any sheet prompt.
+  - This tests what the evidence points to: v1's moons came from "moonlit",
+    and v2's first attempt brought them back by naming the moon.
+  - Barnaby renders first, as the worst case for both the moon and the
+    orange. Pippa and Bramble follow only if he comes back brown and
+    moon-free.
+  - **Pages:** page v2's style has no "moonlit" either. Two page phrases
+    still say "moonlight":
+    - page 2's "spun moonlight", from the accepted plan;
+    - the night light, "quiet silver moonlight".
+
+    They are left for the first page renders to judge. A change to either
+    is a plan or template change.
+
 ## Cold Diff Audit
 
 ### Gaps
