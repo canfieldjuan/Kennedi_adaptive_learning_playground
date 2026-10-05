@@ -410,3 +410,26 @@ night, and a moon belongs there.
       | `/object_info` guard | 1 |
       | `system` guard | 1 |
       | empty-version guard | 1 |
+
+- **PR #151 review, round 4 (Codex, two P2s).**
+  - **An embedded graph is validated in full, in one place.**
+    - Round 3 guarded the JSON parse, but valid JSON in the wrong shape
+      (a node whose `inputs` is a list) still crashed at the later reads.
+    - `comfy_graph()` is now the single owner of "this is a ComfyUI graph":
+      a JSON object of nodes, each with a string `class_type` and an
+      `inputs` object.
+    - `rebuild_problems()` reads nodes only from a validated graph, so
+      recording, `lock` and `selftest` all report a bad shape as a problem.
+  - **Only the new set writer's drafts can be resumed (a change to Must Not
+    Change, by amendment).**
+    - The old writer read the ComfyUI version once, after all four renders.
+      So a draft set it wrote could mix two builds under one label, and
+      resuming it would keep that mix.
+    - Every draft recipe now records `set_writer: 1`. It is a render-time
+      key in `ADDED_KEYS`, like `comfyui_version` and `candidates`, and
+      `lock` copies it into the lock recipe as provenance.
+    - `kept_candidates()` resumes only a recipe with the current
+      `set_writer`. A recipe without one, such as the character drafts
+      committed in #149, starts a fresh set.
+    - The recipe format changes by that one optional key. Existing locks
+      don't have it and still pass `selftest`.
