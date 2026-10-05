@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync, chmodSync, readdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { assets, pages } from '../src/content/numbers-practice.mjs';
 import { renderDocument } from '../src/render.mjs';
-import { inlineSvgFile, inlineImageFile } from '../src/content/asset-inline.mjs';
+import { inlineImageFile } from '../src/content/asset-inline.mjs';
+import { savePdfHashes, assertPdfHashes, measureArtworkCrops, replacePdfRasters } from './print-artifacts.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
@@ -44,18 +45,7 @@ function documents(crops) {
   };
 }
 async function build() {
-  const crops = await withBrowser(async browser => {
-    const page = await browser.newPage();
-    await page.setContent(assets.map(asset => `<div style="width:1024px;height:1024px">${inlineSvgFile(path.join(root, asset))}</div>`).join(''));
-    const bounds = await page.evaluate(() => [...document.querySelectorAll('svg')].map(svg => {
-      const { x, y, width, height } = svg.getBBox(); return { x, y, width, height };
-    }));
-    assert.equal(bounds.length, assets.length);
-    return Object.fromEntries(bounds.map((b, index) => {
-      assert.ok(b.width > 0 && b.height > 0, `Empty art: ${assets[index]}`);
-      return [assets[index], [b.x - b.width * .06, b.y - b.height * .06, b.width * 1.12, b.height * 1.12].map(n => n.toFixed(2)).join(' ')];
-    }));
-  });
+  const crops = await withBrowser(browser => measureArtworkCrops(browser, root, assets));
   const manifest = { pages: pages.map(page => page.meta),
     artwork: assets.map(asset => ({ path: asset, viewBox: crops[asset], sha256: hash(readFileSync(path.join(root, asset))) })) };
   const rendered = documents(crops);
@@ -76,7 +66,7 @@ async function pdf() {
       await page.pdf({ path: destination, preferCSSPageSize: true, printBackground: true, tagged: true,
         margin: { top: 0, right: 0, bottom: 0, left: 0 } });
       chmodSync(destination, 0o600);
-      save(`${destination}.sourcehash`, hash(bytes));
+      savePdfHashes(destination, bytes, save);
     }
     await exportOne(path.join(out, 'preview.html'), pdfPath);
     for (const { meta } of pages) await exportOne(htmlPath(meta.pageNumber), singlePdf(meta.pageNumber));
@@ -100,9 +90,7 @@ async function screenshots() {
 async function rasterize() {
   assert.equal(info(pdfPath).pages, pages.length, 'Unexpected PDF length; inspect layout before continuing.');
   const directory = path.join(out, 'pdf-raster');
-  mkdirSync(directory, { recursive: true, mode: 0o700 });
-  execFileSync('/usr/bin/pdftoppm', ['-png', '-r', '150', pdfPath, path.join(directory, 'page')], { stdio: 'inherit' });
-  const images = readdirSync(directory).filter(file => /^page-\d+\.png$/.test(file)).sort();
+  const images = replacePdfRasters(pdfPath, directory, pages.length);
   assert.equal(images.length, pages.length);
   images.forEach(file => chmodSync(path.join(directory, file), 0o600));
   const contact = `<!doctype html><html><head><meta charset="utf-8"><title>Numbers workbook PDF overview</title>
@@ -125,9 +113,11 @@ async function verify() {
   const manifest = JSON.parse(readFileSync(path.join(out, 'manifest.json'), 'utf8'));
   assert.deepEqual(manifest.pages, pages.map(page => page.meta));
   for (const asset of manifest.artwork) assert.equal(hash(readFileSync(path.join(root, asset.path))), asset.sha256);
-  const current = documents(Object.fromEntries(manifest.artwork.map(asset => [asset.path, asset.viewBox])));
+  const crops = await withBrowser(browser => measureArtworkCrops(browser, root, assets));
+  assert.deepEqual(Object.fromEntries(manifest.artwork.map(asset => [asset.path, asset.viewBox])), crops, 'Stale illustration crops; rebuild first.');
+  const current = documents(crops);
   assert.equal(hash(readFileSync(path.join(out, 'preview.html'))), hash(current.preview), 'Stale combined HTML.');
-  assert.equal(readFileSync(`${pdfPath}.sourcehash`, 'utf8'), hash(current.preview), 'Stale combined PDF.');
+  assertPdfHashes(pdfPath, current.preview);
   assert.deepEqual(info(pdfPath), { pages: 12, dimensions: [612, 792] });
   const physical = execFileSync('/usr/bin/pdfinfo', ['-f', '1', '-l', '12', pdfPath], { encoding: 'utf8' });
   const dimensions = [...physical.matchAll(/^Page\s+\d+ size:\s+([\d.]+) x ([\d.]+) pts/gm)].map(m => m.slice(1).map(Number));
@@ -144,7 +134,7 @@ async function verify() {
     for (const { meta } of pages) {
       const document = readFileSync(htmlPath(meta.pageNumber));
       assert.equal(hash(document), hash(current.singles[meta.pageNumber - 1]));
-      assert.equal(readFileSync(`${singlePdf(meta.pageNumber)}.sourcehash`, 'utf8'), hash(document));
+      assertPdfHashes(singlePdf(meta.pageNumber), document);
       assert.deepEqual(info(singlePdf(meta.pageNumber)), { pages: 1, dimensions: [612, 792] });
       await page.setContent(document.toString('utf8'), { waitUntil: 'load' });
       await page.evaluate(() => document.fonts.ready);

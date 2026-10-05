@@ -325,6 +325,22 @@ ComfyUI or image-generation GPU is needed. Run from this checkout's `workbook/`:
 `workbook:test` also checks imported-art records using Python 3 with Pillow
 and NumPy, the existing CPU-only art-check dependencies installed by CI.
 These checks do not contact ComfyUI or load image models.
+The print regression tests also use the same Google Chrome and Poppler tools
+as PDF export. They build isolated fixtures, never edit source artwork, and
+check combined/individual PDF bytes, live crop freshness and shorter rebuilds.
+
+Alphabet and numbers exports save `.sha256` alongside `.sourcehash`; direct
+verification rejects a changed PDF even if its Letter dimensions still match.
+Direct verification measures live illustration crops instead of trusting a
+previous manifest. Older exports need to be regenerated to create the new
+PDF-byte sidecars. Saved recipe locks include the shared print-artifact code.
+
+Raster regeneration stages a fresh inventory before publishing `pdf-raster/`.
+The previous folder is preserved in a sibling `.pdf-raster-*.previous` folder,
+including any annotations; it is not deleted. This permits a shorter recipe
+in the same output directory without mixing old and new rasters. Retain those
+backups until no longer needed. Use separate output directories when you want
+to keep complete earlier workbooks (their HTML, PDFs and screenshots too).
 
 ```bash
 npm ci

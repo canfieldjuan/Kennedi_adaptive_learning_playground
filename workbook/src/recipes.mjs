@@ -82,7 +82,7 @@ export function catalog() {
 }
 
 export function sourceFingerprint(template) {
-  const common = ['src/recipes.mjs', 'recipes/workbook.schema.json', 'scripts/workbook.mjs',
+  const common = ['src/recipes.mjs', 'recipes/workbook.schema.json', 'scripts/workbook.mjs', 'scripts/print-artifacts.mjs',
     'src/render.mjs', 'src/content/asset-inline.mjs', 'package.json', 'package-lock.json',
     'src/fonts/Baloo2-Variable.woff2', 'src/fonts/Nunito-Variable.woff2',
     ...['fonts', 'tokens', 'base', 'components', 'print'].map(name => `src/styles/${name}.css`)];

@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { alphabet, pages } from '../src/content/alphabet-practice.mjs';
 import { renderDocument } from '../src/render.mjs';
-import { inlineSvgFile, inlineImageFile } from '../src/content/asset-inline.mjs';
+import { inlineImageFile } from '../src/content/asset-inline.mjs';
+import { savePdfHashes, assertPdfHashes, measureArtworkCrops, replacePdfRasters } from './print-artifacts.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
@@ -54,20 +55,7 @@ function documents(crops) {
 async function build() {
   // Crop only the surrounding empty SVG canvas. Never change the source paths.
   // Measure the SVG root, not the transformed potrace group (different units).
-  const art = alphabet.map(entry => inlineSvgFile(path.join(root, entry.illustrationPath)));
-  const crops = await withBrowser(async browser => {
-    const page = await browser.newPage();
-    await page.setContent(art.map(svg => `<div style="width:1024px;height:1024px">${svg}</div>`).join(''));
-    const bounds = await page.evaluate(() => [...document.querySelectorAll('svg')].map(svg => {
-      const { x, y, width, height } = svg.getBBox();
-      return { x, y, width, height };
-    }));
-    assert.equal(bounds.length, alphabet.length);
-    return Object.fromEntries(bounds.map((b, index) => {
-      assert.ok(b.width > 0 && b.height > 0, `Empty art: ${alphabet[index].illustrationPath}`);
-      return [alphabet[index].illustrationPath, [b.x - b.width * .06, b.y - b.height * .06, b.width * 1.12, b.height * 1.12].map(n => n.toFixed(2)).join(' ')];
-    }));
-  });
+  const crops = await withBrowser(browser => measureArtworkCrops(browser, root, alphabet.map(entry => entry.illustrationPath)));
   const manifest = pages.map(page => ({
     ...page.meta,
     cues: page.meta.cues.map(entry => ({ ...entry, viewBox: crops[entry.illustrationPath], sourceSha256: hash(readFileSync(path.join(root, entry.illustrationPath))) })),
@@ -90,7 +78,7 @@ async function pdf() {
       mkdirSync(path.dirname(destination), { recursive: true, mode: 0o700 });
       await page.pdf({ path: destination, preferCSSPageSize: true, printBackground: true, tagged: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });
       chmodSync(destination, 0o600);
-      save(`${destination}.sourcehash`, hash(bytes));
+      savePdfHashes(destination, bytes, save);
     }
     await exportOne(path.join(out, 'preview.html'), pdfPath);
     for (const { meta } of pages) await exportOne(htmlPath(meta.pageNumber), singlePdf(meta.pageNumber));
@@ -117,11 +105,8 @@ async function screenshots() {
 async function rasterize() {
   assert.equal(info(pdfPath).pages, pages.length, 'Refuse to rasterize a wrong-length PDF.');
   const directory = path.join(out, 'pdf-raster');
-  mkdirSync(directory, { recursive: true, mode: 0o700 });
-  execFileSync(poppler('pdftoppm'), ['-png', '-r', '150', pdfPath, path.join(directory, 'page')], { stdio: 'inherit' });
-  for (const file of readdirSync(directory).filter(file => /^page-\d+\.png$/.test(file))) chmodSync(path.join(directory, file), 0o600);
+  const images = replacePdfRasters(pdfPath, directory, pages.length);
   // A compact overview made from the actual PDF rasters, not HTML screenshots.
-  const images = readdirSync(directory).filter(file => /^page-\d+\.png$/.test(file)).sort();
   assert.equal(images.length, pages.length, 'Unexpected/stale PDF raster pages.');
   const contact = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Alphabet PDF contact sheet</title>
     <style>*{box-sizing:border-box}body{margin:0;padding:24px;background:#eee;font:16px sans-serif}h1{margin:0 0 16px;font-size:24px}main{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}figure{margin:0}img{width:100%;display:block;border:1px solid #ccc}figcaption{margin-bottom:6px;font-weight:bold}</style></head>
@@ -140,7 +125,9 @@ async function rasterize() {
 async function verify() {
   const manifest = JSON.parse(readFileSync(path.join(out, 'manifest.json'), 'utf8'));
   assert.deepEqual(manifest.map(entry => entry.letters), pages.map(page => page.meta.letters), 'Manifest row coverage/order drifted.');
-  const crops = Object.fromEntries(manifest.flatMap(entry => entry.cues.map(cue => [cue.illustrationPath, cue.viewBox])));
+  const savedCrops = Object.fromEntries(manifest.flatMap(entry => entry.cues.map(cue => [cue.illustrationPath, cue.viewBox])));
+  const crops = await withBrowser(browser => measureArtworkCrops(browser, root, alphabet.map(entry => entry.illustrationPath)));
+  assert.deepEqual(savedCrops, crops, 'Stale illustration crops; rebuild first.');
   const current = documents(crops);
   assert.equal(hash(readFileSync(path.join(out, 'preview.html'))), hash(current.preview), 'HTML is stale relative to current code/styles/content/art; rebuild first.');
   for (const [index, document] of current.singles.entries()) {
@@ -149,7 +136,7 @@ async function verify() {
   const pdfInfo = info(pdfPath);
   assert.equal(pdfInfo.pages, pages.length);
   assert.deepEqual(pdfInfo.dimensions, [612, 792]);
-  assert.equal(readFileSync(`${pdfPath}.sourcehash`, 'utf8'), hash(readFileSync(path.join(out, 'preview.html'))), 'Combined PDF is stale.');
+  assertPdfHashes(pdfPath, current.preview);
   // Verify each physical PDF page, not just the document's default dimensions.
   const allInfo = execFileSync(poppler('pdfinfo'), ['-f', '1', '-l', String(pages.length), pdfPath], { encoding: 'utf8' });
   const dimensions = [...allInfo.matchAll(/^Page\s+\d+ size:\s+([\d.]+) x ([\d.]+) pts/gm)].map(match => match.slice(1).map(Number));
@@ -165,7 +152,7 @@ async function verify() {
     const results = [];
     for (const { meta } of pages) {
       const document = readFileSync(htmlPath(meta.pageNumber));
-      assert.equal(readFileSync(`${singlePdf(meta.pageNumber)}.sourcehash`, 'utf8'), hash(document), `Page ${meta.pageNumber} PDF is stale.`);
+      assertPdfHashes(singlePdf(meta.pageNumber), document);
       assert.deepEqual(info(singlePdf(meta.pageNumber)), { pages: 1, dimensions: [612, 792] });
       for (const cue of manifest[meta.pageNumber - 1].cues) {
         assert.equal(hash(readFileSync(path.join(root, cue.illustrationPath))), cue.sourceSha256, `Changed artwork: ${cue.illustrationPath}; rebuild first.`);

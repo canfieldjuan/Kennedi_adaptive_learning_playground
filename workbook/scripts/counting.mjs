@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync, chmodSync, readdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,6 +10,7 @@ import { numberGlyph } from '../src/components/number-glyphs.mjs';
 import { renderDocument } from '../src/render.mjs';
 import { inlineSvgFile, inlineImageFile } from '../src/content/asset-inline.mjs';
 import { freezeRecipe, readRecipe, resolveRecipe } from '../src/recipes.mjs';
+import { replacePdfRasters } from './print-artifacts.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
@@ -122,9 +123,7 @@ async function screenshots() {
 async function rasterize() {
   assert.equal(info(pdfPath).pages, pages.length, 'Unexpected PDF length; inspect layout before continuing.');
   const directory = path.join(out, 'pdf-raster');
-  mkdirSync(directory, { recursive: true, mode: 0o700 });
-  execFileSync('/usr/bin/pdftoppm', ['-png', '-gray', '-r', '150', pdfPath, path.join(directory, 'page')], { stdio: 'inherit' });
-  const images = readdirSync(directory).filter(file => /^page-\d+\.png$/.test(file)).sort();
+  const images = replacePdfRasters(pdfPath, directory, pages.length, true);
   assert.equal(images.length, pages.length);
   images.forEach(file => chmodSync(path.join(directory, file), 0o600));
   const contact = `<!doctype html><html><head><meta charset="utf-8"><title>Count-and-trace PDF overview</title>
