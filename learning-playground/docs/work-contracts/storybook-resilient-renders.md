@@ -143,3 +143,107 @@ night, and a moon belongs there.
   trusts bytes it recorded at render time.
 - **Running all seven pages in one command.** The overnight runner loops
   over `page` calls.
+
+## Contract Amendments
+
+- **Page 2's place drops "Moonlit" (operator accepted with this contract,
+  2026-10-04: "accept").** The place is now "the edge of a glade of silver
+  grass, by a mossy rock near the Berry Brook".
+- **A render that ComfyUI answers but doesn't produce is handled like a lost
+  server** (found while building). These are a rejected graph, an error
+  status, or a timeout.
+  - `render()` raised `SystemExit` for them, which skipped the kept-seeds
+    message.
+  - It now raises `RenderFailed`, and the set writer reports it the same
+    way: which seed was lost and which were kept.
+
+## Cold Diff Audit
+
+### Gaps
+
+- **Change without contract trace:** none. `git diff origin/main...HEAD`
+  holds:
+  - the tool and its tests;
+  - three page-plan strings;
+  - this contract.
+- **Contract requirement not delivered:** none.
+- **Protected surface touched:** none.
+  - `lock`, `lock-page` and `commit_lock()` are unchanged.
+  - `selftest`, the recipe format, the templates and render settings are
+    unchanged.
+  - The three character locks still pass `selftest`.
+  - The story text and its SHA-256 are unchanged. Only the `place` and
+    `scene` strings of pages 1 and 2 differ.
+
+### Change By Change Reconstruction
+
+- **`storybook/tools/story-recipe.py`:**
+  - `:118` `LOST_COMFY`: `URLError`, `ConnectionError`, `TimeoutError` and
+    `http.client.HTTPException`, not `OSError` at large.
+  - `:422` `RenderFailed`. `:426` `render()` raises it where it used to
+    exit.
+  - `:495` `kept_candidates()`: an earlier set is kept only for the same
+    recipe (every key but the render-time ones) and the same ComfyUI
+    version, and only if every recorded candidate is a regular file with
+    its recorded SHA-256.
+  - `:516` `render_set()`:
+    - the kept seeds are read under the art lock;
+    - each new seed and the recipe land together under the lock;
+    - a fresh set's first seed removes the old contact sheet;
+    - a lost render exits naming the kept seeds;
+    - the contact sheet is written once all four are in.
+  - `:565` `cmd_character()` and `:575` `cmd_page()` call it. `staging()`
+    is gone, since both callers moved to it.
+  - `:800` `main()` catches `LOST_COMFY`, with the message "unreachable or
+    dropped the connection … nothing was written".
+  - The docstring describes resuming.
+- **`storybook/tools/test-story-recipe.py`:**
+  - `FakeComfy` gains `die_after`, which drops the connection while a
+    render is polled, and `version`.
+  - Three cases (`:585`, `:617`, `:665`) and the `renders()` helper.
+- **`storybook/stories/pippa-and-the-whispering-moss.json`:** page 1's
+  place, and page 2's place and scene.
+
+## Verification
+
+- `test-story-recipe.py`: 77 of 77 checks, on Python 3.13 with Pillow 11.3
+  and on Python 3.12 with Pillow 10.2. That's the 67 from before plus 10
+  new:
+  - Losing ComfyUI after two seeds exits non-zero with no traceback, naming
+    seeds 61 and 72.
+  - Exactly those two, and a recipe recording them, are in `drafts/`.
+  - The re-run renders 2 and writes the contact sheet.
+  - A kept seed locks, and `selftest` passes.
+  - A complete set re-runs with 0 renders.
+  - A run that dies before its first seed leaves the earlier set
+    byte-identical.
+  - A new ComfyUI version renders 4.
+  - A plan change starts fresh and removes the old contact sheet.
+  - A stale candidate is refused by `lock-page`.
+  - A character set resumes with 3 renders.
+  - A kept candidate edited since rendering is not kept, and 4 render.
+- **The tests catch the bugs they're meant to.** Each of five broken copies
+  of the fix fails the suite:
+
+  | Broken copy | Result |
+  |---|---|
+  | `render_set` catches only `RenderFailed` | 3 checks fail |
+  | the version check is dropped | 1 fails |
+  | the recipe comparison is dropped | the suite stops early: `lock-page` refuses page 1's kept seed after Pippa is re-locked |
+  | the old contact sheet is kept | 1 fails |
+  | the digest check on kept candidates is dropped | 1 fails |
+
+  The first attempt at the recipe mutant also removed the version check, so
+  it proved nothing. Rerun separately, the version check was caught, but
+  the recipe mutant broke nothing. The plan-change test had also switched
+  ComfyUI version, which hid the recipe comparison. That test now changes
+  only the plan.
+- **The suite found one real bug before commit.** The recipe's `candidates`
+  aliased `kept`. That would have:
+  - left the old contact sheet in place for a fresh set;
+  - printed "nothing to render" after a fully fresh render.
+
+  It's fixed: the recipe takes a copy.
+- `selftest` on this branch: "3 character locks, 1 stories and 0 page locks
+  checked against canon/moon-berry-forest.json; 0 problems".
+- **No GPU run.** The overnight run is the real-world test.
