@@ -25,9 +25,16 @@ from PIL.PngImagePlugin import PngInfo
 STORYBOOK = Path(__file__).resolve().parents[1]
 TOOL = STORYBOOK / "tools/story-recipe.py"
 DRAFTS, LOCKED = "design-source/characters/drafts", "design-source/characters/locked"
-MODEL_FILES = {"UnetLoaderGGUF": ("unet_name", "qwen-image-Q8_0.gguf"),
-               "CLIPLoader": ("clip_name", "qwen_2.5_vl_7b_fp8_scaled.safetensors"),
-               "VAELoader": ("vae_name", "qwen_image_vae.safetensors")}
+STORY = "pippa-and-the-whispering-moss"
+PAGE_DRAFTS, PAGE_LOCKED = f"design-source/pages/{STORY}/drafts", f"design-source/pages/{STORY}/locked"
+EDIT_MODEL = "qwen-image-edit-2511-Q4_K_S.gguf"
+MODEL_FILES = {"UnetLoaderGGUF": ("unet_name", ["qwen-image-Q8_0.gguf", EDIT_MODEL]),
+               "CLIPLoader": ("clip_name", ["qwen_2.5_vl_7b_fp8_scaled.safetensors"]),
+               "VAELoader": ("vae_name", ["qwen_image_vae.safetensors"])}
+# Every node the sheet and page graphs use, as a ComfyUI with ComfyUI-GGUF has them.
+NODES = {"UnetLoaderGGUF", "CLIPLoader", "VAELoader", "ModelSamplingAuraFlow", "CLIPTextEncode", "EmptySD3LatentImage",
+         "KSampler", "VAEDecode", "SaveImage", "CFGNorm", "TextEncodeQwenImageEditPlus",
+         "FluxKontextMultiReferenceLatentMethod", "LoadImage"}
 results = []
 
 
@@ -37,12 +44,26 @@ def check(label, ok, detail=""):
     print(f"{'PASS' if ok else 'FAIL'}  {label}" + (f": {detail[:180]}" if detail else ""))
 
 
-class FakeComfy:
-    """ComfyUI's HTTP API, as much of it as the tool uses: it lists the allowlisted models, queues a graph,
-    "renders" an image of the requested size from the seed and prompt, and embeds the graph as ComfyUI does."""
+def form_fields(content_type, body):
+    """{field: (filename, bytes)} from a multipart/form-data body."""
+    boundary = content_type.split("boundary=", 1)[1].encode()
+    fields = {}
+    for part in body.split(b"--" + boundary)[1:-1]:
+        head, _, data = part[2:].partition(b"\r\n\r\n")
+        name = re.search(rb'; name="([^"]*)"', head).group(1).decode()
+        filename = re.search(rb'; filename="([^"]*)"', head)
+        fields[name] = (filename.group(1).decode() if filename else None, data[:-2])
+    return fields
 
-    def __init__(self, models=MODEL_FILES):
-        self.images, fake = {}, self
+
+class FakeComfy:
+    """ComfyUI's HTTP API, as much of it as the tool uses: it lists the allowlisted models and its nodes, keeps
+    uploaded images, queues a graph, "renders" an image of the requested size from the graph and the images it
+    loads, and embeds the graph as ComfyUI does. rename_uploads stores uploads under another name, as ComfyUI
+    does without overwrite."""
+
+    def __init__(self, models=MODEL_FILES, nodes=NODES, rename_uploads=False):
+        self.images, self.uploads, fake = {}, {}, self
 
         class Handler(http.server.BaseHTTPRequestHandler):
             def log_message(self, *args):
@@ -57,9 +78,19 @@ class FakeComfy:
                 self.wfile.write(body)
 
             def do_POST(self):
-                graph = json.loads(self.rfile.read(int(self.headers["Content-Length"])))["prompt"]
+                body = self.rfile.read(int(self.headers["Content-Length"]))
+                if self.path == "/upload/image":
+                    fields = form_fields(self.headers["Content-Type"], body)
+                    name, data = fields["image"]
+                    if fields["overwrite"][1] != b"true" or fields["type"][1] != b"input":
+                        self.send_error(400)
+                        return
+                    name = f"{name[:-4]} (1).png" if rename_uploads else name
+                    fake.uploads[name] = data
+                    return self.reply({"name": name, "subfolder": "", "type": "input"})
+                graph = json.loads(body)["prompt"]
                 prompt_id = f"job{len(fake.images)}"
-                fake.images[prompt_id] = fake.render(graph)
+                fake.images[prompt_id] = fake.render(graph, fake.uploads)
                 self.reply({"prompt_id": prompt_id})
 
             def do_GET(self):
@@ -74,8 +105,11 @@ class FakeComfy:
                     return self.reply({"system": {"comfyui_version": "fake"}})
                 if path.startswith("/object_info/"):
                     node = path.rsplit("/", 1)[1]
-                    field, name = models[node]
-                    return self.reply({node: {"input": {"required": {field: [[name, "other.safetensors"]]}}}})
+                    if node not in nodes:
+                        return self.reply({})       # what ComfyUI answers for a node it doesn't have
+                    field, names = models.get(node, (None, []))
+                    required = {field: [[*names, "other.safetensors"]]} if field else {}
+                    return self.reply({node: {"input": {"required": required}}})
                 self.send_error(404)
 
         self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
@@ -83,10 +117,12 @@ class FakeComfy:
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
 
     @staticmethod
-    def render(graph):
+    def render(graph, uploads=None):
         nodes = {n["class_type"]: n["inputs"] for n in graph.values()}
         latent = nodes["EmptySD3LatentImage"]
-        digest = hashlib.sha256(json.dumps(graph, sort_keys=True).encode()).digest()
+        loaded = b"".join((uploads or {}).get(n["inputs"]["image"], b"missing") for n in graph.values()
+                          if n["class_type"] == "LoadImage")
+        digest = hashlib.sha256(json.dumps(graph, sort_keys=True).encode() + loaded).digest()
         image = Image.new("RGB", (latent["width"], latent["height"]), (250, 244, 230))
         image.paste((digest[0], digest[1], digest[2]), (200, 200, 600, 600))
         meta = PngInfo()
@@ -103,6 +139,7 @@ def storybook_copy(root):
     (root / "tools").mkdir(parents=True)
     shutil.copy(TOOL, root / "tools")
     shutil.copytree(STORYBOOK / "canon", root / "canon")
+    shutil.copytree(STORYBOOK / "stories", root / "stories")
     return root        # no design-source/: like the real tree, the tool makes it on first use
 
 
@@ -149,6 +186,10 @@ def case_character_lock_selftest(root):
         recipe = json.loads((root / DRAFTS / "pippa-recipe.json").read_text())
         check("the recipe records Pippa's canon and only apache-2.0 models",
               recipe["canon"]["species"] == "dormouse" and {m["license"] for m in recipe["models"]} == {"apache-2.0"})
+        check("a character recipe names exactly the three base-model files, never the edit model",
+              [(m["role"], m["file"]) for m in recipe["models"]] == [
+                  ("unet", "qwen-image-Q8_0.gguf"), ("clip", "qwen_2.5_vl_7b_fp8_scaled.safetensors"),
+                  ("vae", "qwen_image_vae.safetensors")])
         code, out = run(root, "lock", "pippa", "--seed", 72)
         check("lock writes pippa.png and its recipe", not code and sorted(locked_state(root)) == [
             "pippa.png", "pippa.recipe.json"], out.strip()[-160:])
@@ -165,7 +206,7 @@ def case_refusals(root):
     code, out = run(root, "--server", "http://127.0.0.1:9", "character", "pippa")
     check("ComfyUI unreachable is refused, nothing written",
           code and "unreachable" in out and not (root / DRAFTS).exists(), out.strip()[-160:])
-    comfy = FakeComfy(models={**MODEL_FILES, "CLIPLoader": ("clip_name", "clip_l.safetensors")})
+    comfy = FakeComfy(models={**MODEL_FILES, "CLIPLoader": ("clip_name", ["clip_l.safetensors"])})
     try:
         code, out = run(root, "--server", comfy.url, "character", "pippa")
         check("a model ComfyUI can't see under its allowlisted name is refused before rendering",
@@ -302,10 +343,226 @@ def case_locked_folder_holds_only_records(root):
           and "nested: is not a regular file" in out, out.strip()[-300:])
 
 
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def page_locked_state(root):
+    folder = root / PAGE_LOCKED
+    return {p.name: p.read_bytes() for p in folder.iterdir()} if folder.is_dir() else {}
+
+
+def paged(root, number, seed=83, force=False):
+    """Render a page of the story and lock one candidate."""
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, number)
+        assert not code, out
+        code, out = run(root, "lock-page", STORY, number, "--seed", seed, *(["--force"] if force else []))
+        assert not code, out
+    finally:
+        comfy.close()
+
+
+def case_page_lock_selftest(root):
+    """A page renders from the cast's locked sheets, locks and checks out, end to end."""
+    drawn(root, "pippa")
+    drawn(root, "bramble", seed=61)
+    sheets = {name: (root / LOCKED / f"{name}.png").read_bytes() for name in ("pippa", "bramble")}
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 4)
+        drafts = sorted(p.name for p in (root / PAGE_DRAFTS).iterdir()) if (root / PAGE_DRAFTS).is_dir() else []
+        check("page renders four candidates, a contact sheet and a recipe", not code and drafts == [
+            "page-04-candidate-61.png", "page-04-candidate-72.png", "page-04-candidate-83.png",
+            "page-04-candidate-94.png", "page-04-contact-sheet.png", "page-04-recipe.json"],
+            f"{out.strip()[-160:]} {drafts}")
+        check("and reports each seed's render time", re.search(r"rendered seed 61 in \d+s", out), out.strip()[-160:])
+        check("ComfyUI received exactly the locked sheets' bytes, each named by its SHA-256",
+              comfy.uploads == {f"storybook-{sha(data)}.png": data for data in sheets.values()}, sorted(comfy.uploads))
+        graph = json.loads(Image.open(root / PAGE_DRAFTS / "page-04-candidate-61.png").info["prompt"])
+        loads = {node_id: node["inputs"]["image"] for node_id, node in graph.items() if node["class_type"] == "LoadImage"}
+        encoders = [node["inputs"] for node in graph.values() if node["class_type"] == "TextEncodeQwenImageEditPlus"]
+        in_order = [f"storybook-{sha(sheets['pippa'])}.png", f"storybook-{sha(sheets['bramble'])}.png"]
+        check("both encoders get Pippa's sheet as image1 and Bramble's as image2, and no image3",
+              len(encoders) == 2 and all([loads[e["image1"][0]], loads[e["image2"][0]]] == in_order
+                                         and "image3" not in e for e in encoders), encoders)
+        unets = [node["inputs"]["unet_name"] for node in graph.values() if node["class_type"] == "UnetLoaderGGUF"]
+        check("the page loads the apache-2.0 edit model, and only it", unets == [EDIT_MODEL], unets)
+        recipe = json.loads((root / PAGE_DRAFTS / "page-04-recipe.json").read_text())
+        check("the prompt names each cast member's picture and the page's light",
+              "Pippa is the dormouse in picture 1 and Bramble is the badger in picture 2, each drawn exactly as in "
+              "their picture. Bramble steps out from behind a willow" in recipe["prompt"]
+              and "in gentle autumn, warm golden late-afternoon light through the trees" in recipe["prompt"],
+              recipe["prompt"])
+        check("the recipe records the references it drew on",
+              recipe["references"] == [{"name": "pippa", "sha256": sha(sheets["pippa"])},
+                                       {"name": "bramble", "sha256": sha(sheets["bramble"])}])
+        code, out = run(root, "lock-page", STORY, 4, "--seed", 83)
+        check("lock-page writes page-04.png and its recipe",
+              not code and sorted(page_locked_state(root)) == ["page-04.png", "page-04.recipe.json"],
+              out.strip()[-160:])
+        code, out = run(root, "selftest")
+        check("and selftest passes", not code and "1 page locks" in out, out.strip()[-200:])
+    finally:
+        comfy.close()
+
+
+def case_page_refusals(root):
+    """Each refusal exits before writing anything into the storybook, and before rendering."""
+    unwritten = lambda: not (root / "design-source/pages").exists()
+    for story, number, why in [("the-gruffalo", 1, "is not a story"), ("../canon/moon-berry-forest", 1, "is not a story"),
+                               (STORY, 0, "there is no page 0"), (STORY, 8, "there is no page 8")]:
+        code, out = run(root, "--server", "http://127.0.0.1:9", "page", story, number)
+        check(f"page {story} {number} is refused", code and why in out and unwritten(), out.strip()[-160:])
+    drawn(root, "pippa")
+    code, out = run(root, "--server", "http://127.0.0.1:9", "page", STORY, 4)
+    check("a page whose cast has no locked sheet (Bramble) is refused",
+          code and "bramble has no locked sheet" in out and unwritten(), out.strip()[-160:])
+    code, out = run(root, "--server", "http://127.0.0.1:9", "page", STORY, 1)
+    check("ComfyUI unreachable is refused, nothing written", code and "unreachable" in out and unwritten(),
+          out.strip()[-160:])
+    for label, comfy, why in [
+            ("a ComfyUI without CFGNorm", FakeComfy(nodes=NODES - {"CFGNorm"}), "has no CFGNorm node"),
+            ("a ComfyUI that can't see the edit model",
+             FakeComfy(models={**MODEL_FILES, "UnetLoaderGGUF": ("unet_name", ["qwen-image-Q8_0.gguf"])}),
+             f"can't see {EDIT_MODEL}"),
+            ("an upload ComfyUI stores under another name", FakeComfy(rename_uploads=True), "stored the reference")]:
+        try:
+            code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+            check(f"{label} is refused before rendering", code and why in out and not comfy.images and unwritten(),
+                  out.strip()[-160:])
+        finally:
+            comfy.close()
+    symlinked = root / PAGE_DRAFTS
+    symlinked.parent.mkdir(parents=True)
+    (root.parent / "elsewhere").mkdir()
+    symlinked.symlink_to(root.parent / "elsewhere", target_is_directory=True)
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        check("page into a symlinked drafts folder is refused before uploading or rendering",
+              code and "goes through a symlink" in out and not comfy.images and not comfy.uploads, out.strip()[-160:])
+    finally:
+        comfy.close()
+    symlinked.unlink()
+    paged(root, 1, seed=72)
+    before = page_locked_state(root)
+    code, out = run(root, "lock-page", STORY, 1, "--seed", 50)
+    check("a seed that wasn't rendered is refused", code and "not one of the rendered" in out, out.strip())
+    code, out = run(root, "lock-page", STORY, 1, "--seed", 83)
+    check("replacing a page lock without --force is refused", code and "page-01 is already locked" in out, out.strip())
+    candidate = root / PAGE_DRAFTS / "page-01-candidate-94.png"
+    image = Image.open(candidate)
+    meta = PngInfo()
+    meta.add_text("prompt", image.info["prompt"])
+    retouched = image.convert("RGB")
+    retouched.putpixel((10, 10), (0, 0, 0))
+    retouched.save(candidate, pnginfo=meta)
+    code, out = run(root, "lock-page", STORY, 1, "--seed", 94, "--force")
+    check("a candidate retouched after rendering is refused", code and "is not the bytes `page` rendered" in out,
+          out.strip()[-160:])
+    check("and those refusals changed nothing", page_locked_state(root) == before)
+    code, out = run(root, "lock-page", STORY, 1, "--seed", 83, "--force")
+    code2, out2 = run(root, "selftest")
+    check("with --force the page lock is replaced and checks out", not code and not code2, (out + out2).strip()[-160:])
+
+
+def case_relocked_sheet(root):
+    """A page is drawn from its cast's sheets as they were: re-locking a character fails it until it's redrawn."""
+    drawn(root, "pippa")
+    paged(root, 1)
+    code, out = run(root, "lock", "pippa", "--seed", 94, "--force")
+    code2, out2 = run(root, "selftest")
+    check("re-locking Pippa fails the page lock drawn from her old sheet",
+          not code and code2 and "page-01.recipe.json: its recorded references" in out2, out2.strip()[-240:])
+    paged(root, 1, force=True)
+    code, out = run(root, "selftest")
+    check("redrawn and re-locked from the new sheet, it checks out", not code, out.strip()[-160:])
+    sheet = root / LOCKED / "pippa.png"
+    Image.open(sheet).convert("RGB").save(sheet)          # same pixels, graph dropped: the lock no longer holds
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 2)
+        check("a page whose cast's sheet fails its lock checks is refused before uploading",
+              code and "fail their checks" in out and "pippa.recipe.json" in out and not comfy.uploads,
+              out.strip()[-200:])
+    finally:
+        comfy.close()
+
+
+def case_story_edits(root):
+    """A story snapshot is the published text, and a page lock is its page entry as planned."""
+    drawn(root, "pippa")
+    paged(root, 1)
+    story_path = root / "stories" / f"{STORY}.json"
+    original = story_path.read_text()
+    story = json.loads(original)
+    story["text"] = story["text"].replace("golden light", "silver light", 1)
+    story_path.write_text(json.dumps(story))
+    code, out = run(root, "selftest")
+    check("editing the story text fails selftest", code and "does not hash to its recorded content_sha256" in out
+          and "which has no story" in out, out.strip()[-240:])
+    code, out = run(root, "--server", "http://127.0.0.1:9", "page", STORY, 2)
+    check("and page refuses to draw from it", code and "can't be drawn from" in out, out.strip()[-160:])
+    story = json.loads(original)
+    story["pages"][0]["scene"] = "Pippa naps on a fallen log"
+    story_path.write_text(json.dumps(story))
+    code, out = run(root, "selftest")
+    check("editing a locked page's entry fails that page lock", code and "page-01.recipe.json: its recorded entry" in out,
+          out.strip()[-240:])
+
+
+def case_page_lock_is_its_page(root):
+    """A page lock's files are named for its page: page 1's picture can't pass as page 2's."""
+    drawn(root, "pippa")
+    paged(root, 1)
+    locked = root / PAGE_LOCKED
+    recipe = json.loads((locked / "page-01.recipe.json").read_text())
+    recipe["files"] = {"page-02.png": recipe["files"]["page-01.png"]}
+    recipe["source"] = f"{PAGE_DRAFTS}/page-02-candidate-83.png"
+    (locked / "page-01.png").rename(locked / "page-02.png")
+    (locked / "page-01.recipe.json").unlink()
+    (locked / "page-02.recipe.json").write_text(json.dumps(recipe))
+    code, out = run(root, "selftest")
+    check("page 1's lock saved as page-02 fails selftest", code and "page 1's recipe under" in out, out.strip()[-200:])
+
+
+def case_plan_check(root):
+    """A page plan has one page per paragraph, casts of one to three canon characters, and times from the set."""
+    story_path = root / "stories" / f"{STORY}.json"
+    original = json.loads(story_path.read_text())
+
+    def longer(story):
+        story["text"] += "\n\nOne more paragraph."
+        story["source"]["content_sha256"] = sha(story["text"].encode())
+
+    def page_one(key, value):
+        return lambda story: story["pages"][0].__setitem__(key, value)
+
+    for label, mutate, why in [
+            ("a paragraph more than there are pages", longer, "plans 7 pages for 8 paragraphs"),
+            ("a cast member who isn't in the canon", page_one("cast", ["Gruffalo"]), "names someone who is not"),
+            ("a cast of four", page_one("cast", ["Pippa", "Bramble", "Barnaby", "Bramble"]), "one to three different"),
+            ("a time outside the set", page_one("time", "midnight"), "'midnight' is not one of"),
+            ("a page with no scene", page_one("scene", " "), "page 1 has no scene")]:
+        story = json.loads(json.dumps(original))
+        mutate(story)
+        story_path.write_text(json.dumps(story))
+        code, out = run(root, "selftest")
+        code2, out2 = run(root, "--server", "http://127.0.0.1:9", "page", STORY, 1)
+        check(f"{label} fails selftest, and page refuses it", code and why in out and code2 and why in out2,
+              (out + out2).strip()[-200:])
+    story_path.write_text(json.dumps(original))
+    code, out = run(root, "selftest")
+    check("the plan as committed passes", not code and "1 stories" in out, out.strip()[-160:])
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
-             case_locked_folder_holds_only_records]
+             case_locked_folder_holds_only_records, case_page_lock_selftest, case_page_refusals,
+             case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
