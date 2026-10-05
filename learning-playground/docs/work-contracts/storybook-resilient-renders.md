@@ -344,3 +344,16 @@ night, and a moon belongs there.
   - That covers what wasn't raised yet: ComfyUI handing back another job's
     image (another seed's, or another recipe's) is now refused at
     recording, not at `lock`.
+  - **Consolidation evidence:**
+    - 86 of 86 checks on both stacks. The one new case: seed 61's image
+      served again for seed 72 is refused at recording, and a re-run renders
+      seed 72.
+    - The PNG-format check was removed: any non-PNG lacks the embedded
+      graph, so `lock`'s checks refuse it, and breaking the format check
+      failed nothing.
+    - The cut-off case now cuts a real render, with its embedded graph
+      intact, so only the full decode can catch it.
+    - Each remaining check catches something on its own:
+      - removing the full decode fails the cut-off render;
+      - removing `lock`'s checks fails the wrong-size and other-job cases;
+      - removing the version recheck fails the upgraded-build case.
