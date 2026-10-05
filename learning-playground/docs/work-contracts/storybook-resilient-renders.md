@@ -269,3 +269,35 @@ night, and a moon belongs there.
 - `selftest` on this branch: "3 character locks, 1 stories and 0 page locks
   checked against canon/moon-berry-forest.json; 0 problems".
 - **No GPU run.** The overnight run is the real-world test.
+
+### Round 1 evidence (PR #151, three Codex P2 findings)
+
+- `test-story-recipe.py`: 84 of 84 checks, on Python 3.13 and on 3.12. That's
+  the 77 from before plus 7 in `case_bad_replies_are_not_kept`:
+  - With no ComfyUI version, all four seeds render fresh (nothing is
+    resumed).
+  - A `/history` reply of `{` exits plainly ("isn't JSON") and keeps the
+    seed that finished.
+  - Five broken `/view` replies are never recorded, and a re-run renders
+    that seed:
+    - an HTTP 200 error page;
+    - an empty body;
+    - a 64×64 PNG;
+    - a right-size PNG cut off mid-file;
+    - a right-size JPEG.
+- **Each check catches the bug it's meant to.** Each of six broken copies of
+  the fixes fails the suite:
+
+  | Broken copy | Checks failing |
+  |---|---|
+  | no version guard | 1 |
+  | no `BadReply` wrapping | 1 |
+  | no size check | 1 |
+  | no `load()` | 1 (the cut-off PNG) |
+  | no PNG-format check | 1 (the JPEG) |
+  | no image validation at all | 4 |
+
+  The first break that removed only `load()` and the format check passed:
+  the cut-off PNG and JPEG cases didn't exist yet. They were added because
+  of that.
+- `selftest` on this branch: 3 character locks, 0 problems.
