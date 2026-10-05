@@ -186,16 +186,18 @@ def case_character_lock_selftest(root):
         recipe = json.loads((root / DRAFTS / "pippa-recipe.json").read_text())
         check("the recipe records Pippa's canon and only apache-2.0 models",
               recipe["canon"]["species"] == "dormouse" and {m["license"] for m in recipe["models"]} == {"apache-2.0"})
-        check("a new sheet is template v2: upright on two hind legs, and no moon",
+        negative = next(n["inputs"]["text"] for n in recipe["graph"].values() if n["class_type"] == "CLIPTextEncode"
+                        and n["inputs"]["text"] != recipe["prompt"])
+        check("a new sheet is template v2: upright on two hind legs, never naming the moon, which is in its negative",
               recipe["template_version"] == "v2" and "standing upright on two hind legs" in recipe["prompt"]
-              and "with no moon and no scenery" in recipe["prompt"] and "moonlit" not in recipe["prompt"],
-              recipe["prompt"])
+              and "moon" not in recipe["prompt"] and negative == "moon, crescent moon, full moon, night sky, scenery",
+              f"{recipe['prompt']} || negative: {negative}")
         for name in ("bramble", "barnaby"):
             run(root, "--server", comfy.url, "character", name)
         prompts = [json.loads((root / DRAFTS / f"{n}-recipe.json").read_text())["prompt"]
                    for n in ("pippa", "bramble", "barnaby")]
-        check("every character's sheet prompt stands it upright and rules out a moon",
-              all("standing upright on two hind legs" in p and "no moon" in p for p in prompts), prompts)
+        check("every character's sheet prompt stands it upright and never names the moon",
+              all("standing upright on two hind legs" in p and "moon" not in p for p in prompts), prompts)
         check("a character recipe names exactly the three base-model files, never the edit model",
               [(m["role"], m["file"]) for m in recipe["models"]] == [
                   ("unet", "qwen-image-Q8_0.gguf"), ("clip", "qwen_2.5_vl_7b_fp8_scaled.safetensors"),

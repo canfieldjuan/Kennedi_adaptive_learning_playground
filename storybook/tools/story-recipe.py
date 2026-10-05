@@ -71,7 +71,8 @@ SHEET_ROLES, PAGE_ROLES = ("unet", "clip", "vae"), ("edit_unet", "clip", "vae")
 
 # Versions are never edited: a lock must keep rebuilding from its recipe, so a change is a new version.
 # v2 (2026-10-04, after the first real renders): "moonlit" drew a moon in 9 of 12 v1 sheets, and Bramble came out
-# with four legs and two arms; sheets now stand upright on two hind legs, with no moon or scenery.
+# with four legs and two arms; sheets now stand upright on two hind legs. What a sheet must not show goes in its
+# negative prompt: naming the moon in the prompt, even as "no moon", drew one in all 8 first v2 renders.
 SHEET_TEMPLATES = {
     "v1": {
         "style": ("soft storybook watercolor illustration, gentle warm moonlit palette, clean confident outlines, "
@@ -83,8 +84,9 @@ SHEET_TEMPLATES = {
         "style": ("soft storybook watercolor illustration, gentle warm palette, clean confident outlines, "
                   "cozy picture-book style"),
         "text": ("{style}. A single {build} {species} standing upright on two hind legs in a relaxed three-quarter "
-                 "view, {base_colors}{garment}{props}, {accent}, plain soft cream background with no moon and no "
-                 "scenery, full body, centered, no text"),
+                 "view, {base_colors}{garment}{props}, {accent}, plain soft cream background, full body, centered, "
+                 "no text"),
+        "negative": "moon, crescent moon, full moon, night sky, scenery",
     },
 }
 # ComfyUI's own Qwen-Image defaults (its "Text to Image (Qwen-Image)" blueprint).
@@ -158,7 +160,8 @@ def recipe_graph(recipe, seed, prefix):
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": files["vae"]}},
         "4": {"class_type": "ModelSamplingAuraFlow", "inputs": {"model": ["1", 0], "shift": settings["shift"]}},
         "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": recipe["prompt"]}},
-        "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": ""}},
+        "6": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0],
+                                                         "text": recipe["template"].get("negative", "")}},
         "7": {"class_type": "EmptySD3LatentImage", "inputs": {"width": settings["size"], "height": settings["size"],
                                                                "batch_size": 1}},
         "8": {"class_type": "KSampler", "inputs": {
@@ -316,7 +319,7 @@ def page_graph(recipe, seed, prefix):
         "6": {"class_type": "TextEncodeQwenImageEditPlus", "inputs": {
             "clip": ["2", 0], "prompt": recipe["prompt"], "vae": ["3", 0], **images}},
         "7": {"class_type": "TextEncodeQwenImageEditPlus", "inputs": {
-            "clip": ["2", 0], "prompt": "", "vae": ["3", 0], **images}},
+            "clip": ["2", 0], "prompt": recipe["template"].get("negative", ""), "vae": ["3", 0], **images}},
         "8": {"class_type": "FluxKontextMultiReferenceLatentMethod", "inputs": {
             "conditioning": ["6", 0], "reference_latents_method": settings["reference_method"]}},
         "9": {"class_type": "FluxKontextMultiReferenceLatentMethod", "inputs": {
