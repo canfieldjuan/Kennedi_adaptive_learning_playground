@@ -3,6 +3,7 @@ import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { catalog, readRecipe, resolveRecipe, templates, WORKBOOK_ROOT } from '../src/recipes.mjs';
+import { withPrintBrowser } from './print-artifacts.mjs';
 
 const args = process.argv.slice(2);
 const stage = args.shift() ?? 'all';
@@ -40,7 +41,7 @@ if (stage === 'catalog') {
       if (operation === 'build') {
         save(snapshot, recipe);
         save(path.join(out, 'render-environment.json'), { node: process.version,
-          chrome: execFileSync('/usr/bin/google-chrome', ['--version'], { encoding: 'utf8' }).trim(),
+          chrome: await withPrintBrowser(browser => browser.version()),
           platform: process.platform, architecture: process.arch });
       }
     }

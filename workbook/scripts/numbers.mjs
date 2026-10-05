@@ -1,14 +1,12 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { assets, pages } from '../src/content/numbers-practice.mjs';
 import { renderDocument } from '../src/render.mjs';
 import { inlineImageFile } from '../src/content/asset-inline.mjs';
-import { savePdfHashes, assertPdfHashes, measureArtworkCrops, replacePdfRasters } from './print-artifacts.mjs';
+import { savePdfHashes, assertPdfHashes, measureArtworkCrops, replacePdfRasters, stageInventory, printTool, withPrintBrowser as withBrowser } from './print-artifacts.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
@@ -29,13 +27,9 @@ function save(file, contents) {
   writeFileSync(file, contents, { mode: 0o600 });
 }
 function info(file) {
-  const text = execFileSync('/usr/bin/pdfinfo', [file], { encoding: 'utf8' });
+  const text = printTool('pdfinfo', [file], { encoding: 'utf8' });
   return { pages: Number(text.match(/^Pages:\s+(\d+)/m)?.[1]),
     dimensions: text.match(/^Page size:\s+([\d.]+) x ([\d.]+) pts/m)?.slice(1).map(Number) };
-}
-async function withBrowser(fn) {
-  const browser = await chromium.launch({ channel: 'chrome', headless: true });
-  try { return await fn(browser); } finally { await browser.close(); }
 }
 function documents(crops) {
   const bodies = pages.map(page => page.render(crops));
@@ -49,12 +43,15 @@ async function build() {
   const manifest = { pages: pages.map(page => page.meta),
     artwork: assets.map(asset => ({ path: asset, viewBox: crops[asset], sha256: hash(readFileSync(path.join(root, asset))) })) };
   const rendered = documents(crops);
-  rendered.singles.forEach((document, index) => save(htmlPath(index + 1), document));
+  const inventory = stageInventory(path.join(out, 'pages'));
+  rendered.singles.forEach((document, index) => save(path.join(inventory.directory, path.basename(htmlPath(index + 1))), document));
+  inventory.publish(rendered.singles.map((_, index) => path.basename(htmlPath(index + 1))));
   save(path.join(out, 'preview.html'), rendered.preview);
   save(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2));
   console.log(`Built ${pages.length} pages: ten practice sheets and two illustrated counting breaks.`);
 }
 async function pdf() {
+  const inventory = stageInventory(path.join(out, 'pdf/pages'));
   await withBrowser(async browser => {
     const page = await browser.newPage();
     await page.emulateMedia({ media: 'print' });
@@ -69,22 +66,25 @@ async function pdf() {
       savePdfHashes(destination, bytes, save);
     }
     await exportOne(path.join(out, 'preview.html'), pdfPath);
-    for (const { meta } of pages) await exportOne(htmlPath(meta.pageNumber), singlePdf(meta.pageNumber));
+    for (const { meta } of pages) await exportOne(htmlPath(meta.pageNumber), path.join(inventory.directory, path.basename(singlePdf(meta.pageNumber))));
   });
+  inventory.publish(pages.flatMap(({ meta }) => { const file = path.basename(singlePdf(meta.pageNumber)); return [file, `${file}.sourcehash`, `${file}.sha256`]; }));
   console.log(`Exported ${pdfPath} and ${pages.length} individual page PDFs.`);
 }
 async function screenshots() {
+  const inventory = stageInventory(path.join(out, 'screenshots'));
   await withBrowser(async browser => {
     const page = await browser.newPage({ viewport: { width: 816, height: 1056 }, deviceScaleFactor: 1.5 });
     await page.emulateMedia({ media: 'print' });
     for (const { meta } of pages) {
       await page.setContent(readFileSync(htmlPath(meta.pageNumber), 'utf8'), { waitUntil: 'load' });
       await page.evaluate(() => document.fonts.ready);
-      const file = path.join(out, 'screenshots', `page-${num(meta.pageNumber)}.png`);
+      const file = path.join(inventory.directory, `page-${num(meta.pageNumber)}.png`);
       mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
       await page.screenshot({ path: file, fullPage: true }); chmodSync(file, 0o600);
     }
   });
+  inventory.publish(pages.map(({ meta }) => `page-${num(meta.pageNumber)}.png`));
   console.log(`Captured ${pages.length} browser screenshots.`);
 }
 async function rasterize() {
@@ -119,7 +119,7 @@ async function verify() {
   assert.equal(hash(readFileSync(path.join(out, 'preview.html'))), hash(current.preview), 'Stale combined HTML.');
   assertPdfHashes(pdfPath, current.preview);
   assert.deepEqual(info(pdfPath), { pages: 12, dimensions: [612, 792] });
-  const physical = execFileSync('/usr/bin/pdfinfo', ['-f', '1', '-l', '12', pdfPath], { encoding: 'utf8' });
+  const physical = printTool('pdfinfo', ['-f', '1', '-l', '12', pdfPath], { encoding: 'utf8' });
   const dimensions = [...physical.matchAll(/^Page\s+\d+ size:\s+([\d.]+) x ([\d.]+) pts/gm)].map(m => m.slice(1).map(Number));
   assert.equal(dimensions.length, 12);
   assert.ok(dimensions.every(([w, h]) => w === 612 && h === 792));

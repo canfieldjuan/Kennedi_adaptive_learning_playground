@@ -1,14 +1,12 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync, chmodSync, readdirSync, existsSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { mkdirSync, readFileSync, writeFileSync, chmodSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
 import { alphabet, pages } from '../src/content/alphabet-practice.mjs';
 import { renderDocument } from '../src/render.mjs';
 import { inlineImageFile } from '../src/content/asset-inline.mjs';
-import { savePdfHashes, assertPdfHashes, measureArtworkCrops, replacePdfRasters } from './print-artifacts.mjs';
+import { savePdfHashes, assertPdfHashes, measureArtworkCrops, replacePdfRasters, stageInventory, printTool, withPrintBrowser as withBrowser } from './print-artifacts.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const args = process.argv.slice(2);
@@ -24,21 +22,16 @@ const htmlPath = number => path.join(out, 'pages', `page-${num(number)}.html`);
 const singlePdf = number => path.join(out, 'pdf', 'pages', `page-${num(number)}.pdf`);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const styles = readFileSync(path.join(root, 'src/styles/alphabet-practice.css'), 'utf8');
-const poppler = tool => existsSync(`/usr/bin/${tool}`) ? `/usr/bin/${tool}` : tool;
 function save(file, contents) {
   mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   writeFileSync(file, contents, { mode: 0o600 });
 }
 function info(file) {
-  const result = execFileSync(poppler('pdfinfo'), [file], { encoding: 'utf8' });
+  const result = printTool('pdfinfo', [file], { encoding: 'utf8' });
   return {
     pages: Number(result.match(/^Pages:\s+(\d+)/m)?.[1]),
     dimensions: result.match(/^Page size:\s+([\d.]+) x ([\d.]+) pts/m)?.slice(1).map(Number),
   };
-}
-async function withBrowser(fn) {
-  const browser = await chromium.launch({ channel: 'chrome', headless: true });
-  try { return await fn(browser); } finally { await browser.close(); }
 }
 
 function documents(crops) {
@@ -61,13 +54,16 @@ async function build() {
     cues: page.meta.cues.map(entry => ({ ...entry, viewBox: crops[entry.illustrationPath], sourceSha256: hash(readFileSync(path.join(root, entry.illustrationPath))) })),
   }));
   const rendered = documents(crops);
-  for (const [index, document] of rendered.singles.entries()) save(htmlPath(index + 1), document);
+  const inventory = stageInventory(path.join(out, 'pages'));
+  for (const [index, document] of rendered.singles.entries()) save(path.join(inventory.directory, path.basename(htmlPath(index + 1))), document);
+  inventory.publish(rendered.singles.map((_, index) => path.basename(htmlPath(index + 1))));
   save(path.join(out, 'preview.html'), rendered.preview);
   save(path.join(out, 'manifest.json'), JSON.stringify(manifest, null, 2));
   console.log(`Built ${pages.length} illustrated pages, ${alphabet.length * 2} separate-case rows: ${out}`);
 }
 
 async function pdf() {
+  const inventory = stageInventory(path.join(out, 'pdf/pages'));
   await withBrowser(async browser => {
     const page = await browser.newPage();
     await page.emulateMedia({ media: 'print' });
@@ -81,24 +77,27 @@ async function pdf() {
       savePdfHashes(destination, bytes, save);
     }
     await exportOne(path.join(out, 'preview.html'), pdfPath);
-    for (const { meta } of pages) await exportOne(htmlPath(meta.pageNumber), singlePdf(meta.pageNumber));
+    for (const { meta } of pages) await exportOne(htmlPath(meta.pageNumber), path.join(inventory.directory, path.basename(singlePdf(meta.pageNumber))));
   });
+  inventory.publish(pages.flatMap(({ meta }) => { const file = path.basename(singlePdf(meta.pageNumber)); return [file, `${file}.sourcehash`, `${file}.sha256`]; }));
   console.log(`Exported combined PDF and ${pages.length} individual PDFs: ${pdfPath}`);
 }
 
 async function screenshots() {
+  const inventory = stageInventory(path.join(out, 'screenshots'));
   await withBrowser(async browser => {
     const page = await browser.newPage({ viewport: { width: 816, height: 1056 }, deviceScaleFactor: 1.5 });
     await page.emulateMedia({ media: 'print' });
     for (const { meta } of pages) {
       await page.setContent(readFileSync(htmlPath(meta.pageNumber), 'utf8'), { waitUntil: 'load' });
       await page.evaluate(() => document.fonts.ready);
-      const destination = path.join(out, 'screenshots', `page-${num(meta.pageNumber)}.png`);
+      const destination = path.join(inventory.directory, `page-${num(meta.pageNumber)}.png`);
       mkdirSync(path.dirname(destination), { recursive: true, mode: 0o700 });
       await page.screenshot({ path: destination, fullPage: true });
       chmodSync(destination, 0o600);
     }
   });
+  inventory.publish(pages.map(({ meta }) => `page-${num(meta.pageNumber)}.png`));
   console.log(`Captured ${pages.length} browser screenshots.`);
 }
 
@@ -138,7 +137,7 @@ async function verify() {
   assert.deepEqual(pdfInfo.dimensions, [612, 792]);
   assertPdfHashes(pdfPath, current.preview);
   // Verify each physical PDF page, not just the document's default dimensions.
-  const allInfo = execFileSync(poppler('pdfinfo'), ['-f', '1', '-l', String(pages.length), pdfPath], { encoding: 'utf8' });
+  const allInfo = printTool('pdfinfo', ['-f', '1', '-l', String(pages.length), pdfPath], { encoding: 'utf8' });
   const dimensions = [...allInfo.matchAll(/^Page\s+\d+ size:\s+([\d.]+) x ([\d.]+) pts/gm)].map(match => match.slice(1).map(Number));
   assert.equal(dimensions.length, pages.length);
   assert.ok(dimensions.every(([width, height]) => width === 612 && height === 792));

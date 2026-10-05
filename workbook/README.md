@@ -114,6 +114,9 @@ an npm install on Node 18 pulls in an explicitly-unsupported runtime for the
 PDF/screenshot/verify commands), Google Chrome installed (Playwright drives it directly via
 `channel: 'chrome'` — no browser download), and `poppler-utils` on PATH
 (`pdfinfo`/`pdftoppm`, used only by `npm run verify` / `npm run rasterize`).
+The recipe pipelines use the same installed Chrome channel and resolve Poppler
+commands through PATH, without requiring `/usr/bin` executable locations.
+Their render-environment record gets Chrome's version from the launched browser.
 On Debian/Ubuntu: `sudo apt install poppler-utils`.
 
 ## Preview
@@ -325,9 +328,9 @@ ComfyUI or image-generation GPU is needed. Run from this checkout's `workbook/`:
 `workbook:test` also checks imported-art records using Python 3 with Pillow
 and NumPy, the existing CPU-only art-check dependencies installed by CI.
 These checks do not contact ComfyUI or load image models.
-The print regression tests also use the same Google Chrome and Poppler tools
-as PDF export. They build isolated fixtures, never edit source artwork, and
-check combined/individual PDF bytes, live crop freshness and shorter rebuilds.
+The print regression tests use the tools specified under [Install](#install).
+They build isolated fixtures, never edit source artwork, and check PDF bytes,
+live crop freshness, shorter rebuilds and absence of fixed Linux tool paths.
 
 Alphabet and numbers exports save `.sha256` alongside `.sourcehash`; direct
 verification rejects a changed PDF even if its Letter dimensions still match.
@@ -335,12 +338,16 @@ Direct verification measures live illustration crops instead of trusting a
 previous manifest. Older exports need to be regenerated to create the new
 PDF-byte sidecars. Saved recipe locks include the shared print-artifact code.
 
-Raster regeneration stages a fresh inventory before publishing `pdf-raster/`.
-The previous folder is preserved in a sibling `.pdf-raster-*.previous` folder,
-including any annotations; it is not deleted. This permits a shorter recipe
-in the same output directory without mixing old and new rasters. Retain those
-backups until no longer needed. Use separate output directories when you want
-to keep complete earlier workbooks (their HTML, PDFs and screenshots too).
+Each recipe generator stages fresh inventories for `pages/`, `pdf/pages/`
+(including hash sidecars), `screenshots/` and `pdf-raster/`, then publishes each
+only after its expected files have been generated. Old directories and their
+annotations are retained in sibling `.<folder>-*.previous` backups, not deleted.
+This permits a shorter recipe in the same output directory without retaining
+old individual pages. Keep backups until no longer needed; use separate output
+directories to preserve complete earlier books, including their root manifests,
+combined PDF, recipe, preview and render-environment record. A failed stage keeps
+its former live inventory; an entire multi-stage build is not one transaction.
+Use distinct output directories for simultaneous builds.
 
 ```bash
 npm ci
