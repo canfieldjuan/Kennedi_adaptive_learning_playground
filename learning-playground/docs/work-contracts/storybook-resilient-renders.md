@@ -433,3 +433,24 @@ night, and a moon belongs there.
       committed in #149, starts a fresh set.
     - The recipe format changes by that one optional key. Existing locks
       don't have it and still pass `selftest`.
+  - **Round 4 evidence:**
+    - 95 of 95 checks on both stacks. The three new checks:
+      - the real render with a KSampler whose `inputs` is a list is never
+        recorded;
+      - a lock whose KSampler `inputs` is a string fails `selftest` as a
+        problem, with no traceback;
+      - a complete set whose recipe lacks `set_writer`, as the earlier
+        writer recorded it, re-renders all four.
+    - Removing the inputs check fails 2 checks. Removing the writer check
+      fails 1.
+    - `selftest` on the real storybook still passes: the three #149 locks
+      have no `set_writer`.
+    - **The sweep is closed.** Every ComfyUI-derived value reaches the tool
+      through one of five guards:
+      - `reply_json()`;
+      - the `/history` guard in `render()`;
+      - the `/object_info` guard in `require_models()`;
+      - `server_version()`;
+      - `candidate_problem()`, which goes through `comfy_graph()`.
+
+      On-disk drafts resume only through `kept_candidates()`.
