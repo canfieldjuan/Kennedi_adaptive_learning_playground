@@ -357,3 +357,35 @@ night, and a moon belongs there.
       - removing the full decode fails the cut-off render;
       - removing `lock`'s checks fails the wrong-size and other-job cases;
       - removing the version recheck fails the upgraded-build case.
+
+- **PR #151 review, round 3 (Codex, two P2s). The class is ComfyUI data
+  parsed without a guard, so it was swept tool-wide rather than fixed line
+  by line.**
+  - **A set needs a known build, decided in one place.**
+    - `server_version()` returns a non-empty version string or `None`.
+    - `render_set()` refuses to render when it's `None`. It exits before
+      writing anything, saying the server doesn't report its version, so a
+      set can't be tied to one build.
+    - With that, the per-seed recheck can't see "None equals None", and
+      `kept_candidates()` loses its own version-is-known guard: it can
+      only ever be called with a known version.
+  - **Every ComfyUI-derived value is parsed behind a guard.** The sweep
+    found five read sites. Each malformed shape becomes `BadReply` (a lost
+    or garbled server) or a candidate problem, never a traceback:
+
+    | Read site | Was | Now |
+    |---|---|---|
+    | API JSON (round 1) | guarded | unchanged |
+    | `/history` entry (`render()`): its status, outputs, image item, filename | unguarded | guarded |
+    | `/object_info` loader options (`require_models()`) | unguarded | guarded |
+    | `/system_stats`' `system` field (`server_version()`) | unguarded | guarded |
+    | the PNG's embedded `prompt` graph (`rebuild_problems()`) | unguarded | guarded |
+
+    The last one is fixed where it's parsed, so recording, `lock` and
+    `selftest` all report a malformed embedded graph as a problem instead
+    of crashing.
+  - **`main()`'s message now reads "unreachable or answered badly".**
+    `BadReply` can now come from a reply that isn't the shape the tool
+    knows, not only from a dropped connection.
+  - Not in this class, so unchanged: the tool's own recipe and story files
+    are still parsed as they were in slices 1 and 2.
