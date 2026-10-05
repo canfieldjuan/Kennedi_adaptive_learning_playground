@@ -157,6 +157,28 @@ night, and a moon belongs there.
   - It now raises `RenderFailed`, and the set writer reports it the same
     way: which seed was lost and which were kept.
 
+- **PR #151 review, round 1 (Codex, three P2 findings, all fixed).**
+  - **Resume needs a known ComfyUI version.**
+    - A server that reports no `comfyui_version` used to match an earlier set
+      that had none. A re-run could then mix two ComfyUI builds in one set.
+    - Now a set with no recorded version, or a server reporting none, is
+      never resumed: all four seeds render fresh.
+  - **A reply that isn't JSON is a lost server, caught where the tool talks
+    to ComfyUI.**
+    - `api()` and `upload()` turn a reply that doesn't decode into
+      `BadReply`, which is part of `LOST_COMFY`.
+    - So a body truncated mid-set gets the same plain message and kept
+      seeds as a dropped connection.
+    - Decoding the tool's own files (story, canon, recipes) is untouched,
+      so a broken local file is never reported as a server failure.
+  - **A render must be a PNG of the recipe's size before it is recorded.**
+    - An HTTP 200 error page or an empty body from `/view` used to be
+      recorded by digest. Every re-run would then keep it and fail on the
+      contact sheet.
+    - Now `render()` decodes the bytes as an image and `render_set()`
+      checks the size. Anything else is `RenderFailed`: nothing is
+      recorded for that seed, and a re-run renders it.
+
 ## Cold Diff Audit
 
 ### Gaps
