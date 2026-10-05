@@ -513,21 +513,22 @@ def server_version(server):
     return api(server, "/system_stats", timeout=10).get("system", {}).get("comfyui_version")
 
 
-def candidate_problem(path, size):
-    """Why the bytes ComfyUI returned can't be recorded as a candidate, or None: they must decode fully as a PNG of
-    the recipe's size. A recorded candidate is kept by its digest on every re-run, so an error page, an empty or
-    cut-off body, or the wrong image must never be recorded."""
+def candidate_problem(path, manifest, seed, build_graph):
+    """Why the bytes ComfyUI returned for this seed can't be recorded as a candidate, or None.
+
+    A recorded candidate is kept by its digest on every re-run, so it must be one `lock` can accept on its render:
+    the bytes decode fully (lock's open is lazy, so a cut-off body would pass it), and they pass lock's own render
+    checks -- the embedded graph is there, rendered at this seed, and is the recipe's graph, at the recipe's size.
+    An error page, an empty or cut-off body, another format, or another job's image is refused here rather than
+    kept and then refused by `lock`.
+    """
     try:
         with Image.open(path) as image:
             image.load()
-            kind, dimensions = image.format, image.size
     except (OSError, SyntaxError, ValueError) as error:
         return f"ComfyUI returned {path.stat().st_size} bytes that aren't an image ({type(error).__name__})"
-    if kind != "PNG":
-        return f"ComfyUI returned a {kind} image, not the PNG SaveImage writes"
-    if dimensions != (size, size):
-        return f"ComfyUI returned a {dimensions[0]}x{dimensions[1]} image, not the recipe's {size} square"
-    return None
+    problems = rebuild_problems(path, manifest, manifest, seed, build_graph, "the recipe it was rendered from")
+    return f"ComfyUI's image for seed {seed} isn't this recipe's render: " + "; ".join(problems) if problems else None
 
 
 def kept_candidates(drafts, stem, manifest, version):
@@ -578,7 +579,7 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
             out, started = Path(tmp) / name, time.time()
             try:
                 render(server, build_graph(manifest, seed, f"{prefix}-{seed}"), out)
-                problem = candidate_problem(out, manifest["settings"]["size"])
+                problem = candidate_problem(out, manifest, seed, build_graph)
                 if problem:
                     raise RenderFailed(problem)
                 # Every recorded seed comes from the set's build: a ComfyUI restarted or upgraded between seeds

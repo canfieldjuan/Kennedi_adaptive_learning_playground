@@ -62,7 +62,8 @@ class FakeComfy:
     loads, and embeds the graph as ComfyUI does. rename_uploads stores uploads under another name, as ComfyUI
     does without overwrite; die_after=N drops the connection while the (N+1)th render is polled, as a ComfyUI that
     stops mid-set does; version is what /system_stats reports (None: no version); bad_history and bad_view map a
-    render's index to the broken reply its /history poll or /view download gets instead; upgrade_after=N reports
+    render's index to the broken reply its /history poll or /view download gets instead (a job id string serves
+    that job's image; a function gets the real image and returns what is served); upgrade_after=N reports
     another version once more than N renders have been queued, as a ComfyUI restarted on a new build does."""
 
     def __init__(self, models=MODEL_FILES, nodes=NODES, rename_uploads=False, die_after=None, version="fake",
@@ -110,7 +111,9 @@ class FakeComfy:
                         "10": {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "output"}]}}}})
                 if path == "/view":
                     pid = parse_qs(query)["filename"][0][:-4]
-                    return self.reply((bad_view or {}).get(int(pid[3:]), fake.images[pid]), "image/png")
+                    served = (bad_view or {}).get(int(pid[3:]), fake.images[pid])
+                    served = fake.images[served] if isinstance(served, str) else served
+                    return self.reply(served(fake.images[pid]) if callable(served) else served, "image/png")
                 if path == "/system_stats":
                     upgraded = upgrade_after is not None and len(fake.images) > upgrade_after
                     return self.reply({"system": {"comfyui_version": f"{version}-new" if upgraded else version}})
@@ -735,14 +738,14 @@ def case_bad_replies_are_not_kept(root):
               out.strip()[-200:])
     finally:
         comfy.close()
-    small, jpeg, full = io.BytesIO(), io.BytesIO(), io.BytesIO()
+    small, jpeg = io.BytesIO(), io.BytesIO()
     Image.new("RGB", (64, 64), "white").save(small, "PNG")
     Image.new("RGB", (1328, 1328), "white").save(jpeg, "JPEG")
-    Image.effect_noise((1328, 1328), 64).convert("RGB").save(full, "PNG")
-    cut = full.getvalue()[:len(full.getvalue()) // 2]          # a right-size PNG header, its pixels cut off
+    cut = lambda real: real[:len(real) - 200]       # the real render, its embedded graph intact, the pixels cut off
     for label, broken in [("an HTTP 200 error page", b"<html>500 Internal Server Error</html>"), ("an empty body", b""),
-                          ("a PNG of the wrong size", small.getvalue()), ("a PNG cut off mid-file", cut),
-                          ("a JPEG instead of SaveImage's PNG", jpeg.getvalue())]:
+                          ("a PNG of the wrong size", small.getvalue()), ("the real render cut off mid-file", cut),
+                          ("a JPEG instead of SaveImage's PNG", jpeg.getvalue()),
+                          ("seed 61's image served again for seed 72", "job0")]:
         drafts = root / DRAFTS
         for leftover in drafts.glob("barnaby-*"):
             leftover.unlink()
