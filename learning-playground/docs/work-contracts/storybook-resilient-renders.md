@@ -308,3 +308,18 @@ night, and a moon belongs there.
   - Still 84 of 84 on both stacks.
   - Removing `load()`, the format check or the size check from
     `candidate_problem()` fails one check each; skipping the call fails 5.
+
+- **PR #151 review, round 2 (Codex, one P2): a set is one ComfyUI build at
+  every seed, not just at the start.**
+  - `render_set()` read the version once, then recorded every seed under
+    it. If ComfyUI restarted or upgraded between seeds without a request
+    noticing the gap, later seeds came from the new build under the old
+    label.
+  - Now the version is read again after each seed renders, before it is
+    recorded. If it differs from the set's, the seed is not recorded: the
+    run exits with the kept-seeds message, and the next run starts a fresh
+    set, because the version no longer matches.
+  - One owner: `server_version()` is the only reader of the version.
+    `render_set()` holds the rule "every recorded seed came from the set's
+    version", and `kept_candidates()` applies the same equality when
+    resuming.
