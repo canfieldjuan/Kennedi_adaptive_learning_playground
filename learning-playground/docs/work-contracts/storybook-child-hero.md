@@ -167,8 +167,11 @@ Where these values come from:
 - **The colours** are taken from the approved cover
   (`workbook/design-source/scenes/cover-concept-c-golden.png`): dark brown
   hair, red hair ties, a cream polo, an orange skirt and red sneakers.
-- **Please confirm one choice.** The cover draws her with bangs and high
-  pigtails. This profile follows the newer face and hair lock instead.
+- **Confirmed by the operator, 2026-10-05:** "i dont want bangs, she has pig
+  tails most of the time."
+  - The cover draws her with bangs and high pigtails. This profile follows
+    the newer face and hair lock instead.
+  - She has pigtails on every page, so the book keeps one look.
 
 **Leo** (`leo.json`): invented for this proof. He is not a real child.
 
