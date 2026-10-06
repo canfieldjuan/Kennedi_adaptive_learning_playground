@@ -226,6 +226,14 @@ You can change any of his values.
   - `{name}`;
   - the pronoun slots above.
 
+  **The season may use no slot.** It belongs to the story, not the child
+  (amendment 3).
+  - One table in the tool lists every free-text field of a personal story,
+    and whether that field may fill in the child.
+  - The check reads every field in the table, and a page fills its fields
+    from the same table. So no field reaches a prompt or a page without
+    being read.
+
   A slot can't carry a conversion or a format spec. Any other `{...}` fails
   the check, and so do a stray brace and an escaped brace (`{{` or `}}`).
   Filling would turn an escaped brace into a literal "{name}" on the page
@@ -492,6 +500,19 @@ Each case exits before anything is written:
    Both rules live in `slots()`, the one place the tool reads a personal
    story's braces. It returns the slots a text uses and what's wrong with
    its braces, and the plan check applies both.
+3. **The season, from Codex review round 2 on #153.** Confirmed against the
+   code.
+   - **The gap.** `"{name}'s summer"` passed the check, and reached the
+     prompt with "{name}" unfilled. The season was the one free-text field
+     the check never read.
+   - **Why it happened.** This is the third finding of one kind. The list of
+     fields that may carry slots lived in two places: the check named title,
+     text, place and scene, and the page filled place and scene. Neither
+     listed the season.
+   - **The fix.** `STORY_TEXT` and `PAGE_TEXT` now list every free-text
+     field, and whether it may fill in the child. The check reads every
+     field in them through `slots()`. A field that may not fill in the child
+     must have no slot. A book page fills its page fields from `PAGE_TEXT`.
 
 ## Verification
 
@@ -505,6 +526,9 @@ From tool output on 2026-10-05, at `ad6e69a`.
     child by a pronoun, or whose place is the child's.
   - On the other side, a child-less page with nothing of the child on it
     passes.
+  - After amendment 3, 197 of 197 pass on both versions. A season that
+    fills in the child fails. So does a season with an escaped brace, a
+    stray brace, or an unknown slot.
   - Every Settling Evidence case listed above is covered, plus one more:
     Leo's sheet saved as Kennedi's lock fails `selftest`.
   - Every earlier case still passes.
@@ -515,6 +539,13 @@ From tool output on 2026-10-05, at `ad6e69a`.
   - Amendment 2's rules were checked the same way, with six broken copies,
     and all six fail the suite. One of them over-rejects every page without
     the child.
+  - For amendment 3, six more broken copies each fail the suite:
+    - the season allowed to fill in the child;
+    - the season dropped from the table;
+    - the title dropped from the table;
+    - the not-the-child rule removed;
+    - the page fill wired to its own list again, which left out the scene;
+    - the cast rule removed.
 - **`selftest` on the real storybook:**
   - 3 character locks, 1 story and 0 page locks;
   - 2 children, 0 child locks, 1 personal story and 0 book page locks;
