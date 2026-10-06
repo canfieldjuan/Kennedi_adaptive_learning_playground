@@ -12,16 +12,31 @@ stack.
       plus a contact sheet and a draft recipe, into design-source/pages/<story>/drafts/.
   python3 storybook/tools/story-recipe.py lock-page pippa-and-the-whispering-moss 4 --seed 83 [--force]
       Lock the pick as design-source/pages/<story>/locked/page-04.png, with its recipe.
+  python3 storybook/tools/story-recipe.py child kennedi
+      Render four seeds of the child's character sheet, from storybook/children/kennedi.json, into
+      design-source/children/drafts/.
+  python3 storybook/tools/story-recipe.py lock-child kennedi --seed 72 [--force]
+      Lock the pick as design-source/children/locked/kennedi.png, with its recipe.
+  python3 storybook/tools/story-recipe.py book-page meeting-pippa kennedi 2
+      Render four seeds of page 2 of a personal story, drawn for that child: the child's name and pronouns filled
+      in, and the child's and the animals' locked sheets as references, into
+      design-source/books/<story>/<child>/drafts/.
+  python3 storybook/tools/story-recipe.py lock-book-page meeting-pippa kennedi 2 --seed 83 [--force]
+      Lock the pick as design-source/books/<story>/<child>/locked/page-02.png, with its recipe.
   python3 storybook/tools/story-recipe.py selftest
-      Check every story's page plan, and that every lock rebuilds from its recipe, the current canon, story and
-      locked sheets, that its files match their digests, that every file in a locked folder has one owner, and
-      that every model it names is on the licence allowlist. No ComfyUI needed.
+      Check every story's page plan, every child profile and personal story, and that every lock rebuilds from its
+      recipe, the current canon, story, profile and locked sheets, that its files match their digests, that every
+      file in a locked folder has one owner, and that every model it names is on the licence allowlist. No ComfyUI
+      needed.
 
-`character` and `page` write their four seeds one at a time: a ComfyUI lost mid-set keeps the seeds that finished,
-and running the same command again renders only the missing ones (for the same recipe and ComfyUI version).
+`character`, `child`, `page` and `book-page` write their four seeds one at a time: a ComfyUI lost mid-set keeps the
+seeds that finished, and running the same command again renders only the missing ones (for the same recipe and
+ComfyUI version).
 
 The canon is storybook/canon/moon-berry-forest.json, a snapshot of bedtime_broadcast's WORLD_BIBLE; the stories
-in storybook/stories/ are snapshots of its published stories, each with a page plan. Renders need a running
+in storybook/stories/ are snapshots of its published stories, each with a page plan. A child (storybook/children/)
+is the answers a parent gives -- a boy or a girl, an age and a look -- and is never a canon character; a personal
+story (storybook/personal-stories/) has slots for the child's name and pronouns. Renders need a running
 ComfyUI (--server, default http://127.0.0.1:8188) that can see the allowlisted models. Needs Pillow. One operator
 on one machine: the tool takes one lock on the storybook folder while it commits, and hardening against
 concurrent or adversarial use beyond that is out of scope.
@@ -35,6 +50,7 @@ import io
 import json
 import os
 import re
+import string
 import sys
 import tempfile
 import time
@@ -113,6 +129,38 @@ PAGE_RENDERS = {"v1": {"size": 1328, "shift": 3.1, "cfg_norm": 1.0, "reference_m
                        "steps": 40, "cfg": 4.0, "sampler": "euler", "scheduler": "simple"}}
 PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"
 PAGE_KEYS = {"cast", "place", "time", "scene"}
+
+# A child is the answers a parent gives on the form; the form slice turns the phrases into closed choices. Boy or
+# girl, and nothing else: it sets the drawing ("a young girl") and the pronouns in the text. A profile never changes
+# the plot.
+CHILDREN, PERSONAL = "children", "personal-stories"
+CHILD_DRAFTS, CHILD_LOCKED = "design-source/children/drafts", "design-source/children/locked"
+BOOKS = "design-source/books"
+CHILD_KEYS, LOOK_KEYS = {"name", "child", "age", "appearance", "source"}, {"skin", "hair", "eyes", "outfit", "glasses"}
+CHILD_NAME = re.compile(r"[^\W\d_]+(?:[ '-][^\W\d_]+)*")    # letters, joined by single spaces, hyphens or apostrophes
+AGES = range(2, 9)
+PRONOUNS = {"boy": {"subject": "he", "object": "him", "possessive": "his", "reflexive": "himself"},
+            "girl": {"subject": "she", "object": "her", "possessive": "her", "reflexive": "herself"}}
+# What a personal story's text, title, places and scenes may fill in; a page's cast names the child as CHILD.
+SLOTS = {"name", *PRONOUNS["boy"], *(slot.capitalize() for slot in PRONOUNS["boy"])}
+CHILD = "{child}"
+# Every free-text field of a personal story, and whether it may fill in the child. The plan check reads every one of
+# them through slots(), and a book page fills its page fields from this table, so no field reaches a prompt or a page
+# without being read: a field that may not fill in the child (the season is the story's) must have no slot at all.
+STORY_TEXT = {"title": True, "text": True, "season": False}
+PAGE_TEXT = {"place": True, "scene": True}
+# One book, one style: the v2 sheet style. Like every template, a version is never edited.
+CHILD_TEMPLATES = {"v1": {
+    "style": SHEET_TEMPLATES["v2"]["style"],
+    # The look in sentences of its own: listed in one clause, a long hair phrase ran into the eyes ("a small round
+    # red hair tie and big round dark eyes").
+    "text": ("{style}. A single young {child}, about {age} years old, standing in a relaxed three-quarter view. "
+             "{Subject} has {skin}, {eyes}, and {hair}. {Subject} is wearing {outfit}{glasses}. Plain soft cream "
+             "background, full body, centered, no text"),
+}}
+CHILD_TEMPLATE = "v1"
+
+
 class BadReply(Exception):
     """ComfyUI answered with something that isn't the JSON object its API sends (a body cut off mid-reply)."""
 
@@ -276,13 +324,17 @@ def paragraphs(text):
     return [p for p in re.split(r"\n[ \t]*\n", text.strip()) if p.strip()]
 
 
-def story_problems(story, canon):
-    """Why a story's snapshot and page plan can't be drawn from; an empty list when they can."""
+def story_problems(story, canon, personal=False):
+    """Why a story's snapshot and page plan can't be drawn from; an empty list when they can. A personal story
+    (personal=True) is checked the same way, and also: every free-text field in STORY_TEXT and PAGE_TEXT is read
+    through slots(), and only those the table allows may fill in the child; its cast may name the child as {child};
+    a page whose place or scene fills in a slot -- each one is the child -- must, so the child is never drawn
+    without their sheet; and at least one page must."""
     source = story.get("source") if isinstance(story.get("source"), dict) else {}
     text = story.get("text")
     if not isinstance(text, str) or hashlib.sha256(text.encode()).hexdigest() != source.get("content_sha256"):
         return ["its text does not hash to its recorded content_sha256 (the snapshot was edited)"]
-    problems, names = [], [c["name"] for c in canon["characters"]]
+    problems, names = [], [c["name"] for c in canon["characters"]] + ([CHILD] if personal else [])
     if not isinstance(story.get("season"), str) or not story["season"].strip():
         problems.append("it has no season")
     pages = story.get("pages") if isinstance(story.get("pages"), list) else []
@@ -299,13 +351,64 @@ def story_problems(story, canon):
             problems.append(f"page {number}'s cast {cast!r} is not one to three different characters (the edit "
                             f"model takes three references)")
         elif any(name not in names for name in cast):
-            problems.append(f"page {number}'s cast {cast!r} names someone who is not a character in {CANON}")
+            problems.append(f"page {number}'s cast {cast!r} names someone who is not a character in {CANON}"
+                            + (f" or {CHILD}" if personal else ""))
         if not isinstance(page["time"], str) or page["time"] not in lights:
             problems.append(f"page {number}'s time {page['time']!r} is not one of {', '.join(lights)}")
-        for key in ("place", "scene"):
+        for key, slotted in PAGE_TEXT.items():
             if not isinstance(page[key], str) or not page[key].strip():
                 problems.append(f"page {number} has no {key}")
+            elif personal:
+                used, whys = read_field(page[key], f"page {number}'s {key}", slotted)
+                problems += whys
+                if used and not (isinstance(cast, list) and CHILD in cast):
+                    problems.append(f"page {number}'s {key} fills in {', '.join(sorted(used))} but its cast has no "
+                                    f"{CHILD}, so the child would be drawn without their sheet")
+    if personal:
+        if not isinstance(story.get("title"), str) or not story["title"].strip():
+            problems.append("it has no title")
+        for key, slotted in STORY_TEXT.items():
+            if isinstance(story.get(key), str):
+                problems += read_field(story[key], f"its {key}", slotted)[1]
+        if not any(isinstance(page, dict) and isinstance(page.get("cast"), list) and CHILD in page["cast"]
+                   for page in pages):
+            problems.append(f"no page's cast has {CHILD}, and the child is the hero")
     return problems
+
+
+def slots(text, where):
+    """({the slots text fills in}, [why its braces aren't all plain slots]). The one place the tool reads a personal
+    story's braces: every brace must open or close a slot -- no other name, no attribute or index, no conversion or
+    format spec, no stray brace, and no escaped brace ({{ or }}), which fill() would turn into a "{name}" that reaches
+    the page unfilled."""
+    try:
+        parts = list(string.Formatter().parse(text))
+    except ValueError as error:
+        return set(), [f"{where} has a stray brace ({error})"]
+    problems = [f"{where} uses {{{field}{'!' + conversion if conversion else ''}{':' + spec if spec else ''}}}, "
+                f"which is not one of the slots {', '.join(sorted(SLOTS))}"
+                for _, field, spec, conversion in parts
+                if field is not None and (field not in SLOTS or spec or conversion)]
+    if any("{" in literal or "}" in literal for literal, *_ in parts):
+        problems.append(f"{where} has an escaped brace ({{{{ or }}}}), which would reach the page unfilled")
+    return {field for _, field, *_ in parts if field in SLOTS}, problems
+
+
+def read_field(text, where, slotted):
+    """({the slots a personal story's free-text field fills in}, [why it can't be used]): its braces aren't all plain
+    slots, or it fills in the child where it may not (slotted False)."""
+    used, problems = slots(text, where)
+    if used and not slotted:
+        problems.append(f"{where} fills in {', '.join(sorted(used))}, but it is the story's and never the child's")
+    return used, problems
+
+
+def fill(text, profile):
+    """text with the child's name and pronouns in its slots. Only for a text that passed slots(), and a profile that
+    passed child_problems."""
+    words = PRONOUNS[profile["child"]]
+    return text.format_map({"name": profile["name"], **words,
+                            **{slot.capitalize(): word.capitalize() for slot, word in words.items()}})
 
 
 def page_number(name, story, number):
@@ -421,6 +524,175 @@ def page_identity(manifest, name, stem):
     if manifest.get("story") == name and type(number) is int and page_stem(number) == stem:
         return []
     return [f"it is {manifest.get('story')!r} page {number!r}'s recipe under {name}/{stem}"]
+
+
+def phrase_problem(value, what):
+    """Why value isn't a look phrase -- a non-empty single line of at most 200 characters -- or None."""
+    if not isinstance(value, str) or not value.strip() or len(value) > 200 or value.splitlines() != [value]:
+        return f"its {what} is not a non-empty single line of at most 200 characters"
+    return None
+
+
+def child_problems(profile):
+    """Why a child profile can't be drawn from; an empty list when it can."""
+    if not isinstance(profile, dict) or set(profile) != CHILD_KEYS:
+        return [f"it is not exactly {sorted(CHILD_KEYS)}"]
+    problems, name, look = [], profile["name"], profile["appearance"]
+    if not (isinstance(name, str) and len(name) <= 24 and CHILD_NAME.fullmatch(name)):
+        problems.append(f"its name {name!r} is not 1-24 letters joined by single spaces, hyphens or apostrophes")
+    if not (isinstance(profile["child"], str) and profile["child"] in PRONOUNS):
+        problems.append(f"its child {profile['child']!r} is not \"boy\" or \"girl\"")
+    if type(profile["age"]) is not int or profile["age"] not in AGES:
+        problems.append(f"its age {profile['age']!r} is not a whole number from {AGES[0]} to {AGES[-1]}")
+    if not isinstance(look, dict) or set(look) != LOOK_KEYS:
+        problems.append(f"its appearance is not exactly {sorted(LOOK_KEYS)}")
+    else:
+        problems += [why for why in (phrase_problem(look[key], key) for key in ("skin", "hair", "eyes", "outfit"))
+                     if why]
+        if type(look["glasses"]) is not bool:
+            problems.append(f"its glasses {look['glasses']!r} is not true or false")
+    if not isinstance(profile["source"], str) or not profile["source"].strip():
+        problems.append("it has no source")
+    return problems
+
+
+def load_child(child_id):
+    """The child whose profile is storybook/children/<child_id>.json, or exit; a profile that fails its check exits
+    too, so nothing is drawn from it."""
+    path = STORYBOOK / CHILDREN / f"{child_id}.json"
+    if not STORY_NAME.fullmatch(str(child_id)) or not path.is_file():
+        known = sorted(p.stem for p in (STORYBOOK / CHILDREN).glob("*.json")) if (STORYBOOK / CHILDREN).is_dir() else []
+        sys.exit(f"{child_id!r} is not a child in {CHILDREN}/: {', '.join(known) or 'none yet'}")
+    profile = json.loads(path.read_text())
+    problems = child_problems(profile)
+    if problems:
+        sys.exit(f"{CHILDREN}/{child_id}.json can't be drawn from: " + "; ".join(problems))
+    return profile
+
+
+def child_prompt(template, profile):
+    look = profile["appearance"]
+    return template["text"].format(style=template["style"], child=profile["child"], age=profile["age"],
+                                   Subject=PRONOUNS[profile["child"]]["subject"].capitalize(), skin=look["skin"],
+                                   hair=look["hair"], eyes=look["eyes"], outfit=look["outfit"],
+                                   glasses=", and round glasses" if look["glasses"] else "")
+
+
+def child_manifest(child_id, template_version, render_version, profile):
+    """Everything a child-sheet recipe records about how it renders, built from its inputs alone (draft_manifest's
+    pattern): editing the profile fails the child's lock."""
+    template = CHILD_TEMPLATES[template_version]
+    manifest = {"kind": "child-sheet", "child": child_id, "template_version": template_version,
+                "render_version": render_version, "profile": profile, "template": template,
+                "prompt": child_prompt(template, profile), "settings": RENDERS[render_version],
+                "models": [{"role": role, **MODELS[role]} for role in SHEET_ROLES], "seeds": list(SEEDS)}
+    manifest["graph"] = recipe_graph(manifest, 0, f"storybook/children/{child_id}")
+    return manifest
+
+
+def child_embedded_problems(png, manifest, seed, profiles):
+    """Why png is not the child sheet its recipe describes at this seed, from the child's profile (profiles: id -> a
+    profile that passes its check); an empty list when it is."""
+    problems = allowlist_problems(manifest)
+    child_id = manifest.get("child")
+    profile = profiles.get(child_id) if isinstance(child_id, str) else None
+    if (profile is None or manifest.get("template_version") not in CHILD_TEMPLATES
+            or manifest.get("render_version") not in RENDERS):
+        return problems + ["its child, template_version or render_version is not one the tool knows"]
+    expected = child_manifest(child_id, manifest["template_version"], manifest["render_version"], profile)
+    return problems + rebuild_problems(png, manifest, expected, seed, recipe_graph, "this child's profile")
+
+
+def load_personal(name):
+    """The personal story called name, from storybook/personal-stories/, or exit."""
+    path = STORYBOOK / PERSONAL / f"{name}.json"
+    if not STORY_NAME.fullmatch(str(name)) or not path.is_file():
+        known = sorted(p.stem for p in (STORYBOOK / PERSONAL).glob("*.json")) if (STORYBOOK / PERSONAL).is_dir() else []
+        sys.exit(f"{name!r} is not a personal story in {PERSONAL}/: {', '.join(known) or 'none yet'}")
+    return json.loads(path.read_text())
+
+
+def name_clash(story, profile):
+    """Why this child can't be the hero of this story -- their name is a canon cast member's in it -- or []. The
+    prompt would otherwise call two different characters by one name."""
+    cast = {member.lower() for page in story["pages"] for member in page["cast"] if member != CHILD}
+    if profile["name"].lower() in cast:
+        return [f"the child is called {profile['name']}, as a character in the story is"]
+    return []
+
+
+def book_folder(story, child_id, kind):
+    return f"{BOOKS}/{story}/{child_id}/{kind}"
+
+
+def book_references(page, child_id):
+    """[(kind, id)] for a book page's cast, in picture order: the child's sheet, or a canon character's."""
+    return [("child", child_id) if member == CHILD else ("character", member.lower()) for member in page["cast"]]
+
+
+def book_sheet_digests(references):
+    """{(kind, id): the SHA-256 of that locked sheet now, or None}."""
+    folders = {"child": STORYBOOK / CHILD_LOCKED, "character": STORYBOOK / LOCKED}
+    return {(kind, ref): sha256(folders[kind] / f"{ref}.png") if (folders[kind] / f"{ref}.png").is_file() else None
+            for kind, ref in references}
+
+
+def book_page_manifest(name, child_id, number, template_version, render_version, story, profile, canon, sheets):
+    """Everything a book page's recipe records about how it renders, built from its inputs alone: the personal story
+    and its page entry as written (unfilled), the child's whole profile, the canon, and the SHA-256 of each cast
+    member's locked sheet (sheets, by (kind, id)).
+
+    `book-page` writes what this returns; `lock-book-page` and `selftest` rebuild it and compare every key, so editing
+    the profile or the story, or re-locking the child or an animal, fails the page locks drawn from what was there.
+    """
+    page = story["pages"][number - 1]
+    filled = {**page, **{key: fill(page[key], profile) for key, slotted in PAGE_TEXT.items() if slotted}}
+    cast = [(profile["name"], profile["child"]) if member == CHILD
+            else (member, character(canon, member)["appearance"]["species"]) for member in page["cast"]]
+    template = PAGE_TEMPLATES[template_version]
+    manifest = {"kind": "book-page", "story": name, "child": child_id, "page": number,
+                "story_sha256": story["source"]["content_sha256"], "season": story["season"], "entry": page,
+                "profile": profile, "cast": [{"name": member, "drawn_as": drawn_as} for member, drawn_as in cast],
+                "template_version": template_version, "render_version": render_version, "template": template,
+                "prompt": page_prompt(template, story, filled, cast), "settings": PAGE_RENDERS[render_version],
+                "models": [{"role": role, **MODELS[role]} for role in PAGE_ROLES],
+                "references": [{"kind": kind, "name": ref, "sha256": sheets.get((kind, ref))}
+                               for kind, ref in book_references(page, child_id)],
+                "seeds": list(SEEDS)}
+    manifest["graph"] = page_graph(manifest, 0, f"storybook/books/{name}/{child_id}/{page_stem(number)}")
+    return manifest
+
+
+def book_page_embedded_problems(png, manifest, seed, canon, stories, profiles):
+    """Why png is not the book page its recipe describes at this seed, from the personal story (stories: name -> a
+    story that passes its check), the child's profile (profiles: id -> a profile that passes its check) and the
+    cast's current locked sheets; an empty list when it is."""
+    problems = allowlist_problems(manifest)
+    name, child_id, number = manifest.get("story"), manifest.get("child"), manifest.get("page")
+    story = stories.get(name) if isinstance(name, str) else None
+    profile = profiles.get(child_id) if isinstance(child_id, str) else None
+    if (story is None or profile is None or type(number) is not int or not 1 <= number <= len(story["pages"])
+            or manifest.get("template_version") not in PAGE_TEMPLATES
+            or manifest.get("render_version") not in PAGE_RENDERS):
+        return problems + ["its story, child, page, template_version or render_version is not one the tool knows"]
+    problems += name_clash(story, profile)
+    references = book_references(story["pages"][number - 1], child_id)
+    sheets = book_sheet_digests(references)
+    problems += [f"{ref} has no locked sheet, and this page is drawn from it" for kind, ref in references
+                 if sheets[(kind, ref)] is None]
+    expected = book_page_manifest(name, child_id, number, manifest["template_version"], manifest["render_version"],
+                                  story, profile, canon, sheets)
+    return problems + rebuild_problems(png, manifest, expected, seed, page_graph,
+                                       "this page, its story, the child and the cast's locked sheets")
+
+
+def book_identity(manifest, name, child_id, stem):
+    number = manifest.get("page")
+    if (manifest.get("story") == name and manifest.get("child") == child_id and type(number) is int
+            and page_stem(number) == stem):
+        return []
+    return [f"it is {manifest.get('story')!r} page {number!r} for {manifest.get('child')!r}'s recipe under "
+            f"{name}/{child_id}/{stem}"]
 
 
 @contextlib.contextmanager
@@ -756,6 +1028,83 @@ def cmd_lock_page(args):
                     staged, manifest, args.seed, canon, {args.story: story}))
 
 
+def cmd_child(args):
+    profile = load_child(args.child)
+    manifest = child_manifest(args.child, CHILD_TEMPLATE, RENDER, profile)
+    require_models(args.server, SHEET_ROLES)
+    real_folder(CHILD_DRAFTS)
+    render_set(args.server, CHILD_DRAFTS, args.child, manifest, recipe_graph, f"storybook/children/{args.child}")
+    print(f"wrote {args.child}'s candidates, contact sheet and recipe to {CHILD_DRAFTS} -- pick a seed, then "
+          f"`lock-child {args.child}`")
+
+
+def cmd_lock_child(args):
+    profile = load_child(args.child)
+    commit_lock(CHILD_DRAFTS, CHILD_LOCKED, args.child, args.seed, args.force, f"child {args.child}",
+                lambda staged, manifest: child_embedded_problems(staged, manifest, args.seed, {args.child: profile}))
+
+
+def book_inputs(args):
+    """The canon, the personal story, the child's profile and the page number a book command draws on, or exit
+    when any of them can't be drawn from."""
+    canon = load_canon()
+    story = load_personal(args.story)
+    problems = story_problems(story, canon, personal=True)
+    if problems:
+        sys.exit(f"{PERSONAL}/{args.story}.json can't be drawn from: " + "; ".join(problems))
+    profile = load_child(args.child)
+    clash = name_clash(story, profile)
+    if clash:
+        sys.exit(f"{args.child} can't be the hero of {args.story}: " + "; ".join(clash))
+    return canon, story, profile, page_number(args.story, story, args.number)
+
+
+def cmd_book_page(args):
+    canon, story, profile, number = book_inputs(args)
+    stem, drafts = page_stem(number), book_folder(args.story, args.child, "drafts")
+    references = book_references(story["pages"][number - 1], args.child)
+    real_folder(drafts)
+    with art_lock():
+        # Each sheet is read once, under the lock, after its lock checks out: the bytes checked are the bytes
+        # uploaded and recorded.
+        cast = {ref for kind, ref in references if kind == "character"}
+        broken = [(path, why) for path, why in locked_problems(canon)
+                  if path == STORYBOOK / LOCKED or path.name.split(".")[0] in cast]
+        broken += [(path, why) for path, why in child_locked_problems({args.child: profile})
+                   if path == STORYBOOK / CHILD_LOCKED or path.name.split(".")[0] == args.child]
+        if broken:
+            sys.exit("the cast's locked sheets fail their checks (run `selftest`): "
+                     + "; ".join(f"{path.name}: {why}" for path, why in broken))
+        sheets = {}
+        for kind, ref in references:
+            path = STORYBOOK / (CHILD_LOCKED if kind == "child" else LOCKED) / f"{ref}.png"
+            if not path.is_file():
+                sys.exit(f"{ref} has no locked sheet -- run `{'child' if kind == 'child' else 'character'} {ref}`, "
+                         f"then `lock{'-child' if kind == 'child' else ''} {ref}`, first")
+            sheets[(kind, ref)] = path.read_bytes()
+    manifest = book_page_manifest(args.story, args.child, number, PAGE_TEMPLATE, PAGE_RENDER, story, profile, canon,
+                                  {key: hashlib.sha256(data).hexdigest() for key, data in sheets.items()})
+    require_nodes(args.server, manifest["graph"])
+    require_models(args.server, PAGE_ROLES)
+    for reference in manifest["references"]:
+        upload(args.server, sheets[(reference["kind"], reference["name"])], reference_name(reference["sha256"]))
+    labels = {("child", args.child): profile["name"]}
+    render_set(args.server, drafts, stem, manifest, page_graph, f"storybook/books/{args.story}/{args.child}/{stem}",
+               references=[(labels.get(key, key[1]), sheets[key]) for key in references])
+    print(f"wrote page {number}'s candidates, contact sheet and recipe to {drafts} -- pick a seed, then "
+          f"`lock-book-page {args.story} {args.child} {number}`")
+
+
+def cmd_lock_book_page(args):
+    canon, story, profile, number = book_inputs(args)
+    stem = page_stem(number)
+    commit_lock(book_folder(args.story, args.child, "drafts"), book_folder(args.story, args.child, "locked"), stem,
+                args.seed, args.force, f"book-page {args.story} {args.child} {number}",
+                lambda staged, manifest: book_identity(manifest, args.story, args.child, stem)
+                + book_page_embedded_problems(staged, manifest, args.seed, canon, {args.story: story},
+                                              {args.child: profile}))
+
+
 def lock_folder_problems(folder, kind, recipe_problems):
     """[(path, why)] for everything wrong in a locked folder: entries that aren't regular files, files that aren't
     exactly one recipe's or no longer have their locked bytes, and whatever recipe_problems(recipe, manifest, png)
@@ -843,18 +1192,85 @@ def story_and_page_problems(canon):
     return problems, len(story_files)
 
 
+def sound_files(folder, check):
+    """([(path, why)], {stem: content} for those that pass) for every .json in folder: each must be JSON, be named
+    as a story is (lowercase words joined by hyphens), and pass check(content)."""
+    problems, sound = [], {}
+    for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
+        try:
+            content = json.loads(path.read_text())
+        except ValueError as error:
+            problems.append((path, f"is not JSON ({error})"))
+            continue
+        whys = (check(content) if STORY_NAME.fullmatch(path.stem)
+                else [f"{path.stem!r} is not a name the tool takes (lowercase words joined by hyphens)"])
+        problems += [(path, why) for why in whys]
+        if not whys:
+            sound[path.stem] = content
+    return problems, sound
+
+
+def child_locked_problems(profiles):
+    """[(path, why)] for everything wrong with the children's locks, from their profiles (profiles: id -> a profile
+    that passes its check)."""
+    def child_lock(recipe, manifest, png):
+        whys = []
+        if manifest.get("child") != recipe.name.removesuffix(".recipe.json"):
+            whys.append(f"it is {manifest.get('child')!r}'s recipe under another child's name")
+        if png.is_file():
+            whys += child_embedded_problems(png, manifest, manifest.get("chosen_seed"), profiles)
+            if manifest.get("source") != f"{CHILD_DRAFTS}/{manifest.get('child')}-candidate-{manifest.get('chosen_seed')}.png":
+                whys.append("its recorded source is not the draft lock copies for it")
+        return whys
+    return lock_folder_problems(STORYBOOK / CHILD_LOCKED, "child", child_lock)
+
+
+def child_and_book_problems(canon):
+    """([(path, why)], counts) for every child profile, personal story, child lock and book page lock."""
+    problems, profiles = sound_files(STORYBOOK / CHILDREN, child_problems)
+    story_whys, stories = sound_files(STORYBOOK / PERSONAL, lambda story: story_problems(story, canon, personal=True))
+    problems += story_whys + child_locked_problems(profiles)
+    books = STORYBOOK / BOOKS
+    for story_folder in sorted(books.iterdir()) if books.is_dir() else []:
+        for child_folder in sorted(story_folder.iterdir()) if story_folder.is_dir() else []:
+            name, child_id, locked = story_folder.name, child_folder.name, child_folder / "locked"
+            if name not in stories or child_id not in profiles:
+                if os.path.lexists(locked):
+                    problems.append((locked, f"holds page locks for {name!r} drawn for {child_id!r}, and there is no "
+                                             f"such personal story and child that pass their checks"))
+                continue
+
+            def book_lock(recipe, manifest, png, name=name, child_id=child_id):
+                stem = recipe.name.removesuffix(".recipe.json")
+                whys = book_identity(manifest, name, child_id, stem)
+                if png.is_file():
+                    whys += book_page_embedded_problems(png, manifest, manifest.get("chosen_seed"), canon, stories,
+                                                        profiles)
+                    drafted = f"{book_folder(name, child_id, 'drafts')}/{stem}-candidate-{manifest.get('chosen_seed')}.png"
+                    if manifest.get("source") != drafted:
+                        whys.append("its recorded source is not the draft lock copies for it")
+                return whys
+            problems += lock_folder_problems(locked, "book page", book_lock)
+    count = lambda folder, pattern: len(list(folder.glob(pattern))) if folder.is_dir() else 0
+    return problems, {"children": count(STORYBOOK / CHILDREN, "*.json"),
+                      "child locks": count(STORYBOOK / CHILD_LOCKED, "*.recipe.json"),
+                      "personal stories": count(STORYBOOK / PERSONAL, "*.json"),
+                      "book page locks": count(books, "*/*/locked/*.recipe.json")}
+
+
 def cmd_selftest(args):
     canon = load_canon()
     with art_lock():
         problems = locked_problems(canon)
         story_problems_found, stories = story_and_page_problems(canon)
-    problems += story_problems_found
+        child_problems_found, counts = child_and_book_problems(canon)
+    problems += story_problems_found + child_problems_found
     for path, why in problems:
         print(f"FAIL {path.relative_to(STORYBOOK)}: {why}")
     locks = sorted((STORYBOOK / LOCKED).glob("*.recipe.json")) if (STORYBOOK / LOCKED).is_dir() else []
     page_locks = sorted((STORYBOOK / PAGES).glob("*/locked/*.recipe.json")) if (STORYBOOK / PAGES).is_dir() else []
     print(f"{len(locks)} character locks, {stories} stories and {len(page_locks)} page locks checked against "
-          f"{CANON}; {len(problems)} problems")
+          f"{CANON}; " + ", ".join(f"{n} {what}" for what, n in counts.items()) + f"; {len(problems)} problems")
     sys.exit(1 if problems else 0)
 
 
@@ -877,13 +1293,27 @@ def main():
     lp.add_argument("number", type=int)
     lp.add_argument("--seed", type=int, required=True)
     lp.add_argument("--force", action="store_true")
+    sub.add_parser("child").add_argument("child")
+    lc = sub.add_parser("lock-child")
+    lc.add_argument("child")
+    lc.add_argument("--seed", type=int, required=True)
+    lc.add_argument("--force", action="store_true")
+    for command in ("book-page", "lock-book-page"):
+        bp = sub.add_parser(command)
+        bp.add_argument("story")
+        bp.add_argument("child")
+        bp.add_argument("number", type=int)
+        if command == "lock-book-page":
+            bp.add_argument("--seed", type=int, required=True)
+            bp.add_argument("--force", action="store_true")
     sub.add_parser("selftest")
     args = ap.parse_args()
     STORYBOOK = args.storybook.resolve()
     args.server = args.server.rstrip("/")
     try:
         {"character": cmd_character, "lock": cmd_lock, "page": cmd_page, "lock-page": cmd_lock_page,
-         "selftest": cmd_selftest}[args.cmd](args)
+         "child": cmd_child, "lock-child": cmd_lock_child, "book-page": cmd_book_page,
+         "lock-book-page": cmd_lock_book_page, "selftest": cmd_selftest}[args.cmd](args)
     except LOST_COMFY as error:
         sys.exit(f"ComfyUI at {args.server} is unreachable or answered badly "
                  f"({getattr(error, 'reason', error)}); nothing was written")

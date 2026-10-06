@@ -8,6 +8,7 @@ art. ComfyUI is the external boundary and the only thing faked: no GPU, no model
 """
 import hashlib
 import http.server
+import importlib.util
 import io
 import json
 import re
@@ -27,6 +28,8 @@ TOOL = STORYBOOK / "tools/story-recipe.py"
 DRAFTS, LOCKED = "design-source/characters/drafts", "design-source/characters/locked"
 STORY = "pippa-and-the-whispering-moss"
 PAGE_DRAFTS, PAGE_LOCKED = f"design-source/pages/{STORY}/drafts", f"design-source/pages/{STORY}/locked"
+CHILD_DRAFTS, CHILD_LOCKED = "design-source/children/drafts", "design-source/children/locked"
+BOOK = "meeting-pippa"
 EDIT_MODEL = "qwen-image-edit-2511-Q4_K_S.gguf"
 MODEL_FILES = {"UnetLoaderGGUF": ("unet_name", ["qwen-image-Q8_0.gguf", EDIT_MODEL]),
                "CLIPLoader": ("clip_name", ["qwen_2.5_vl_7b_fp8_scaled.safetensors"]),
@@ -157,6 +160,8 @@ def storybook_copy(root):
     shutil.copy(TOOL, root / "tools")
     shutil.copytree(STORYBOOK / "canon", root / "canon")
     shutil.copytree(STORYBOOK / "stories", root / "stories")
+    shutil.copytree(STORYBOOK / "children", root / "children")
+    shutil.copytree(STORYBOOK / "personal-stories", root / "personal-stories")
     return root        # no design-source/: like the real tree, the tool makes it on first use
 
 
@@ -834,13 +839,395 @@ def case_bad_replies_are_not_kept(root):
             comfy.close()
 
 
+def child_drawn(root, child="kennedi", seed=72):
+    """Render a child's sheet candidates and lock one."""
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "child", child)
+        assert not code, out
+        code, out = run(root, "lock-child", child, "--seed", seed)
+        assert not code, out
+    finally:
+        comfy.close()
+
+
+def book_folder(child, kind):
+    return f"design-source/books/{BOOK}/{child}/{kind}"
+
+
+def book_paged(root, child, number, seed=83, force=False):
+    """Render a page of the proof story for a child, and lock one candidate."""
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "book-page", BOOK, child, number)
+        assert not code, out
+        code, out = run(root, "lock-book-page", BOOK, child, number, "--seed", seed, *(["--force"] if force else []))
+        assert not code, out
+    finally:
+        comfy.close()
+
+
+def tool(root):
+    """The tool as a module, for its pure functions; every command is still run through its command line."""
+    spec = importlib.util.spec_from_file_location("story_recipe", root / "tools/story-recipe.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def case_child_sheets(root):
+    """A child's sheet renders from their profile -- a young girl or a young boy -- locks and checks out."""
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "child", "kennedi")
+        drafts = sorted(p.name for p in (root / CHILD_DRAFTS).iterdir()) if (root / CHILD_DRAFTS).is_dir() else []
+        check("child renders four candidates, a contact sheet and a recipe", not code and drafts == [
+            "kennedi-candidate-61.png", "kennedi-candidate-72.png", "kennedi-candidate-83.png",
+            "kennedi-candidate-94.png", "kennedi-contact-sheet.png", "kennedi-recipe.json"], f"{out.strip()[-120:]} {drafts}")
+        girl = json.loads((root / CHILD_DRAFTS / "kennedi-recipe.json").read_text())
+        check("Kennedi's sheet is a young girl of 4, with her look in its own sentences and no glasses",
+              girl["kind"] == "child-sheet" and "A single young girl, about 4 years old" in girl["prompt"]
+              and "She has light golden-brown skin" in girl["prompt"] and "She is wearing a cream collared polo" in
+              girl["prompt"] and "glasses" not in girl["prompt"], girl["prompt"])
+        check("a child's sheet names exactly the three base-model files",
+              [m["file"] for m in girl["models"]] == ["qwen-image-Q8_0.gguf", "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                                                      "qwen_image_vae.safetensors"])
+        run(root, "--server", comfy.url, "child", "leo")
+        boy = json.loads((root / CHILD_DRAFTS / "leo-recipe.json").read_text())
+        check("Leo's sheet is a young boy of 5, with round glasses",
+              "A single young boy, about 5 years old" in boy["prompt"] and "He has deep brown skin" in boy["prompt"]
+              and "green sneakers, and round glasses." in boy["prompt"], boy["prompt"])
+        code, out = run(root, "lock-child", "kennedi", "--seed", 72)
+        code2, out2 = run(root, "lock-child", "leo", "--seed", 61)
+        locked = sorted(p.name for p in (root / CHILD_LOCKED).iterdir())
+        check("lock-child writes each child's sheet and recipe", not code and not code2 and locked == [
+            "kennedi.png", "kennedi.recipe.json", "leo.png", "leo.recipe.json"], (out + out2).strip()[-160:])
+        code, out = run(root, "selftest")
+        check("and selftest passes", not code and "2 children, 2 child locks" in out, out.strip()[-200:])
+    finally:
+        comfy.close()
+    locked = root / CHILD_LOCKED
+    recipe = json.loads((locked / "leo.recipe.json").read_text())
+    recipe["files"] = {"kennedi.png": recipe["files"]["leo.png"]}
+    for name in ("kennedi.png", "kennedi.recipe.json", "leo.recipe.json"):
+        (locked / name).unlink()
+    (locked / "leo.png").rename(locked / "kennedi.png")
+    (locked / "kennedi.recipe.json").write_text(json.dumps(recipe))
+    code, out = run(root, "selftest")
+    check("Leo's sheet saved as Kennedi's lock fails selftest", code and "under another child's name" in out,
+          out.strip()[-200:])
+    for args, why in [(("character", "kennedi"), "is not a character"), (("child", "pippa"), "is not a child"),
+                      (("child", "Kennedi"), "is not a child"), (("book-page", BOOK, "pippa", 1), "is not a child"),
+                      (("lock", "kennedi", "--seed", 72), "is not a character")]:
+        code, out = run(root, "--server", "http://127.0.0.1:9", *args)
+        check(f"{' '.join(map(str, args))} is refused: a child is never a canon character, nor the reverse",
+              code and why in out, out.strip()[-160:])
+
+
+def case_profile_check(root):
+    """A profile is a boy or a girl and nothing else, aged 2 to 8, named in letters, with a look in short phrases."""
+    base = json.loads((root / "children" / "leo.json").read_text())
+    path = root / "children" / "testkid.json"
+    unwritten = lambda: not (root / "design-source").exists()
+
+    def profile(**changes):
+        made = json.loads(json.dumps(base))
+        for key, value in changes.items():
+            if key in made["appearance"] or key == "extra_look":
+                made["appearance"][key] = value
+            elif value is KeyError:
+                del made[key]
+            else:
+                made[key] = value
+        return made
+
+    for label, made, why in [
+            ('child "Boy"', profile(child="Boy"), "its child"), ('child "girl " (trailing space)', profile(child="girl "),
+                                                                  "its child"),
+            ('child "other"', profile(child="other"), "its child"), ('child ""', profile(child=""), "its child"),
+            ("child 1", profile(child=1), "its child"), ('child ["boy"]', profile(child=["boy"]), "its child"),
+            ("no child", profile(child=KeyError), "is not exactly"),
+            ("age 1", profile(age=1), "its age"), ("age 9", profile(age=9), "its age"),
+            ('age "4"', profile(age="4"), "its age"), ("age true", profile(age=True), "its age"),
+            ("age 4.0", profile(age=4.0), "its age"),
+            ("a 25-letter name", profile(name="A" + "b" * 24), "its name"), ("an empty name", profile(name=""), "its name"),
+            ("a name with a digit", profile(name="Leo2"), "its name"),
+            ("two spaces in a name", profile(name="Mary  Jane"), "its name"),
+            ("a 201-character phrase", profile(skin="s" * 201), "its skin is not"),
+            ("a phrase with a newline", profile(skin="deep brown\nskin"), "its skin is not"),
+            ("an empty phrase", profile(hair="   "), "its hair is not"),
+            ('glasses "yes"', profile(glasses="yes"), "its glasses"),
+            ("an extra key", {**base, "favourite": "dinosaurs"}, "is not exactly"),
+            ("an extra look", profile(extra_look="freckles"), "its appearance is not exactly"),
+            ("no source", profile(source=" "), "no source")]:
+        path.write_text(json.dumps(made))
+        code, out = run(root, "--server", "http://127.0.0.1:9", "child", "testkid")
+        code2, out2 = run(root, "selftest")
+        check(f"{label} is refused by child and fails selftest",
+              code and "can't be drawn from" in out and why in out and code2 and why in out2 and unwritten(),
+              (out + out2).strip()[-200:])
+    for label, made in [("age 2", profile(age=2)), ("age 8", profile(age=8)), ('"Mary-Jane"', profile(name="Mary-Jane")),
+                        ('"D\'Andre"', profile(name="D'Andre")), ("a 24-letter name", profile(name="A" + "b" * 23)),
+                        ("a 200-character phrase", profile(outfit="o" * 200)), ("a girl", profile(child="girl"))]:
+        path.write_text(json.dumps(made))
+        code, out = run(root, "--server", "http://127.0.0.1:9", "child", "testkid")
+        code2, out2 = run(root, "selftest")
+        check(f"{label} passes the profile check (child goes on to ComfyUI) and selftest",
+              code and "unreachable" in out and not code2, (out + out2).strip()[-200:])
+
+
+def case_personal_story_check(root):
+    """A personal story fills in only the child's name and pronouns, and the child is in its cast."""
+    story_path = root / "personal-stories" / f"{BOOK}.json"
+    original = json.loads(story_path.read_text())
+
+    def text(old, new):
+        def mutate(story):
+            story["text"] = story["text"].replace(old, new, 1)
+            story["source"]["content_sha256"] = sha(story["text"].encode())
+        return mutate
+
+    def page_one(key, value):
+        return lambda story: story["pages"][0].__setitem__(key, value)
+
+    def page_cast_scene(number, cast, scene):
+        def mutate(story):
+            story["pages"][number - 1].update(cast=cast, scene=scene)
+        return mutate
+
+    def no_child(story):
+        for page in story["pages"]:
+            page["cast"] = ["Pippa"]
+
+    for label, mutate, why in [
+            ("an unknown slot", text("{subject} crouched", "{they} crouched"), "its text uses {they}"),
+            ("an empty slot", text("{subject} crouched", "{} crouched"), "its text uses {}"),
+            ("a format spec", text("{name} followed", "{name:>5} followed"), "its text uses {name:>5}"),
+            ("a conversion", text("{name} followed", "{name!r} followed"), "its text uses {name!r}"),
+            ("an attribute", text("{name} followed", "{name.upper} followed"), "its text uses {name.upper}"),
+            ("a stray brace", text("{name} followed", "{name followed"), "its text has a stray brace"),
+            ("an escaped brace in the text", text("{name} followed", "{{name}} followed"), "its text has an escaped brace"),
+            ("an escaped brace in a scene", page_one("scene", "{{name}} crouches on the path"),
+             "page 1's scene has an escaped brace"),
+            ("a page that names the child but has no {child}", page_cast_scene(2, ["Pippa"], "{name} hugs tiny Pippa"),
+             "page 2's scene fills in name but its cast has no {child}"),
+            ("a page that calls the child by a pronoun but has no {child}",
+             page_cast_scene(2, ["Pippa"], "tiny Pippa waves at {object}"), "page 2's scene fills in object but"),
+            ("a page whose place is the child's but has no {child}",
+             lambda s: (page_cast_scene(4, ["Pippa"], "tiny Pippa sleeps on soft moss")(s),
+                        s["pages"][3].__setitem__("place", "{possessive} bed of moss")),
+             "page 4's place fills in possessive but"),
+            ("the child in the season", lambda s: s.__setitem__("season", "{name}'s autumn"),
+             "its season fills in name, but it is the story's"),
+            ("an escaped brace in the season", lambda s: s.__setitem__("season", "gentle {{name}} autumn"),
+             "its season has an escaped brace"),
+            ("a stray brace in the season", lambda s: s.__setitem__("season", "gentle autumn {"),
+             "its season has a stray brace"),
+            ("an unknown slot in the season", lambda s: s.__setitem__("season", "{weather} autumn"),
+             "its season uses {weather}"),
+            ("an unknown slot in the title", lambda s: s.__setitem__("title", "{kid} Meets Pippa"),
+             "its title uses {kid}"),
+            ("an unknown slot in a scene", page_one("scene", "{Name} crouches on the path"), "page 1's scene uses {Name}"),
+            ("a cast member who is neither the child nor canon", page_one("cast", ["{kid}"]), "names someone who is not"),
+            ("a cast of four", lambda s: s["pages"][2].__setitem__("cast", ["{child}", "Pippa", "Bramble", "Barnaby"]),
+             "one to three different"),
+            ("no child in any cast", no_child, "no page's cast has {child}"),
+            ("text that doesn't hash to its record", lambda s: s.__setitem__("text", s["text"] + " Extra."),
+             "does not hash")]:
+        story = json.loads(json.dumps(original))
+        mutate(story)
+        story_path.write_text(json.dumps(story))
+        code, out = run(root, "selftest")
+        code2, out2 = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "kennedi", 1)
+        check(f"{label} fails selftest, and book-page refuses it",
+              code and why in out and code2 and "can't be drawn from" in out2 and why in out2, (out + out2).strip()[-200:])
+    story = json.loads(json.dumps(original))
+    page_cast_scene(2, ["Pippa"], "tiny Pippa waves hello from a big fern")(story)
+    story_path.write_text(json.dumps(story))
+    code, out = run(root, "selftest")
+    check("a page without the child passes when nothing in it is the child", not code, out.strip()[-200:])
+    story_path.write_text(json.dumps(original))
+    clash = {**json.loads((root / "children" / "kennedi.json").read_text()), "name": "Pippa"}
+    (root / "children" / "pippa-kid.json").write_text(json.dumps(clash))
+    code, out = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "pippa-kid", 1)
+    check("a child named Pippa can't be the hero of a book with Pippa in it",
+          code and "can't be the hero" in out and not (root / "design-source").exists(), out.strip()[-160:])
+    (root / "children" / "pippa-kid.json").unlink()
+    code, out = run(root, "selftest")
+    check("the proof story as committed passes", not code and "1 personal stories" in out, out.strip()[-200:])
+
+
+def case_filling(root):
+    """Boy fills in he, him, his, himself; girl fills in she, her, her, herself."""
+    module = tool(root)
+    story = json.loads((root / "personal-stories" / f"{BOOK}.json").read_text())
+    kennedi, leo = (json.loads((root / "children" / f"{c}.json").read_text()) for c in ("kennedi", "leo"))
+    slots = "{subject} {object} {possessive} {reflexive} / {Subject} {Object} {Possessive} {Reflexive}"
+    check("a girl's slots", module.fill(slots, kennedi) == "she her her herself / She Her Her Herself",
+          module.fill(slots, kennedi))
+    check("a boy's slots", module.fill(slots, leo) == "he him his himself / He Him His Himself", module.fill(slots, leo))
+    for profile, expected in [
+            (kennedi, ["Kennedi Meets Pippa", "so she crouched down", "hopped onto Kennedi's open hand. She held very "
+                       "still and smiled to herself. Her new friend", "Pippa giggled beside her.", "And she drifted"]),
+            (leo, ["Leo Meets Pippa", "so he crouched down", "hopped onto Leo's open hand. He held very still and "
+                   "smiled to himself. His new friend", "Pippa giggled beside him.", "And he drifted"])]:
+        filled = module.fill(story["title"], profile) + " | " + module.fill(story["text"], profile)
+        check(f"the proof story filled for {profile['name']}", all(part in filled for part in expected)
+              and "{" not in filled, filled[:200])
+
+
+def case_book_page_lock_selftest(root):
+    """A book page renders for one child, from the child's and the animals' locked sheets, locks and checks out."""
+    drawn(root, "pippa")
+    drawn(root, "bramble", seed=61)
+    child_drawn(root, "kennedi")
+    sheets = {"kennedi": (root / CHILD_LOCKED / "kennedi.png").read_bytes(),
+              **{name: (root / LOCKED / f"{name}.png").read_bytes() for name in ("pippa", "bramble")}}
+    drafts_rel = book_folder("kennedi", "drafts")
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "book-page", BOOK, "kennedi", 3)
+        drafts = sorted(p.name for p in (root / drafts_rel).iterdir()) if (root / drafts_rel).is_dir() else []
+        check("book-page renders four candidates, a contact sheet and a recipe", not code and drafts == [
+            "page-03-candidate-61.png", "page-03-candidate-72.png", "page-03-candidate-83.png",
+            "page-03-candidate-94.png", "page-03-contact-sheet.png", "page-03-recipe.json"], f"{out.strip()[-160:]} {drafts}")
+        check("ComfyUI received exactly the three locked sheets' bytes",
+              comfy.uploads == {f"storybook-{sha(data)}.png": data for data in sheets.values()}, sorted(comfy.uploads))
+        graph = json.loads(Image.open(root / drafts_rel / "page-03-candidate-61.png").info["prompt"])
+        loads = {node_id: node["inputs"]["image"] for node_id, node in graph.items() if node["class_type"] == "LoadImage"}
+        encoders = [node["inputs"] for node in graph.values() if node["class_type"] == "TextEncodeQwenImageEditPlus"]
+        in_order = [f"storybook-{sha(sheets[name])}.png" for name in ("kennedi", "pippa", "bramble")]
+        check("both encoders get Kennedi's sheet as image1, then Pippa's and Bramble's",
+              len(encoders) == 2 and all([loads[e[f"image{i}"][0]] for i in (1, 2, 3)] == in_order for e in encoders),
+              encoders)
+        recipe = json.loads((root / drafts_rel / "page-03-recipe.json").read_text())
+        check("the prompt calls her the girl in picture 1, and fills her name and pronouns into the scene",
+              "Kennedi is the girl in picture 1, Pippa is the dormouse in picture 2 and Bramble is the badger in "
+              "picture 3, each drawn exactly as in their picture. Kennedi kneels at a mossy rock" in recipe["prompt"]
+              and "sitting on the rock beside her and Bramble" in recipe["prompt"] and "{" not in recipe["prompt"],
+              recipe["prompt"])
+        check("the recipe records the page entry as written, the profile and the references by kind",
+              "{name}" in recipe["entry"]["scene"] and recipe["profile"]["child"] == "girl" and recipe["references"] == [
+                  {"kind": "child", "name": "kennedi", "sha256": sha(sheets["kennedi"])},
+                  {"kind": "character", "name": "pippa", "sha256": sha(sheets["pippa"])},
+                  {"kind": "character", "name": "bramble", "sha256": sha(sheets["bramble"])}], recipe["references"])
+        code, out = run(root, "lock-book-page", BOOK, "kennedi", 3, "--seed", 83)
+        locked = sorted(p.name for p in (root / book_folder("kennedi", "locked")).iterdir())
+        check("lock-book-page writes page-03.png and its recipe", not code and locked == ["page-03.png",
+                                                                                          "page-03.recipe.json"],
+              out.strip()[-160:])
+        code, out = run(root, "selftest")
+        check("and selftest passes", not code and "1 book page locks" in out, out.strip()[-200:])
+    finally:
+        comfy.close()
+    child_drawn(root, "leo", seed=61)
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "book-page", BOOK, "leo", 1)
+        recipe = json.loads((root / book_folder("leo", "drafts") / "page-01-recipe.json").read_text())
+        check("for Leo, page 1 is the boy alone, with him in its scene",
+              not code and "Leo is the boy in picture 1, each drawn" in recipe["prompt"]
+              and "the leaves around him glowing" in recipe["prompt"] and len(comfy.uploads) == 1, recipe["prompt"])
+    finally:
+        comfy.close()
+
+
+def case_book_lock_follows_its_inputs(root):
+    """A book page lock is drawn from the profile, the story and the sheets as they were: changing any fails it."""
+    drawn(root, "pippa")
+    child_drawn(root, "kennedi")
+    book_paged(root, "kennedi", 2)
+    code, out = run(root, "selftest")
+    check("the book page lock checks out to begin with", not code, out.strip()[-160:])
+    profile_path, story_path = root / "children/kennedi.json", root / f"personal-stories/{BOOK}.json"
+    profile, story = profile_path.read_text(), story_path.read_text()
+
+    def edited(path, change):
+        data = json.loads(path.read_text())
+        change(data)
+        path.write_text(json.dumps(data))
+
+    def new_text(s):
+        s["text"] = s["text"].replace("golden autumn", "crisp autumn", 1)
+        s["source"]["content_sha256"] = sha(s["text"].encode())
+
+    for label, change, whys, restore in [
+            ("editing her profile", lambda: edited(profile_path, lambda p: p.__setitem__("age", 5)),
+             ["page-02.recipe.json: its recorded profile", "kennedi.recipe.json: its recorded profile"],
+             lambda: profile_path.write_text(profile)),
+            ("re-locking her sheet", lambda: run(root, "lock-child", "kennedi", "--seed", 94, "--force"),
+             ["page-02.recipe.json: its recorded references"],
+             lambda: run(root, "lock-child", "kennedi", "--seed", 72, "--force")),
+            ("editing the story text", lambda: edited(story_path, new_text),
+             ["page-02.recipe.json: its recorded story_sha256"], lambda: story_path.write_text(story)),
+            ("editing the page's entry",
+             lambda: edited(story_path, lambda s: s["pages"][1].__setitem__("scene", "{name} waves at tiny Pippa")),
+             ["page-02.recipe.json: its recorded entry"], lambda: story_path.write_text(story)),
+            ("re-locking Pippa", lambda: run(root, "lock", "pippa", "--seed", 94, "--force"),
+             ["page-02.recipe.json: its recorded references"],
+             lambda: run(root, "lock", "pippa", "--seed", 72, "--force"))]:
+        change()
+        code, out = run(root, "selftest")
+        check(f"{label} fails the book page lock", code and all(why in out for why in whys), out.strip()[-300:])
+        restore()
+        code, out = run(root, "selftest")
+        check("and putting it back makes it check out again", not code, out.strip()[-160:])
+
+
+def case_book_refusals(root):
+    """Each refusal exits before writing a book page, and before rendering."""
+    unwritten = lambda: not (root / "design-source/books").exists()
+    for args, why in [(("the-gruffalo", "kennedi", 1), "is not a personal story"),
+                      ((STORY, "kennedi", 1), "is not a personal story"),
+                      ((BOOK, "nobody", 1), "is not a child"), ((BOOK, "kennedi", 0), "there is no page 0"),
+                      ((BOOK, "kennedi", 5), "there is no page 5")]:
+        code, out = run(root, "--server", "http://127.0.0.1:9", "book-page", *args)
+        check(f"book-page {' '.join(map(str, args))} is refused", code and why in out and unwritten(), out.strip()[-160:])
+    code, out = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "kennedi", 1)
+    check("a child with no locked sheet is refused", code and "kennedi has no locked sheet" in out and unwritten(),
+          out.strip()[-160:])
+    child_drawn(root, "kennedi")
+    code, out = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "kennedi", 2)
+    check("an animal in the cast with no locked sheet is refused", code and "pippa has no locked sheet" in out
+          and unwritten(), out.strip()[-160:])
+    code, out = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "kennedi", 1)
+    check("ComfyUI unreachable is refused, nothing written", code and "unreachable" in out and unwritten(),
+          out.strip()[-160:])
+    book_paged(root, "kennedi", 1, seed=72)
+    locked = root / book_folder("kennedi", "locked")
+    before = {p.name: p.read_bytes() for p in locked.iterdir()}
+    code, out = run(root, "lock-book-page", BOOK, "kennedi", 1, "--seed", 50)
+    check("a seed that wasn't rendered is refused", code and "not one of the rendered" in out, out.strip())
+    code, out = run(root, "lock-book-page", BOOK, "kennedi", 1, "--seed", 83)
+    check("replacing a book page lock without --force is refused", code and "page-01 is already locked" in out,
+          out.strip())
+    check("and those refusals changed nothing", {p.name: p.read_bytes() for p in locked.iterdir()} == before)
+    elsewhere = root / book_folder("leo", "locked")
+    shutil.copytree(locked, elsewhere)
+    code, out = run(root, "selftest")
+    check("Kennedi's page lock copied under Leo's book fails selftest",
+          code and "'kennedi''s recipe under meeting-pippa/leo/page-01" in out, out.strip()[-200:])
+    shutil.rmtree(elsewhere)
+    sheet = root / CHILD_LOCKED / "kennedi.png"
+    Image.open(sheet).convert("RGB").save(sheet)          # same pixels, graph dropped: the lock no longer holds
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "book-page", BOOK, "kennedi", 3)
+        check("a child whose sheet fails its lock checks is refused before uploading",
+              code and "fail their checks" in out and "kennedi.recipe.json" in out and not comfy.uploads,
+              out.strip()[-200:])
+    finally:
+        comfy.close()
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
              case_locked_folder_holds_only_records, case_page_lock_selftest, case_page_refusals,
              case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check,
              case_lost_comfy_keeps_finished_seeds, case_resume_needs_the_same_recipe, case_character_sets_resume_too,
-             case_bad_replies_are_not_kept]
+             case_bad_replies_are_not_kept, case_child_sheets, case_profile_check, case_personal_story_check,
+             case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
