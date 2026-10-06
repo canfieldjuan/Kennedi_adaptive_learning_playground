@@ -150,16 +150,18 @@ are phrases; the form slice turns them into closed choices.
 | Key | Value |
 |---|---|
 | name, child, age | Kennedi, girl, 4 |
-| skin | light golden-brown skin with soft, darker golden-brown shading and a faint rosy-tan blush on the cheeks |
+| skin | warm medium golden-tan skin with an even tone and soft, slightly darker golden-brown shading (Amendment 4) |
 | hair | dark brown hair parted in the middle and pulled back smoothly from her forehead into two long, smooth, wavy pigtails at the sides of her head, each tied with a small round red hair tie |
 | eyes | big round dark eyes with long curled eyelashes |
 | outfit | a cream collared polo shirt with a plain round badge showing a simple red star, an orange knee-length pleated skirt, short white socks and red sneakers |
 | glasses | false |
 
 Where these values come from:
-- **The skin** is the workbook's `<SKIN>` wording, word for word. It is the
-  tone you approved on 2026-10-04: `#D9A774`, in
-  `workbook/design-source/boss-kennedi/palette.json`.
+- **The skin** aims at the tone you approved on 2026-10-04: `#D9A774`, in
+  `workbook/design-source/boss-kennedi/palette.json`. It started as the
+  workbook's `<SKIN>` wording, word for word. Amendment 4 rewords it after
+  the first render drew her too light and too rosy; the target tone is
+  unchanged.
 - **The hairstyle** is the workbook's `<HEAD>`, from the 2026-09-24 face and
   hair lock. One change: `<HEAD>` says "with no bangs", and here it reads
   "pulled back smoothly from her forehead". The renders taught us that
@@ -513,6 +515,36 @@ Each case exits before anything is written:
      field, and whether it may fill in the child. The check reads every
      field in them through `slots()`. A field that may not fill in the child
      must have no slot. A book page fills its page fields from `PAGE_TEXT`.
+4. **Kennedi's skin wording, from her first real sheet render (2026-10-06).**
+   - **What the render showed.** All four seeds of `child kennedi` drew her
+     paler than her approved tone, closer to peach than golden brown. Seeds
+     83 and 94 gave her strongly red cheeks. This is the skin risk under
+     Known Risks, seen at the real render.
+   - **The operator, 2026-10-06:** "it has super rosy cheeks and we want
+     light. Her skin coir is lighter than I'd like." He wrote that seed "84"
+     looks best. The seeds are 61, 72, 83 and 94; I read it as 94, the one
+     without bangs and with very red cheeks. Accepting this amendment
+     confirms that reading.
+   - **Why.** The phrase opens with "light", and the model leans light
+     anyway. It also names "a faint rosy-tan blush on the cheeks", and
+     naming the blush draws it, the same lesson as the moon and the bangs.
+   - **The change.** Her skin phrase becomes:
+
+     > warm medium golden-tan skin with an even tone and soft, slightly
+     > darker golden-brown shading
+
+     It drops "light", and it drops the blush and the cheeks. "An even tone"
+     asks positively for a face of one colour.
+   - **Unchanged.** The target tone (`#D9A774`), the child sheet template
+     v1, her other fields, and Leo. Leo is locked at seed 72.
+   - **What follows.** Her `source` note records the rewording. The tests
+     that read her real prompt follow the new phrase. `child kennedi` renders
+     a fresh set, since the recipe changed. No Kennedi lock exists, so
+     nothing is versioned.
+   - **If the new set still misses**, I bring you the renders before changing
+     anything else. The next lever would be the template's shared style
+     ("gentle warm palette"), which is a template version and its own
+     amendment.
 
 ## Verification
 
