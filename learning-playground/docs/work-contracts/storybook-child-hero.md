@@ -227,10 +227,17 @@ You can change any of his values.
   - the pronoun slots above.
 
   A slot can't carry a conversion or a format spec. Any other `{...}` fails
-  the check, and so does a stray brace.
+  the check, and so do a stray brace and an escaped brace (`{{` or `}}`).
+  Filling would turn an escaped brace into a literal "{name}" on the page
+  (amendment 2).
 - **A page's cast** holds at most three members, all different. Each is
-  either `{child}` or a canon character. `{child}` must be in at least one
-  page's cast, since the child is the hero.
+  either `{child}` or a canon character.
+  - `{child}` must be in at least one page's cast, since the child is the
+    hero.
+  - Every slot stands for the child, so a page whose place or scene fills in
+    a slot must have `{child}` in its cast. Otherwise the child would be
+    drawn without their sheet (amendment 2).
+  - A page without the child is fine when nothing on it is the child.
 - **The rest of the plan follows the story plan check:**
   - one page per paragraph;
   - each page's keys are exactly cast, place, time and scene;
@@ -335,9 +342,10 @@ The new commands take that same lock.
 Each case exits before anything is written:
 - an unknown child or personal story;
 - a profile that fails its check (any rule in the profile table);
-- a personal story that fails its check: an unknown slot, a stray brace, a
-  page count different from the paragraph count, a bad cast, or no
-  `{child}` in any cast;
+- a personal story that fails its check: an unknown slot, a stray or
+  escaped brace, a page count different from the paragraph count, a bad
+  cast, no `{child}` in any cast, or a page that fills in the child with no
+  `{child}` in its cast;
 - a child whose name is also a canon character's name in the story;
 - a child, or a canon cast member, with no locked sheet, or with a sheet
   that fails its lock checks;
@@ -469,13 +477,34 @@ Each case exits before anything is written:
    The long hair phrase ends its sentence, and "He" or "She" comes from
    the same pronoun table as the text. No lock exists yet, so v1 is still
    unpublished, and nothing is versioned.
+2. **Two personal-story rules, from Codex review round 1 on #153.** Both are
+   confirmed against the code.
+   - **Escaped braces.** `{{name}}` parsed as literal text, so it passed the
+     check. `fill()` then turned it into "{name}", which reached the prompt
+     unfilled. Now any brace that doesn't open or close a slot fails.
+   - **A page could name the child without drawing from their sheet.**
+     "`{child}` in at least one cast" let one page say "{name} hugs Pippa"
+     with a cast of Pippa alone. That page would be rendered with only
+     Pippa's sheet. Now a page whose place or scene fills in any slot must
+     have `{child}` in its cast. A page with nothing of the child on it
+     still passes, and a test proves it.
+
+   Both rules live in `slots()`, the one place the tool reads a personal
+   story's braces. It returns the slots a text uses and what's wrong with
+   its braces, and the plan check applies both.
 
 ## Verification
 
 From tool output on 2026-10-05, at `ad6e69a`.
 
 - **`test-story-recipe.py`:** 187 of 187 checks pass on Python 3.13 with
-  Pillow 11.3, and on 3.12 with Pillow 10.2.
+  Pillow 11.3, and on 3.12 with Pillow 10.2. After amendment 2, 193 of 193
+  pass on both.
+  - The new cases cover an escaped brace in the text and in a scene.
+  - They cover a child-less cast whose scene names the child, calls the
+    child by a pronoun, or whose place is the child's.
+  - On the other side, a child-less page with nothing of the child on it
+    passes.
   - Every Settling Evidence case listed above is covered, plus one more:
     Leo's sheet saved as Kennedi's lock fails `selftest`.
   - Every earlier case still passes.
@@ -483,6 +512,9 @@ From tool output on 2026-10-05, at `ad6e69a`.
   fail the suite.** The first round found one gap: nothing caught a child's
   lock saved under another child's name. The child-lock identity test was
   added for it.
+  - Amendment 2's rules were checked the same way, with six broken copies,
+    and all six fail the suite. One of them over-rejects every page without
+    the child.
 - **`selftest` on the real storybook:**
   - 3 character locks, 1 story and 0 page locks;
   - 2 children, 0 child locks, 1 personal story and 0 book page locks;
