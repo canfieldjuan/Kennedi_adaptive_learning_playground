@@ -37,6 +37,10 @@ import {
   renderStoryStage,
   destroyStoryStage,
 } from '../modules/story-stage/StoryStageActivity';
+import {
+  renderDressUpStudio,
+  destroyDressUpStudio,
+} from '../modules/dress-up-studio/DressUpStudioActivity';
 import { renderParentPanel, destroyParentPanel } from '../modules/parent-panel/ParentPanel';
 import { renderParentGate, destroyParentGate } from '../modules/parent-gate/ParentGate';
 import {
@@ -115,6 +119,7 @@ function handleRoute(route: Route): void {
   destroyColoringActivity();
   destroyBearArtStudioActivity();
   destroyStoryStage();
+  destroyDressUpStudio();
   destroyVideoVault();
   destroyKennedisOrdersActivity();
   destroyPhonicsMatchActivity();
@@ -162,6 +167,19 @@ function handleRoute(route: Route): void {
         // never the attempt-event log.
         history: {
           append: (record) => storage.appendStoryHistory(record),
+        },
+      });
+      break;
+    case 'dress-up':
+      // Dress-Up Studio is a creative-play route like Story Stage: it takes
+      // speech and a narrow, non-evaluative fashion-card sink, and emits no
+      // attempt events. Saved looks live outside the assessment system.
+      renderDressUpStudio(app, {
+        sessionId,
+        speech,
+        history: {
+          list: () => storage.getFashionCardHistory(),
+          append: (card) => storage.appendFashionCardHistory(card),
         },
       });
       break;

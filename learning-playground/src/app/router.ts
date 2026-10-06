@@ -8,6 +8,7 @@ export type Route =
   | { view: 'home' }
   | { view: 'parent' }
   | { view: 'story-stage' }
+  | { view: 'dress-up' }
   | { view: 'activity'; activityId: string };
 
 type RouteChangeHandler = (route: Route) => void;
@@ -26,6 +27,10 @@ export function parseRoute(): Route {
 
   if (hash === 'story-stage') {
     return { view: 'story-stage' };
+  }
+
+  if (hash === 'dress-up') {
+    return { view: 'dress-up' };
   }
 
   if (hash.startsWith('activity/')) {
@@ -49,6 +54,9 @@ export function navigate(route: Route): void {
       break;
     case 'story-stage':
       window.location.hash = '#story-stage';
+      break;
+    case 'dress-up':
+      window.location.hash = '#dress-up';
       break;
     case 'activity':
       window.location.hash = `#activity/${route.activityId}`;
