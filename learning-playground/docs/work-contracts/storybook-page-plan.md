@@ -353,6 +353,44 @@ Accepted 2026-10-04 ("accept"). Found while building:
   already taken. The tool always sends overwrite, and still checks the name
   it gets back.
 
+Found at the first real page renders (2026-10-06), after the slice merged:
+
+- **A page's embedded graph carries ComfyUI's reference fingerprints.**
+  - **What happened.** On the 2026-10-06 night run, every page seed rendered
+    and was then refused by the tool's own check: "its embedded graph is not
+    the one its recipe renders". Pages 1, 2 and 3 each lost about 6.5
+    minutes of GPU time, and their retries failed in two seconds.
+  - **Why.** Before it runs a job, ComfyUI (`execution.py`, the known
+    0.25.0 build) writes `is_changed` into each node that has a change
+    check, and `SaveImage` embeds that job. For `LoadImage` the value is a
+    one-item list: the SHA-256 (hex) of the file the node read. The rebuilt
+    graph had no such key, so a correct page could never match.
+    - Character and child sheets load no image, so they never hit this.
+    - The tests' fake ComfyUI never wrote the key, so 197 passing checks
+      missed it.
+    - Book pages (the child-hero contract) share the check and would have
+      failed the same way.
+  - **The rule.**
+    - The graph the tool sends is unchanged and carries no `is_changed`.
+      ComfyUI uses a sent value instead of computing one, which would make
+      the fingerprint meaningless.
+    - The graph a page PNG must embed is the sent graph plus, on each
+      `LoadImage` node, `"is_changed": [<that reference's SHA-256>]`.
+    - The comparison stays exact. A missing, different or extra fingerprint
+      fails, and every other node must match as before.
+  - **What this adds.** The check now proves ComfyUI hashed exactly the
+    locked sheet's bytes when it loaded each reference, not just a file
+    with the right name.
+  - **Where it applies.** Wherever a page PNG is checked against its recipe:
+    `page` and `book-page` before a seed is recorded, `lock-page`,
+    `lock-book-page` and `selftest`. Character and child sheets are
+    unchanged.
+  - **Tests.** The fake ComfyUI writes `is_changed` the way the real one
+    does. New cases refuse a page PNG whose fingerprint is missing, wrong,
+    or on a node other than `LoadImage`, and pass a correct one. The real
+    refused render (page 1, seed 61, in ComfyUI's output folder) passes the
+    new check. No page lock exists yet, so nothing locked changes.
+
 ## Cold Diff Audit
 
 ### Gaps
