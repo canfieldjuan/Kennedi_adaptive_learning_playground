@@ -1,0 +1,13 @@
+{
+ "name": "Leo",
+ "child": "boy",
+ "age": 5,
+ "appearance": {
+  "skin": "deep brown skin with warm undertones",
+  "hair": "short black curly hair",
+  "eyes": "dark brown eyes",
+  "outfit": "a mustard-yellow knit sweater, navy blue shorts, white socks and green sneakers",
+  "glasses": true
+ },
+ "source": "Invented for the child-hero proof; not a real child. Accepted with learning-playground/docs/work-contracts/storybook-child-hero.md (2026-10-05)."
+}

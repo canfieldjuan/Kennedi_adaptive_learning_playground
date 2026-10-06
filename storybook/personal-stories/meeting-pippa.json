@@ -1,0 +1,49 @@
+{
+ "source": {
+  "written_by": "the storybook child-hero proof",
+  "contract": "learning-playground/docs/work-contracts/storybook-child-hero.md",
+  "accepted": "operator, 2026-10-05",
+  "content_sha256": "60beefa3e3b6097c1829dffd30e5e28a474910d4c89d073f04456107a5f79ebd"
+ },
+ "title": "{name} Meets Pippa",
+ "season": "gentle autumn",
+ "text": "One golden autumn afternoon, {name} followed a winding path into Moon Berry Forest. The leaves glowed honey and rust. Under a big fern, something tiny rustled, so {subject} crouched down low to look.\n\nOut peeked Pippa the dormouse, wearing her red acorn cap. \"Hello!\" she squeaked, and hopped onto {name}'s open hand. {Subject} held very still and smiled to {reflexive}. {Possessive} new friend weighed no more than a leaf.\n\nBramble the badger came along with his little lantern. \"The softest moss grows by the Berry Brook,\" he said. So they walked there together, and {name} touched moss as pale and fine as silver silk. Pippa giggled beside {object}.\n\nWhen the stars came out, {name} curled up on a bed of soft moss, with Pippa tucked in close. The lanterns dim, and the forest grows hushed. And {subject} drifted gently off to sleep.",
+ "pages": [
+  {
+   "cast": [
+    "{child}"
+   ],
+   "place": "a winding path among the autumn trees",
+   "time": "late-afternoon",
+   "scene": "{name} crouches down low on the path to peek under a big fern, curious, the leaves around {object} glowing honey and rust"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa"
+   ],
+   "place": "beside a big fern among the autumn trees",
+   "time": "late-afternoon",
+   "scene": "{name} kneels and holds out one open hand, and tiny Pippa stands on {possessive} palm, waving hello"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa",
+    "Bramble"
+   ],
+   "place": "a mossy rock near the Berry Brook",
+   "time": "dusk",
+   "scene": "{name} kneels at a mossy rock, gently touching moss pale and fine as silver silk, with tiny Pippa sitting on the rock beside {object} and Bramble standing nearby holding his small lantern"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa"
+   ],
+   "place": "a soft bed of moss under the trees",
+   "time": "night",
+   "scene": "{name} sleeps curled up on soft moss, with tiny Pippa asleep tucked in close beside {object}"
+  }
+ ]
+}
