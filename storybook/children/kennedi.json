@@ -3,11 +3,11 @@
  "child": "girl",
  "age": 4,
  "appearance": {
-  "skin": "light golden-brown skin with soft, darker golden-brown shading and a faint rosy-tan blush on the cheeks",
+  "skin": "warm medium golden-tan skin with an even tone and soft, slightly darker golden-brown shading",
   "hair": "dark brown hair parted in the middle and pulled back smoothly from her forehead into two long, smooth, wavy pigtails at the sides of her head, each tied with a small round red hair tie",
   "eyes": "big round dark eyes with long curled eyelashes",
   "outfit": "a cream collared polo shirt with a plain round badge showing a simple red star, an orange knee-length pleated skirt, short white socks and red sneakers",
   "glasses": false
  },
- "source": "Kennedi, this repo's own character, with her approved look. Skin: workbook/docs/art/asset-provenance.md <SKIN>, word for word (workbook/design-source/boss-kennedi/palette.json, #D9A774, approved 2026-10-04). Hairstyle: <HEAD> from the 2026-09-24 face and hair lock, with its 'no bangs' said positively. Colours: workbook/design-source/scenes/cover-concept-c-golden.png. Accepted with learning-playground/docs/work-contracts/storybook-child-hero.md (2026-10-05)."
+ "source": "Kennedi, this repo's own character, with her approved look. Skin: aims at #D9A774 (workbook/design-source/boss-kennedi/palette.json, approved 2026-10-04); first worded as workbook/docs/art/asset-provenance.md <SKIN>, reworded by Amendment 4 (2026-10-06) after the first render drew her too light and too rosy. Hairstyle: <HEAD> from the 2026-09-24 face and hair lock, with its 'no bangs' said positively. Colours: workbook/design-source/scenes/cover-concept-c-golden.png. Accepted with learning-playground/docs/work-contracts/storybook-child-hero.md (2026-10-05)."
 }

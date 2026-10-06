@@ -887,7 +887,7 @@ def case_child_sheets(root):
         girl = json.loads((root / CHILD_DRAFTS / "kennedi-recipe.json").read_text())
         check("Kennedi's sheet is a young girl of 4, with her look in its own sentences and no glasses",
               girl["kind"] == "child-sheet" and "A single young girl, about 4 years old" in girl["prompt"]
-              and "She has light golden-brown skin" in girl["prompt"] and "She is wearing a cream collared polo" in
+              and "She has warm medium golden-tan skin" in girl["prompt"] and "She is wearing a cream collared polo" in
               girl["prompt"] and "glasses" not in girl["prompt"], girl["prompt"])
         check("a child's sheet names exactly the three base-model files",
               [m["file"] for m in girl["models"]] == ["qwen-image-Q8_0.gguf", "qwen_2.5_vl_7b_fp8_scaled.safetensors",
