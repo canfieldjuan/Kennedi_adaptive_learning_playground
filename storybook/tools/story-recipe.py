@@ -144,6 +144,11 @@ PRONOUNS = {"boy": {"subject": "he", "object": "him", "possessive": "his", "refl
 # What a personal story's text, title, places and scenes may fill in; a page's cast names the child as CHILD.
 SLOTS = {"name", *PRONOUNS["boy"], *(slot.capitalize() for slot in PRONOUNS["boy"])}
 CHILD = "{child}"
+# Every free-text field of a personal story, and whether it may fill in the child. The plan check reads every one of
+# them through slots(), and a book page fills its page fields from this table, so no field reaches a prompt or a page
+# without being read: a field that may not fill in the child (the season is the story's) must have no slot at all.
+STORY_TEXT = {"title": True, "text": True, "season": False}
+PAGE_TEXT = {"place": True, "scene": True}
 # One book, one style: the v2 sheet style. Like every template, a version is never edited.
 CHILD_TEMPLATES = {"v1": {
     "style": SHEET_TEMPLATES["v2"]["style"],
@@ -321,9 +326,10 @@ def paragraphs(text):
 
 def story_problems(story, canon, personal=False):
     """Why a story's snapshot and page plan can't be drawn from; an empty list when they can. A personal story
-    (personal=True) is checked the same way, and also: its title, text, places and scenes may fill in only the
-    slots; its cast may name the child as {child}; a page whose place or scene fills in a slot -- each one is the
-    child -- must, so the child is never drawn without their sheet; and at least one page must."""
+    (personal=True) is checked the same way, and also: every free-text field in STORY_TEXT and PAGE_TEXT is read
+    through slots(), and only those the table allows may fill in the child; its cast may name the child as {child};
+    a page whose place or scene fills in a slot -- each one is the child -- must, so the child is never drawn
+    without their sheet; and at least one page must."""
     source = story.get("source") if isinstance(story.get("source"), dict) else {}
     text = story.get("text")
     if not isinstance(text, str) or hashlib.sha256(text.encode()).hexdigest() != source.get("content_sha256"):
@@ -349,11 +355,11 @@ def story_problems(story, canon, personal=False):
                             + (f" or {CHILD}" if personal else ""))
         if not isinstance(page["time"], str) or page["time"] not in lights:
             problems.append(f"page {number}'s time {page['time']!r} is not one of {', '.join(lights)}")
-        for key in ("place", "scene"):
+        for key, slotted in PAGE_TEXT.items():
             if not isinstance(page[key], str) or not page[key].strip():
                 problems.append(f"page {number} has no {key}")
             elif personal:
-                used, whys = slots(page[key], f"page {number}'s {key}")
+                used, whys = read_field(page[key], f"page {number}'s {key}", slotted)
                 problems += whys
                 if used and not (isinstance(cast, list) and CHILD in cast):
                     problems.append(f"page {number}'s {key} fills in {', '.join(sorted(used))} but its cast has no "
@@ -361,9 +367,9 @@ def story_problems(story, canon, personal=False):
     if personal:
         if not isinstance(story.get("title"), str) or not story["title"].strip():
             problems.append("it has no title")
-        else:
-            problems += slots(story["title"], "its title")[1]
-        problems += slots(text, "its text")[1]
+        for key, slotted in STORY_TEXT.items():
+            if isinstance(story.get(key), str):
+                problems += read_field(story[key], f"its {key}", slotted)[1]
         if not any(isinstance(page, dict) and isinstance(page.get("cast"), list) and CHILD in page["cast"]
                    for page in pages):
             problems.append(f"no page's cast has {CHILD}, and the child is the hero")
@@ -386,6 +392,15 @@ def slots(text, where):
     if any("{" in literal or "}" in literal for literal, *_ in parts):
         problems.append(f"{where} has an escaped brace ({{{{ or }}}}), which would reach the page unfilled")
     return {field for _, field, *_ in parts if field in SLOTS}, problems
+
+
+def read_field(text, where, slotted):
+    """({the slots a personal story's free-text field fills in}, [why it can't be used]): its braces aren't all plain
+    slots, or it fills in the child where it may not (slotted False)."""
+    used, problems = slots(text, where)
+    if used and not slotted:
+        problems.append(f"{where} fills in {', '.join(sorted(used))}, but it is the story's and never the child's")
+    return used, problems
 
 
 def fill(text, profile):
@@ -631,7 +646,7 @@ def book_page_manifest(name, child_id, number, template_version, render_version,
     the profile or the story, or re-locking the child or an animal, fails the page locks drawn from what was there.
     """
     page = story["pages"][number - 1]
-    filled = {**page, "place": fill(page["place"], profile), "scene": fill(page["scene"], profile)}
+    filled = {**page, **{key: fill(page[key], profile) for key, slotted in PAGE_TEXT.items() if slotted}}
     cast = [(profile["name"], profile["child"]) if member == CHILD
             else (member, character(canon, member)["appearance"]["species"]) for member in page["cast"]]
     template = PAGE_TEMPLATES[template_version]
