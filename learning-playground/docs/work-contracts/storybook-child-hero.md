@@ -200,12 +200,14 @@ You can change any of his values.
 ### Child Sheet Template, v1
 
 > `<STYLE>`. A single young `<child>`, about `<age>` years old, standing in a
-> relaxed three-quarter view, with `<skin>`, `<hair>` and `<eyes>`, wearing
-> `<outfit>``<glasses>`, plain soft cream background, full body, centered, no
-> text
+> relaxed three-quarter view. `<Subject>` has `<skin>`, `<eyes>`, and
+> `<hair>`. `<Subject>` is wearing `<outfit>``<glasses>`. Plain soft cream
+> background, full body, centered, no text
+
+(Amended while building; see amendment 1.)
 
 - `<STYLE>` is the v2 sheet style, so the book has one style.
-- `<child>` is "boy" or "girl".
+- `<child>` is "boy" or "girl", and `<Subject>` is "He" or "She".
 - `<glasses>` is ", and round glasses" when `glasses` is true. Otherwise it
   is empty.
 - Render settings: `RENDERS` v1, the same as the animals' sheets, with the
@@ -445,3 +447,22 @@ Each case exits before anything is written:
 - **Rendering a whole book in one command,** and a combined consistency sheet
   for a book.
 - #145, #146 and #152.
+
+## Contract Amendments
+
+1. **The child sheet template is written as sentences** (found while
+   building, before any render). The accepted wording listed the look as
+   "with `<skin>`, `<hair>` and `<eyes>`". With Kennedi's profile, which has
+   the longest hair phrase, that printed:
+
+   > …each tied with a small round red hair tie and big round dark eyes with
+   > long curled eyelashes, wearing…
+
+   This reads as a hair tie with eyes. v1 now gives the look its own
+   sentences:
+
+   > She has [skin], [eyes], and [hair]. She is wearing [outfit].
+
+   The long hair phrase ends its sentence, and "He" or "She" comes from
+   the same pronoun table as the text. No lock exists yet, so v1 is still
+   unpublished, and nothing is versioned.
