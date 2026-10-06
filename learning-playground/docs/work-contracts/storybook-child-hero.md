@@ -466,3 +466,39 @@ Each case exits before anything is written:
    The long hair phrase ends its sentence, and "He" or "She" comes from
    the same pronoun table as the text. No lock exists yet, so v1 is still
    unpublished, and nothing is versioned.
+
+## Verification
+
+From tool output on 2026-10-05, at `ad6e69a`.
+
+- **`test-story-recipe.py`:** 187 of 187 checks pass on Python 3.13 with
+  Pillow 11.3, and on 3.12 with Pillow 10.2.
+  - Every Settling Evidence case listed above is covered, plus one more:
+    Leo's sheet saved as Kennedi's lock fails `selftest`.
+  - Every earlier case still passes.
+- **Mutation testing: all 30 deliberately broken copies of the new checks
+  fail the suite.** The first round found one gap: nothing caught a child's
+  lock saved under another child's name. The child-lock identity test was
+  added for it.
+- **`selftest` on the real storybook:**
+  - 3 character locks, 1 story and 0 page locks;
+  - 2 children, 0 child locks, 1 personal story and 0 book page locks;
+  - 0 problems.
+- **The real prompts were printed from the tool before commit.** That is how
+  amendment 1 was found. For example, Leo's sheet reads:
+
+  > A single young boy, about 5 years old, standing in a relaxed
+  > three-quarter view. He has deep brown skin with warm undertones, dark
+  > brown eyes, and short black curly hair. He is wearing a mustard-yellow
+  > knit sweater, navy blue shorts, white socks and green sneakers, and round
+  > glasses.
+
+  Page 3 for Kennedi reads:
+
+  > Kennedi is the girl in picture 1, Pippa is the dormouse in picture 2 and
+  > Bramble is the badger in picture 3, each drawn exactly as in their
+  > picture. Kennedi kneels at a mossy rock, … with tiny Pippa sitting on the
+  > rock beside her…
+
+- **Still open:** the overnight renders and your consistency read, the
+  proof's actual result.
