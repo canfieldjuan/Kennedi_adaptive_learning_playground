@@ -990,6 +990,11 @@ def case_personal_story_check(root):
     def page_one(key, value):
         return lambda story: story["pages"][0].__setitem__(key, value)
 
+    def page_cast_scene(number, cast, scene):
+        def mutate(story):
+            story["pages"][number - 1].update(cast=cast, scene=scene)
+        return mutate
+
     def no_child(story):
         for page in story["pages"]:
             page["cast"] = ["Pippa"]
@@ -1001,6 +1006,17 @@ def case_personal_story_check(root):
             ("a conversion", text("{name} followed", "{name!r} followed"), "its text uses {name!r}"),
             ("an attribute", text("{name} followed", "{name.upper} followed"), "its text uses {name.upper}"),
             ("a stray brace", text("{name} followed", "{name followed"), "its text has a stray brace"),
+            ("an escaped brace in the text", text("{name} followed", "{{name}} followed"), "its text has an escaped brace"),
+            ("an escaped brace in a scene", page_one("scene", "{{name}} crouches on the path"),
+             "page 1's scene has an escaped brace"),
+            ("a page that names the child but has no {child}", page_cast_scene(2, ["Pippa"], "{name} hugs tiny Pippa"),
+             "page 2's scene fills in name but its cast has no {child}"),
+            ("a page that calls the child by a pronoun but has no {child}",
+             page_cast_scene(2, ["Pippa"], "tiny Pippa waves at {object}"), "page 2's scene fills in object but"),
+            ("a page whose place is the child's but has no {child}",
+             lambda s: (page_cast_scene(4, ["Pippa"], "tiny Pippa sleeps on soft moss")(s),
+                        s["pages"][3].__setitem__("place", "{possessive} bed of moss")),
+             "page 4's place fills in possessive but"),
             ("an unknown slot in the title", lambda s: s.__setitem__("title", "{kid} Meets Pippa"),
              "its title uses {kid}"),
             ("an unknown slot in a scene", page_one("scene", "{Name} crouches on the path"), "page 1's scene uses {Name}"),
@@ -1017,6 +1033,11 @@ def case_personal_story_check(root):
         code2, out2 = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "kennedi", 1)
         check(f"{label} fails selftest, and book-page refuses it",
               code and why in out and code2 and "can't be drawn from" in out2 and why in out2, (out + out2).strip()[-200:])
+    story = json.loads(json.dumps(original))
+    page_cast_scene(2, ["Pippa"], "tiny Pippa waves hello from a big fern")(story)
+    story_path.write_text(json.dumps(story))
+    code, out = run(root, "selftest")
+    check("a page without the child passes when nothing in it is the child", not code, out.strip()[-200:])
     story_path.write_text(json.dumps(original))
     clash = {**json.loads((root / "children" / "kennedi.json").read_text()), "name": "Pippa"}
     (root / "children" / "pippa-kid.json").write_text(json.dumps(clash))

@@ -321,8 +321,9 @@ def paragraphs(text):
 
 def story_problems(story, canon, personal=False):
     """Why a story's snapshot and page plan can't be drawn from; an empty list when they can. A personal story
-    (personal=True) is checked the same way, and also: its cast may name the child as {child}, at least one page
-    must, and its title, text, places and scenes may fill in only the slots."""
+    (personal=True) is checked the same way, and also: its title, text, places and scenes may fill in only the
+    slots; its cast may name the child as {child}; a page whose place or scene fills in a slot -- each one is the
+    child -- must, so the child is never drawn without their sheet; and at least one page must."""
     source = story.get("source") if isinstance(story.get("source"), dict) else {}
     text = story.get("text")
     if not isinstance(text, str) or hashlib.sha256(text.encode()).hexdigest() != source.get("content_sha256"):
@@ -352,35 +353,44 @@ def story_problems(story, canon, personal=False):
             if not isinstance(page[key], str) or not page[key].strip():
                 problems.append(f"page {number} has no {key}")
             elif personal:
-                problems += slot_problems(page[key], f"page {number}'s {key}")
+                used, whys = slots(page[key], f"page {number}'s {key}")
+                problems += whys
+                if used and not (isinstance(cast, list) and CHILD in cast):
+                    problems.append(f"page {number}'s {key} fills in {', '.join(sorted(used))} but its cast has no "
+                                    f"{CHILD}, so the child would be drawn without their sheet")
     if personal:
         if not isinstance(story.get("title"), str) or not story["title"].strip():
             problems.append("it has no title")
         else:
-            problems += slot_problems(story["title"], "its title")
-        problems += slot_problems(text, "its text")
+            problems += slots(story["title"], "its title")[1]
+        problems += slots(text, "its text")[1]
         if not any(isinstance(page, dict) and isinstance(page.get("cast"), list) and CHILD in page["cast"]
                    for page in pages):
             problems.append(f"no page's cast has {CHILD}, and the child is the hero")
     return problems
 
 
-def slot_problems(text, where):
-    """Why text's {...} aren't all plain slots -- no other name, no attribute or index, no conversion or format spec,
-    no stray brace; an empty list when they are."""
+def slots(text, where):
+    """({the slots text fills in}, [why its braces aren't all plain slots]). The one place the tool reads a personal
+    story's braces: every brace must open or close a slot -- no other name, no attribute or index, no conversion or
+    format spec, no stray brace, and no escaped brace ({{ or }}), which fill() would turn into a "{name}" that reaches
+    the page unfilled."""
     try:
-        fields = [(field, spec, conversion) for _, field, spec, conversion in string.Formatter().parse(text)
-                  if field is not None]
+        parts = list(string.Formatter().parse(text))
     except ValueError as error:
-        return [f"{where} has a stray brace ({error})"]
-    return [f"{where} uses {{{field}{'!' + conversion if conversion else ''}{':' + spec if spec else ''}}}, which "
-            f"is not one of the slots {', '.join(sorted(SLOTS))}"
-            for field, spec, conversion in fields if field not in SLOTS or spec or conversion]
+        return set(), [f"{where} has a stray brace ({error})"]
+    problems = [f"{where} uses {{{field}{'!' + conversion if conversion else ''}{':' + spec if spec else ''}}}, "
+                f"which is not one of the slots {', '.join(sorted(SLOTS))}"
+                for _, field, spec, conversion in parts
+                if field is not None and (field not in SLOTS or spec or conversion)]
+    if any("{" in literal or "}" in literal for literal, *_ in parts):
+        problems.append(f"{where} has an escaped brace ({{{{ or }}}}), which would reach the page unfilled")
+    return {field for _, field, *_ in parts if field in SLOTS}, problems
 
 
 def fill(text, profile):
-    """text with the child's name and pronouns in its slots. Only for a text that passed slot_problems, and a
-    profile that passed child_problems."""
+    """text with the child's name and pronouns in its slots. Only for a text that passed slots(), and a profile that
+    passed child_problems."""
     words = PRONOUNS[profile["child"]]
     return text.format_map({"name": profile["name"], **words,
                             **{slot.capitalize(): word.capitalize() for slot, word in words.items()}})
