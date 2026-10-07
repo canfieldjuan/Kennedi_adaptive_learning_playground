@@ -120,7 +120,7 @@ are phrases; the form slice turns them into closed choices.
 | `name` | 1–24 characters: letters, joined by single spaces, hyphens or apostrophes ("Mary-Jane", "D'Andre"). It is used in the text and the prompt. |
 | `child` | exactly `"boy"` or `"girl"`. Nothing else is accepted: no other value, case or spacing. |
 | `age` | a whole number from 2 to 8. These are picture-book ages, and you can change them. A boolean, a string or 4.0 is refused. |
-| `appearance` | exactly `skin`, `hair`, `eyes`, `outfit` (each a non-empty single-line phrase of at most 200 characters) and `glasses` (`true` or `false`) |
+| `appearance` | exactly `skin`, `hair`, `eyes`, `outfit` (each a non-empty single-line phrase of at most 240 characters; 200 before amendment 5) and `glasses` (`true` or `false`) |
 | `source` | where the answers came from (non-empty) |
 
 - **No other keys.** The file name is the id: lowercase words joined by
@@ -391,14 +391,14 @@ Each case exits before anything is written:
       - age 2 and age 8;
       - "Mary-Jane" and "D'Andre";
       - a 24-character name;
-      - a 200-character phrase.
+      - a 240-character phrase (amendment 5).
     - **Refuses:**
       - `child` set to "Boy", "girl " (with a trailing space), "other", "",
         `1`, or missing;
       - age 1, 9, "4", `true` and 4.0;
       - a 25-character name, an empty name, a name with digits, and two
         spaces in a row;
-      - a 201-character phrase, a phrase with a newline, and an empty
+      - a 241-character phrase, a phrase with a newline, and an empty
         phrase;
       - `glasses` set to "yes";
       - an extra key, and a missing key.
@@ -599,6 +599,11 @@ Each case exits before anything is written:
      - Her eyes, outfit and glasses are unchanged.
 
      This is word for word the seed-72 prompt you picked.
+   - **Look phrases may be up to 240 characters** (it was 200). Found while
+     building: her hair, word for word, is 218 characters, and the profile
+     check refused it. The limit guards against a pasted paragraph, not
+     against detail, and the order form will offer closed choices. A
+     friend's personality keeps its limit of 200.
    - **Child sheet template v2.** v2 keeps v1's text and adds a cleanup
      instruction:
 
