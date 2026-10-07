@@ -29,6 +29,7 @@ DRAFTS, LOCKED = "design-source/characters/drafts", "design-source/characters/lo
 STORY = "pippa-and-the-whispering-moss"
 PAGE_DRAFTS, PAGE_LOCKED = f"design-source/pages/{STORY}/drafts", f"design-source/pages/{STORY}/locked"
 CHILD_DRAFTS, CHILD_LOCKED = "design-source/children/drafts", "design-source/children/locked"
+FRIEND_DRAFTS, FRIEND_LOCKED = "design-source/friends/drafts", "design-source/friends/locked"
 BOOK = "meeting-pippa"
 EDIT_MODEL = "qwen-image-edit-2511-Q4_K_S.gguf"
 MODEL_FILES = {"UnetLoaderGGUF": ("unet_name", ["qwen-image-Q8_0.gguf", EDIT_MODEL]),
@@ -169,6 +170,7 @@ def storybook_copy(root):
     shutil.copytree(STORYBOOK / "canon", root / "canon")
     shutil.copytree(STORYBOOK / "stories", root / "stories")
     shutil.copytree(STORYBOOK / "children", root / "children")
+    shutil.copytree(STORYBOOK / "friends", root / "friends")
     shutil.copytree(STORYBOOK / "personal-stories", root / "personal-stories")
     return root        # no design-source/: like the real tree, the tool makes it on first use
 
@@ -578,10 +580,10 @@ def case_reference_fingerprints(root):
               code and "isn't this recipe's render" in out and "its embedded graph is not the one" in out
               and "nothing was written" in out and not list((root / PAGE_DRAFTS).glob("page-01-*")),
               out.strip()[-200:])
-    drawn(root, "bramble", seed=61)
+    friend_drawn(root, "maya")
     child_drawn(root, "kennedi")
     references = [sha((root / CHILD_LOCKED / "kennedi.png").read_bytes()), pippa,
-                  sha((root / LOCKED / "bramble.png").read_bytes())]
+                  sha((root / FRIEND_LOCKED / "maya.png").read_bytes())]
     comfy = FakeComfy(bad_view={0: refingerprinted(lambda node: node.pop("is_changed", None))})
     try:
         code, out = run(root, "--server", comfy.url, "book-page", BOOK, "kennedi", 3)
@@ -597,7 +599,7 @@ def case_reference_fingerprints(root):
     candidate = root / book_folder("kennedi", "drafts") / "page-03-candidate-61.png"
     graph = json.loads(Image.open(candidate).info["prompt"]) if candidate.is_file() else {}
     loaded = {node_id: node.get("is_changed") for node_id, node in graph.items() if node["class_type"] == "LoadImage"}
-    check("a book page carries Kennedi's, Pippa's and Bramble's fingerprints, in picture order, and is recorded",
+    check("a book page carries Kennedi's, Pippa's and Maya's fingerprints, in picture order, and is recorded",
           not code and [loaded[node_id] for node_id in sorted(loaded)] == [[digest] for digest in references],
           f"{out.strip()[-160:]} {loaded}")
 
@@ -932,6 +934,18 @@ def child_drawn(root, child="kennedi", seed=72):
         comfy.close()
 
 
+def friend_drawn(root, friend="maya", seed=72):
+    """Render a friend's sheet candidates and lock one."""
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "friend", friend)
+        assert not code, out
+        code, out = run(root, "lock-friend", friend, "--seed", seed)
+        assert not code, out
+    finally:
+        comfy.close()
+
+
 def book_folder(child, kind):
     return f"design-source/books/{BOOK}/{child}/{kind}"
 
@@ -1158,12 +1172,13 @@ def case_filling(root):
 
 
 def case_book_page_lock_selftest(root):
-    """A book page renders for one child, from the child's and the animals' locked sheets, locks and checks out."""
+    """A book page renders for one child, from the child's, a friend's and an animal's locked sheets, locks and
+    checks out."""
     drawn(root, "pippa")
-    drawn(root, "bramble", seed=61)
+    friend_drawn(root, "maya")
     child_drawn(root, "kennedi")
     sheets = {"kennedi": (root / CHILD_LOCKED / "kennedi.png").read_bytes(),
-              **{name: (root / LOCKED / f"{name}.png").read_bytes() for name in ("pippa", "bramble")}}
+              "pippa": (root / LOCKED / "pippa.png").read_bytes(), "maya": (root / FRIEND_LOCKED / "maya.png").read_bytes()}
     drafts_rel = book_folder("kennedi", "drafts")
     comfy = FakeComfy()
     try:
@@ -1177,21 +1192,23 @@ def case_book_page_lock_selftest(root):
         graph = json.loads(Image.open(root / drafts_rel / "page-03-candidate-61.png").info["prompt"])
         loads = {node_id: node["inputs"]["image"] for node_id, node in graph.items() if node["class_type"] == "LoadImage"}
         encoders = [node["inputs"] for node in graph.values() if node["class_type"] == "TextEncodeQwenImageEditPlus"]
-        in_order = [f"storybook-{sha(sheets[name])}.png" for name in ("kennedi", "pippa", "bramble")]
-        check("both encoders get Kennedi's sheet as image1, then Pippa's and Bramble's",
+        in_order = [f"storybook-{sha(sheets[name])}.png" for name in ("kennedi", "pippa", "maya")]
+        check("both encoders get Kennedi's sheet as image1, then Pippa's and Maya's",
               len(encoders) == 2 and all([loads[e[f"image{i}"][0]] for i in (1, 2, 3)] == in_order for e in encoders),
               encoders)
         recipe = json.loads((root / drafts_rel / "page-03-recipe.json").read_text())
-        check("the prompt calls her the girl in picture 1, and fills her name and pronouns into the scene",
-              "Kennedi is the girl in picture 1, Pippa is the dormouse in picture 2 and Bramble is the badger in "
+        check("the prompt calls her and Maya each the girl in their picture, and fills her name and pronouns in",
+              "Kennedi is the girl in picture 1, Pippa is the dormouse in picture 2 and Maya is the girl in "
               "picture 3, each drawn exactly as in their picture. Kennedi kneels at a mossy rock" in recipe["prompt"]
-              and "sitting on the rock beside her and Bramble" in recipe["prompt"] and "{" not in recipe["prompt"],
+              and "sitting on the rock beside her and Maya standing" in recipe["prompt"] and "{" not in recipe["prompt"],
               recipe["prompt"])
-        check("the recipe records the page entry as written, the profile and the references by kind",
-              "{name}" in recipe["entry"]["scene"] and recipe["profile"]["child"] == "girl" and recipe["references"] == [
+        maya = json.loads((root / "friends/maya.json").read_text())
+        check("the recipe records the page entry as written, the profiles and the references by kind",
+              "{name}" in recipe["entry"]["scene"] and recipe["profile"]["child"] == "girl"
+              and recipe["friends"] == {"maya": maya} and recipe["references"] == [
                   {"kind": "child", "name": "kennedi", "sha256": sha(sheets["kennedi"])},
                   {"kind": "character", "name": "pippa", "sha256": sha(sheets["pippa"])},
-                  {"kind": "character", "name": "bramble", "sha256": sha(sheets["bramble"])}], recipe["references"])
+                  {"kind": "friend", "name": "maya", "sha256": sha(sheets["maya"])}], recipe["references"])
         code, out = run(root, "lock-book-page", BOOK, "kennedi", 3, "--seed", 83)
         locked = sorted(p.name for p in (root / book_folder("kennedi", "locked")).iterdir())
         check("lock-book-page writes page-03.png and its recipe", not code and locked == ["page-03.png",
@@ -1301,6 +1318,236 @@ def case_book_refusals(root):
         comfy.close()
 
 
+def case_friend_sheets(root):
+    """A friend's sheet renders from their profile with the child template, locks and checks out; a friend is never a
+    hero, and a hero is never a friend."""
+    module = tool(root)
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "friend", "maya")
+        drafts = sorted(p.name for p in (root / FRIEND_DRAFTS).iterdir()) if (root / FRIEND_DRAFTS).is_dir() else []
+        check("friend renders four candidates, a contact sheet and a recipe", not code and drafts == [
+            "maya-candidate-61.png", "maya-candidate-72.png", "maya-candidate-83.png", "maya-candidate-94.png",
+            "maya-contact-sheet.png", "maya-recipe.json"], f"{out.strip()[-120:]} {drafts}")
+        maya = json.loads((root / "friends/maya.json").read_text())
+        girl = json.loads((root / FRIEND_DRAFTS / "maya-recipe.json").read_text())
+        prefixes = sorted(node["inputs"]["filename_prefix"] for graph in comfy.sent for node in graph.values()
+                          if node["class_type"] == "SaveImage")
+        check("Maya's renders land in ComfyUI's output under storybook/friends/, apart from the children's",
+              prefixes == [f"storybook/friends/maya-{seed}" for seed in (61, 72, 83, 94)]
+              and girl["graph"]["10"]["inputs"]["filename_prefix"] == "storybook/friends/maya", prefixes)
+        check("Maya's sheet is the child template's prompt for her look: a young girl of 5",
+              girl["kind"] == "friend-sheet" and girl["friend"] == "maya" and girl["template_version"] == "v1"
+              and girl["prompt"] == module.child_prompt(module.CHILD_TEMPLATES["v1"], maya)
+              and "A single young girl, about 5 years old" in girl["prompt"]
+              and "She has deep brown skin, dark brown eyes, and black hair in two round puffs" in girl["prompt"],
+              girl["prompt"])
+        check("her recipe records her whole profile, and her personality and role never reach the prompt",
+              girl["profile"] == maya and maya["personality"] not in girl["prompt"]
+              and "friend" not in girl["prompt"].lower(), girl["prompt"])
+        run(root, "--server", comfy.url, "friend", "theo")
+        boy = json.loads((root / FRIEND_DRAFTS / "theo-recipe.json").read_text())
+        check("Theo's sheet is a young boy of 4, with no glasses",
+              "A single young boy, about 4 years old" in boy["prompt"] and "He has fair skin with light freckles"
+              in boy["prompt"] and "glasses" not in boy["prompt"], boy["prompt"])
+        run(root, "--server", comfy.url, "friend", "sora")
+        sora = json.loads((root / FRIEND_DRAFTS / "sora-recipe.json").read_text())
+        check("Sora's sheet has the template's round glasses", "white sneakers, and round glasses." in sora["prompt"],
+              sora["prompt"])
+        code, out = run(root, "lock-friend", "maya", "--seed", 72)
+        code2, out2 = run(root, "lock-friend", "theo", "--seed", 61)
+        locked = sorted(p.name for p in (root / FRIEND_LOCKED).iterdir())
+        check("lock-friend writes each friend's sheet and recipe", not code and not code2 and locked == [
+            "maya.png", "maya.recipe.json", "theo.png", "theo.recipe.json"], (out + out2).strip()[-160:])
+        code, out = run(root, "selftest")
+        check("and selftest passes", not code and "4 friends, 2 friend locks" in out, out.strip()[-200:])
+    finally:
+        comfy.close()
+    locked = root / FRIEND_LOCKED
+    recipe = json.loads((locked / "theo.recipe.json").read_text())
+    recipe["files"] = {"maya.png": recipe["files"]["theo.png"]}
+    for name in ("maya.png", "maya.recipe.json", "theo.recipe.json"):
+        (locked / name).unlink()
+    (locked / "theo.png").rename(locked / "maya.png")
+    (locked / "maya.recipe.json").write_text(json.dumps(recipe))
+    code, out = run(root, "selftest")
+    check("Theo's sheet saved as Maya's lock fails selftest", code and "under another friend's name" in out,
+          out.strip()[-200:])
+    for args, why in [(("friend", "kennedi"), "is not a friend"), (("lock-friend", "leo", "--seed", 72), "is not a friend"),
+                      (("child", "maya"), "is not a child"), (("lock-child", "maya", "--seed", 72), "is not a child"),
+                      (("book-page", BOOK, "maya", 1), "is not a child"), (("character", "maya"), "is not a character")]:
+        code, out = run(root, "--server", "http://127.0.0.1:9", *args)
+        check(f"{' '.join(map(str, args))} is refused: a friend is never a hero or a canon character, nor the reverse",
+              code and why in out, out.strip()[-160:])
+
+
+def case_friend_profile_check(root):
+    """A friend profile is a child profile plus a personality phrase and a role, "friend" or "met"."""
+    base = {**json.loads((root / "friends" / "maya.json").read_text()), "name": "Zuri"}
+    path = root / "friends" / "testpal.json"
+    unwritten = lambda: not (root / "design-source").exists()
+
+    def profile(**changes):
+        made = json.loads(json.dumps(base))
+        for key, value in changes.items():
+            if value is KeyError:
+                del made[key]
+            else:
+                made[key] = value
+        return made
+
+    for label, made, why in [
+            ('role "Friend"', profile(role="Friend"), "its role"), ('role "hero"', profile(role="hero"), "its role"),
+            ('role ""', profile(role=""), "its role"), ("role 1", profile(role=1), "its role"),
+            ("no role", profile(role=KeyError), "is not exactly"),
+            ("no personality", profile(personality=KeyError), "is not exactly"),
+            ("an empty personality", profile(personality="  "), "its personality is not"),
+            ("a personality with a newline", profile(personality="bold\nand brave"), "its personality is not"),
+            ("a 201-character personality", profile(personality="p" * 201), "its personality is not"),
+            ("an extra key", {**base, "favourite": "kites"}, "is not exactly"),
+            ('child "Boy" (the child rules apply)', profile(child="Boy"), "its child"),
+            ("age 9 (the child rules apply)", profile(age=9), "its age"),
+            ("no source (the child rules apply)", profile(source=""), "no source")]:
+        path.write_text(json.dumps(made))
+        code, out = run(root, "--server", "http://127.0.0.1:9", "friend", "testpal")
+        code2, out2 = run(root, "selftest")
+        check(f"{label} is refused by friend and fails selftest",
+              code and "can't be drawn from" in out and why in out and code2 and why in out2 and unwritten(),
+              (out + out2).strip()[-200:])
+    for label, made in [('role "met"', profile(role="met")), ('role "friend"', profile(role="friend")),
+                        ("a 200-character personality", profile(personality="p" * 200)), ("a boy", profile(child="boy"))]:
+        path.write_text(json.dumps(made))
+        code, out = run(root, "--server", "http://127.0.0.1:9", "friend", "testpal")
+        code2, out2 = run(root, "selftest")
+        check(f"{label} passes the friend check (friend goes on to ComfyUI) and selftest",
+              code and "unreachable" in out and not code2, (out + out2).strip()[-200:])
+
+
+def case_friend_names(root):
+    """One name, one character: no friend shares a name with a canon character or another friend, in any case."""
+    maya = json.loads((root / "friends" / "maya.json").read_text())
+    for file_name, name, why in [("pippa-pal", "Pippa", "is also the name of the canon character Pippa"),
+                                 ("maya-two", "maya", "is also the name of the friend maya"),
+                                 ("bramble-pal", "BRAMBLE", "is also the name of the canon character Bramble")]:
+        path = root / "friends" / f"{file_name}.json"
+        path.write_text(json.dumps({**maya, "name": name}))
+        code, out = run(root, "selftest")
+        code2, out2 = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "kennedi", 1)
+        code3, out3 = run(root, "--server", "http://127.0.0.1:9", "friend", "theo")
+        code4, out4 = run(root, "lock-friend", "theo", "--seed", 72)
+        check(f"a friend named {name!r} fails selftest, and book-page, friend and lock-friend refuse the roster",
+              code and why in out and code2 and "the friends can't be drawn from" in out2 and why in out2
+              and code3 and "the friends can't be drawn from" in out3
+              and code4 and "the friends can't be drawn from" in out4, (out + out2 + out3 + out4).strip()[-240:])
+        path.unlink()
+    code, out = run(root, "selftest")
+    check("the roster as committed passes", not code and "4 friends" in out, out.strip()[-200:])
+
+
+def case_mixing_rule(root):
+    """A personal story casts at least one friend and at least one canon character, so a book mixes children and
+    animals; the hero can't share a friend's name."""
+    story_path = root / "personal-stories" / f"{BOOK}.json"
+    original = json.loads(story_path.read_text())
+
+    def bramble_not_maya(story):
+        story["pages"][2]["cast"] = ["{child}", "Pippa", "Bramble"]
+        story["pages"][2]["scene"] = story["pages"][2]["scene"].replace("Maya standing nearby holding her",
+                                                                        "Bramble standing nearby holding his")
+
+    def theo_not_pippa(story):
+        for page in story["pages"]:
+            page["cast"] = ["Theo" if member == "Pippa" else member for member in page["cast"]]
+
+    for label, mutate, why in [
+            ("no friend in any cast (a kid and animals)", bramble_not_maya, "no page's cast has a friend"),
+            ("no canon character in any cast", theo_not_pippa, "no page's cast has a character from"),
+            ("a cast naming someone who is no character, child or friend",
+             lambda s: s["pages"][2].__setitem__("cast", ["{child}", "Pippa", "Zara"]), "names someone who is not")]:
+        story = json.loads(json.dumps(original))
+        mutate(story)
+        story_path.write_text(json.dumps(story))
+        code, out = run(root, "selftest")
+        code2, out2 = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "kennedi", 1)
+        check(f"{label} fails selftest, and book-page refuses it",
+              code and why in out and code2 and "can't be drawn from" in out2 and why in out2, (out + out2).strip()[-200:])
+    story = json.loads(json.dumps(original))
+    story["pages"][1]["cast"] = ["{child}", "Pippa", "Theo"]
+    story_path.write_text(json.dumps(story))
+    code, out = run(root, "selftest")
+    check("a story with two friends and an animal passes", not code, out.strip()[-200:])
+    module = tool(root)
+    friends = {friend: json.loads((root / "friends" / f"{friend}.json").read_text()) for friend in ("maya", "theo")}
+    page = module.book_page_manifest(BOOK, "kennedi", 2, module.PAGE_TEMPLATE, module.PAGE_RENDER, story,
+                                     json.loads((root / "children/kennedi.json").read_text()), module.load_canon(), {},
+                                     friends)
+    check("a boy friend is drawn as the boy in his picture", {"name": "Theo", "drawn_as": "boy"} in page["cast"]
+          and "Theo is the boy in picture 3" in page["prompt"], page["prompt"])
+    story_path.write_text(json.dumps(original))
+    clash = {**json.loads((root / "children" / "kennedi.json").read_text()), "name": "Maya"}
+    (root / "children" / "maya-kid.json").write_text(json.dumps(clash))
+    code, out = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "maya-kid", 1)
+    check("a child named Maya can't be the hero of a book with Maya in it",
+          code and "can't be the hero" in out and "called Maya" in out and not (root / "design-source").exists(),
+          out.strip()[-160:])
+    (root / "children" / "maya-kid.json").unlink()
+    code, out = run(root, "selftest")
+    check("the revised proof story as committed passes", not code and "1 personal stories" in out, out.strip()[-200:])
+
+
+def case_book_lock_follows_friends(root):
+    """A book page draws on a friend's locked sheet: re-locking the friend or editing their profile fails the page
+    lock, and a friend with no sound sheet is refused before rendering."""
+    drawn(root, "pippa")
+    child_drawn(root, "kennedi")
+    code, out = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "kennedi", 3)
+    check("a friend in the cast with no locked sheet is refused",
+          code and "maya has no locked sheet -- run `friend maya`, then `lock-friend maya`, first" in out
+          and not (root / "design-source/books").exists(), out.strip()[-160:])
+    friend_drawn(root, "maya")
+    book_paged(root, "kennedi", 3)
+    code, out = run(root, "selftest")
+    check("the book page lock with Maya checks out", not code and "1 book page locks" in out, out.strip()[-160:])
+    clash = root / "friends/pippa-pal.json"
+    clash.write_text(json.dumps({**json.loads((root / "friends/maya.json").read_text()), "name": "Pippa"}))
+    code, out = run(root, "selftest")
+    check("a friend named Pippa is the one problem: left out of the roster, it doesn't stand in for the canon Pippa "
+          "in the page lock drawn with her", code and "is also the name of the canon character Pippa" in out
+          and out.strip().endswith("; 1 problems"), out.strip()[-240:])
+    clash.unlink()
+    profile_path = root / "friends/maya.json"
+    profile = profile_path.read_text()
+
+    def edit_maya():
+        data = json.loads(profile)
+        data["appearance"]["outfit"] = "a red raincoat over a teal dress, and red rain boots"
+        profile_path.write_text(json.dumps(data))
+
+    for label, change, whys, restore in [
+            ("re-locking Maya", lambda: run(root, "lock-friend", "maya", "--seed", 94, "--force"),
+             ["page-03.recipe.json: its recorded references"],
+             lambda: run(root, "lock-friend", "maya", "--seed", 72, "--force")),
+            ("editing Maya's profile", edit_maya,
+             ["page-03.recipe.json: its recorded friends", "maya.recipe.json: its recorded profile"],
+             lambda: profile_path.write_text(profile))]:
+        change()
+        code, out = run(root, "selftest")
+        check(f"{label} fails the book page lock", code and all(why in out for why in whys), out.strip()[-300:])
+        restore()
+        code, out = run(root, "selftest")
+        check("and putting it back makes it check out again", not code, out.strip()[-160:])
+    sheet = root / FRIEND_LOCKED / "maya.png"
+    Image.open(sheet).convert("RGB").save(sheet)          # same pixels, graph dropped: the lock no longer holds
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "book-page", BOOK, "kennedi", 3)
+        check("a friend whose sheet fails its lock checks is refused before uploading",
+              code and "fail their checks" in out and "maya.recipe.json" in out and not comfy.uploads,
+              out.strip()[-200:])
+    finally:
+        comfy.close()
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
@@ -1308,7 +1555,9 @@ def main():
              case_reference_fingerprints, case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check,
              case_lost_comfy_keeps_finished_seeds, case_resume_needs_the_same_recipe, case_character_sets_resume_too,
              case_bad_replies_are_not_kept, case_child_sheets, case_profile_check, case_personal_story_check,
-             case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals]
+             case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals,
+             case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
+             case_book_lock_follows_friends]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:

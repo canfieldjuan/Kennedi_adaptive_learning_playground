@@ -1,0 +1,15 @@
+{
+ "name": "Sora",
+ "child": "girl",
+ "age": 6,
+ "appearance": {
+  "skin": "light skin",
+  "hair": "a straight black chin-length bob with a small red clip",
+  "eyes": "dark brown eyes",
+  "outfit": "a lavender dress with big pockets, and white sneakers",
+  "glasses": true
+ },
+ "personality": "the planner, who carries a folded map",
+ "role": "friend",
+ "source": "Invented for the storybook friends roster; not a real child. Accepted with learning-playground/docs/work-contracts/storybook-friends.md (2026-10-07)."
+}
