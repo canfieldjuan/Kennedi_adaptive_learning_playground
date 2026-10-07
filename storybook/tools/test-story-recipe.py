@@ -61,8 +61,9 @@ def form_fields(content_type, body):
 
 class FakeComfy:
     """ComfyUI's HTTP API, as much of it as the tool uses: it lists the allowlisted models and its nodes, keeps
-    uploaded images, queues a graph, "renders" an image of the requested size from the graph and the images it
-    loads, and embeds the graph as ComfyUI does. rename_uploads stores uploads under another name, as ComfyUI
+    uploaded images, queues a graph (sent keeps each one as it arrived), "renders" an image of the requested size
+    from the graph and the images it loads, and embeds the graph as ComfyUI does, with each LoadImage's is_changed
+    fingerprint. rename_uploads stores uploads under another name, as ComfyUI
     does without overwrite; die_after=N drops the connection while the (N+1)th render is polled, as a ComfyUI that
     stops mid-set does; version is what /system_stats reports (None: no version); bad_history and bad_view map a
     render's index to the broken reply its /history poll or /view download gets instead (a job id string serves
@@ -72,7 +73,7 @@ class FakeComfy:
 
     def __init__(self, models=MODEL_FILES, nodes=NODES, rename_uploads=False, die_after=None, version="fake",
                  bad_history=None, bad_view=None, upgrade_after=None, stats=None):
-        self.images, self.uploads, fake = {}, {}, self
+        self.images, self.uploads, self.sent, fake = {}, {}, [], self
 
         class Handler(http.server.BaseHTTPRequestHandler):
             def log_message(self, *args):
@@ -98,6 +99,7 @@ class FakeComfy:
                     fake.uploads[name] = data
                     return self.reply({"name": name, "subfolder": "", "type": "input"})
                 graph = json.loads(body)["prompt"]
+                fake.sent.append(graph)
                 prompt_id = f"job{len(fake.images)}"
                 fake.images[prompt_id] = fake.render(graph, fake.uploads)
                 self.reply({"prompt_id": prompt_id})
@@ -145,8 +147,14 @@ class FakeComfy:
         digest = hashlib.sha256(json.dumps(graph, sort_keys=True).encode() + loaded).digest()
         image = Image.new("RGB", (latent["width"], latent["height"]), (250, 244, 230))
         image.paste((digest[0], digest[1], digest[2]), (200, 200, 600, 600))
+        # As ComfyUI does before it runs a job: each LoadImage gets is_changed, the SHA-256 of the file it loads,
+        # unless the job sent one; the job is embedded with it.
+        embedded = json.loads(json.dumps(graph))
+        for node in embedded.values():
+            if node["class_type"] == "LoadImage" and "is_changed" not in node:
+                node["is_changed"] = [sha((uploads or {}).get(node["inputs"]["image"], b"missing"))]
         meta = PngInfo()
-        meta.add_text("prompt", json.dumps(graph))
+        meta.add_text("prompt", json.dumps(embedded))
         out = io.BytesIO()
         image.save(out, "PNG", pnginfo=meta)
         return out.getvalue()
@@ -519,6 +527,79 @@ def case_page_refusals(root):
     code, out = run(root, "lock-page", STORY, 1, "--seed", 83, "--force")
     code2, out2 = run(root, "selftest")
     check("with --force the page lock is replaced and checks out", not code and not code2, (out + out2).strip()[-160:])
+
+
+def case_reference_fingerprints(root):
+    """A page PNG embeds the sent graph plus ComfyUI's fingerprint of each reference it loaded: the locked sheet's
+    SHA-256 on its LoadImage. A missing, wrong or misplaced fingerprint is not this recipe's render."""
+    drawn(root, "pippa")
+    pippa = sha((root / LOCKED / "pippa.png").read_bytes())
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        sent = [node for graph in comfy.sent for node in graph.values()]
+    finally:
+        comfy.close()
+    candidate = root / PAGE_DRAFTS / "page-01-candidate-61.png"
+    graph = json.loads(Image.open(candidate).info["prompt"]) if candidate.is_file() else {}
+    fingerprints = [node.get("is_changed") for node in graph.values() if node["class_type"] == "LoadImage"]
+    check("a page whose PNG carries Pippa's sheet's SHA-256 on its LoadImage is recorded",
+          not code and fingerprints == [[pippa]], f"{out.strip()[-160:]} {fingerprints}")
+    check("and the graphs the tool sent carry no fingerprint of their own",
+          len(comfy.sent) == 4 and sent and not any("is_changed" in node for node in sent))
+    shutil.rmtree(root / PAGE_DRAFTS, ignore_errors=True)
+
+    def refingerprinted(change):                    # the real pixels, with the embedded graph's fingerprints changed
+        def serve(real):
+            image = Image.open(io.BytesIO(real))
+            graph = json.loads(image.info["prompt"])
+            for node in graph.values():
+                change(node)
+            meta, out = PngInfo(), io.BytesIO()
+            meta.add_text("prompt", json.dumps(graph))
+            image.save(out, "PNG", pnginfo=meta)
+            return out.getvalue()
+        return serve
+    loads = lambda node: node["class_type"] == "LoadImage"
+    for label, change in [
+            ("no fingerprint", lambda node: node.pop("is_changed", None)),
+            ("another file's fingerprint", lambda node: loads(node) and node.update(is_changed=[sha(b"another")])),
+            ("the fingerprint ComfyUI writes when its check fails (NaN)",
+             lambda node: loads(node) and node.update(is_changed=float("nan"))),
+            ("the fingerprint twice", lambda node: loads(node) and node.update(is_changed=[pippa, pippa])),
+            ("a fingerprint on the KSampler too", lambda node: node["class_type"] == "KSampler"
+             and node.update(is_changed=[pippa]))]:
+        comfy = FakeComfy(bad_view={0: refingerprinted(change)})
+        try:
+            code, out = run(root, "--server", comfy.url, "page", STORY, 1)
+        finally:
+            comfy.close()
+        check(f"a page PNG with {label} is refused, nothing recorded",
+              code and "isn't this recipe's render" in out and "its embedded graph is not the one" in out
+              and "nothing was written" in out and not list((root / PAGE_DRAFTS).glob("page-01-*")),
+              out.strip()[-200:])
+    drawn(root, "bramble", seed=61)
+    child_drawn(root, "kennedi")
+    references = [sha((root / CHILD_LOCKED / "kennedi.png").read_bytes()), pippa,
+                  sha((root / LOCKED / "bramble.png").read_bytes())]
+    comfy = FakeComfy(bad_view={0: refingerprinted(lambda node: node.pop("is_changed", None))})
+    try:
+        code, out = run(root, "--server", comfy.url, "book-page", BOOK, "kennedi", 3)
+    finally:
+        comfy.close()
+    check("a book page PNG with no fingerprint is refused too",
+          code and "its embedded graph is not the one" in out and "nothing was written" in out, out.strip()[-200:])
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "book-page", BOOK, "kennedi", 3)
+    finally:
+        comfy.close()
+    candidate = root / book_folder("kennedi", "drafts") / "page-03-candidate-61.png"
+    graph = json.loads(Image.open(candidate).info["prompt"]) if candidate.is_file() else {}
+    loaded = {node_id: node.get("is_changed") for node_id, node in graph.items() if node["class_type"] == "LoadImage"}
+    check("a book page carries Kennedi's, Pippa's and Bramble's fingerprints, in picture order, and is recorded",
+          not code and [loaded[node_id] for node_id in sorted(loaded)] == [[digest] for digest in references],
+          f"{out.strip()[-160:]} {loaded}")
 
 
 def case_relocked_sheet(root):
@@ -1224,7 +1305,7 @@ def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
              case_locked_folder_holds_only_records, case_page_lock_selftest, case_page_refusals,
-             case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check,
+             case_reference_fingerprints, case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check,
              case_lost_comfy_keeps_finished_seeds, case_resume_needs_the_same_recipe, case_character_sets_resume_too,
              case_bad_replies_are_not_kept, case_child_sheets, case_profile_check, case_personal_story_check,
              case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals]
