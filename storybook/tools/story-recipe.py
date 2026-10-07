@@ -274,9 +274,20 @@ def comfy_graph(text):
     return graph
 
 
+def comfy_embed(graph, recipe):
+    """The graph ComfyUI embeds in the PNG of a job the tool sent as graph. Before it runs a job, ComfyUI writes
+    is_changed into each node that has a change check; for LoadImage that is a one-item list holding the SHA-256 of
+    the file it loaded, which is a locked sheet uploaded under its own digest. The tool never sends is_changed
+    (ComfyUI would use a sent one instead of hashing the file), so this is the one place it is added."""
+    digests = {reference_name(reference["sha256"]): reference["sha256"] for reference in recipe.get("references", [])}
+    return {node_id: {**node, "is_changed": [digests[node["inputs"]["image"]]]} if node["class_type"] == "LoadImage"
+            else node for node_id, node in graph.items()}
+
+
 def rebuild_problems(png, manifest, expected, seed, build_graph, what):
     """Why png and its recipe are not what the tool rebuilds from the recipe's inputs (expected) at this seed; an
-    empty list when they are. build_graph is the graph builder for this kind of recipe."""
+    empty list when they are. build_graph is the graph builder for this kind of recipe; the PNG must embed the graph
+    it builds as ComfyUI embeds it (comfy_embed)."""
     problems = []
     for key in sorted(set(manifest) | set(expected)):
         if key in expected and key not in manifest:
@@ -296,7 +307,7 @@ def rebuild_problems(png, manifest, expected, seed, build_graph, what):
     nodes = {node["class_type"]: node["inputs"] for node in graph.values()}
     if nodes.get("KSampler", {}).get("seed") != seed:
         problems.append(f"it was rendered at seed {nodes.get('KSampler', {}).get('seed')}, not {seed}")
-    if graph != build_graph(expected, seed, nodes.get("SaveImage", {}).get("filename_prefix")):
+    if graph != comfy_embed(build_graph(expected, seed, nodes.get("SaveImage", {}).get("filename_prefix")), expected):
         problems.append(f"its embedded graph is not the one its recipe renders at seed {seed}")
     return problems
 
