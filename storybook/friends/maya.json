@@ -1,0 +1,15 @@
+{
+ "name": "Maya",
+ "child": "girl",
+ "age": 5,
+ "appearance": {
+  "skin": "deep brown skin",
+  "hair": "black hair in two round puffs, each tied with a yellow ribbon",
+  "eyes": "dark brown eyes",
+  "outfit": "a yellow raincoat over a teal dress, and yellow rain boots",
+  "glasses": false
+ },
+ "personality": "the bold one, always first down the path",
+ "role": "friend",
+ "source": "Invented for the storybook friends roster; not a real child. Accepted with learning-playground/docs/work-contracts/storybook-friends.md (2026-10-07)."
+}

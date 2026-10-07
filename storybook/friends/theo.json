@@ -1,0 +1,15 @@
+{
+ "name": "Theo",
+ "child": "boy",
+ "age": 4,
+ "appearance": {
+  "skin": "fair skin with light freckles",
+  "hair": "short curly copper-red hair",
+  "eyes": "green eyes",
+  "outfit": "a striped blue-and-white shirt, brown overalls and brown boots",
+  "glasses": false
+ },
+ "personality": "the quiet collector, with pockets full of pebbles and feathers",
+ "role": "friend",
+ "source": "Invented for the storybook friends roster; not a real child. Accepted with learning-playground/docs/work-contracts/storybook-friends.md (2026-10-07)."
+}

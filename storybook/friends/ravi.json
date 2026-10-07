@@ -1,0 +1,15 @@
+{
+ "name": "Ravi",
+ "child": "boy",
+ "age": 5,
+ "appearance": {
+  "skin": "medium brown skin",
+  "hair": "short wavy black hair",
+  "eyes": "dark brown eyes",
+  "outfit": "a sky-blue hoodie, grey shorts and white sneakers",
+  "glasses": false
+ },
+ "personality": "the joker, who makes up silly songs",
+ "role": "friend",
+ "source": "Invented for the storybook friends roster; not a real child. Accepted with learning-playground/docs/work-contracts/storybook-friends.md (2026-10-07)."
+}
