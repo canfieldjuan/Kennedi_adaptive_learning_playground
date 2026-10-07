@@ -976,17 +976,23 @@ def case_child_sheets(root):
     try:
         code, out = run(root, "--server", comfy.url, "child", "kennedi")
         drafts = sorted(p.name for p in (root / CHILD_DRAFTS).iterdir()) if (root / CHILD_DRAFTS).is_dir() else []
-        check("child renders four candidates, a contact sheet and a recipe", not code and drafts == [
-            "kennedi-candidate-61.png", "kennedi-candidate-72.png", "kennedi-candidate-83.png",
-            "kennedi-candidate-94.png", "kennedi-contact-sheet.png", "kennedi-recipe.json"], f"{out.strip()[-120:]} {drafts}")
+        check("child renders four text renders, their four cleanups as candidates, a contact sheet and a recipe",
+              not code and drafts == sorted([
+            *(f"kennedi-candidate-{seed}.png" for seed in (61, 72, 83, 94)), "kennedi-contact-sheet.png", "kennedi-recipe.json",
+            *(f"kennedi-render-{seed}.png" for seed in (61, 72, 83, 94))]), f"{out.strip()[-120:]} {drafts}")
         girl = json.loads((root / CHILD_DRAFTS / "kennedi-recipe.json").read_text())
-        check("Kennedi's sheet is a young girl of 4, with her look in its own sentences and no glasses",
+        check("Kennedi's sheet is a young girl of 4 with brown skin and short pigtails, her look in its own sentences "
+              "and no glasses",
               girl["kind"] == "child-sheet" and "A single young girl, about 4 years old" in girl["prompt"]
-              and "She has warm medium golden-tan skin" in girl["prompt"] and "She is wearing a cream collared polo" in
-              girl["prompt"] and "glasses" not in girl["prompt"], girl["prompt"])
-        check("a child's sheet names exactly the three base-model files",
+              and "She has brown skin, big round dark eyes" in girl["prompt"]
+              and "two short, wavy pigtails at the sides of her head that end above her shoulders" in girl["prompt"]
+              and "her forehead bare and smooth. She is wearing a cream collared polo" in girl["prompt"]
+              and "glasses" not in girl["prompt"], girl["prompt"])
+        check("a child's text render names exactly the three base-model files, and its cleanup the edit model's",
               [m["file"] for m in girl["models"]] == ["qwen-image-Q8_0.gguf", "qwen_2.5_vl_7b_fp8_scaled.safetensors",
-                                                      "qwen_image_vae.safetensors"])
+                                                      "qwen_image_vae.safetensors"]
+              and [m["file"] for m in girl["cleanup"]["models"]] == [EDIT_MODEL, "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                                                                     "qwen_image_vae.safetensors"])
         run(root, "--server", comfy.url, "child", "leo")
         boy = json.loads((root / CHILD_DRAFTS / "leo-recipe.json").read_text())
         check("Leo's sheet is a young boy of 5, with round glasses",
@@ -995,8 +1001,9 @@ def case_child_sheets(root):
         code, out = run(root, "lock-child", "kennedi", "--seed", 72)
         code2, out2 = run(root, "lock-child", "leo", "--seed", 61)
         locked = sorted(p.name for p in (root / CHILD_LOCKED).iterdir())
-        check("lock-child writes each child's sheet and recipe", not code and not code2 and locked == [
-            "kennedi.png", "kennedi.recipe.json", "leo.png", "leo.recipe.json"], (out + out2).strip()[-160:])
+        check("lock-child writes each child's sheet, its text render and its recipe", not code and not code2 and locked == [
+            "kennedi-render.png", "kennedi.png", "kennedi.recipe.json", "leo-render.png", "leo.png", "leo.recipe.json"],
+              (out + out2).strip()[-160:])
         code, out = run(root, "selftest")
         check("and selftest passes", not code and "2 children, 2 child locks" in out, out.strip()[-200:])
     finally:
@@ -1017,6 +1024,247 @@ def case_child_sheets(root):
         code, out = run(root, "--server", "http://127.0.0.1:9", *args)
         check(f"{' '.join(map(str, args))} is refused: a child is never a canon character, nor the reverse",
               code and why in out, out.strip()[-160:])
+
+
+def case_two_stage_sheets(root):
+    """A v2 child or friend sheet is two renders at its seed: the v1 text render, then a cleanup on the edit model with
+    the text render as picture 1. Both are recorded, locked and checked."""
+    module = tool(root)
+    sha = lambda data: hashlib.sha256(data).hexdigest()
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "child", "kennedi")
+        recipe = json.loads((root / CHILD_DRAFTS / "kennedi-recipe.json").read_text())
+        drafts = root / CHILD_DRAFTS
+        kennedi = json.loads((root / "children/kennedi.json").read_text())
+        check("the text render is v1's text and render, so v2 keeps v1's prompt word for word",
+              not code and recipe["template_version"] == "v2" and recipe["render_version"] == "v1"
+              and recipe["prompt"] == module.child_prompt(module.CHILD_TEMPLATES["v1"], kennedi)
+              and recipe["settings"] == module.RENDERS["v1"], out.strip()[-160:])
+        check("the cleanup takes the pink off her cheeks and nose and keeps her skin, on PAGE_RENDERS v1",
+              recipe["cleanup"]["prompt"] == "Take away the pink blush on the girl's cheeks and the pink on her nose. "
+              "Keep her skin exactly the colour it is, and keep everything else in picture 1 exactly the same."
+              and recipe["cleanup"]["render_version"] == "v1" and recipe["cleanup"]["settings"] == module.PAGE_RENDERS["v1"],
+              recipe["cleanup"])
+        check("the recipe records each text render's SHA-256, and each candidate's",
+              recipe["renders"] == {f"kennedi-render-{s}.png": sha((drafts / f"kennedi-render-{s}.png").read_bytes())
+                                    for s in (61, 72, 83, 94)}
+              and recipe["candidates"] == {f"kennedi-candidate-{s}.png":
+                                           sha((drafts / f"kennedi-candidate-{s}.png").read_bytes())
+                                           for s in (61, 72, 83, 94)}, sorted(recipe["renders"]))
+        inputs = lambda graph, node, key: [n["inputs"][key] for n in graph.values() if n["class_type"] == node]
+        seeds = [seed for graph in comfy.sent for seed in inputs(graph, "KSampler", "seed")]
+        check("each seed is its text render, then that render's cleanup at the same seed",
+              seeds == [61, 61, 72, 72, 83, 83, 94, 94]
+              and all(inputs(g, "UnetLoaderGGUF", "unet_name") == ["qwen-image-Q8_0.gguf"]
+                      and inputs(g, "CLIPTextEncode", "text") == [recipe["prompt"], ""] for g in comfy.sent[0::2])
+              and all(inputs(g, "UnetLoaderGGUF", "unet_name") == [EDIT_MODEL]
+                      and inputs(g, "TextEncodeQwenImageEditPlus", "prompt") == [recipe["cleanup"]["prompt"], ""]
+                      and inputs(g, "KSampler", "steps") == [40] for g in comfy.sent[1::2]), seeds)
+        loads = [[n["inputs"]["image"] for n in graph.values() if n["class_type"] == "LoadImage"]
+                 for graph in comfy.sent[1::2]]
+        uploaded = {name: sha(data) for name, data in comfy.uploads.items()}
+        check("a cleanup's one reference is its own seed's text render, uploaded under its SHA-256",
+              loads == [[f"storybook-{recipe['renders'][f'kennedi-render-{s}.png']}.png"] for s in (61, 72, 83, 94)]
+              and all(uploaded[name] == name[len("storybook-"):-len(".png")] for [name] in loads), loads)
+        candidate = json.loads(Image.open(drafts / "kennedi-candidate-72.png").info["prompt"])
+        check("the candidate is the cleanup, carrying its text render's fingerprint",
+              [n["is_changed"] for n in candidate.values() if n["class_type"] == "LoadImage"]
+              == [[recipe["renders"]["kennedi-render-72.png"]]])
+        run(root, "--server", comfy.url, "child", "leo")
+        leo = json.loads((root / CHILD_DRAFTS / "leo-recipe.json").read_text())
+        check("a boy's cleanup says his cheeks, his nose and his skin",
+              leo["cleanup"]["prompt"].startswith("Take away the pink blush on the boy's cheeks and the pink on his "
+                                                  "nose. Keep his skin exactly the colour it is"), leo["cleanup"]["prompt"])
+        run(root, "--server", comfy.url, "friend", "theo")
+        theo = json.loads((root / FRIEND_DRAFTS / "theo-recipe.json").read_text())
+        check("a friend's sheet has the same cleanup", theo["cleanup"]["prompt"] == leo["cleanup"]["prompt"]
+              and sorted(theo["renders"]) == [f"theo-render-{s}.png" for s in (61, 72, 83, 94)])
+    finally:
+        comfy.close()
+    render72 = drafts / "kennedi-render-72.png"
+    kept = render72.read_bytes()
+    Image.open(io.BytesIO(kept)).save(render72, pnginfo=PngInfo())     # same pixels, re-saved: other bytes
+    code, out = run(root, "lock-child", "kennedi", "--seed", 72)
+    check("lock-child refuses a text render edited after rendering",
+          code and "kennedi-render-72.png is not the bytes `child` rendered" in out
+          and not any((root / CHILD_LOCKED).glob("*")), out.strip()[-160:])
+    render72.unlink()
+    code, out = run(root, "lock-child", "kennedi", "--seed", 72)
+    check("lock-child refuses a missing text render", code and "kennedi-render-72.png is missing" in out
+          and not any((root / CHILD_LOCKED).glob("*")), out.strip()[-160:])
+    render72.write_bytes(kept)
+    code, out = run(root, "lock-child", "kennedi", "--seed", 72)
+    locked = root / CHILD_LOCKED
+    lock = json.loads((locked / "kennedi.recipe.json").read_text()) if (locked / "kennedi.recipe.json").is_file() else {}
+    check("lock-child locks the cleaned sheet and its text render, and records both",
+          not code and "locked design-source/children/locked/kennedi.png + kennedi-render.png + .recipe.json" in out
+          and (locked / "kennedi-render.png").read_bytes() == kept
+          and lock.get("files") == {"kennedi.png": sha((locked / "kennedi.png").read_bytes()),
+                                    "kennedi-render.png": sha(kept)}, out.strip()[-160:])
+    code, out = run(root, "selftest")
+    check("and selftest passes", not code and "1 child locks" in out, out.strip()[-200:])
+    other = (drafts / "kennedi-render-61.png").read_bytes()
+    texts = {"kennedi.png": (locked / "kennedi.png").read_bytes(), "kennedi-render.png": kept,
+             "kennedi.recipe.json": (locked / "kennedi.recipe.json").read_bytes()}
+
+    def relock(swapped=None, **changes):
+        """Write the lock with some files (swapped: name -> bytes, None to leave it out) and recipe keys changed; the
+        recorded file digests follow the bytes unless files is one of the changes."""
+        for name, data in {**texts, **(swapped or {})}.items():
+            (locked / name).write_bytes(data) if data is not None else (locked / name).unlink()
+        recipe = {**json.loads(texts["kennedi.recipe.json"]), **changes}
+        recipe["files"] = {name: sha((locked / name).read_bytes()) for name in recipe["files"]
+                           if (locked / name).is_file()} if "files" not in changes else changes["files"]
+        (locked / "kennedi.recipe.json").write_text(json.dumps(recipe))
+
+    bad_cleanup = {**lock.get("cleanup", {}), "prompt": "Take away the pink blush."}
+    for label, swapped, changes, whys in [
+            ("another seed's text render, its digest recorded", {"kennedi-render.png": other}, {},
+             ["is not the text render its recipe records for seed 72", "kennedi-render.png: it was rendered at seed 61",
+              "its embedded graph is not the one its recipe renders at seed 72"]),
+            ("no text render", {"kennedi-render.png": None}, {},
+             ["kennedi-render.png is not on disk, and kennedi.png is drawn from it"]),
+            ("the text render locked as the sheet", {"kennedi.png": kept}, {},
+             ["its embedded graph is not the one its recipe renders at seed 72"]),
+            ("its recorded render digest changed", None, {"renders": {**lock.get("renders", {}),
+                                                                      "kennedi-render-72.png": sha(other)}},
+             ["is not the text render its recipe records for seed 72"]),
+            ("its text render left out of its files", None, {"files": {"kennedi.png": sha(texts["kennedi.png"])}},
+             ["a child lock owns kennedi-render.png, kennedi.png", "kennedi-render.png: no recipe owns it"]),
+            ("no renders recorded", None, {"renders": None}, ["is not the text render its recipe records"]),
+            ("its cleanup reworded", None, {"cleanup": bad_cleanup}, ["its recorded cleanup is not what the tool records"]),
+            ("its cleanup on a model off the allowlist", None,
+             {"cleanup": {**lock.get("cleanup", {}), "models": [{"role": "edit_unet", "file": "flux1-dev.gguf"}]}},
+             ["is not on the licence allowlist"])]:
+        relock(swapped, **changes)
+        code, out = run(root, "selftest")
+        check(f"a v2 lock with {label} fails selftest", code and all(why in out for why in whys), out.strip()[-300:])
+        relock()
+        code, out = run(root, "selftest")
+        check("and putting it back makes it check out again", not code, out.strip()[-160:])
+
+
+def case_two_stage_resume(root):
+    """A seed of a two-stage sheet is recorded only once both renders pass: a ComfyUI lost between them, or a cleanup
+    that isn't the recipe's, keeps the finished seeds and records nothing of that seed."""
+    drafts = root / CHILD_DRAFTS
+    no_edit_model = {**MODEL_FILES, "UnetLoaderGGUF": ("unet_name", ["qwen-image-Q8_0.gguf"])}
+    for label, comfy_args, why in [
+            ("that can't see the edit model", {"models": no_edit_model}, f"ComfyUI can't see {EDIT_MODEL}"),
+            ("without the edit graph's nodes", {"nodes": NODES - {"TextEncodeQwenImageEditPlus"}},
+             "ComfyUI has no TextEncodeQwenImageEditPlus node")]:
+        comfy = FakeComfy(**comfy_args)
+        try:
+            code, out = run(root, "--server", comfy.url, "child", "kennedi")
+        finally:
+            comfy.close()
+        check(f"a ComfyUI {label} is refused before anything renders",
+              code and why in out and renders(comfy) == 0 and not drafts.exists(), out.strip()[-160:])
+    comfy = FakeComfy(die_after=3)          # seed 61's two renders and seed 72's text render, then it goes away
+    try:
+        code, out = run(root, "--server", comfy.url, "child", "kennedi")
+    finally:
+        comfy.close()
+    names = sorted(p.name for p in drafts.iterdir())
+    check("a ComfyUI lost during seed 72's cleanup keeps seed 61, and nothing of seed 72",
+          code and "lost the render of seed 72" in out and "kept kennedi-candidate-61.png" in out
+          and names == ["kennedi-candidate-61.png", "kennedi-recipe.json", "kennedi-render-61.png"],
+          f"{out.strip()[-160:]} {names}")
+    recipe_path = drafts / "kennedi-recipe.json"
+    written = recipe_path.read_text()
+    recipe_path.write_text(json.dumps({**json.loads(written), "renders": {}}))
+    comfy = FakeComfy(die_after=0)
+    try:
+        code, out = run(root, "--server", comfy.url, "child", "kennedi")
+    finally:
+        comfy.close()
+    check("a set whose recipe doesn't record a kept seed's text render is not resumed",
+          code and "lost the render of seed 61" in out and "nothing was written" in out, out.strip()[-160:])
+    recipe_path.write_text(written)
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "child", "kennedi")
+        check("the same command renders only the missing seeds, two renders each",
+              not code and "kept kennedi-candidate-61.png from an earlier run" in out and renders(comfy) == 6,
+              f"{out.strip()[-160:]} | {renders(comfy)} renders")
+    finally:
+        comfy.close()
+    (drafts / "kennedi-render-83.png").unlink()
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "child", "kennedi")
+        check("a set missing a recorded text render is rendered afresh", not code and renders(comfy) == 8,
+              f"{out.strip()[-160:]} | {renders(comfy)} renders")
+    finally:
+        comfy.close()
+    for path in drafts.iterdir():
+        path.unlink()
+    comfy = FakeComfy(bad_view={0: b"<html>502 Bad Gateway</html>"})     # seed 61's text render is an error page
+    try:
+        code, out = run(root, "--server", comfy.url, "child", "kennedi")
+    finally:
+        comfy.close()
+    check("a text render that isn't the recipe's is never cleaned up or recorded",
+          code and "lost the render of seed 61" in out and "aren't an image" in out and "nothing was written" in out
+          and renders(comfy) == 1 and not any(drafts.glob("kennedi-*.png")), f"{out.strip()[-200:]} | {renders(comfy)}")
+    comfy = FakeComfy(bad_view={1: "job0"})     # seed 61's cleanup answered with its text render
+    try:
+        code, out = run(root, "--server", comfy.url, "child", "kennedi")
+    finally:
+        comfy.close()
+    check("a cleanup that is not the recipe's cleanup is never recorded",
+          code and "isn't this recipe's render" in out and "nothing was written" in out
+          and not any(drafts.glob("kennedi-*.png")), out.strip()[-200:])
+
+
+def case_v1_locks_still_hold(root):
+    """Templates are versioned: a sheet locked under v1, before the cleanup, still checks out and still draws a book
+    page, and re-locking moves its text render in or out with the template."""
+    source = root / "tools/story-recipe.py"
+    current = source.read_text()
+    assert current.count('CHILD_TEMPLATE = "v2"') == 1
+    source.write_text(current.replace('CHILD_TEMPLATE = "v2"', 'CHILD_TEMPLATE = "v1"'))     # the tool before v2
+    child_drawn(root, "leo")
+    source.write_text(current)
+    locked = root / CHILD_LOCKED
+    code, out = run(root, "selftest")
+    check("Leo's v1 lock still checks out under the v2 tool", not code and "1 child locks" in out
+          and sorted(p.name for p in locked.iterdir()) == ["leo.png", "leo.recipe.json"], out.strip()[-200:])
+    v1_recipe = (locked / "leo.recipe.json").read_text()
+    (locked / "leo.recipe.json").write_text(json.dumps({**json.loads(v1_recipe), "renders": {}}))
+    code, out = run(root, "selftest")
+    check("a v1 lock that records text renders fails selftest: only a two-stage sheet has them",
+          code and "it records renders, which the tool does not" in out, out.strip()[-200:])
+    (locked / "leo.recipe.json").write_text(v1_recipe)
+    drawn(root, "pippa")
+    friend_drawn(root, "maya")
+    book_paged(root, "leo", 3)
+    code, out = run(root, "selftest")
+    check("and a book page drawn from it (and Maya's v2 sheet) locks and checks out",
+          not code and "1 book page locks" in out, out.strip()[-200:])
+    comfy = FakeComfy()
+    try:
+        run(root, "--server", comfy.url, "child", "leo")
+    finally:
+        comfy.close()
+    code, out = run(root, "lock-child", "leo", "--seed", 61, "--force")
+    code2, out2 = run(root, "selftest")
+    check("re-locking Leo under v2 locks his text render too, and fails the page drawn from his v1 sheet",
+          not code and sorted(p.name for p in locked.iterdir()) == ["leo-render.png", "leo.png", "leo.recipe.json"]
+          and code2 and "page-03.recipe.json: its recorded references" in out2, (out + out2).strip()[-200:])
+    source.write_text(current.replace('CHILD_TEMPLATE = "v2"', 'CHILD_TEMPLATE = "v1"'))
+    comfy = FakeComfy()
+    try:
+        run(root, "--server", comfy.url, "child", "leo")
+        code, out = run(root, "lock-child", "leo", "--seed", 72, "--force")
+    finally:
+        comfy.close()
+        source.write_text(current)
+    code2, out2 = run(root, "selftest")
+    check("re-locking him from a v1 set takes the v2 text render out of the lock, so nothing is left without an owner",
+          not code and sorted(p.name for p in locked.iterdir()) == ["leo.png", "leo.recipe.json"]
+          and "no recipe owns it" not in out2 and "leo.recipe.json" not in out2, (out + out2).strip()[-300:])
 
 
 def case_profile_check(root):
@@ -1048,7 +1296,7 @@ def case_profile_check(root):
             ("a 25-letter name", profile(name="A" + "b" * 24), "its name"), ("an empty name", profile(name=""), "its name"),
             ("a name with a digit", profile(name="Leo2"), "its name"),
             ("two spaces in a name", profile(name="Mary  Jane"), "its name"),
-            ("a 201-character phrase", profile(skin="s" * 201), "its skin is not"),
+            ("a 241-character phrase", profile(skin="s" * 241), "its skin is not"),
             ("a phrase with a newline", profile(skin="deep brown\nskin"), "its skin is not"),
             ("an empty phrase", profile(hair="   "), "its hair is not"),
             ('glasses "yes"', profile(glasses="yes"), "its glasses"),
@@ -1063,7 +1311,7 @@ def case_profile_check(root):
               (out + out2).strip()[-200:])
     for label, made in [("age 2", profile(age=2)), ("age 8", profile(age=8)), ('"Mary-Jane"', profile(name="Mary-Jane")),
                         ('"D\'Andre"', profile(name="D'Andre")), ("a 24-letter name", profile(name="A" + "b" * 23)),
-                        ("a 200-character phrase", profile(outfit="o" * 200)), ("a girl", profile(child="girl"))]:
+                        ("a 240-character phrase", profile(outfit="o" * 240)), ("a girl", profile(child="girl"))]:
         path.write_text(json.dumps(made))
         code, out = run(root, "--server", "http://127.0.0.1:9", "child", "testkid")
         code2, out2 = run(root, "selftest")
@@ -1326,19 +1574,21 @@ def case_friend_sheets(root):
     try:
         code, out = run(root, "--server", comfy.url, "friend", "maya")
         drafts = sorted(p.name for p in (root / FRIEND_DRAFTS).iterdir()) if (root / FRIEND_DRAFTS).is_dir() else []
-        check("friend renders four candidates, a contact sheet and a recipe", not code and drafts == [
-            "maya-candidate-61.png", "maya-candidate-72.png", "maya-candidate-83.png", "maya-candidate-94.png",
-            "maya-contact-sheet.png", "maya-recipe.json"], f"{out.strip()[-120:]} {drafts}")
+        check("friend renders four text renders, their four cleanups as candidates, a contact sheet and a recipe",
+              not code and drafts == sorted([
+            *(f"maya-candidate-{seed}.png" for seed in (61, 72, 83, 94)), "maya-contact-sheet.png", "maya-recipe.json",
+            *(f"maya-render-{seed}.png" for seed in (61, 72, 83, 94))]), f"{out.strip()[-120:]} {drafts}")
         maya = json.loads((root / "friends/maya.json").read_text())
         girl = json.loads((root / FRIEND_DRAFTS / "maya-recipe.json").read_text())
         prefixes = sorted(node["inputs"]["filename_prefix"] for graph in comfy.sent for node in graph.values()
                           if node["class_type"] == "SaveImage")
         check("Maya's renders land in ComfyUI's output under storybook/friends/, apart from the children's",
-              prefixes == [f"storybook/friends/maya-{seed}" for seed in (61, 72, 83, 94)]
+              prefixes == sorted(f"storybook/friends/maya-{stage}{seed}" for seed in (61, 72, 83, 94)
+                                 for stage in ("", "cleanup-"))
               and girl["graph"]["10"]["inputs"]["filename_prefix"] == "storybook/friends/maya", prefixes)
         check("Maya's sheet is the child template's prompt for her look: a young girl of 5",
-              girl["kind"] == "friend-sheet" and girl["friend"] == "maya" and girl["template_version"] == "v1"
-              and girl["prompt"] == module.child_prompt(module.CHILD_TEMPLATES["v1"], maya)
+              girl["kind"] == "friend-sheet" and girl["friend"] == "maya" and girl["template_version"] == "v2"
+              and girl["prompt"] == module.child_prompt(module.CHILD_TEMPLATES["v2"], maya)
               and "A single young girl, about 5 years old" in girl["prompt"]
               and "She has deep brown skin, dark brown eyes, and black hair in two round puffs" in girl["prompt"],
               girl["prompt"])
@@ -1357,8 +1607,9 @@ def case_friend_sheets(root):
         code, out = run(root, "lock-friend", "maya", "--seed", 72)
         code2, out2 = run(root, "lock-friend", "theo", "--seed", 61)
         locked = sorted(p.name for p in (root / FRIEND_LOCKED).iterdir())
-        check("lock-friend writes each friend's sheet and recipe", not code and not code2 and locked == [
-            "maya.png", "maya.recipe.json", "theo.png", "theo.recipe.json"], (out + out2).strip()[-160:])
+        check("lock-friend writes each friend's sheet, its text render and its recipe", not code and not code2
+              and locked == ["maya-render.png", "maya.png", "maya.recipe.json", "theo-render.png", "theo.png",
+                             "theo.recipe.json"], (out + out2).strip()[-160:])
         code, out = run(root, "selftest")
         check("and selftest passes", not code and "4 friends, 2 friend locks" in out, out.strip()[-200:])
     finally:
@@ -1555,6 +1806,7 @@ def main():
              case_reference_fingerprints, case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check,
              case_lost_comfy_keeps_finished_seeds, case_resume_needs_the_same_recipe, case_character_sets_resume_too,
              case_bad_replies_are_not_kept, case_child_sheets, case_profile_check, case_personal_story_check,
+             case_two_stage_sheets, case_two_stage_resume, case_v1_locks_still_hold,
              case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals,
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
              case_book_lock_follows_friends]

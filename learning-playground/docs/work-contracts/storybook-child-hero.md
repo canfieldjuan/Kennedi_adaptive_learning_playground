@@ -120,7 +120,7 @@ are phrases; the form slice turns them into closed choices.
 | `name` | 1–24 characters: letters, joined by single spaces, hyphens or apostrophes ("Mary-Jane", "D'Andre"). It is used in the text and the prompt. |
 | `child` | exactly `"boy"` or `"girl"`. Nothing else is accepted: no other value, case or spacing. |
 | `age` | a whole number from 2 to 8. These are picture-book ages, and you can change them. A boolean, a string or 4.0 is refused. |
-| `appearance` | exactly `skin`, `hair`, `eyes`, `outfit` (each a non-empty single-line phrase of at most 200 characters) and `glasses` (`true` or `false`) |
+| `appearance` | exactly `skin`, `hair`, `eyes`, `outfit` (each a non-empty single-line phrase of at most 240 characters; 200 before amendment 5) and `glasses` (`true` or `false`) |
 | `source` | where the answers came from (non-empty) |
 
 - **No other keys.** The file name is the id: lowercase words joined by
@@ -150,8 +150,8 @@ are phrases; the form slice turns them into closed choices.
 | Key | Value |
 |---|---|
 | name, child, age | Kennedi, girl, 4 |
-| skin | warm medium golden-tan skin with an even tone and soft, slightly darker golden-brown shading (Amendment 4) |
-| hair | dark brown hair parted in the middle and pulled back smoothly from her forehead into two long, smooth, wavy pigtails at the sides of her head, each tied with a small round red hair tie |
+| skin | brown skin (Amendment 5) |
+| hair | dark brown hair parted in the middle and pulled back smoothly into two short, wavy pigtails at the sides of her head that end above her shoulders, each tied with a small round red hair tie, her forehead bare and smooth (Amendment 5) |
 | eyes | big round dark eyes with long curled eyelashes |
 | outfit | a cream collared polo shirt with a plain round badge showing a simple red star, an orange knee-length pleated skirt, short white socks and red sneakers |
 | glasses | false |
@@ -160,8 +160,8 @@ Where these values come from:
 - **The skin** aims at the tone you approved on 2026-10-04: `#D9A774`, in
   `workbook/design-source/boss-kennedi/palette.json`. It started as the
   workbook's `<SKIN>` wording, word for word. Amendment 4 rewords it after
-  the first render drew her too light and too rosy; the target tone is
-  unchanged.
+  the first render drew her too light and too rosy, and Amendment 5 after
+  the probes that followed; the target tone is unchanged.
 - **The hairstyle** is the workbook's `<HEAD>`, from the 2026-09-24 face and
   hair lock. One change: `<HEAD>` says "with no bangs", and here it reads
   "pulled back smoothly from her forehead". The renders taught us that
@@ -209,7 +209,7 @@ You can change any of his values.
 > `<hair>`. `<Subject>` is wearing `<outfit>``<glasses>`. Plain soft cream
 > background, full body, centered, no text
 
-(Amended while building; see amendment 1.)
+(Amended while building; see amendment 1. Version 2 adds the cleanup pass; see amendment 5.)
 
 - `<STYLE>` is the v2 sheet style, so the book has one style.
 - `<child>` is "boy" or "girl", and `<Subject>` is "He" or "She".
@@ -391,14 +391,14 @@ Each case exits before anything is written:
       - age 2 and age 8;
       - "Mary-Jane" and "D'Andre";
       - a 24-character name;
-      - a 200-character phrase.
+      - a 240-character phrase (amendment 5).
     - **Refuses:**
       - `child` set to "Boy", "girl " (with a trailing space), "other", "",
         `1`, or missing;
       - age 1, 9, "4", `true` and 4.0;
       - a 25-character name, an empty name, a name with digits, and two
         spaces in a row;
-      - a 201-character phrase, a phrase with a newline, and an empty
+      - a 241-character phrase, a phrase with a newline, and an empty
         phrase;
       - `glasses` set to "yes";
       - an extra key, and a missing key.
@@ -545,6 +545,112 @@ Each case exits before anything is written:
      anything else. The next lever would be the template's shared style
      ("gentle warm palette"), which is a template version and its own
      amendment.
+5. **Kennedi's look, and child sheet template v2, which takes the blush
+   off in a second pass** (the 2026-10-06 and 10-07 probes).
+   - **What the probes measured.** These were scratch renders, nothing
+     locked. Each number is the median brightness of her face, and the
+     approved `#D9A774` measures 174.
+     - Amendment 4's set measured 202 to 206.
+     - **Skin wording:**
+       - "warm golden brown" measured 197 to 201;
+       - "light brown with a warm golden undertone", 201 to 203;
+       - "medium brown with a warm golden undertone", 192 to 195;
+       - "golden brown skin on her face, arms and legs", 199 to 201;
+       - plain **"brown skin"**, 172 to 175.
+
+       Any "golden", "warm" or "light" drew her pale, whatever followed it.
+     - **The style.** Taking "soft" and "gentle warm palette" out of it
+       didn't darken her (190 to 196), and on one seed it changed the whole
+       art style. The shared style stays.
+     - **Hair.** "Two short, wavy pigtails … that end above her shoulders"
+       held on every render. Shorter hair brought bangs back. "Her forehead
+       bare and smooth" removed them on most seeds, but not all.
+     - **Blush.** Naming her cheeks drew more blush, and a negative prompt
+       ("blush, rosy cheeks, pink cheeks") barely changed it. The pink
+       comes with the style, not with her words.
+     - **Pages copy the sheet's cheeks.** "Meets Pippa" pages 1 and 2 were
+       drawn from her blushed sheet and from a blush-free one. The blushed
+       sheet gave pink cheeks on both pages; the blush-free one gave none.
+       So the blush comes off once, on the sheet.
+     - **The edit model takes it off.** Qwen-Image-Edit-2511 was given the
+       "brown skin" seed-72 sheet and told: "Take away the pink blush on the
+       girl's cheeks and the pink on her nose. Keep her skin exactly the
+       colour it is, and keep everything else in picture 1 exactly the
+       same."
+       - At edit seeds 61 and 72 her face measured 175 and 167, against
+         172 before.
+       - Her outfit, pose, hair and background were unchanged.
+       - Instructions that named a colour ("the same brown", "one even
+         brown", "the colour of her forehead") darkened her or turned her
+         face red.
+   - **The operator:**
+     - 2026-10-06, after Amendment 4's set: "Kennedi 94 works but we need
+       darker skin and shorter hair."
+     - 2026-10-07, on the "brown skin" set: "Seed 72 is good but Let's
+       remove the blush altogether".
+     - On the darker blush-free sheet: "She's Too dark and the blush is
+       still there."
+   - **Her profile.**
+     - Skin becomes "brown skin".
+     - Hair becomes "dark brown hair parted in the middle and pulled back
+       smoothly into two short, wavy pigtails at the sides of her head that
+       end above her shoulders, each tied with a small round red hair tie,
+       her forehead bare and smooth".
+     - Her eyes, outfit and glasses are unchanged.
+
+     This is word for word the seed-72 prompt you picked.
+   - **Look phrases may be up to 240 characters** (it was 200). Found while
+     building: her hair, word for word, is 218 characters, and the profile
+     check refused it. The limit guards against a pasted paragraph, not
+     against detail, and the order form will offer closed choices. A
+     friend's personality keeps its limit of 200.
+   - **Child sheet template v2.** v2 keeps v1's text and adds a cleanup
+     instruction:
+
+     > Take away the pink blush on the `<child>`'s cheeks and the pink on
+     > `<possessive>` nose. Keep `<possessive>` skin exactly the colour it
+     > is, and keep everything else in picture 1 exactly the same.
+
+     - `<child>` is "girl" or "boy", and `<possessive>` is "her" or "his".
+     - **A v2 sheet at seed S is two renders:**
+       1. The text render at S. It uses the v1 text and `RENDERS` v1, the
+          same as today.
+       2. The cleanup at S. It uses Qwen-Image-Edit-2511 and `PAGE_RENDERS`
+          v1 settings, with the text render as picture 1 and the cleanup
+          instruction as the prompt.
+
+       The cleanup's output is the candidate. A seed is recorded only once
+       both renders pass their checks.
+     - **The drafts keep each text render** as
+       `<id>-render-<seed>.png`. The recipe records each render's SHA-256.
+     - **A lock keeps both files:** `<id>.png`, the cleaned sheet, and
+       `<id>-render.png`.
+     - **`lock-child` and `selftest` check both.** The text render must
+       rebuild from the profile at S, as today. The cleaned sheet's embedded
+       graph must be the cleanup graph whose one reference is that render's
+       SHA-256, with ComfyUI's fingerprint (#155). Changing either file
+       fails the lock.
+     - **New child sheets use v2.** Book pages and friends draw on the
+       cleaned sheet. Nothing else in the page path changes.
+     - **Time:** about 100 seconds plus about 6 minutes per seed, so about
+       half an hour for four seeds.
+   - **Leo is unchanged.** He is locked under v1, and templates are
+     versioned, so his lock still rebuilds. You approved his look ("Leo
+     looks good too"). His sheet keeps its blush unless you ask for a v2
+     re-render, about half an hour of GPU time.
+   - **Not a check.** "Say the skin colour plainly" is not a profile rule.
+     Leo's "deep brown skin with warm undertones" draws correctly and is
+     locked, so refusing "warm" would break a good lock. The lesson goes to
+     the order form slice, whose closed skin options will be worded
+     plainly.
+   - **What follows.**
+     - Her profile and `source` note change.
+     - The tests that read her real prompt follow the new words.
+     - `child kennedi` renders a fresh v2 set in an overnight window. Seed
+       72's text render should match the picture you picked: same prompt,
+       same seed, same ComfyUI build.
+     - You pick a seed, then `lock-child`.
+     - No Kennedi lock exists yet, so nothing locked changes.
 
 ## Verification
 
