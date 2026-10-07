@@ -1331,6 +1331,11 @@ def case_friend_sheets(root):
             "maya-contact-sheet.png", "maya-recipe.json"], f"{out.strip()[-120:]} {drafts}")
         maya = json.loads((root / "friends/maya.json").read_text())
         girl = json.loads((root / FRIEND_DRAFTS / "maya-recipe.json").read_text())
+        prefixes = sorted(node["inputs"]["filename_prefix"] for graph in comfy.sent for node in graph.values()
+                          if node["class_type"] == "SaveImage")
+        check("Maya's renders land in ComfyUI's output under storybook/friends/, apart from the children's",
+              prefixes == [f"storybook/friends/maya-{seed}" for seed in (61, 72, 83, 94)]
+              and girl["graph"]["10"]["inputs"]["filename_prefix"] == "storybook/friends/maya", prefixes)
         check("Maya's sheet is the child template's prompt for her look: a young girl of 5",
               girl["kind"] == "friend-sheet" and girl["friend"] == "maya" and girl["template_version"] == "v1"
               and girl["prompt"] == module.child_prompt(module.CHILD_TEMPLATES["v1"], maya)
@@ -1429,9 +1434,11 @@ def case_friend_names(root):
         code, out = run(root, "selftest")
         code2, out2 = run(root, "--server", "http://127.0.0.1:9", "book-page", BOOK, "kennedi", 1)
         code3, out3 = run(root, "--server", "http://127.0.0.1:9", "friend", "theo")
-        check(f"a friend named {name!r} fails selftest, and book-page and friend refuse the roster",
+        code4, out4 = run(root, "lock-friend", "theo", "--seed", 72)
+        check(f"a friend named {name!r} fails selftest, and book-page, friend and lock-friend refuse the roster",
               code and why in out and code2 and "the friends can't be drawn from" in out2 and why in out2
-              and code3 and "the friends can't be drawn from" in out3, (out + out2 + out3).strip()[-240:])
+              and code3 and "the friends can't be drawn from" in out3
+              and code4 and "the friends can't be drawn from" in out4, (out + out2 + out3 + out4).strip()[-240:])
         path.unlink()
     code, out = run(root, "selftest")
     check("the roster as committed passes", not code and "4 friends" in out, out.strip()[-200:])
@@ -1469,6 +1476,13 @@ def case_mixing_rule(root):
     story_path.write_text(json.dumps(story))
     code, out = run(root, "selftest")
     check("a story with two friends and an animal passes", not code, out.strip()[-200:])
+    module = tool(root)
+    friends = {friend: json.loads((root / "friends" / f"{friend}.json").read_text()) for friend in ("maya", "theo")}
+    page = module.book_page_manifest(BOOK, "kennedi", 2, module.PAGE_TEMPLATE, module.PAGE_RENDER, story,
+                                     json.loads((root / "children/kennedi.json").read_text()), module.load_canon(), {},
+                                     friends)
+    check("a boy friend is drawn as the boy in his picture", {"name": "Theo", "drawn_as": "boy"} in page["cast"]
+          and "Theo is the boy in picture 3" in page["prompt"], page["prompt"])
     story_path.write_text(json.dumps(original))
     clash = {**json.loads((root / "children" / "kennedi.json").read_text()), "name": "Maya"}
     (root / "children" / "maya-kid.json").write_text(json.dumps(clash))
@@ -1494,6 +1508,13 @@ def case_book_lock_follows_friends(root):
     book_paged(root, "kennedi", 3)
     code, out = run(root, "selftest")
     check("the book page lock with Maya checks out", not code and "1 book page locks" in out, out.strip()[-160:])
+    clash = root / "friends/pippa-pal.json"
+    clash.write_text(json.dumps({**json.loads((root / "friends/maya.json").read_text()), "name": "Pippa"}))
+    code, out = run(root, "selftest")
+    check("a friend named Pippa is the one problem: left out of the roster, it doesn't stand in for the canon Pippa "
+          "in the page lock drawn with her", code and "is also the name of the canon character Pippa" in out
+          and out.strip().endswith("; 1 problems"), out.strip()[-240:])
+    clash.unlink()
     profile_path = root / "friends/maya.json"
     profile = profile_path.read_text()
 

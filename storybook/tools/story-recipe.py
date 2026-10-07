@@ -1217,8 +1217,7 @@ def cmd_book_page(args):
     require_models(args.server, PAGE_ROLES)
     for reference in manifest["references"]:
         upload(args.server, sheets[(reference["kind"], reference["name"])], reference_name(reference["sha256"]))
-    labels = {("child", args.child): profile["name"],
-              **{("friend", friend_id): friend["name"] for friend_id, friend in friends.items()}}
+    labels = {("child", args.child): profile["name"]}
     render_set(args.server, drafts, stem, manifest, page_graph, f"storybook/books/{args.story}/{args.child}/{stem}",
                references=[(labels.get(key, key[1]), sheets[key]) for key in references])
     print(f"wrote page {number}'s candidates, contact sheet and recipe to {drafts} -- pick a seed, then "
