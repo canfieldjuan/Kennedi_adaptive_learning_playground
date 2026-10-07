@@ -14,14 +14,16 @@ stack.
       Lock the pick as design-source/pages/<story>/locked/page-04.png, with its recipe.
   python3 storybook/tools/story-recipe.py child kennedi
       Render four seeds of the child's character sheet, from storybook/children/kennedi.json, into
-      design-source/children/drafts/.
+      design-source/children/drafts/. Each seed is a text render (kennedi-render-<seed>.png) and its cleanup on the
+      edit model, which takes the pink blush off; the cleanup is the candidate.
   python3 storybook/tools/story-recipe.py lock-child kennedi --seed 72 [--force]
-      Lock the pick as design-source/children/locked/kennedi.png, with its recipe.
+      Lock the pick as design-source/children/locked/kennedi.png, with its text render (kennedi-render.png) and
+      its recipe.
   python3 storybook/tools/story-recipe.py friend maya
       Render four seeds of a friend's character sheet, from storybook/friends/maya.json, into
-      design-source/friends/drafts/.
+      design-source/friends/drafts/, the same way.
   python3 storybook/tools/story-recipe.py lock-friend maya --seed 72 [--force]
-      Lock the pick as design-source/friends/locked/maya.png, with its recipe.
+      Lock the pick as design-source/friends/locked/maya.png, with its text render and its recipe.
   python3 storybook/tools/story-recipe.py book-page meeting-pippa kennedi 2
       Render four seeds of page 2 of a personal story, drawn for that child: the child's name and pronouns filled
       in, and the child's, the friends' and the animals' locked sheets as references, into
@@ -165,7 +167,14 @@ CHILD_TEMPLATES = {"v1": {
              "{Subject} has {skin}, {eyes}, and {hair}. {Subject} is wearing {outfit}{glasses}. Plain soft cream "
              "background, full body, centered, no text"),
 }}
-CHILD_TEMPLATE = "v1"
+# v2 (Amendment 5, 2026-10-07): the style draws a pink blush that no wording or negative prompt took off, and a page
+# copies the cheeks of the sheet it is drawn from. So a v2 sheet is two renders at its seed: v1's text render, then a
+# cleanup on the edit model (PAGE_RENDERS[cleanup_render]) with the text render as picture 1. Measured on Kennedi, her
+# tone held and the pink went; instructions that named a colour darkened her or turned her face red.
+CHILD_TEMPLATES["v2"] = {**CHILD_TEMPLATES["v1"], "cleanup_render": "v1", "cleanup": (
+    "Take away the pink blush on the {child}'s cheeks and the pink on {possessive} nose. Keep {possessive} skin "
+    "exactly the colour it is, and keep everything else in picture 1 exactly the same.")}
+CHILD_TEMPLATE = "v2"
 # A friend is an invented child in the hero's world, drawn exactly as a child is (the same profile rules, template and
 # render), with a personality and a role -- in many books, or met along the way -- for whoever writes the stories.
 # Neither reaches a prompt. A friend is never a hero, and a hero never a friend.
@@ -189,6 +198,12 @@ SET_WRITER = 1
 # Keys a recipe gains outside draft_manifest(): the set writer, the ComfyUI version and the candidates' SHA-256,
 # noted at render time, and what `lock` adds.
 ADDED_KEYS = {"set_writer", "comfyui_version", "candidates", "chosen_seed", "source", "files"}
+
+
+def added_keys(expected):
+    """The keys a recipe of this kind (expected, as the tool builds it) gains at render and lock time: ADDED_KEYS,
+    and for a two-stage sheet the SHA-256 of each text render too."""
+    return ADDED_KEYS | ({"renders"} if "cleanup" in expected else set())
 
 
 def sha256(path):
@@ -267,9 +282,12 @@ def draft_manifest(name, template_version, render_version, canon):
 
 
 def allowlist_problems(manifest):
+    """Why a recipe names a model off the licence allowlist, its own or (a two-stage sheet's) its cleanup's."""
     allowed = {m["file"] for m in MODELS.values()}
-    return [f"model {model!r} is not on the licence allowlist"
-            for model in (manifest.get("models") if isinstance(manifest.get("models"), list) else [])
+    cleanup = manifest.get("cleanup") if isinstance(manifest.get("cleanup"), dict) else {}
+    models = [*(manifest.get("models") if isinstance(manifest.get("models"), list) else []),
+              *(cleanup.get("models") if isinstance(cleanup.get("models"), list) else [])]
+    return [f"model {model!r} is not on the licence allowlist" for model in models
             if not isinstance(model, dict) or model.get("file") not in allowed]
 
 
@@ -301,14 +319,27 @@ def rebuild_problems(png, manifest, expected, seed, build_graph, what):
     """Why png and its recipe are not what the tool rebuilds from the recipe's inputs (expected) at this seed; an
     empty list when they are. build_graph is the graph builder for this kind of recipe; the PNG must embed the graph
     it builds as ComfyUI embeds it (comfy_embed)."""
+    return record_problems(manifest, expected, what) + render_problems(png, expected, seed, build_graph)
+
+
+def record_problems(manifest, expected, what):
+    """Why a recipe doesn't record exactly what the tool records from its inputs (expected), apart from the keys it
+    gains at render and lock time; an empty list when it does."""
     problems = []
     for key in sorted(set(manifest) | set(expected)):
         if key in expected and key not in manifest:
             problems.append(f"it does not record {key}")
         elif key in expected and manifest[key] != expected[key]:
             problems.append(f"its recorded {key} is not what the tool records for {what}")
-        elif key not in expected and key not in ADDED_KEYS:
+        elif key not in expected and key not in added_keys(expected):
             problems.append(f"it records {key}, which the tool does not")
+    return problems
+
+
+def render_problems(png, expected, seed, build_graph):
+    """Why png is not the render of the recipe expected at this seed: it must embed the graph build_graph builds from
+    the recipe, as ComfyUI embeds it (comfy_embed), at the recipe's size. An empty list when it is."""
+    problems = []
     image = Image.open(png)
     if "prompt" not in image.info:
         return problems + [f"{png.name} has no embedded graph"]
@@ -560,10 +591,15 @@ def page_identity(manifest, name, stem):
     return [f"it is {manifest.get('story')!r} page {number!r}'s recipe under {name}/{stem}"]
 
 
-def phrase_problem(value, what):
-    """Why value isn't a look phrase -- a non-empty single line of at most 200 characters -- or None."""
-    if not isinstance(value, str) or not value.strip() or len(value) > 200 or value.splitlines() != [value]:
-        return f"its {what} is not a non-empty single line of at most 200 characters"
+# The longest phrase a profile takes: a guard against a pasted paragraph, not against detail. Look phrases rose from
+# 200 with amendment 5, since Kennedi's hair, word for word the prompt picked, is 218 characters.
+LOOK_PHRASE, PERSONALITY_PHRASE = 240, 200
+
+
+def phrase_problem(value, what, longest):
+    """Why value isn't a phrase -- a non-empty single line of at most longest characters -- or None."""
+    if not isinstance(value, str) or not value.strip() or len(value) > longest or value.splitlines() != [value]:
+        return f"its {what} is not a non-empty single line of at most {longest} characters"
     return None
 
 
@@ -581,7 +617,7 @@ def child_problems(profile):
     if not isinstance(look, dict) or set(look) != LOOK_KEYS:
         problems.append(f"its appearance is not exactly {sorted(LOOK_KEYS)}")
     else:
-        problems += [why for why in (phrase_problem(look[key], key) for key in ("skin", "hair", "eyes", "outfit"))
+        problems += [why for why in (phrase_problem(look[key], key, LOOK_PHRASE) for key in ("skin", "hair", "eyes", "outfit"))
                      if why]
         if type(look["glasses"]) is not bool:
             problems.append(f"its glasses {look['glasses']!r} is not true or false")
@@ -596,7 +632,7 @@ def friend_problems(profile):
     if not isinstance(profile, dict) or set(profile) != FRIEND_KEYS:
         return [f"it is not exactly {sorted(FRIEND_KEYS)}"]
     problems = child_problems({key: profile[key] for key in CHILD_KEYS})
-    problems += [why for why in [phrase_problem(profile["personality"], "personality")] if why]
+    problems += [why for why in [phrase_problem(profile["personality"], "personality", PERSONALITY_PHRASE)] if why]
     if not (isinstance(profile["role"], str) and profile["role"] in ROLES):
         problems.append(f"its role {profile['role']!r} is not \"friend\" or \"met\"")
     return problems
@@ -663,14 +699,40 @@ def child_prompt(template, profile):
 
 def person_manifest(kind, person_id, template_version, render_version, profile):
     """Everything a child's or a friend's (kind) sheet recipe records about how it renders, built from its inputs
-    alone (draft_manifest's pattern): editing the profile fails the sheet's lock."""
+    alone (draft_manifest's pattern): editing the profile fails the sheet's lock. A template with a cleanup (v2 on)
+    makes a two-stage sheet, and its recipe records the cleanup too: the prompt, settings and models of the edit job
+    that takes each text render to its candidate."""
     template = CHILD_TEMPLATES[template_version]
     manifest = {"kind": f"{kind}-sheet", kind: person_id, "template_version": template_version,
                 "render_version": render_version, "profile": profile, "template": template,
                 "prompt": child_prompt(template, profile), "settings": RENDERS[render_version],
                 "models": [{"role": role, **MODELS[role]} for role in SHEET_ROLES], "seeds": list(SEEDS)}
+    if "cleanup" in template:
+        manifest["cleanup"] = {
+            "prompt": template["cleanup"].format(child=profile["child"],
+                                                 possessive=PRONOUNS[profile["child"]]["possessive"]),
+            "render_version": template["cleanup_render"], "settings": PAGE_RENDERS[template["cleanup_render"]],
+            "models": [{"role": role, **MODELS[role]} for role in PAGE_ROLES]}
     manifest["graph"] = recipe_graph(manifest, 0, f"storybook/{PEOPLE[kind]['folder']}/{person_id}")
     return manifest
+
+
+def draft_render(stem, seed):
+    """A two-stage sheet's text render at seed, among the drafts."""
+    return f"{stem}-render-{seed}.png"
+
+
+def locked_render(stem):
+    """A two-stage sheet's text render, in its lock beside <stem>.png."""
+    return f"{stem}-render.png"
+
+
+def cleanup_recipe(manifest, digest):
+    """The cleanup job of a two-stage sheet whose text render has this SHA-256 (digest), as page_graph builds it:
+    the recorded cleanup's prompt, settings and models, and the text render as picture 1, its one reference."""
+    cleanup = manifest["cleanup"]
+    return {"prompt": cleanup["prompt"], "settings": cleanup["settings"], "models": cleanup["models"],
+            "references": [{"sha256": digest}]}
 
 
 def child_manifest(child_id, template_version, render_version, profile):
@@ -687,7 +749,21 @@ def person_embedded_problems(kind, png, manifest, seed, profiles):
             or manifest.get("render_version") not in RENDERS):
         return problems + [f"its {kind}, template_version or render_version is not one the tool knows"]
     expected = person_manifest(kind, person_id, manifest["template_version"], manifest["render_version"], profile)
-    return problems + rebuild_problems(png, manifest, expected, seed, recipe_graph, f"this {kind}'s profile")
+    what = f"this {kind}'s profile"
+    if "cleanup" not in expected:
+        return problems + rebuild_problems(png, manifest, expected, seed, recipe_graph, what)
+    # A two-stage sheet: the text render locked beside it must rebuild from the profile at this seed, as a one-stage
+    # sheet does, and be the render its recipe records; the sheet must be the cleanup of exactly that render.
+    problems += record_problems(manifest, expected, what)
+    render = png.with_name(locked_render(png.stem))
+    if not render.is_file():
+        return problems + [f"{render.name} is not on disk, and {png.name} is drawn from it"]
+    digest = sha256(render)
+    renders = manifest.get("renders") if isinstance(manifest.get("renders"), dict) else {}
+    if renders.get(draft_render(person_id, seed)) != digest:
+        problems.append(f"{render.name} is not the text render its recipe records for seed {seed}")
+    problems += [f"{render.name}: {why}" for why in render_problems(render, expected, seed, recipe_graph)]
+    return problems + render_problems(png, cleanup_recipe(expected, digest), seed, page_graph)
 
 
 def load_personal(name):
@@ -929,35 +1005,41 @@ def candidate_problem(path, manifest, seed, build_graph):
             image.load()
     except (OSError, SyntaxError, ValueError) as error:
         return f"ComfyUI returned {path.stat().st_size} bytes that aren't an image ({type(error).__name__})"
-    problems = rebuild_problems(path, manifest, manifest, seed, build_graph, "the recipe it was rendered from")
+    problems = render_problems(path, manifest, seed, build_graph)
     return f"ComfyUI's image for seed {seed} isn't this recipe's render: " + "; ".join(problems) if problems else None
 
 
 def kept_candidates(drafts, stem, manifest, version):
-    """The candidates of the draft set already in drafts that this run can keep: none unless its recipe rebuilds to
-    this one (every key but the render-time ones), it was written by this set writer and rendered by the same ComfyUI
-    version (render_set only calls this with a known one), and each candidate it records is still on disk with its
+    """({candidate: SHA-256}, {text render: SHA-256}) of the draft set already in drafts that this run can keep: none
+    unless its recipe rebuilds to this one (every key but the render-time ones), it was written by this set writer and
+    rendered by the same ComfyUI version (render_set only calls this with a known one), a two-stage set records the
+    text render of exactly the seeds it has candidates for, and every file it records is still on disk with its
     recorded SHA-256."""
     path = drafts / f"{stem}-recipe.json"
     try:
         earlier = json.loads(path.read_text()) if path.is_file() else None
     except ValueError:
-        return {}
+        return {}, {}
     candidates = earlier.get("candidates") if isinstance(earlier, dict) else None
-    if (not isinstance(candidates, dict) or earlier.get("set_writer") != SET_WRITER
+    renders = earlier.get("renders", {}) if isinstance(earlier, dict) and "cleanup" in manifest else {}
+    if (not isinstance(candidates, dict) or not isinstance(renders, dict) or earlier.get("set_writer") != SET_WRITER
             or earlier.get("comfyui_version") != version
-            or {key: value for key, value in earlier.items() if key not in ADDED_KEYS} != manifest
-            or not set(candidates) <= {f"{stem}-candidate-{seed}.png" for seed in SEEDS}):
-        return {}
-    for name, digest in candidates.items():
-        candidate = drafts / name
-        if candidate.is_symlink() or not candidate.is_file() or sha256(candidate) != digest:
-            return {}
-    return dict(candidates)
+            or {key: value for key, value in earlier.items() if key not in added_keys(manifest)} != manifest
+            or not set(candidates) <= {f"{stem}-candidate-{seed}.png" for seed in SEEDS}
+            or ("cleanup" in manifest and set(renders) != {draft_render(stem, seed) for seed in SEEDS
+                                                           if f"{stem}-candidate-{seed}.png" in candidates})):
+        return {}, {}
+    for name, digest in {**candidates, **renders}.items():
+        kept = drafts / name
+        if kept.is_symlink() or not kept.is_file() or sha256(kept) != digest:
+            return {}, {}
+    return dict(candidates), dict(renders)
 
 
 def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, references=()):
-    """Render the recipe's seeds into drafts_rel as <stem>-candidate-<seed>.png, one seed at a time.
+    """Render the recipe's seeds into drafts_rel as <stem>-candidate-<seed>.png, one seed at a time. A two-stage sheet's
+    seed is its text render, kept as <stem>-render-<seed>.png, and the candidate is that render's cleanup; the two land
+    together, so a seed is recorded only once both pass their checks.
 
     After each seed, its candidate and the draft recipe, which records every seed rendered so far, land in the
     drafts folder together under the art lock, once the bytes are a valid candidate and the ComfyUI build is still the
@@ -971,9 +1053,11 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
         # Every seed of a set must come from one known build; with no version there is nothing to compare.
         sys.exit(f"ComfyUI at {server} doesn't report its version (/system_stats system.comfyui_version), so a set "
                  f"can't be tied to one build; nothing was written")
+    two_stage = "cleanup" in manifest
     with art_lock():
-        kept = kept_candidates(drafts, stem, manifest, version)
-    recipe = {**manifest, "set_writer": SET_WRITER, "comfyui_version": version, "candidates": dict(kept)}
+        kept, kept_renders = kept_candidates(drafts, stem, manifest, version)
+    recipe = {**manifest, "set_writer": SET_WRITER, "comfyui_version": version, "candidates": dict(kept),
+              **({"renders": kept_renders} if two_stage else {})}
     for name in sorted(kept):
         print(f"kept {name} from an earlier run")
     drafts.mkdir(parents=True, exist_ok=True)
@@ -983,9 +1067,17 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
             continue
         with tempfile.TemporaryDirectory(dir=drafts, prefix=".staging-") as tmp:
             out, started = Path(tmp) / name, time.time()
+            # A two-stage sheet renders its text render first, and the candidate is that render's cleanup.
+            text = Path(tmp) / draft_render(stem, seed)
             try:
-                render(server, build_graph(manifest, seed, f"{prefix}-{seed}"), out)
-                problem = candidate_problem(out, manifest, seed, build_graph)
+                render(server, build_graph(manifest, seed, f"{prefix}-{seed}"), text if two_stage else out)
+                problem = candidate_problem(text if two_stage else out, manifest, seed, build_graph)
+                if two_stage and not problem:
+                    # The cleanup's one reference is the text render, uploaded under its own SHA-256.
+                    cleanup = cleanup_recipe(manifest, sha256(text))
+                    upload(server, text.read_bytes(), reference_name(sha256(text)))
+                    render(server, page_graph(cleanup, seed, f"{prefix}-cleanup-{seed}"), out)
+                    problem = candidate_problem(out, cleanup, seed, page_graph)
                 if problem:
                     raise RenderFailed(problem)
                 # Every recorded seed comes from the set's build: a ComfyUI restarted or upgraded between seeds
@@ -1001,11 +1093,15 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
                     if done else "nothing was written"))
             # The bytes ComfyUI returned, so `lock` can refuse a candidate edited afterwards.
             recipe["candidates"][name] = sha256(out)
+            if two_stage:
+                recipe["renders"][text.name] = sha256(text)
             (Path(tmp) / f"{stem}-recipe.json").write_text(json.dumps(recipe, indent=1))
             with art_lock():
                 if not kept and len(recipe["candidates"]) == 1:
                     # A fresh set: the old contact sheet shows a set this recipe no longer describes.
                     (drafts / f"{stem}-contact-sheet.png").unlink(missing_ok=True)
+                if two_stage:
+                    os.replace(text, drafts / text.name)
                 os.replace(out, drafts / name)
                 os.replace(Path(tmp) / f"{stem}-recipe.json", drafts / f"{stem}-recipe.json")
         print(f"rendered seed {seed} in {time.time() - started:.0f}s")
@@ -1066,7 +1162,8 @@ def cmd_page(args):
 
 def commit_lock(drafts_rel, locked_rel, stem, seed, force, command, check):
     """Lock the draft candidate at seed as locked_rel/<stem>.png with its recipe, once check(staged png, recipe)
-    finds nothing wrong with the staged copy. command is what renders the drafts, for the messages."""
+    finds nothing wrong with the staged copy; a two-stage sheet locks its text render beside it, as
+    <stem>-render.png. command is what renders the drafts, for the messages."""
     drafts, locked = real_folder(drafts_rel), real_folder(locked_rel)
     with art_lock():
         # The draft set is read under the lock, so the recipe and the candidate come from one committed set.
@@ -1077,32 +1174,52 @@ def commit_lock(drafts_rel, locked_rel, stem, seed, force, command, check):
         if seed not in manifest.get("seeds", []):
             sys.exit(f"seed {seed} is not one of the rendered candidates {manifest.get('seeds')}")
         candidate = drafts / f"{stem}-candidate-{seed}.png"
-        if not candidate.is_file():
-            sys.exit(f"{drafts_rel}/{candidate.name} is missing -- run `{command}` again")
-        targets = [locked / f"{stem}.png", locked / f"{stem}.recipe.json"]
+        # (draft, its name in the lock, the recipe key recording the bytes the set wrote). Whether the recipe really
+        # is a two-stage sheet's is check's to say: it rebuilds the recipe from its inputs.
+        files = [(candidate, f"{stem}.png", "candidates")] + (
+            [(drafts / draft_render(stem, seed), locked_render(stem), "renders")] if "cleanup" in manifest else [])
+        for draft, _, _ in files:
+            if not draft.is_file():
+                sys.exit(f"{drafts_rel}/{draft.name} is missing -- run `{command}` again")
+        targets = [locked / name for _, name, _ in files] + [locked / f"{stem}.recipe.json"]
         if any(os.path.lexists(t) for t in targets) and not force:
             sys.exit(f"{stem} is already locked (use --force to replace it)")
         if any(t.is_symlink() for t in targets):
             sys.exit(f"{stem}'s lock is a symlink; a lock writes only real files")
+        stale = owned_render(locked, stem) if "cleanup" not in manifest else None
         manifest.update(chosen_seed=seed, source=f"{drafts_rel}/{candidate.name}")
         locked.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=locked, prefix=".staging-") as tmp:
-            # The candidate is read once, into staging, and the staged copy is what gets validated and committed.
-            staged = Path(tmp) / f"{stem}.png"
-            staged.write_bytes(candidate.read_bytes())
-            rendered = manifest.get("candidates", {}).get(candidate.name) if isinstance(manifest.get("candidates"),
-                                                                                         dict) else None
-            if rendered is None or sha256(staged) != rendered:
-                sys.exit(f"{candidate.name} is not the bytes `{command.split()[0]}` rendered (edited since, or a "
-                         f"draft from before candidates were recorded) -- re-run `{command}`")
-            problems = check(staged, manifest)
+            # Each draft is read once, into staging, and the staged copy is what gets validated and committed.
+            for draft, name, record in files:
+                (Path(tmp) / name).write_bytes(draft.read_bytes())
+                recorded = manifest.get(record) if isinstance(manifest.get(record), dict) else {}
+                if recorded.get(draft.name) is None or sha256(Path(tmp) / name) != recorded[draft.name]:
+                    sys.exit(f"{draft.name} is not the bytes `{command.split()[0]}` rendered (edited since, or a "
+                             f"draft from before candidates were recorded) -- re-run `{command}`")
+            problems = check(Path(tmp) / f"{stem}.png", manifest)
             if problems:
                 sys.exit(f"{candidate.name} is not the render its recipe describes: " + "; ".join(problems))
-            manifest["files"] = {staged.name: sha256(staged)}
+            manifest["files"] = {name: sha256(Path(tmp) / name) for _, name, _ in files}
             (Path(tmp) / f"{stem}.recipe.json").write_text(json.dumps(manifest, indent=1))
             for path in sorted(Path(tmp).iterdir()):
                 os.replace(path, locked / path.name)
-    print(f"locked {locked_rel}/{stem}.png + .recipe.json")
+            if stale:
+                # A one-stage lock replacing a two-stage one: the old text render has no owner now.
+                stale.unlink()
+    print(f"locked {locked_rel}/{stem}.png" + (f" + {locked_render(stem)}" if len(files) > 1 else "")
+          + " + .recipe.json")
+
+
+def owned_render(locked, stem):
+    """locked/<stem>-render.png when the lock there now records it among its files, or None."""
+    try:
+        recipe = json.loads((locked / f"{stem}.recipe.json").read_text())
+    except (OSError, ValueError):
+        return None
+    files = recipe.get("files") if isinstance(recipe, dict) else None
+    render = locked / locked_render(stem)
+    return render if isinstance(files, dict) and render.name in files and render.is_file() else None
 
 
 def cmd_lock(args):
@@ -1127,10 +1244,14 @@ def cmd_lock_page(args):
 
 
 def draw_person(server, kind, person_id, profile):
-    """Render a child's or a friend's (kind) sheet: four seeds, into their drafts folder."""
+    """Render a child's or a friend's (kind) sheet: four seeds, into their drafts folder. A two-stage sheet's seed is
+    a text render and its cleanup on the edit model, so ComfyUI must have the edit graph's models and nodes too."""
     drafts = PEOPLE[kind]["drafts"]
     manifest = person_manifest(kind, person_id, CHILD_TEMPLATE, RENDER, profile)
     require_models(server, SHEET_ROLES)
+    if "cleanup" in manifest:
+        require_models(server, PAGE_ROLES)
+        require_nodes(server, page_graph(cleanup_recipe(manifest, "0" * 64), 0, "check"))
     real_folder(drafts)
     render_set(server, drafts, person_id, manifest, recipe_graph, f"storybook/{PEOPLE[kind]['folder']}/{person_id}")
     print(f"wrote {person_id}'s candidates, contact sheet and recipe to {drafts} -- pick a seed, then "
@@ -1234,10 +1355,11 @@ def cmd_lock_book_page(args):
                                               {args.child: profile}, friends))
 
 
-def lock_folder_problems(folder, kind, recipe_problems):
+def lock_folder_problems(folder, kind, recipe_problems, owns=lambda manifest, png: {png.name}):
     """[(path, why)] for everything wrong in a locked folder: entries that aren't regular files, files that aren't
-    exactly one recipe's or no longer have their locked bytes, and whatever recipe_problems(recipe, manifest, png)
-    finds wrong with a lock of this kind."""
+    exactly one recipe's or no longer have their locked bytes, a recipe that doesn't record exactly the files
+    owns(manifest, png) says a lock of this kind owns, and whatever recipe_problems(recipe, manifest, png) finds wrong
+    with it."""
     problems, owners = [], {}
     if folder.resolve() != folder:
         return [(folder, f"goes through a symlink to {folder.resolve()}; locks live only in the storybook")]
@@ -1252,8 +1374,9 @@ def lock_folder_problems(folder, kind, recipe_problems):
         manifest = json.loads(recipe.read_text())
         files = manifest.get("files") if isinstance(manifest.get("files"), dict) else {}
         png = folder / f"{recipe.name.removesuffix('.recipe.json')}.png"
-        if set(files) != {png.name}:
-            problems.append((recipe, f"it records files {sorted(files)}; a {kind} lock owns {png.name}"))
+        owned = owns(manifest, png)
+        if set(files) != owned:
+            problems.append((recipe, f"it records files {sorted(files)}; a {kind} lock owns {', '.join(sorted(owned))}"))
         for file_name, digest in files.items():
             owners.setdefault(folder / file_name, []).append(recipe)
             if (folder / file_name).is_file() and sha256(folder / file_name) != digest:
@@ -1353,7 +1476,13 @@ def person_locked_problems(kind, profiles):
             if manifest.get("source") != f"{drafts}/{manifest.get(kind)}-candidate-{manifest.get('chosen_seed')}.png":
                 whys.append("its recorded source is not the draft lock copies for it")
         return whys
-    return lock_folder_problems(STORYBOOK / PEOPLE[kind]["locked"], kind, person_lock)
+
+    def person_files(manifest, png):
+        # Its sheet, and a two-stage sheet's text render, by the template its recipe names.
+        version = manifest.get("template_version")
+        two_stage = isinstance(version, str) and "cleanup" in CHILD_TEMPLATES.get(version, {})
+        return {png.name} | ({locked_render(png.stem)} if two_stage else set())
+    return lock_folder_problems(STORYBOOK / PEOPLE[kind]["locked"], kind, person_lock, person_files)
 
 
 def child_and_book_problems(canon):
