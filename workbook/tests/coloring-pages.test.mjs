@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, renameSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
@@ -103,4 +103,74 @@ test('single-page print pipeline replays a locked recipe and rejects altered ras
   const altered = run('verify'); assert.notEqual(altered.status, 0); assert.match(altered.stderr, /Stale or altered PDF raster/);
   const restored = run('rasterize'); assert.equal(restored.status, 0, restored.stderr);
   const verified = run('verify'); assert.equal(verified.status, 0, verified.stderr);
+});
+
+test('coloring verification rejects a stale contact-sheet image', context => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), 'kennedi-coloring-contact-'));
+  context.after(() => rmSync(temp, { recursive: true }));
+  const file = path.join(temp, 'one-page.json'), out = path.join(temp, 'printed');
+  writeFileSync(file, JSON.stringify(recipe(['turtle'])));
+  const run = stage => spawnSync(process.execPath,
+    [path.join(WORKBOOK_ROOT, 'scripts/workbook.mjs'), stage, '--recipe', file, '--out', out], { encoding: 'utf8' });
+  const initial = run('all'); assert.equal(initial.status, 0, initial.stderr);
+  for (const name of ['contact-sheet.png', 'contact-sheet.html', 'raster-receipt.json']) {
+    const target = path.join(out, name), original = readFileSync(target);
+    writeFileSync(target, name.endsWith('.json') ? '{}' : 'stale contact proof');
+    const stale = run('verify');
+    assert.notEqual(stale.status, 0, `Verification accepted stale ${name}.`);
+    assert.match(stale.stderr, /contact|proof/i);
+    writeFileSync(target, original);
+    renameSync(target, path.join(temp, 'missing-file'));
+    const missing = run('verify');
+    assert.notEqual(missing.status, 0, `Verification accepted missing ${name}.`);
+    assert.match(missing.stderr, /ENOENT/);
+    renameSync(path.join(temp, 'missing-file'), target);
+  }
+  const recovered = run('verify'); assert.equal(recovered.status, 0, recovered.stderr);
+});
+
+test('coloring contact failure preserves old proof and interrupted publication fails closed', context => {
+  const temp = mkdtempSync(path.join(os.tmpdir(), 'kennedi-coloring-interruption-'));
+  context.after(() => rmSync(temp, { recursive: true }));
+  const file = path.join(temp, 'recipe.json'), out = path.join(temp, 'printed');
+  const preload = path.join(temp, 'fault.mjs');
+  const run = (stage, injected = false) => spawnSync(process.execPath,
+    [...(injected ? ['--import', preload] : []), path.join(WORKBOOK_ROOT, injected ? 'scripts/coloring.mjs' : 'scripts/workbook.mjs'),
+      stage, '--recipe', file, '--out', out], { encoding: 'utf8' });
+  const pass = stage => { const result = run(stage); assert.equal(result.status, 0, result.stderr); };
+  const proofFiles = ['pdf-raster/page-1.png', 'contact-sheet.html', 'contact-sheet.png', 'raster-receipt.json'];
+  const snapshot = () => proofFiles.map(name => [name, readFileSync(path.join(out, name))]);
+  writeFileSync(file, JSON.stringify(recipe(['turtle']))); pass('all');
+  const old = snapshot();
+  writeFileSync(file, JSON.stringify(recipe(['bunny']))); pass('build'); pass('pdf');
+  for (const fault of ['launch', 'screenshot']) {
+    writeFileSync(preload, `import {chromium} from ${JSON.stringify(path.join(WORKBOOK_ROOT, 'node_modules/playwright/index.mjs'))};
+import fs from 'node:fs';
+const launch=chromium.launch.bind(chromium);
+chromium.launch=async(...args)=>{
+  if(${JSON.stringify(fault)}==='launch') throw Error('injected contact launch failure');
+  const browser=await launch(...args), newPage=browser.newPage.bind(browser);
+  browser.newPage=async(...args)=>{const page=await newPage(...args);
+    page.screenshot=async options=>{fs.writeFileSync(options.path,'partial screenshot');throw Error('injected contact screenshot failure');};
+    return page;};
+  return browser;
+};`);
+    const interrupted = run('rasterize', true);
+    assert.notEqual(interrupted.status, 0);
+    assert.match(interrupted.stderr, new RegExp(`injected contact ${fault} failure`));
+    assert.deepEqual(snapshot(), old, 'Rendering failure changed the last complete proof.');
+    const stale = run('verify'); assert.notEqual(stale.status, 0);
+    assert.match(stale.stderr, /Stale or altered PDF raster\/contact proof/);
+  }
+  writeFileSync(preload, `import fs from 'node:fs';
+import {syncBuiltinESMExports} from 'node:module';
+const rename=fs.renameSync;
+fs.renameSync=(from,to)=>{if(String(from).includes('.coloring-proof-') && String(to).endsWith('/contact-sheet.png'))
+  throw Error('injected contact publication failure');return rename(from,to);};
+syncBuiltinESMExports();`);
+  const partial = run('rasterize', true); assert.notEqual(partial.status, 0);
+  assert.match(partial.stderr, /injected contact publication failure/);
+  const mixed = run('verify'); assert.notEqual(mixed.status, 0);
+  assert.match(mixed.stderr, /Stale or altered PDF raster\/contact proof/);
+  pass('rasterize'); pass('verify');
 });

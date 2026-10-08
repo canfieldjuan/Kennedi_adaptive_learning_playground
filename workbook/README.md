@@ -31,7 +31,12 @@ xdg-open dist-recipes/coloring-pages-v1/preview.html
 The combined PDF is `dist-recipes/coloring-pages-v1/pdf/kennedi-coloring.pdf`.
 Individual PDFs live in its `pdf/pages/` directory. `screenshots/` contains
 browser images; `pdf-raster/` and `contact-sheet.png` show the actual grayscale
-PDF output. Print US Letter at actual size / 100%, with no browser headers.
+PDF output. Verification binds the contact HTML and PNG hashes to the current
+PDF/raster receipt and regenerates expected contact HTML from those rasters.
+Missing, stale or altered contacts fail verification; rerun `rasterize` for older
+outputs whose receipt predates these checks. Rendering must finish before live
+proof publication; receipt-last checks reject interrupted mixed publication.
+Print US Letter at actual size / 100%, with no browser headers.
 Half-inch safe margins are built in. No server or image model is involved.
 
 ### Owner-approved scene pair
@@ -91,8 +96,8 @@ node tools/prepare-coloring-bunny.mjs
 ```
 
 It uses the existing bunny PNG, ImageMagick at 70 percent threshold and
-potrace `--opaque`. It writes the coloring derivative and its provenance
-receipt; it never changes canonical art or calls an image model. The opaque
+potrace `--opaque`. It writes a review candidate derivative and provenance
+receipt; it never changes live art or calls an image model. The opaque
 interiors hide background lines through the face/body while the exterior
 remains transparent. Tests bound minor edge-antialias differences, verify
 source/published scene parity, and preserve the starter's exact HTML hashes.
@@ -100,12 +105,16 @@ Reprinting uses the saved SVG, not this preparation tool. Dependencies for
 derivative preparation are ImageMagick, potrace and the existing Chrome setup.
 
 Both preparation commands share `tools/prepare-coloring-character.mjs`. Tracing,
-cropping and the matching receipt are prepared in temporary files before live
-publication. Failures leave existing art and receipts unchanged; publication
-preserves sibling files and retains the previous complete inventory in an
-ignored `design-source/coloring/.characters-*.previous/` directory. A conflicting
-edit during preparation rejects publication rather than overwriting it. These
-are rollback-capable exports, not a power-loss atomicity guarantee.
+cropping and the matching receipt are prepared in private staging, then published
+only to a unique ignored `design-source/coloring/.characters-*/export/` candidate.
+The JSON result reports `candidateDirectory`; the receipt's `output` remains the
+intended live asset path, not an automatic promotion. Compare/review the candidate
+in Inkscape before explicitly adopting its SVG and receipt as a separate artist
+edit. Copy candidates to a durable evidence directory if needed for review.
+Preparation never replaces the live `characters/` directory, its sibling files
+or annotations, even if an editor writes at the final publication step. Failed
+runs remove their own scratch only. We do not claim an advisory lock protects
+uncooperative editor writes, or that adoption is a power-loss atomic transaction.
 
 Pippa, Kennedi and other storybook guests remain a later expansion: preserve
 their established identity, create/review print-ready line-art exports, and

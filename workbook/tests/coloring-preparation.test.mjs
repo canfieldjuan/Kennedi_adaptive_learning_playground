@@ -44,6 +44,7 @@ import child from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
 import {chromium} from 'playwright';
 const write=fs.writeFileSync, rename=fs.renameSync, exec=child.execFileSync;
+const chmod=fs.chmodSync;
 const fault=${JSON.stringify(fault)}, live=${JSON.stringify(live)};
 if(fault==='crop') chromium.launch=async()=>{throw Error('injected crop failure');};
 if(fault==='metadata') child.execFileSync=(tool,args,options)=>{
@@ -55,7 +56,7 @@ if(fault==='receipt') fs.writeFileSync=(file,...args)=>{
   return write(file,...args);
 };
 if(fault==='publish') fs.renameSync=(from,to)=>{
-  if(String(from).includes('.characters-') && !String(from).endsWith('.previous') && to===live)
+  if(String(from).includes('.characters-') && (to===live || String(to).endsWith('/export')))
     throw Error('injected publication failure');
   return rename(from,to);
 };
@@ -64,6 +65,18 @@ if(fault==='concurrent') fs.writeFileSync=(file,...args)=>{
   if(String(file).endsWith('.recipe.json')) write(live+'/notes.txt','Concurrent artist edit.');
   return result;
 };
+if(fault==='late-edit') {
+  let armed=false;
+  fs.writeFileSync=(file,...args)=>{
+    const result=write(file,...args);
+    if(String(file).endsWith('.recipe.json')) armed=true;
+    return result;
+  };
+  fs.chmodSync=(file,...args)=>{
+    if(armed && String(file).includes('.characters-')) write(live+'/notes.txt','Late artist edit.');
+    return chmod(file,...args);
+  };
+}
 syncBuiltinESMExports();
 `);
       args.push('--import', preload);
@@ -76,6 +89,13 @@ syncBuiltinESMExports();
 }
 
 for (const animal of ['bunny', 'turtle']) {
+  test(`${animal}: late publication edit must remain in live artist inventory`, context => {
+    const f = fixture(context), before = f.snapshot();
+    const result = f.run(animal, 'late-edit');
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(path.join(f.live, 'notes.txt'), 'utf8'), 'Late artist edit.');
+    assert.deepEqual(f.snapshot().filter(([name]) => name !== 'notes.txt'), before.filter(([name]) => name !== 'notes.txt'));
+  });
   for (const fault of ['crop', 'metadata', 'receipt', 'publish']) {
     test(`${animal}: ${fault} failure preserves complete reviewed inventory`, context => {
       const f = fixture(context), before = f.snapshot(), inputs = f.inputs();
@@ -94,19 +114,21 @@ for (const animal of ['bunny', 'turtle']) {
     assert.equal(result.status, 0, result.stderr || result.stdout || String(result.error));
     assert.deepEqual(f.snapshot(), before, 'Port changed proven export bytes or provenance.');
     assert.deepEqual(f.inputs(), inputs);
-    const receipt = JSON.parse(readFileSync(path.join(f.live, `${animal}-coloring-opaque.recipe.json`)));
+    const resultRecord = JSON.parse(result.stdout);
+    const candidate = resultRecord.candidateDirectory;
+    assert.ok(candidate.startsWith(path.dirname(f.live) + '/.characters-'));
+    const receipt = JSON.parse(readFileSync(path.join(candidate, `${animal}-coloring-opaque.recipe.json`)));
     assert.equal(receipt.outputSha256, hash(readFileSync(path.join(f.root, receipt.output))));
-    const backups = readdirSync(path.dirname(f.live)).filter(name => name.startsWith('.characters-') && name.endsWith('.previous'));
-    assert.equal(backups.length, 1, 'Previous complete inventory must be preserved.');
-    assert.deepEqual(readdirSync(path.join(path.dirname(f.live), backups[0])).sort().map(name =>
-      [name, hash(readFileSync(path.join(path.dirname(f.live), backups[0], name)))]), before);
+    assert.deepEqual(readdirSync(candidate).sort().map(name => [name, hash(readFileSync(path.join(candidate, name)))]),
+      before.filter(([name]) => name.startsWith(animal + '-')));
+    const repeated = f.run(animal); assert.equal(repeated.status, 0, repeated.stderr);
+    assert.notEqual(JSON.parse(repeated.stdout).candidateDirectory, candidate, 'Runs must not share a publication target.');
     console.log(`${animal} successful export/receipt parity PASS: ${receipt.outputSha256}`);
   });
-  test(`${animal}: concurrent same-directory edit is preserved and rejects publication`, context => {
+  test(`${animal}: concurrent same-directory edit is preserved without live publication`, context => {
     const f = fixture(context), before = f.snapshot();
     const result = f.run(animal, 'concurrent');
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /changed during preparation/);
+    assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(f.snapshot().filter(([name]) => name !== 'notes.txt'), before.filter(([name]) => name !== 'notes.txt'));
     assert.equal(readFileSync(path.join(f.live, 'notes.txt'), 'utf8'), 'Concurrent artist edit.');
   });

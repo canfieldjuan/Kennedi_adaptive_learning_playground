@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, chmodSync, cpSync, renameSync, rmSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { readRecipe, resolveRecipe, WORKBOOK_ROOT as root } from '../src/recipes.mjs';
 import { renderDocument } from '../src/render.mjs';
@@ -92,23 +92,49 @@ async function screenshots() {
   inventory.publish(pages.map((_, i) => `page-${number(i)}.png`));
   console.log(`Rendered ${pages.length} browser screenshots.`);
 }
+function contactDocument(raster) {
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><title>Coloring pack print proof</title>
+    <style>body{margin:24px;background:#ececec;font:20px sans-serif}h1{font-size:28px}main{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}figure{margin:0}img{width:100%;display:block}figcaption{padding:8px 0}</style>
+    <h1>Kennedi's coloring book / draft print proof</h1><main>${pages.map(({ meta }, i) => `<figure><img alt="${meta.title}" src="${inlineImageFile(raster(i))}"><figcaption>${i + 1}. ${meta.title}</figcaption></figure>`).join('')}</main></html>`;
+}
+function rasterReceipt(raster, directory, pdfSha256) {
+  return { pdfSha256,
+    pages: pages.map((_, i) => ({ file: path.basename(raster(i)), sha256: hashFile(raster(i)) })),
+    contact: { htmlSha256: hashFile(path.join(directory, 'contact-sheet.html')),
+      pngSha256: hashFile(path.join(directory, 'contact-sheet.png')) } };
+}
 async function rasterize() {
   assert.equal(pdfInfo(pdfPath), pages.length);
   assertPdfHashes(pdfPath, readFileSync(path.join(out, 'preview.html'), 'utf8'));
-  replacePdfRasters(pdfPath, path.join(out, 'pdf-raster'), pages.length, true);
-  saveJson(path.join(out, 'raster-receipt.json'), { pdfSha256: hashFile(pdfPath),
-    pages: pages.map((_, i) => ({ file: path.basename(rasterPath(i)), sha256: hashFile(rasterPath(i)) })) });
-  const contact = `<!doctype html><html lang="en"><meta charset="utf-8"><title>Coloring pack print proof</title>
-    <style>body{margin:24px;background:#ececec;font:20px sans-serif}h1{font-size:28px}main{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}figure{margin:0}img{width:100%;display:block}figcaption{padding:8px 0}</style>
-    <h1>Kennedi's coloring book / draft print proof</h1><main>${pages.map(({ meta }, i) => `<figure><img alt="${meta.title}" src="${inlineImageFile(rasterPath(i))}"><figcaption>${i + 1}. ${meta.title}</figcaption></figure>`).join('')}</main></html>`;
-  save(path.join(out, 'contact-sheet.html'), contact);
-  await withPrintBrowser(async browser => {
-    const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
-    await page.setContent(contact, { waitUntil: 'load' });
-    await page.evaluate(() => Promise.all([...document.images].map(image => image.decode())));
-    await page.screenshot({ path: path.join(out, 'contact-sheet.png'), fullPage: true });
-    chmodSync(path.join(out, 'contact-sheet.png'), 0o600);
-  });
+  const pdfSha256 = hashFile(pdfPath);
+  const staging = mkdtempSync(path.join(out, '.coloring-proof-'));
+  const stagedRaster = i => path.join(staging, 'pdf-raster', `page-${i + 1}.png`);
+  let inventory;
+  try {
+    replacePdfRasters(pdfPath, path.join(staging, 'pdf-raster'), pages.length, true);
+    const contact = contactDocument(stagedRaster);
+    save(path.join(staging, 'contact-sheet.html'), contact);
+    await withPrintBrowser(async browser => {
+      const page = await browser.newPage({ viewport: { width: 1400, height: 1100 } });
+      await page.setContent(contact, { waitUntil: 'load' });
+      await page.evaluate(() => Promise.all([...document.images].map(image => image.decode())));
+      await page.screenshot({ path: path.join(staging, 'contact-sheet.png'), fullPage: true });
+      chmodSync(path.join(staging, 'contact-sheet.png'), 0o600);
+    });
+    assert.equal(hashFile(pdfPath), pdfSha256, 'PDF changed during proof preparation.');
+    saveJson(path.join(staging, 'raster-receipt.json'), rasterReceipt(stagedRaster, staging, pdfSha256));
+    // No live proof is touched until all rendering succeeds. Receipt is last:
+    // an interrupted publication cannot validate a mixed old/new contact set.
+    inventory = stageInventory(path.join(out, 'pdf-raster'));
+    const files = pages.map((_, i) => path.basename(stagedRaster(i)));
+    files.forEach((name, i) => cpSync(stagedRaster(i), path.join(inventory.directory, name)));
+    inventory.publish(files);
+    for (const name of ['contact-sheet.html', 'contact-sheet.png', 'raster-receipt.json'])
+      renameSync(path.join(staging, name), path.join(out, name));
+  } finally {
+    rmSync(staging, { recursive: true });
+    if (inventory && existsSync(inventory.directory)) rmSync(inventory.directory, { recursive: true });
+  }
   console.log(`Rasterized ${pages.length} actual PDF pages in grayscale at 150 DPI.`);
 }
 async function verify() {
@@ -119,8 +145,10 @@ async function verify() {
   assert.equal(readFileSync(path.join(out, 'preview.html'), 'utf8'), docs.preview);
   assertPdfHashes(pdfPath, docs.preview); assert.equal(pdfInfo(pdfPath), pages.length);
   assert.deepEqual(JSON.parse(readFileSync(path.join(out, 'raster-receipt.json'), 'utf8')),
-    { pdfSha256: hashFile(pdfPath), pages: pages.map((_, i) => ({ file: path.basename(rasterPath(i)), sha256: hashFile(rasterPath(i)) })) },
-    'Stale or altered PDF raster receipt; rasterize the current PDF first.');
+    rasterReceipt(rasterPath, out, hashFile(pdfPath)),
+    'Stale or altered PDF raster/contact proof receipt; rasterize the current PDF first.');
+  assert.ok(readFileSync(path.join(out, 'contact-sheet.html'), 'utf8') === contactDocument(rasterPath),
+    'Stale or altered contact HTML; rasterize the current PDF first.');
   const errors = [], externalRequests = [];
   const measurements = await withPrintBrowser(async browser => {
     const page = await browser.newPage({ viewport: { width: 816, height: 1056 } });

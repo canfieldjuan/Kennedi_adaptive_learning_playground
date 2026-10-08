@@ -1,5 +1,11 @@
 # Coloring preparation publication safety
 
+Historical first fix, superseded by `coloring-review-proof-safety.md` after
+review reproduced a post-snapshot edit race in 09456ff. The evidence below
+records the earlier tested scope, not a current guarantee of conflict-free
+live replacement. Current preparation publishes candidates only and does not
+replace the artist's live inventory.
+
 ## Root Cause
 Introducing commit: c4c73965079d788b592738495f68635112a601c0, authored in this
 coding arc. Both prepare-coloring tools write the live SVG at line 23 before
