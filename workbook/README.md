@@ -99,6 +99,14 @@ source/published scene parity, and preserve the starter's exact HTML hashes.
 Reprinting uses the saved SVG, not this preparation tool. Dependencies for
 derivative preparation are ImageMagick, potrace and the existing Chrome setup.
 
+Both preparation commands share `tools/prepare-coloring-character.mjs`. Tracing,
+cropping and the matching receipt are prepared in temporary files before live
+publication. Failures leave existing art and receipts unchanged; publication
+preserves sibling files and retains the previous complete inventory in an
+ignored `design-source/coloring/.characters-*.previous/` directory. A conflicting
+edit during preparation rejects publication rather than overwriting it. These
+are rollback-capable exports, not a power-loss atomicity guarantee.
+
 Pippa, Kennedi and other storybook guests remain a later expansion: preserve
 their established identity, create/review print-ready line-art exports, and
 register a fixed scene ID plus all dependencies. No cast integration is built

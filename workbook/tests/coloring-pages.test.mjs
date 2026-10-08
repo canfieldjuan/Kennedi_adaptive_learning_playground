@@ -8,6 +8,9 @@ import { catalog, readRecipe, recipeSchema, resolveRecipe, WORKBOOK_ROOT } from 
 import { coloringCatalog, createColoringBook } from '../src/content/coloring-pages.mjs';
 import { renderDocument } from '../src/render.mjs';
 import { withPrintBrowser } from '../scripts/print-artifacts.mjs';
+// Both existing npm/CI test entry points include this file. Keep package.json
+// unchanged because it is part of the approved print recipe's source lock.
+import './coloring-preparation.test.mjs';
 
 const recipe = pages => ({ schemaVersion: 1, template: 'coloring-pages-v1', pages });
 const copy = value => JSON.parse(JSON.stringify(value));
