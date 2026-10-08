@@ -1,0 +1,8 @@
+/* Art-first pages: no worksheet boxes, tracing or ink-heavy decorations. */
+.coloring-sheet { padding: .5in; gap: .16in; }
+.coloring-header { flex: 0 0 auto; text-align: center; }
+.coloring-header p { margin: 0 0 .04in; font: 800 10pt var(--font-body); letter-spacing: .1em; }
+.coloring-header h1 { margin: 0; font: 700 30pt/normal var(--font-display); }
+.coloring-art { margin: 0; width: 100%; flex: 1 1 auto; min-height: 0; }
+.coloring-art > svg { width: 100%; height: 100%; }
+.coloring-footer { display: flex; justify-content: space-between; flex: 0 0 auto; font: 600 11pt/1.3 var(--font-body); }

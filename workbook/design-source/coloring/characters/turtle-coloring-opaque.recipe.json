@@ -1,0 +1,17 @@
+{
+  "aiGeneratedSource": true,
+  "artModified": false,
+  "vectorExportModified": true,
+  "input": "design-source/animals/locked-poses/turtle-01-walking.png",
+  "inputSha256": "520fe4835d76d567a32cee56e657581d0bc1ae51d33eb6825be4b56753eba197",
+  "output": "design-source/coloring/characters/turtle-coloring-opaque.svg",
+  "outputSha256": "065f5c955b5bf31d59984dbd6fdc27d7d99fc71f41a4d917ffcabf089e46df1e",
+  "thresholdPercent": 70,
+  "opaqueWhiteInteriors": true,
+  "tools": {
+    "convert": "Version: ImageMagick 6.9.12-98 Q16 x86_64 18038 https://legacy.imagemagick.org",
+    "potrace": "potrace 1.16. Copyright (C) 2001-2019 Peter Selinger."
+  },
+  "crop": "180.20 369.42 670.57 429.49",
+  "approval": "draft / owner visual approval required"
+}

@@ -35,7 +35,7 @@ if (stage === 'catalog') {
       // Check the exact saved recipe before exporting/checking an older build.
       if (operation !== 'build') assert.deepEqual(resolveRecipe(readRecipe(snapshot)).recipe, recipe, 'Output was built from a different recipe.');
       const command = [path.join(WORKBOOK_ROOT, 'scripts', `${templates[recipe.template]}.mjs`), operation, '--out', out];
-      if (recipe.template === 'count-and-trace-v1') command.push('--recipe', input);
+      if (['count-and-trace-v1', 'coloring-pages-v1'].includes(recipe.template)) command.push('--recipe', input);
       // Fixed executable/script mapping and argument array; no shell or recipe code.
       execFileSync(process.execPath, command, { cwd: WORKBOOK_ROOT, stdio: 'inherit' });
       if (operation === 'build') {

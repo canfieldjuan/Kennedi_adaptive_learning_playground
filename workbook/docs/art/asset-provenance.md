@@ -1,5 +1,121 @@
 # Art asset provenance
 
+## Current coloring approval
+
+Owner visually approved bunny garden ("Nice") and turtle pond ("love it") after
+reviewing their actual PDF rasters. The original isolated-animal starter was
+also accepted. Scope is those compositions and the reused art as printed there;
+not a blanket approval of future scenes, Pippa/Kennedi poses or the art family.
+Physical printing remains untested. The dated draft entries/derivative receipts
+below preserve their creation-stage status, not the current scene decision.
+
+Published pair: `docs/art/coloring-approved/`, with contact sheet, Letter PDF,
+frozen recipe and source/export hash receipt. Editable selection recipe:
+`recipes/coloring-scenes.json`. Sources remain under `design-source/coloring/`;
+no new model inference, photos or original-art edits during publication.
+
+## 2026-10-07: Turtle pond companion coloring proof
+
+Approval: **draft / owner visual approval required** for the new scene. Owner
+liked the bunny garden and requested turtle pond next; no new cast rollout.
+
+| Asset | Source/tool | Modification | Editable / consumed source |
+| --- | --- | --- | --- |
+| Turtle opaque-interior derivative | Existing AI-generated FLUX.1-dev turtle PNG and saved provenance; CPU ImageMagick 70 percent threshold, Potrace 1.16 opaque export, Chrome-measured crop | White interior contours prevent backdrop bleed-through; no new image inference, pose/identity edit or original asset overwrite | `design-source/coloring/characters/turtle-coloring-opaque.svg` |
+| Turtle pond | Assistant-authored, AI-assisted native SVG paths and composition; no raster model call | New bank, water/lily pads, flower, reeds/cattails, clouds and dragonfly; established turtle remains linked | `design-source/coloring/scenes/turtle-pond.svg` |
+
+Original AI source is `design-source/animals/locked-poses/turtle-01-walking.png`,
+with its original generation recipe and canonical transparent SVG unchanged.
+Derivative hashes/tools/crop/settings and approval status are recorded in
+`design-source/coloring/characters/turtle-coloring-opaque.recipe.json`.
+Rebuild via `node tools/prepare-coloring-turtle.mjs`; reprinting only consumes
+the saved SVG, with no model load, GPU use, hosted upload or family photograph.
+
+Source layers remain Inkscape-editable. Shared fixed-slot publication replaces
+the linked character with inline vector paths. Recipe hashes cover scene and
+character; actual PDF/raster proof is separate from artist sources. Tests require
+source/published black-white silhouette parity, bound measured edge smoothing,
+reject pose/scale drift and check opaque face/shell/exterior samples. Canonical
+turtle appearance and accepted bunny HTML are independently hash-checked.
+This is not claimed as human-authored or byte-identical antialiasing.
+
+Recipe: `recipes/coloring-turtle-pond.json`. Durable proof/source-overlay root:
+`~/Desktop/codex-evidence/kennedi-workbook/turtle-pond-proof-2026-10-07/`.
+Physical printing and additional scene/character work await owner review.
+
+## 2026-10-07: Bunny garden layered coloring proof
+
+Approval: **draft / owner visual approval required** for this new scene.
+Owner accepted the earlier isolated-animal starter and authorized one garden
+proof; that does not approve a whole scene family or storybook cast rollout.
+
+| Asset | Source/tool | Modification | Editable / consumed source |
+| --- | --- | --- | --- |
+| Bunny opaque-interior derivative | Existing AI-generated bunny PNG; CPU ImageMagick 70 percent threshold, potrace 1.16 `--opaque`, measured crop in Chrome | Vector export gains white interior contours; no new image-model inference, pose or identity edit | `design-source/coloring/characters/bunny-coloring-opaque.svg` |
+| Bunny garden | Assistant-authored, AI-assisted native SVG curves and composition; no bitmap generation/model call | New flowers, carrots, butterfly, clouds and ground; canonical bunny linked unchanged in identity | `design-source/coloring/scenes/bunny-garden.svg` |
+
+The new garden is not represented as human-drawn art. Its props are editable
+paths/definitions with Inkscape layers. Original bunny artwork/provenance
+remains under `design-source/animals/locked-poses/bunny-01-sitting.{png,svg}`.
+Derivative settings, observed tool versions and input/output hashes are in
+`design-source/coloring/characters/bunny-coloring-opaque.recipe.json`.
+Rebuild with `node tools/prepare-coloring-bunny.mjs`; reprint from the saved
+SVG/scene recipe without any GPU or art model. Source linked SVG and published
+inline composition have identical tested black/white silhouettes, with bounded
+edge antialiasing rather than falsely claiming byte-identical rendering.
+Shifted/resized fixtures fail the parity check. Original/opaque bunny black-on-white
+appearance differs only by bounded edge antialiasing; face/body white interiors
+now prevent background bleed-through, while outside transparency is retained.
+
+Runtime source/export flow: catalog selects the scene and its character
+dependency; the fixed reference is replaced by inline vector markup, then
+existing HTML/Chrome/Poppler tools export PDF, screenshots and PDF rasters.
+Source-quality files stay separate from proof outputs; they are not buried in
+JavaScript illustration blobs. Recipe locks cover both selected SVGs and
+renderer source; artist previews and publication must agree.
+
+Recipe: `recipes/coloring-bunny-garden.json`. Durable proof root:
+`~/Desktop/codex-evidence/kennedi-workbook/bunny-garden-proof-2026-10-07/`.
+No private photos, cloud upload, local image generation, new model, Pippa,
+Kennedi pose, or other scene was added in this slice. The existing bunny's
+original ear/tail trace texture remains inherited. Physical printing and
+mass background rollout await owner review.
+
+## 2026-10-07: Original coloring starter pack
+
+Owner rejected photo conversion and requested original reusable coloring pages.
+No new images, private photographs, generative model calls, vector tracing or
+Inkscape edits were made for this slice. Existing AI-generated art is reused
+byte-for-byte; it is not claimed as human-authored or newly generated art.
+
+| Page ID | Editable SVG and original raster base | New exported assets |
+| --- | --- | --- |
+| bunny | `design-source/animals/locked-poses/bunny-01-sitting.{svg,png}` | Inline SVG in `pages/page-01.html`, individual PDF |
+| turtle | `design-source/animals/locked-poses/turtle-01-walking.{svg,png}` | Inline SVG in `pages/page-02.html`, individual PDF |
+| unicorn | `design-source/animals/locked-poses/unicorn-01-standing.{svg,png}` | Inline SVG in `pages/page-03.html`, individual PDF |
+| whale | `design-source/animals/locked-poses/whale-01-swimming.{svg,png}` | Inline SVG in `pages/page-04.html`, individual PDF |
+
+Original tool/model: local ComfyUI / FLUX.1-dev and ImageMagick/potrace for
+print vectors, as recorded in the original source recipes/embedded PNG graphs
+and earlier provenance entries. Original generation dates are not inferred
+from filesystem timestamps. Manual art modification in this slice: none.
+Page composition/CSS: assistant-authored deterministic code, not generative
+scene illustration. Export tool: existing Chrome/Playwright and Poppler;
+selected SVG hashes, content/source lock and render environment are saved.
+
+Recipe: `recipes/coloring-starter.json`. Default generated root:
+`dist-recipes/coloring-pages-v1/` (Git-ignored). Durable inspected proof:
+`~/Desktop/codex-evidence/kennedi-workbook/original-coloring-pack-2026-10-07/starter/`.
+Contains editable recipe, manifest, Letter PDFs, browser screenshots, actual
+grayscale PDF rasters, their hash receipt, contact sheet and verification JSON.
+Source-quality SVGs remain at the paths above rather than being duplicated.
+
+Approval: **draft / owner visual approval required**. Full-size bunny ear/tail
+texture and whale cheek texture retain the original threshold-trace roughness.
+Not all existing animal SVGs are coloring-ready; the heavily filled elephant
+and puppy were excluded from this starter. Do not silently approve an entire
+art family or regenerate assets when only a recipe reprint was requested.
+
 Tracks every AI-generated or AI-assisted illustration asset in `workbook/`.
 Companion to `docs/design-system.md`'s Art Direction v2 section. Mirrors the
 convention used by the main app's `learning-playground/docs/art/`.

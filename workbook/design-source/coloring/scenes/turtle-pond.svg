@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+  width="700" height="820" viewBox="0 0 700 820">
+  <title>Turtle's pond: lily pads, reeds and a dragonfly visitor</title>
+  <desc>Editable coloring scene. The existing walking turtle stands on a bank beside the water, not floating in the pond.</desc>
+  <defs>
+    <g id="pond-lily-pad" fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-12 0 L-61-28 C-88-6-72 29-31 35 C6 47 69 27 76 4 C82-22 33-43-7-31 C-22-28-41-22-47-14Z"/>
+      <path d="M-12 0 Q13-9 47-7 M-12 0 Q12 12 33 20" fill="none" stroke-width="2.3"/>
+    </g>
+    <g id="pond-water-lily" fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M0 16 C-35 8-63-13-66-43 C-35-41-9-15 0 16Z"/>
+      <path d="M0 16 C31 7 59-16 64-42 C31-41 10-12 0 16Z"/>
+      <path d="M0 14 C-37-10-43-45-29-69 C-2-52 4-21 0 14Z"/>
+      <path d="M0 14 C33-13 42-45 28-68 C4-48-3-18 0 14Z"/>
+      <path d="M0 15 C-19-9-18-52 0-83 C19-55 22-14 0 15Z"/>
+      <path d="M-48-9 C-27-13-6 0 0 16 C-26 23-44 7-48-9Z M48-10 C26-12 6 0 0 16 C26 21 43 6 48-10Z"/>
+      <path d="M-25 13 Q0 32 27 11 M0-45 Q-3-21 0-7" fill="none" stroke-width="2.3"/>
+    </g>
+  </defs>
+  <g inkscape:groupmode="layer" inkscape:label="01 Quiet sky" id="pond-background"
+    fill="#fff" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M64 129 C48 128 48 110 61 105 C61 85 88 78 102 96 C118 88 140 97 138 114 C153 119 149 135 129 136Z"/>
+    <path d="M387 93 C367 92 369 73 387 68 C391 45 418 41 432 62 C451 52 472 64 470 83 C488 88 480 104 459 102Z"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="02 Pond and broad ripples" id="pond-water"
+    fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M56 537 C24 502 75 449 161 456 C252 449 321 473 393 472 C482 451 608 463 650 508 C686 549 650 593 660 637 C676 691 632 762 567 779 C474 805 387 778 300 790 C203 806 92 780 52 732 C20 695 44 643 41 609 C35 580 34 558 56 537Z"/>
+    <path d="M81 695 Q101 684 125 687 M244 716 Q280 703 316 711 M371 654 Q416 645 446 653 M482 763 Q518 769 550 758" fill="none" stroke-width="2.7"/>
+    <path d="M110 750 Q137 755 154 749 M583 605 Q603 598 622 604" fill="none" stroke-width="2.7"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="03 Reeds and cattails" id="pond-reeds"
+    fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M605 524 C604 444 590 358 590 278 M636 526 C641 461 638 413 637 352 M617 525 C619 442 630 386 659 338" fill="none"/>
+    <path d="M590 281 C570 279 574 263 573 239 L572 210 C574 196 591 192 600 204 C606 220 603 251 606 267 C605 278 598 283 590 281Z"/>
+    <path d="M637 352 C621 351 622 336 622 322 L621 300 C624 289 638 287 645 298 C650 312 649 329 650 339 C649 349 644 354 637 352Z"/>
+    <path d="M585 199 L583 182 M633 292 L633 278" fill="none"/>
+    <path d="M603 491 C570 455 552 418 553 392 C582 404 600 447 603 491Z"/>
+    <path d="M622 510 C640 456 657 430 682 413 C682 450 658 482 622 510Z"/>
+    <path d="M616 510 C605 458 611 394 625 370 C635 414 628 471 616 510Z"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="04 Turtle's bank" id="pond-bank"
+    fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M73 573 C91 544 126 553 157 539 C209 524 262 533 299 527 C369 522 408 538 452 547 C501 549 550 569 557 592 C570 613 532 632 489 638 C420 649 374 634 324 639 C261 648 201 637 153 629 C112 625 64 604 73 573Z"/>
+    <path d="M90 586 C69 567 76 553 95 556 C109 543 125 554 128 568 C124 584 107 590 90 586Z"/>
+    <path d="M438 620 C431 602 449 589 463 596 C475 583 495 594 495 610 C486 625 460 629 438 620Z"/>
+    <path d="M199 622 Q220 628 241 625 M369 623 L387 622" fill="none" stroke-width="2.5"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="05 Existing turtle (linked editable SVG)" id="pond-turtle">
+    <image id="turtle-reference" href="../characters/turtle-coloring-opaque.svg" x="125" y="293" width="485" height="310"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="06 Dragonfly visitor" id="pond-dragonfly"
+    fill="#fff" stroke="#000" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(137 255) rotate(-12)">
+      <path d="M-6-15 C-20-34-47-50-67-40 C-78-30-48-12-6-8Z M5-15 C18-35 45-47 64-36 C73-22 41-10 5-8Z"/>
+      <path d="M-6-7 C-32-13-57-7-54 8 C-48 24-24 11-5 0Z M6-7 C33-11 56-3 51 12 C44 26 24 13 5 0Z"/>
+      <path d="M-5-9 C-14-22-6-30 4-27 C15-23 12-12 6-8 C8 8 5 34 0 43 C-5 34-9 8-5-9Z"/>
+      <path d="M-2-20 L-2-19 M6-20 L6-19 M-5 11 L6 11 M-4 23 L4 23" stroke-width="2.2"/>
+    </g>
+    <path d="M67 263 Q34 284 49 308" fill="none" stroke-width="2.6" stroke-dasharray="5 12"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="07 Lily pads and water lily" id="pond-lilies">
+    <use href="#pond-lily-pad" transform="translate(146 671) rotate(8) scale(.9)"/>
+    <use href="#pond-lily-pad" transform="translate(520 705) rotate(-6) scale(1.35)"/>
+    <use href="#pond-water-lily" transform="translate(541 686) scale(1.04)"/>
+    <use href="#pond-lily-pad" transform="translate(391 765) rotate(12) scale(.58)"/>
+  </g>
+</svg>
