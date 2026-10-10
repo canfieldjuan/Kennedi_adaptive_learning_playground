@@ -68,13 +68,24 @@ export function stageInventory(directory) {
   } };
 }
 
+export function readPdfRasterInventory(directory, pages) {
+  assert.ok(Number.isSafeInteger(pages) && pages > 0, 'Expected a positive raster page count.');
+  const output = lstatSync(directory);
+  assert.ok(output.isDirectory() && !output.isSymbolicLink(), 'Raster inventory must be a real directory.');
+  const images = readdirSync(directory).sort((a, b) =>
+    Number(/^page-(\d+)\.png$/.exec(a)?.[1]) - Number(/^page-(\d+)\.png$/.exec(b)?.[1]));
+  assert.deepEqual(images.map(name => /^page-(\d+)\.png$/.exec(name)?.[1]).map(Number),
+    Array.from({ length: pages }, (_, index) => index + 1), 'Unexpected raster page inventory.');
+  assert.ok(images.every(name => lstatSync(path.join(directory, name)).isFile()), 'Raster inventory must contain regular files.');
+  return images;
+}
+
 export function replacePdfRasters(file, directory, pages, grayscale = false) {
   assert.ok(Number.isSafeInteger(pages) && pages > 0, 'Expected a positive raster page count.');
   const inventory = stageInventory(directory);
   const staging = inventory.directory;
   printTool('pdftoppm', ['-png', ...(grayscale ? ['-gray'] : []), '-r', '150', file, path.join(staging, 'page')], { stdio: 'inherit' });
-  const images = readdirSync(staging).sort();
-  assert.deepEqual(images.map(name => /^page-(\d+)\.png$/.exec(name)?.[1]).map(Number),
-    Array.from({ length: pages }, (_, index) => index + 1), 'Unexpected raster page inventory.');
-  return inventory.publish(images);
+  const images = readPdfRasterInventory(staging, pages);
+  inventory.publish(images);
+  return images;
 }

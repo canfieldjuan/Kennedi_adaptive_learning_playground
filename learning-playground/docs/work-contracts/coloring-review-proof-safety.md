@@ -1,5 +1,10 @@
 # Coloring review proof safety consolidation
 
+Historical verification record for 9a6f77a. The active third-round owner-approved
+consolidation is [coloring-artifact-ownership.md](coloring-artifact-ownership.md),
+which adds verification lifecycle, real raster inventory and immutable input
+ownership. Do not treat this prior commit's results as current-head readiness.
+
 ## Root Cause
 
 - Preparation conflict protection introduced in 09456ffa8af4feb61e3fe358ad589ea7864c27a6

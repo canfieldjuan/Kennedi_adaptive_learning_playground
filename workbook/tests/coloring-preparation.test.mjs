@@ -46,6 +46,16 @@ import {chromium} from 'playwright';
 const write=fs.writeFileSync, rename=fs.renameSync, exec=child.execFileSync;
 const chmod=fs.chmodSync;
 const fault=${JSON.stringify(fault)}, live=${JSON.stringify(live)};
+if(fault==='input-aba') child.execFileSync=(tool,args,options)=>{
+  if(tool!=='convert' || args[0]==='-version') return exec(tool,args,options);
+  const source=${JSON.stringify(path.join(root, 'design-source/animals/locked-poses', animal === 'bunny' ? 'bunny-01-sitting.png' : 'turtle-01-walking.png'))};
+  const alternate=${JSON.stringify(path.join(root, 'design-source/animals/locked-poses', animal === 'bunny' ? 'turtle-01-walking.png' : 'bunny-01-sitting.png'))};
+  const original=fs.readFileSync(source), replacement=fs.readFileSync(alternate);
+  if(original.equals(replacement)) throw Error('ABA fixture inputs must differ');
+  write(source+'.replacement',replacement); rename(source+'.replacement',source);
+  try { console.error('injected input ABA during conversion'); return exec(tool,args,options); }
+  finally { write(source+'.restored',original); rename(source+'.restored',source); }
+};
 if(fault==='crop') chromium.launch=async()=>{throw Error('injected crop failure');};
 if(fault==='metadata') child.execFileSync=(tool,args,options)=>{
   if(args[0]==='-version') throw Error('injected metadata failure');
@@ -89,6 +99,19 @@ syncBuiltinESMExports();
 }
 
 for (const animal of ['bunny', 'turtle']) {
+  test(`${animal}: input ABA cannot change the bytes described by candidate provenance`, context => {
+    const f = fixture(context), before = f.snapshot(), inputs = f.inputs();
+    const result = f.run(animal, 'input-aba');
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /injected input ABA during conversion/);
+    const record = JSON.parse(result.stdout), candidate = record.candidateDirectory;
+    assert.deepEqual(f.snapshot(), before); assert.deepEqual(f.inputs(), inputs);
+    const receipt = JSON.parse(readFileSync(path.join(candidate, `${animal}-coloring-opaque.recipe.json`)));
+    assert.equal(receipt.inputSha256, inputs[animal === 'bunny' ? 0 : 1]);
+    assert.deepEqual(readdirSync(candidate).sort().map(name => [name, hash(readFileSync(path.join(candidate, name)))]),
+      before.filter(([name]) => name.startsWith(animal + '-')), 'Candidate must trace the captured original bytes, not transient replacement.');
+    console.log(`${animal} input ABA export/receipt parity PASS`);
+  });
   test(`${animal}: late publication edit must remain in live artist inventory`, context => {
     const f = fixture(context), before = f.snapshot();
     const result = f.run(animal, 'late-edit');

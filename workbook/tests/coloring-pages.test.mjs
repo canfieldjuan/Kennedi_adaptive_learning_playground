@@ -11,6 +11,7 @@ import { withPrintBrowser } from '../scripts/print-artifacts.mjs';
 // Both existing npm/CI test entry points include this file. Keep package.json
 // unchanged because it is part of the approved print recipe's source lock.
 import './coloring-preparation.test.mjs';
+import './coloring-ownership.test.mjs';
 
 const recipe = pages => ({ schemaVersion: 1, template: 'coloring-pages-v1', pages });
 const copy = value => JSON.parse(JSON.stringify(value));

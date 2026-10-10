@@ -36,6 +36,19 @@ PDF/raster receipt and regenerates expected contact HTML from those rasters.
 Missing, stale or altered contacts fail verification; rerun `rasterize` for older
 outputs whose receipt predates these checks. Rendering must finish before live
 proof publication; receipt-last checks reject interrupted mixed publication.
+Raster filenames come from Poppler's validated numeric inventory (for example,
+`page-01.png` in a ten-page pack), not a naming guess. Verification derives the
+actual regular-file inventory and rejects missing, extra or linked entries.
+
+Each coloring command marks `verification.json` as `NOT_VERIFIED` before recipe
+compatibility checks or output changes; only complete verification writes `PASS`.
+The generic workbook CLI delegates the entire coloring run to the same owner.
+One output directory allows one cooperating run at a time, including `all` and
+its rendering metadata. A contender fails without changing the owner's files.
+The private `.coloring-run-lock` is released on normal success/failure; a killed
+process may leave it behind. Confirm no process owns that output before manually
+recovering an interrupted lock. Do not steal a live lock. This is not protection
+against arbitrary editor writes or a multi-file power-loss transaction.
 Print US Letter at actual size / 100%, with no browser headers.
 Half-inch safe margins are built in. No server or image model is involved.
 
@@ -111,6 +124,9 @@ The JSON result reports `candidateDirectory`; the receipt's `output` remains the
 intended live asset path, not an automatic promotion. Compare/review the candidate
 in Inkscape before explicitly adopting its SVG and receipt as a separate artist
 edit. Copy candidates to a durable evidence directory if needed for review.
+Preparation captures the source PNG once, hashes those bytes and traces a private
+snapshot. Later editor saves cannot silently change the candidate's recorded
+input. Unchanged inputs retain the approved SVG/receipt bytes and CPU settings.
 Preparation never replaces the live `characters/` directory, its sibling files
 or annotations, even if an editor writes at the final publication step. Failed
 runs remove their own scratch only. We do not claim an advisory lock protects
