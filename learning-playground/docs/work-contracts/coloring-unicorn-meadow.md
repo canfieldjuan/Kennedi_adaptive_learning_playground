@@ -146,6 +146,34 @@ inspection, frozen replay, documentation and durable artifacts. Renderer, print
 CSS, schema shape/caps, dependencies, canonical art and accepted outputs were
 not changed. Source fingerprint changes from catalog/schema/package entries
 intentionally invalidate old frozen recipes; keep their matching source.
-NOT DONE: owner visual approval, physical printing, remote publication, CI,
+At the local-proof handoff, NOT DONE: owner visual approval, physical printing, remote publication, CI,
 independent PR review or merge. Those remain separate gates. No next scene,
 storybook-cast rollout, new workbook pages or GPU/model call occurred.
+
+## Owner Approval / Publication Follow-up: 2026-10-11
+
+Owner reviewed the final rendered Unicorn Meadow and replied "looks good".
+Record approval for this exact composition/derivative only, not future scenes,
+the cast, physical printing or merge. Approved implementation:
+85bb0f14a4667a15f9494eb36fa19f5949639994. Approved PDF SHA256:
+85d3e56fa81bf6ac89b737b20c60354815453462fbf9effc09d08591ccd7d11c;
+raster SHA256: c4a3fbd1c1deef24602ce553dae5940957f06ced4696870504bdfcd437863b84.
+
+Required follow-up surface: this contract plus README, design-system and current
+provenance approval wording; persist head/ownership, publish the scoped branch,
+open one PR, subscribe and stop. Original creation-stage derivative receipt and
+proof receipt remain unchanged; current docs own the subsequent approval status.
+No artwork, recipe, renderer, tests, dependencies, saved approved pair or
+curriculum changes. No merge authority is inferred from visual approval.
+
+Verification: inspect documentation diff, git diff --check, and prove no
+non-document diff from the tested implementation. Reuse its recorded 82-pass
+adjacent test and PASS print/replay evidence; do not rerun code tests for this
+documentation-only follow-up. Current main remains the implementation base.
+Live branch protection requires quality-gate; workbook-quality-gate must also
+be green before readiness. Exact-head CI and independent review remain pending.
+
+Cold audit trace: README's Unicorn Meadow and pack-selection sections describe
+the accepted scene; design-system's Unicorn Meadow section records composition
+approval; provenance's current-approval/Unicorn Meadow sections bind the decision
+to the tested source and final artifact hashes. No rendered bytes change.

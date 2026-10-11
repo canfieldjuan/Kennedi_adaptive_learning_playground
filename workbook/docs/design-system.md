@@ -4,7 +4,8 @@
 
 ### Layered scene proof: unicorn meadow
 
-Approval: **draft / owner visual approval required**. One fixed selection,
+Approval: owner visually approved this composition ("looks good", 2026-10-11).
+This does not approve a full art family or physical printing. One fixed selection,
 `unicorn-meadow`, reuses the established unicorn, not a new character/pose.
 Wide rainbow bands, sparse rolling hills and two large organic flowers provide
 open crayon-sized regions. Hills sit below the face; the ground meets the

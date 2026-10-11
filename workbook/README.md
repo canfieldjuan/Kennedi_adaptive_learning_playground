@@ -174,11 +174,12 @@ No GPU or model is required to prepare this export or reproduce the page.
 Both canonical turtle PNG/SVG remain unchanged. Tests measure white interior
 occlusion, outline preservation, artist/publication parity and rejected drift.
 
-### Unicorn meadow proof (draft)
+### Owner-approved Unicorn meadow
 
 `unicorn-meadow` reuses the established unicorn beneath a wide-band rainbow,
-with rolling hills and two large flowers. This scene is **draft / owner visual
-approval required**; it does not replace or extend the owner-approved scene pair.
+with rolling hills and two large flowers. The owner visually approved this
+composition ("looks good"). It does not replace the saved bunny/turtle pair
+or approve future scenes; physical printing remains untested.
 From `workbook/`, on Node 20:
 
 ```bash
@@ -208,7 +209,7 @@ Copy `recipes/coloring-starter.json` and change only the ordered `pages` list:
 {"schemaVersion":1,"template":"coloring-pages-v1","pages":["whale","bunny","turtle"]}
 ```
 
-Choose 1-24 entries from `bunny`, `turtle`, `unicorn`, `whale`, `bunny-garden`, `turtle-pond`, `unicorn-meadow` (draft). Repeated entries
+Choose 1-24 entries from `bunny`, `turtle`, `unicorn`, `whale`, `bunny-garden`, `turtle-pond`, `unicorn-meadow`. Repeated entries
 are allowed; each gets its own page. No file paths, HTML, prompts or arbitrary
 captions are accepted. A local language model only needs to emit this JSON;
 no model runtime integration is required. List choices with

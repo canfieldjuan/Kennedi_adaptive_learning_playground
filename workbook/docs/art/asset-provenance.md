@@ -9,6 +9,9 @@ not a blanket approval of future scenes, Pippa/Kennedi poses or the art family.
 Physical printing remains untested. The dated draft entries/derivative receipts
 below preserve their creation-stage status, not the current scene decision.
 
+Owner also visually approved the final Unicorn Meadow ("looks good", 2026-10-11).
+This accepts the specific composition/derivative below, not future scenes or cast.
+
 Published pair: `docs/art/coloring-approved/`, with contact sheet, Letter PDF,
 frozen recipe and source/export hash receipt. Editable selection recipe:
 `recipes/coloring-scenes.json`. Sources remain under `design-source/coloring/`;
@@ -16,8 +19,13 @@ no new model inference, photos or original-art edits during publication.
 
 ## 2026-10-11: Unicorn meadow proof
 
-Approval: **draft / owner visual approval required**. The owner approved starting
-one Unicorn Meadow slice, not the finished composition or a cast rollout.
+Approval: **owner visually approved** the final composition ("looks good",
+2026-10-11), built from 85bb0f14a4667a15f9494eb36fa19f5949639994.
+Approved PDF SHA256: 85d3e56fa81bf6ac89b737b20c60354815453462fbf9effc09d08591ccd7d11c.
+Approved raster SHA256: c4a3fbd1c1deef24602ce553dae5940957f06ced4696870504bdfcd437863b84.
+Creation-stage derivative/proof receipts remain draft historical records;
+this section records subsequent owner acceptance. No cast/future-scene rollout
+or physical-print qualification is implied.
 
 | Asset | Source/tool | Modification | Editable / consumed source |
 | --- | --- | --- | --- |
@@ -47,7 +55,7 @@ Durable proof root:
 `/home/juan-canfield/Desktop/codex-evidence/kennedi-workbook/unicorn-meadow-proof-2026-10-11-p40wU0/`.
 Use `proof/` for final print/browser output, `replay/` for frozen reproduction,
 and the final source archive for matching-checkout retention. No physical-printer
-claim; owner review is required before publication.
+claim; remote CI/review and merge remain separate from visual acceptance.
 
 ## 2026-10-07: Turtle pond companion coloring proof
 
