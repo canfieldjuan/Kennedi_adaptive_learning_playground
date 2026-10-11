@@ -129,7 +129,7 @@ test('shared output owner rejects forged, cross-target and concurrent capabiliti
     const receipt = path.join(f.out, 'verification.json'), before = readFileSync(receipt, 'utf8');
     let calls = 0;
     const action = () => { calls++; };
-    for (const forged of [{}, null, false, 0, ''])
+    for (const forged of [{}, Object.freeze({}), structuredClone(owner), null, false, 0, ''])
       await assert.rejects(withPrintOutput(f.out, 'pdf', action, forged), /owner does not match/);
     await assert.rejects(withPrintOutput(other, 'pdf', action, owner), /owner does not match/);
     assert.equal(existsSync(other), false);

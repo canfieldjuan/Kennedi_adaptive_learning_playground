@@ -13,7 +13,7 @@ const outputOwners = new Map();
 export async function withPrintOutput(directory, stage, fn, owner) {
   const out = path.resolve(directory);
   if (owner !== undefined) {
-    assert.equal(outputOwners.get(out), owner, 'Output owner does not match this run.');
+    assert.ok(outputOwners.get(out) === owner, 'Output owner does not match this run.');
     return fn(owner);
   }
   mkdirSync(out, { recursive: true, mode: 0o700 });

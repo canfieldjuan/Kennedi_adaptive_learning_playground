@@ -1,5 +1,80 @@
 # Coloring artifact ownership consolidation
 
+## Approved Node 20 Owner Diagnostic Amendment (2026-10-11)
+
+Owner accepted root plan issuecomment-6105542341 with "Yes I approve".
+This session owns the repair. Blame traces the sole owner assertion and its
+diagnostic test to my 7584ecbc. Node 20's object assertion formatter replaces
+the custom message for distinct empty objects; newer local qualification did
+not expose that failure. CI pins Node 20. The guard rejects the forged owner,
+but its promised rejection diagnostic is not stable on the supported runtime.
+
+Correct fix must touch only scripts/print-artifacts.mjs:16, the existing
+tests/coloring-ownership.test.mjs capability regression, and this amendment.
+Assert the strict-identity boolean at the sole withPrintOutput gate. Keep the
+existing message and all rejection assertions; add frozen and cloned owner
+forgeries. No second identity rule, caller catch, deep equality or relaxed test.
+
+Must not change art, recipes, print layouts/export, output lock/status lifetime,
+schemas, dependencies, workflow runtime pins, other PRs or worktrees. README's
+Node 20+ requirement already applies; no duplicate runtime policy is introduced.
+
+Verification plan: reuse recorded fail-before on unchanged 7584ecbc (local
+v20.20.0: 0 pass/1 fail, identical to CI's diagnostic mismatch). Run the same
+capability regression and adjacent incoming/overlap ownership tests on Node 20
+and the newer local runtime. Check syntax and whitespace; cold-audit every
+changed file. Preserve passing valid handoff and all unauthorized-capability
+negatives. Broad CI and artwork regeneration are not duplicated locally.
+One normal push, fresh exact-head review/subscription, record timer, and stop.
+Remote readiness remains NOT DONE until fresh checks and review are observed.
+
+### Implementation / Six-Step Evidence / Cold Audit
+
+1. Reproduce: unchanged 7584ecbc failed the declared capability test on local
+   v20.20.0 (0 pass/1 fail), matching CI's lost custom diagnostic. Preserved CI
+   log SHA256 34bcc481b895d30cc67137b90b2027bb907a7f25c2e574973199a79b8a5e55fc
+   under durable alias coloring-pr158-review-2026-10-11. No repeated old replay.
+2. Isolate: print-artifacts.mjs:16 object-comparison assertion throws before
+   the callback; coloring-ownership.test.mjs:133 then rejects its wrong message.
+3. Explain: my 7584ecbc relied on runtime-specific object assertion formatting
+   and qualified only on newer Node. The single outputOwners identity gate,
+   not caller status recovery, owns this remaining diagnostic defect.
+4. Fix: print-artifacts.mjs:16 asserts the strict-identity boolean with the
+   unchanged message. No lock, callback, receipt or unauthorized-acceptance
+   behavior changes; no downstream patch or duplicate owner.
+5. Prove: targeted capability/incoming/overlap command on Node v20.20.0 and
+   v26.7.0 passed 3 tests/0 failures each. Both reported 84 incoming failure
+   cases NOT_VERIFIED, saved-input alias preserved, all concurrent contenders
+   rejected without receipt writes, and valid handoff/verification accepted.
+   Node 20 syntax checks for both changed modules and git diff --check passed.
+6. Prevent: tests/coloring-ownership.test.mjs:132 adds a frozen empty object
+   and structured clone of the live owner to forgeries. All original message,
+   non-mutation, valid-handoff, cross-target, released-owner and falsy checks
+   remain. Existing npm/CI entry already imports this test; no gate weakening.
+
+Cold diff audit: print-artifacts.mjs:16 changes only the identity assertion's
+diagnostic path; tests/coloring-ownership.test.mjs:132 strengthens its inputs;
+this amendment records owner acceptance, origin and runtime evidence. Every
+change traces to this contract. No art/recipe/layout/package/workflow changes.
+
+effect-trace: preserve owner diagnostic on Node 20 | strict identity at sole
+withPrintOutput gate, boolean assert avoids object diff formatting | same
+capability test now passes without loosening its message matcher.
+boundary-probe: real owner accepts; ordinary/frozen/cloned/falsy/cross-target/
+released forgeries reject without callback or receipt writes; competing runs
+reject and valid owner verification completes, on both tested runtimes.
+
+Durable alias coloring-node20-owner-fix-2026-10-11, outside worktrees,
+directories 700/files 600:
+- before-source.tar SHA256 c852c9241f5e2d051336330f65d6e67c391f6b993c44e7898b3b88bd2be82f00
+- node20-ownership.log SHA256 c84f6b4f170cd5604a1807c92e64fbeb045cfc45d43013340cd1d22dfad3ff93
+- node26-ownership.log SHA256 113f4c9aa60f9b1aeb22ffdbc92ea9dbb73c1177a2379b5c2fb12de1a57ea42d
+
+Gap audit: local repair DONE; remote readiness NOT DONE. Fresh published-head
+CI/review remains required. Full local suite and visual regeneration were not
+rerun: this diff changes neither render content nor geometry, and CI owns the
+broad suite. No merge, new scene or physical-printer claim.
+
 ## Approved Dispatch-Owner Amendment (2026-10-11)
 
 Owner accepted revised root note issuecomment-6104675919 with "I approve it".
