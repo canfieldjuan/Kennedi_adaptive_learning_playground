@@ -36,12 +36,36 @@ Render browser screenshots, Letter PDF and actual PDF raster using the unchanged
 Record exact tests/hashes at each milestone; do not claim physical printing.
 
 ## Owner Approval Gate
-Operator ordered Whale Reef. Final composition remains draft / owner visual approval required. Commit locally only; no push, PR or merge for this new slice before visual acceptance.
+Owner visually approved the final Whale Reef composition ("looks good", 2026-10-11),
+from tested commit d63a75a975e163e85ac3c4c2e6c3da70d1fb35ed. This accepts the
+inspected composition and reused derivative, not future scenes/cast or physical
+printing. Creation-stage receipts retain their historical draft status.
+
+### Approval publication follow-up contract
+Root cause: approval metadata still described this accepted proof as awaiting
+visual review. Required surface: this contract, README, design-system and
+provenance only; then publish the isolated slice for exact-head CI/review.
+Non-scope: art, code, tests, recipes, dependencies, pipeline and other PRs/trees.
+Assumptions/blockers: owner's response accepts the displayed final PDF raster;
+no merge authority or next scene is inferred.
+Verification: inspect docs-only diff against tested d63a75a, confirm no relevant
+code/art/generated-input changes, recheck approved PDF/raster hashes and reuse
+the prior local evidence with its tested SHA. Do not rerun code suites for docs.
+Publication scope: one owned PR, subscribe and stop; CI/independent review and
+any later merge authorization remain separate gates.
+
+Approval follow-up cold audit: this contract's Owner Approval Gate, README's
+Whale reef section, design-system's Whale reef status and provenance's dated
+Whale reef approval record changed only documentation. The diff excluding
+these four files against tested d63a75a is empty; `git diff --check` passes.
+Approved PDF/raster hashes rechecked unchanged. Code tests were not rerun;
+the local proof evidence remains bound to tested d63a75a, not a claimed new run.
 
 ## Cold Diff / Gap Audit
 
-Gaps: none within the implemented local proof contract. Owner visual approval,
-physical printing and remote publication are intentionally NOT DONE.
+Gaps: none within the implemented local proof contract. Owner visual approval
+is now received. Physical printing remains untested; publication/CI/review
+follow-up is pending and no merge is authorized.
 
 Change-by-change reconstruction:
 - `workbook/design-source/coloring/scenes/whale-reef.svg:6`: named water,

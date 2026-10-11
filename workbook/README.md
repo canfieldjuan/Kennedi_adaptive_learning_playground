@@ -201,10 +201,11 @@ If necessary, `node tools/prepare-coloring-unicorn.mjs` prepares a CPU-only revi
 candidate from the original PNG, using the same shared threshold/Potrace owner.
 It never promotes candidates or changes canonical art automatically.
 
-### Whale reef (local visual proof)
+### Owner-approved Whale reef
 
-One existing whale, large coral shapes, bubbles and a starfish. Draft / owner
-visual approval required; original whale art and other scenes are unchanged.
+One existing whale, large coral shapes, bubbles and a starfish. The owner
+visually approved this composition ("looks good"); original whale art and other
+scenes are unchanged. This is not approval of future scenes or physical printing.
 From `workbook/`, on Node 20 or later (this local proof used Node v26.7.0):
 
 ```bash

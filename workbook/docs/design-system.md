@@ -4,7 +4,9 @@
 
 ### Layered scene proof: whale reef
 
-Status: **draft / owner visual approval required**. One fixed `whale-reef`
+Status: **owner visually approved** this composition ("looks good", 2026-10-11),
+from tested commit d63a75a975e163e85ac3c4c2e6c3da70d1fb35ed. This does not
+approve a wider art family or physical printing. One fixed `whale-reef`
 selection reuses the established whale unchanged. Large upper-middle whale,
 open water, sparse bubbles, asymmetrical branching/plate coral and one broad
 starfish leave crayon-sized regions. No dense seabed wallpaper or activity boxes.

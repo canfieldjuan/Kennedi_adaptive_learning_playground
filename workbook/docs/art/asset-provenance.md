@@ -11,6 +11,8 @@ below preserve their creation-stage status, not the current scene decision.
 
 Owner also visually approved the final Unicorn Meadow ("looks good", 2026-10-11).
 This accepts the specific composition/derivative below, not future scenes or cast.
+Owner visually approved the final Whale Reef ("looks good", 2026-10-11),
+including the reused whale as rendered; no future art-family approval is implied.
 
 Published pair: `docs/art/coloring-approved/`, with contact sheet, Letter PDF,
 frozen recipe and source/export hash receipt. Editable selection recipe:
@@ -19,8 +21,12 @@ no new model inference, photos or original-art edits during publication.
 
 ## 2026-10-11: Whale reef proof
 
-Approval: **draft / owner visual approval required**. Operator ordered one
-reef proof; no approval of this composition, new cast or physical printing yet.
+Approval: **owner visually approved** the final composition ("looks good",
+2026-10-11), from tested commit d63a75a975e163e85ac3c4c2e6c3da70d1fb35ed.
+Approved PDF SHA256: 9e55a3f46a7f513afffe3dcafface4094baff70e117480fb162a78f1d9ed2bf6.
+Approved raster SHA256: 95e6a8ca72d73861906f97c705296db975a1668756c46d8102e9885142006594.
+Creation-stage derivative/proof receipts remain historical draft records.
+No approval of future scenes/cast or physical printing is implied.
 
 | Asset | Source/tool | Modification | Editable / consumed source |
 | --- | --- | --- | --- |
@@ -50,7 +56,7 @@ Durable root:
 Final `proof/`, frozen `replay/`, and `initial-proof/` retain print-review evidence.
 Original contours, white interiors/exterior transparency and actual linked/
 inline parity are tested; shift/resize/contour mutations fail. Physical printing
-and remote publication remain deferred until owner visual acceptance.
+remains untested; PR publication and exact-head CI/review are separate gates.
 
 ## 2026-10-11: Unicorn meadow proof
 
