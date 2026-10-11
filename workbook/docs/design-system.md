@@ -2,6 +2,33 @@
 
 ## Original coloring pack template
 
+### Layered scene proof: whale reef
+
+Status: **draft / owner visual approval required**. One fixed `whale-reef`
+selection reuses the established whale unchanged. Large upper-middle whale,
+open water, sparse bubbles, asymmetrical branching/plate coral and one broad
+starfish leave crayon-sized regions. No dense seabed wallpaper or activity boxes.
+The playful spout is inherited storybook shorthand, not literal marine science.
+
+Source: `design-source/coloring/scenes/whale-reef.svg`. Keep named water/seabed/
+whale/coral/starfish layers and the single `whale-reference` slot linked to
+`../characters/whale-coloring-opaque.svg`. Plate coral has a visible connecting
+stem; nothing should look like floating cloud shelves. Keep clear gaps beside
+face, spout, flipper and tail. Existing fonts, print CSS and Letter margins hold.
+
+The coloring-only opaque export shares the existing preparation owner via
+`tools/prepare-coloring-whale.mjs`, preserving canonical contours while adding
+white interiors. Do not overwrite original PNG/SVG or redraw the whale in
+inline code. Both source dependencies enter recipe locks. Reprints need saved
+vectors, Chrome and Poppler, no GPU/model; preparing a candidate is not adoption.
+
+Proof: `recipes/coloring-whale-reef.json`; durable review root:
+`/home/juan-canfield/Desktop/codex-evidence/kennedi-workbook/whale-reef-proof-2026-10-11-PxLYju/`.
+Tests exercise selection/lock boundaries, editable layers, source hashes,
+fixed-slot references, exact contour identity, opacity and linked/inline raster
+parity with actual shift/resize negatives. Inherited cheek texture and physical
+home-printer quality remain explicit review risks, not blanket art approval.
+
 ### Layered scene proof: unicorn meadow
 
 Approval: owner visually approved this composition ("looks good", 2026-10-11).

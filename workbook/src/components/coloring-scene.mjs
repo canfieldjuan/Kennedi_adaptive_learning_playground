@@ -15,6 +15,10 @@ export const unicornMeadow = Object.freeze({
   scene: 'design-source/coloring/scenes/unicorn-meadow.svg',
   character: 'design-source/coloring/characters/unicorn-coloring-opaque.svg',
 });
+export const whaleReef = Object.freeze({
+  scene: 'design-source/coloring/scenes/whale-reef.svg',
+  character: 'design-source/coloring/characters/whale-coloring-opaque.svg',
+});
 
 export function inlineBunnyGarden(root) {
   return inlineCharacterScene(root, bunnyGarden, 'bunny');
@@ -24,6 +28,9 @@ export function inlineTurtlePond(root) {
 }
 export function inlineUnicornMeadow(root) {
   return inlineCharacterScene(root, unicornMeadow, 'unicorn');
+}
+export function inlineWhaleReef(root) {
+  return inlineCharacterScene(root, whaleReef, 'whale');
 }
 
 // Only the fixed wrappers above select these inputs, never recipe paths/HTML.

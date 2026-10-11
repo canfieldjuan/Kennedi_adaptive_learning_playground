@@ -17,6 +17,41 @@ frozen recipe and source/export hash receipt. Editable selection recipe:
 `recipes/coloring-scenes.json`. Sources remain under `design-source/coloring/`;
 no new model inference, photos or original-art edits during publication.
 
+## 2026-10-11: Whale reef proof
+
+Approval: **draft / owner visual approval required**. Operator ordered one
+reef proof; no approval of this composition, new cast or physical printing yet.
+
+| Asset | Source/tool | Modification | Editable / consumed source |
+| --- | --- | --- | --- |
+| Whale coloring derivative | Existing AI-generated local ComfyUI / FLUX.1-dev PNG; CPU ImageMagick 6.9.12-98 at 70 percent, Potrace 1.16 opaque export, browser crop | White interior contour representation; no inference, pose or canonical geometry change | `design-source/coloring/characters/whale-coloring-opaque.svg` |
+| Reef setting | Assistant-authored native SVG paths, not image-model generated | Open water/bubbles, branching coral, connected plate coral and a large starfish; named editable Inkscape layers | `design-source/coloring/scenes/whale-reef.svg` |
+
+Derivative receipt: `design-source/coloring/characters/whale-coloring-opaque.recipe.json`.
+Original PNG SHA256: e5834ec2e58c6a07919a6485986c444b7f0b866a8bf5d2bc017ef627281609b0.
+Original SVG SHA256: 302babb8d7f8ca139f5dc28e05f25cdbdbed6e455c83e5c9e3209b02ba88d880.
+Original generation date is not inferred from timestamps; embedded PNG graph,
+prompt and seed remain intact. New derivative/composition date: 2026-10-11.
+
+Creation uses the same CPU preparation owner as bunny/turtle/unicorn, through
+`tools/prepare-coloring-whale.mjs`; separate candidates are never auto-adopted.
+Scene publication embeds fixed-slot vectors, not raster links, and recipes hash
+both dependencies. Editable source and consumed print source stay together;
+inline runtime exports, PDF/raster, frozen recipe and receipts live in proof/.
+
+Visual refinements: matching cactus-like coral replaced by asymmetrical branch
+and connected plate forms; face-adjacent water stroke shortened for a clear gap.
+The original whale cheek trace texture remains inherited, not newly polished.
+The playful spout is preserved: this is coloring fantasy, not a science diagram.
+No GPU/models, family photos, new pose or original source edits.
+
+Durable root:
+`/home/juan-canfield/Desktop/codex-evidence/kennedi-workbook/whale-reef-proof-2026-10-11-PxLYju/`.
+Final `proof/`, frozen `replay/`, and `initial-proof/` retain print-review evidence.
+Original contours, white interiors/exterior transparency and actual linked/
+inline parity are tested; shift/resize/contour mutations fail. Physical printing
+and remote publication remain deferred until owner visual acceptance.
+
 ## 2026-10-11: Unicorn meadow proof
 
 Approval: **owner visually approved** the final composition ("looks good",
