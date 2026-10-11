@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "template": "coloring-pages-v1",
+  "pages": [
+    "bunny-garden",
+    "turtle-pond"
+  ],
+  "lock": {
+    "sourceSha256": "744355e61c40123b223eee006a705b3d282cfc28f925019e13544ac7ddbb50fa",
+    "contentSha256": "b8cfbee9dc73a73fb8b46669e7765e3c5d418f651a4be64c6b0dd0c4c3be78e0",
+    "artwork": [
+      {
+        "asset": "bunny-garden",
+        "sha256": "e3a53644b1d9c0a191e834a58c795cd8ef305a7a78bd9411abe25f15b233239f"
+      },
+      {
+        "asset": "bunny-coloring-opaque",
+        "sha256": "4ef14fb662335a2a41e74d735c2b1100333a1a4f99962b707b60ef00655c6818"
+      },
+      {
+        "asset": "turtle-pond",
+        "sha256": "023cc1fdcb377ff2252fbaf8ef0573616360d103176da9780a22e703a6f57312"
+      },
+      {
+        "asset": "turtle-coloring-opaque",
+        "sha256": "065f5c955b5bf31d59984dbd6fdc27d7d99fc71f41a4d917ffcabf089e46df1e"
+      }
+    ]
+  }
+}

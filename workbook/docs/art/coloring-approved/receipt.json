@@ -1,0 +1,100 @@
+{
+  "publishedAt": "2026-10-08T01:37:02.669Z",
+  "approval": {
+    "status": "owner visually approved",
+    "scope": [
+      "bunny-garden",
+      "turtle-pond"
+    ],
+    "bunnyEvidence": "Nice",
+    "turtleEvidence": "love it",
+    "physicalPrinterTested": false,
+    "entireArtFamilyApproved": false
+  },
+  "sourceLock": {
+    "sourceSha256": "744355e61c40123b223eee006a705b3d282cfc28f925019e13544ac7ddbb50fa",
+    "contentSha256": "b8cfbee9dc73a73fb8b46669e7765e3c5d418f651a4be64c6b0dd0c4c3be78e0",
+    "artwork": [
+      {
+        "asset": "bunny-garden",
+        "sha256": "e3a53644b1d9c0a191e834a58c795cd8ef305a7a78bd9411abe25f15b233239f"
+      },
+      {
+        "asset": "bunny-coloring-opaque",
+        "sha256": "4ef14fb662335a2a41e74d735c2b1100333a1a4f99962b707b60ef00655c6818"
+      },
+      {
+        "asset": "turtle-pond",
+        "sha256": "023cc1fdcb377ff2252fbaf8ef0573616360d103176da9780a22e703a6f57312"
+      },
+      {
+        "asset": "turtle-coloring-opaque",
+        "sha256": "065f5c955b5bf31d59984dbd6fdc27d7d99fc71f41a4d917ffcabf089e46df1e"
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "file": "contact-sheet.png",
+      "sha256": "54b240299ca8e43ca7f24c66526c7d192e83d78e571fc510363bf1f2c1b27d6c"
+    },
+    {
+      "file": "kennedi-coloring.pdf",
+      "sha256": "7ef989496069b83d0ccd0042a308b1c92378095c95a4faedcabcc4b0a8311b89"
+    },
+    {
+      "file": "recipe.json",
+      "sha256": "beeea66bb4279cc9bbcc8e1d1a2c4cfc56a4fde3bf8745f827193cbcfbf4b011"
+    }
+  ],
+  "verification": {
+    "status": "PASS",
+    "pages": 2,
+    "dimensionsPoints": [
+      612,
+      792
+    ],
+    "browserErrors": [],
+    "externalRequests": [],
+    "measurements": [
+      {
+        "page": 1,
+        "title": "Bunny's garden",
+        "width": 816,
+        "height": 1056,
+        "safeMargins": true,
+        "noOverflow": true,
+        "artworkInches": [
+          7.5,
+          8.58740234375
+        ],
+        "labeledArt": 1,
+        "raster": {
+          "width": 1275,
+          "height": 1650,
+          "grayscale": true,
+          "inkFraction": 0.05905882352941177
+        }
+      },
+      {
+        "page": 2,
+        "title": "Turtle's pond",
+        "width": 816,
+        "height": 1056,
+        "safeMargins": true,
+        "noOverflow": true,
+        "artworkInches": [
+          7.5,
+          8.58740234375
+        ],
+        "labeledArt": 1,
+        "raster": {
+          "width": 1275,
+          "height": 1650,
+          "grayscale": true,
+          "inkFraction": 0.07970243612596553
+        }
+      }
+    ]
+  }
+}

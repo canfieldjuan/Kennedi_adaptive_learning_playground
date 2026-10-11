@@ -1,0 +1,17 @@
+{
+  "aiGeneratedSource": true,
+  "artModified": false,
+  "vectorExportModified": true,
+  "input": "design-source/animals/locked-poses/bunny-01-sitting.png",
+  "inputSha256": "fd96cbbc3d80ab2ded6b8abe04b6c3ed8ae05649bf9e3539c9e2af8446fea382",
+  "output": "design-source/coloring/characters/bunny-coloring-opaque.svg",
+  "outputSha256": "4ef14fb662335a2a41e74d735c2b1100333a1a4f99962b707b60ef00655c6818",
+  "thresholdPercent": 70,
+  "opaqueWhiteInteriors": true,
+  "tools": {
+    "convert": "Version: ImageMagick 6.9.12-98 Q16 x86_64 18038 https://legacy.imagemagick.org",
+    "potrace": "potrace 1.16. Copyright (C) 2001-2019 Peter Selinger."
+  },
+  "crop": "238.31 6.07 600.84 988.66",
+  "approval": "draft / owner visual approval required"
+}

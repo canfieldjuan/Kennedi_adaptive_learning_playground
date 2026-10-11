@@ -5,6 +5,8 @@
   "type": "module",
   "description": "Printable workbook builder for Kennedi Is the Boss - Learning Book 1",
   "scripts": {
+    "coloring:all": "node scripts/workbook.mjs all --recipe recipes/coloring-starter.json",
+    "coloring:test": "node --test tests/coloring-pages.test.mjs tests/coloring-scenes.test.mjs tests/coloring-turtle-pond.test.mjs",
     "build": "node scripts/build.mjs",
     "pdf": "node scripts/export-pdf.mjs",
     "screenshots": "node scripts/screenshot.mjs",
@@ -40,7 +42,7 @@
     "workbook:verify": "node scripts/workbook.mjs verify",
     "workbook:validate": "node scripts/workbook.mjs validate",
     "workbook:catalog": "node scripts/workbook.mjs catalog",
-    "workbook:test": "node --test tests/recipes.test.mjs tests/counting-practice.test.mjs tests/alphabet-practice.test.mjs tests/publication-assets.test.mjs tests/print-artifacts.test.mjs"
+    "workbook:test": "node --test tests/recipes.test.mjs tests/coloring-pages.test.mjs tests/coloring-scenes.test.mjs tests/coloring-turtle-pond.test.mjs tests/counting-practice.test.mjs tests/alphabet-practice.test.mjs tests/publication-assets.test.mjs tests/print-artifacts.test.mjs"
   },
   "devDependencies": {
     "fontkit": "^2.0.4",

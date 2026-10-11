@@ -1,5 +1,105 @@
 # Design system: how to build a page
 
+## Original coloring pack template
+
+### Layered scene proof: turtle pond
+
+`turtle-pond` is the next fixed coloring selection. Use the established walking
+turtle unchanged on a small bank, not floating in water. The broader, lower
+composition suits its wide silhouette: lily pads and a large water lily in the
+foreground, asymmetrical reeds/cattails at the side, sparse ripples/clouds and
+a dragonfly near its gaze. Open regions remain the priority over scene density.
+Black/white, caption typography and Letter safe margins match the accepted pack.
+
+Source: `design-source/coloring/scenes/turtle-pond.svg`, with layers for sky,
+water, reeds, bank, linked turtle, dragonfly and lilies. Keep the fixed
+`turtle-reference` slot and linked coloring-only opaque turtle export together.
+The publisher shares fixed-slot vector embedding with the bunny garden; it
+never accepts arbitrary recipe SVG paths. Every scene dependency enters locks.
+
+`tools/prepare-coloring-turtle.mjs` reproduces the opaque export using the
+validated local threshold/Potrace settings. Original turtle art is untouched.
+Reprints consume saved SVGs without GPU/models. Tests bound edge antialiasing,
+check interior white/exterior alpha, reject shifted/resized publication and
+preserve the accepted bunny's full HTML hash as well as the animal starter.
+
+Approval: owner visually approved this pond composition ("love it"). Physical
+printing remains untested; no blanket approval of future scenes/character art.
+Proof root: `~/Desktop/codex-evidence/kennedi-workbook/turtle-pond-proof-2026-10-07/`.
+Pippa/Kennedi guests and other scenes remain later scope, not part of this proof.
+
+### Layered scene proof: bunny garden
+
+`bunny-garden` is a fixed scene selection in the existing coloring template.
+The owner accepted the animal starter and visually approved this background/
+guest composition ("Nice"). Do not expand it to every page or insert the
+storybook cast without a new scoped request and visual review.
+
+Source: `design-source/coloring/scenes/bunny-garden.svg`. Inkscape-editable
+layers: distant garden, flowers, linked bunny, butterfly visitor, foreground.
+Broad organic petals, distinct carrot silhouettes and large open coloring
+regions; sparse clouds and ground lines provide setting without wallpaper.
+Existing caption fonts/safe margins are unchanged. A gap separates butterfly
+from bunny ear so their contours stay readable.
+
+Opaque white interiors are essential for layered art. The coloring-only bunny
+export uses the existing PNG/threshold with potrace's opaque contour option,
+not white rectangles or a new bunny design. Face/body interiors cover the
+background; exterior transparency retains the setting. Preserve canonical
+animal SVGs. `tools/prepare-coloring-bunny.mjs` reproduces this derivative
+locally; print builds never require a model or retracing.
+
+`src/components/coloring-scene.mjs` inlines the one fixed linked character slot
+at publication. Tests require identical black/white silhouettes and tightly
+bounded edge-antialias differences between source and published composition;
+shifted/resized character fixtures must fail that comparison.
+Catalog dependencies include scene and character SVGs; both enter recipe locks.
+Future Pippa/Kennedi scenes must use existing identity models and reviewed
+coloring exports, not inline invented characters or unrestricted recipe paths.
+
+Proofs: `~/Desktop/codex-evidence/kennedi-workbook/bunny-garden-proof-2026-10-07/`.
+Keep both artist sources together when moving/editing the scene.
+
+`coloring-pages-v1` is a separate page type in this same workbook project, not
+a replacement for the curriculum. Approved direction: original reusable art,
+no family photos. Owner accepted the starter and the bunny/turtle scene pair,
+not a full art library. See `recipes/coloring-starter.json`,
+`recipes/coloring-scenes.json` and the README's coloring commands.
+
+Design: ink black `#000`, paper white `#fff`; screen chrome alone uses gray.
+Baloo 2 gives quiet, centered 30pt titles, Nunito supplies small brand/footer
+copy. One giant illustration sits between them inside half-inch Letter margins:
+
+```text
+      quiet brand + subject title
+      large open-space SVG picture
+      brief coloring invitation / page number
+```
+
+Keep the artwork as the memorable element. Worksheet frames, activity rows,
+reward boxes and decorative borders were rejected here: they consume coloring
+space without helping the child. Titles use natural font metrics, not cramped
+line height. Large open white interiors matter more than tiny texture details.
+
+Curated IDs live in `src/content/coloring-pages.mjs`; each resolves a fixed,
+tracked editable SVG. Schema enum and catalog must agree. Existing source art
+is never rewritten during printing. Live bounds plus padding crop empty canvas
+without stretching it. No arbitrary recipe paths, SVG, HTML or captions.
+To expand, first inspect the full-size PDF: small worksheet icons may have
+large dark fills or trace artifacts unsuitable for coloring. The starter
+excludes heavy shaded elephant/puppy exports. Bunny/whale inherited trace
+texture remains a documented visual-review risk, not final-art approval.
+
+Reprints are CPU/browser-only from saved, hashed recipes. Existing ComfyUI
+generation recipes remain asset provenance, not a dependency of PDF building.
+Verify actual grayscale PDF rasters, dimensions, margins, errors, hash freshness
+and ink coverage. The under-18-percent nonwhite raster threshold is a coarse
+coverage check, not a measurement of toner cost or artistic quality.
+
+Review proof location: `~/Desktop/codex-evidence/kennedi-workbook/original-coloring-pack-2026-10-07/starter/`.
+Inspect `contact-sheet.png` and every `pdf-raster/page-*.png` before approval.
+Do not turn this starter pack into a mass art-family rollout without review.
+
 This is the reference for adding a page to the "Kennedi Is the Boss"
 workbook system (Book 1). Page 1 (`src/content/pages/page-01-cover.mjs`) is
 the proven, rendered, verified reference implementation -- when in doubt,

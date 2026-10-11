@@ -10,6 +10,203 @@ Book 1 (`src/content/book-1.mjs`) currently has 6 pages. The `src/components/`
 and `src/illustrations/` libraries are the reusable design system for every
 future page/book in the series.
 
+## Original coloring pages (no photos, no GPU needed)
+
+The starter pack has four full-page coloring pictures: bunny, turtle, unicorn
+and whale. It reuses tracked editable animal SVGs, not family photos or the
+old programmatic character drawings. Owner accepted the starter and approved
+the bunny garden and turtle pond scenes; this is not blanket art-family approval.
+Some original trace texture remains visible
+in the bunny's ears/tail and whale's cheeks; this is not newly polished art.
+
+From `workbook/`:
+
+```bash
+npm ci
+npm run coloring:all
+npm run coloring:test
+xdg-open dist-recipes/coloring-pages-v1/preview.html
+```
+
+The combined PDF is `dist-recipes/coloring-pages-v1/pdf/kennedi-coloring.pdf`.
+Individual PDFs live in its `pdf/pages/` directory. `screenshots/` contains
+browser images; `pdf-raster/` and `contact-sheet.png` show the actual grayscale
+PDF output. Verification binds the contact HTML and PNG hashes to the current
+PDF/raster receipt and regenerates expected contact HTML from those rasters.
+Missing, stale or altered contacts fail verification; rerun `rasterize` for older
+outputs whose receipt predates these checks. Rendering must finish before live
+proof publication; receipt-last checks reject interrupted mixed publication.
+Raster filenames come from Poppler's validated numeric inventory (for example,
+`page-01.png` in a ten-page pack), not a naming guess. Verification derives the
+actual regular-file inventory and rejects missing, extra or linked entries.
+
+Each coloring attempt against existing output marks `verification.json` as
+`NOT_VERIFIED` before recipe parsing, compatibility checks or output changes;
+only complete verification
+writes `PASS`. The generic CLI claims an existing explicit `--out` before any
+incoming or saved recipe is read, even if input is missing, unreadable, malformed
+or schema-invalid. This attempt lifetime also applies to explicitly targeted
+existing non-coloring outputs; their rendering and recipe dispatch are unchanged.
+Without `--out`, the generic CLI selects a default only after valid input names
+a template; invalid input selects no output. Invalid new recipes create no
+directory. `validate`/`catalog` and malformed command flags never claim output.
+The generic CLI calls the coloring runner in-process using the same owner's
+private capability, not a child-process lock bypass or an error-cleanup writer.
+One output directory allows one cooperating coloring run (or generic CLI run
+against an existing explicit target) at a time, including `all` and its rendering
+metadata. A contender fails without changing the owner's files.
+The private `.coloring-run-lock` is released on normal success/failure; a killed
+process may leave it behind. Confirm no process owns that output before manually
+recovering an interrupted lock. Do not steal a live lock. This is not protection
+against arbitrary editor writes or a multi-file power-loss transaction.
+Print US Letter at actual size / 100%, with no browser headers.
+Half-inch safe margins are built in. No server or image model is involved.
+
+### Owner-approved scene pair
+
+[Preview](docs/art/coloring-approved/contact-sheet.png) and
+[print the saved PDF](docs/art/coloring-approved/kennedi-coloring.pdf).
+See [approval/provenance](docs/art/coloring-approved/README.md) for exact assets
+and limits. Rebuild this pair locally:
+
+```bash
+node scripts/workbook.mjs all --recipe recipes/coloring-scenes.json --out dist-recipes/coloring-scenes
+```
+
+The frozen recipe beside the saved PDF requires this matching source version;
+use the editable recipe above for a newly reviewed build after source changes.
+
+Exact independent build/export/verification commands:
+
+```bash
+node scripts/workbook.mjs build --recipe recipes/coloring-starter.json
+node scripts/workbook.mjs pdf --recipe recipes/coloring-starter.json
+node scripts/workbook.mjs screenshots --recipe recipes/coloring-starter.json
+node scripts/workbook.mjs rasterize --recipe recipes/coloring-starter.json
+node scripts/workbook.mjs verify --recipe recipes/coloring-starter.json
+```
+
+All commands accept `--out /absolute/path/to/output`. Use a durable directory
+outside disposable worktrees for review evidence. Generated output is ignored
+by Git; the recipe, renderer and original SVG art are the source instead.
+
+### Bunny garden scene proof
+
+An additional fixed catalog ID, `bunny-garden`, layers the existing bunny with
+large flowers, a carrot patch, clouds and a visiting butterfly. Owner visually
+approved this scene; the original animal-only starter is unchanged.
+
+```bash
+node scripts/workbook.mjs all --recipe recipes/coloring-bunny-garden.json --out dist-recipes/bunny-garden
+xdg-open dist-recipes/bunny-garden/preview.html
+npm run coloring:test
+```
+
+The PDF is `dist-recipes/bunny-garden/pdf/kennedi-coloring.pdf`. Choose an
+absolute `--out` directory outside worktrees to retain review proofs.
+
+Edit `design-source/coloring/scenes/bunny-garden.svg` in Inkscape; its layers are
+background, flowers, bunny reference, butterfly and foreground. The linked
+`../characters/bunny-coloring-opaque.svg` is a derived editable export, not a
+replacement for the original bunny. Keep its reference ID and layer order.
+Publishing inlines the vector paths, so HTML/PDF have no linked-file dependency.
+All selected scene/character files are hashed in the frozen recipe.
+
+If the opaque bunny derivative needs rebuilding, this is CPU-only:
+
+```bash
+node tools/prepare-coloring-bunny.mjs
+```
+
+It uses the existing bunny PNG, ImageMagick at 70 percent threshold and
+potrace `--opaque`. It writes a review candidate derivative and provenance
+receipt; it never changes live art or calls an image model. The opaque
+interiors hide background lines through the face/body while the exterior
+remains transparent. Tests bound minor edge-antialias differences, verify
+source/published scene parity, and preserve the starter's exact HTML hashes.
+Reprinting uses the saved SVG, not this preparation tool. Dependencies for
+derivative preparation are ImageMagick, potrace and the existing Chrome setup.
+
+Both preparation commands share `tools/prepare-coloring-character.mjs`. Tracing,
+cropping and the matching receipt are prepared in private staging, then published
+only to a unique ignored `design-source/coloring/.characters-*/export/` candidate.
+The JSON result reports `candidateDirectory`; the receipt's `output` remains the
+intended live asset path, not an automatic promotion. Compare/review the candidate
+in Inkscape before explicitly adopting its SVG and receipt as a separate artist
+edit. Copy candidates to a durable evidence directory if needed for review.
+Preparation captures the source PNG once, hashes those bytes and traces a private
+snapshot. Later editor saves cannot silently change the candidate's recorded
+input. Unchanged inputs retain the approved SVG/receipt bytes and CPU settings.
+Preparation never replaces the live `characters/` directory, its sibling files
+or annotations, even if an editor writes at the final publication step. Failed
+runs remove their own scratch only. We do not claim an advisory lock protects
+uncooperative editor writes, or that adoption is a power-loss atomic transaction.
+
+Pippa, Kennedi and other storybook guests remain a later expansion: preserve
+their established identity, create/review print-ready line-art exports, and
+register a fixed scene ID plus all dependencies. No cast integration is built
+or promised complete by this proof.
+
+### Turtle pond companion proof
+
+The fixed ID `turtle-pond` uses the existing walking turtle on a bank beside
+lily pads, a water lily, reeds/cattails and a dragonfly. Owner visually approved
+this scene. The bunny garden and animal-only pages are
+unchanged.
+
+```bash
+node scripts/workbook.mjs all --recipe recipes/coloring-turtle-pond.json --out dist-recipes/turtle-pond
+xdg-open dist-recipes/turtle-pond/preview.html
+npm run coloring:test
+```
+
+The PDF is `dist-recipes/turtle-pond/pdf/kennedi-coloring.pdf`. Edit the layers
+in `design-source/coloring/scenes/turtle-pond.svg`, keeping its linked
+`../characters/turtle-coloring-opaque.svg` alongside it. Publishing embeds
+editable vector paths, not raster pictures or external links. The scene and
+character are both hashed in the frozen recipe. Reprint from that saved recipe
+using its matching source checkout; catalog/source edits intentionally invalidate
+older locks. Existing durable source overlays retain earlier proof versions.
+
+CPU-only derivative preparation, if needed: `node tools/prepare-coloring-turtle.mjs`.
+Uses the same validated 70 percent threshold/opaque Potrace export as the bunny.
+No GPU or model is required to prepare this export or reproduce the page.
+Both canonical turtle PNG/SVG remain unchanged. Tests measure white interior
+occlusion, outline preservation, artist/publication parity and rejected drift.
+
+### Make another coloring pack
+
+Copy `recipes/coloring-starter.json` and change only the ordered `pages` list:
+
+```json
+{"schemaVersion":1,"template":"coloring-pages-v1","pages":["whale","bunny","turtle"]}
+```
+
+Choose 1-24 entries from `bunny`, `turtle`, `unicorn`, `whale`, `bunny-garden`, `turtle-pond`. Repeated entries
+are allowed; each gets its own page. No file paths, HTML, prompts or arbitrary
+captions are accepted. A local language model only needs to emit this JSON;
+no model runtime integration is required. List choices with
+`npm run workbook:catalog`, then validate with
+`node scripts/workbook.mjs validate --recipe recipes/my-coloring-pack.json`.
+Build using the same command above with that recipe filename.
+
+Build writes a resolved `recipe.json` containing hashes of selected art,
+ordered content and source inputs, plus `render-environment.json`. Reprint
+using that saved recipe with this exact source checkout. Renderer/source/art
+changes fail closed; keep the original checkout or create a new reviewed
+recipe. Adding this template also changes shared renderer fingerprints for
+older locked workbook recipes; their original checkouts remain necessary.
+Unlocked alphabet/numbers/counting content is unchanged. PDF byte identity
+across Chrome versions is not promised (metadata/rendering can vary).
+
+To add a subject later, add a reviewed line-art SVG and its provenance, then
+register its fixed ID/title/path in `src/content/coloring-pages.mjs` and the
+schema enum in `recipes/workbook.schema.json`. Run tests and render/inspect the
+actual PDF before admitting it. Do not accept arbitrary model-generated paths.
+Page layout lives in that content module; styling is scoped to
+`src/styles/coloring-practice.css`; `scripts/coloring.mjs` reuses the existing
+Chrome/Poppler print helpers. No original workbook page is replaced.
+
 ## Illustrated alphabet practice: separate uppercase/lowercase rows
 
 The new row-format workbook follows A, a, B, b through Z, z. It has two
