@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+  width="700" height="820" viewBox="0 0 700 820">
+  <title>Unicorn meadow: a wide rainbow, rolling hills and big flowers</title>
+  <desc>Editable coloring scene using the established unicorn. White interior contours hide distant hill lines. Keep the linked character and layer order.</desc>
+  <defs>
+    <g id="meadow-blossom" fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-9-18 C-35-37-27-65-7-60 C9-75 31-51 15-22 C42-45 71-27 55-9 C72 10 44 32 20 16 C35 44 11 68-4 48 C-24 64-43 38-22 14 C-47 33-74 11-55-5 C-72-27-42-44-19-19Z"/>
+      <path d="M-16-6 C-13-23 10-25 20-10 C29 7 10 27-8 18 C-18 14-22 2-16-6Z"/>
+      <path d="M-5-40 Q-2-32 0-29 M36-8 Q29-9 27-6 M-3 35 L-2 28 M-38-3 L-29-1" fill="none" stroke-width="2.2"/>
+    </g>
+  </defs>
+  <g inkscape:groupmode="layer" inkscape:label="01 Wide rainbow bands" id="meadow-rainbow"
+    fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M65 294 C65-18 635-18 635 294"/>
+    <path d="M95 294 C95 22 605 22 605 294"/>
+    <path d="M125 294 C125 62 575 62 575 294"/>
+    <path d="M155 294 C155 102 545 102 545 294"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="02 Clouds at rainbow ends" id="meadow-clouds"
+    fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M52 331 C17 331 14 296 40 285 C34 258 64 242 84 259 C97 230 132 239 139 269 C169 258 190 283 174 303 C191 323 171 339 151 336Z"/>
+    <path d="M549 330 C517 332 512 303 535 290 C526 264 554 249 574 260 C589 232 622 240 629 269 C653 257 681 281 663 302 C683 321 666 338 641 335Z"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="03 Distant rolling hills" id="meadow-hills"
+    fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M35 536 C145 455 242 470 358 538 C453 452 561 445 669 500"/>
+    <path d="M35 607 C143 548 251 559 355 610 C457 546 563 555 669 595"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="04 Open meadow ground" id="meadow-ground"
+    fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 742 C125 716 216 713 292 716 C390 721 480 710 563 733 C607 743 645 756 672 754"/>
+    <path d="M222 785 C294 770 359 784 418 774 C449 769 480 773 505 778"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="05 Existing unicorn (linked editable SVG)" id="meadow-unicorn">
+    <image id="unicorn-reference" href="../characters/unicorn-coloring-opaque.svg" x="155" y="212" width="430" height="540"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="06 Large foreground flowers" id="meadow-flowers"
+    fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M86 784 C77 749 87 704 87 665 M84 746 C56 749 36 727 34 704 C64 703 82 722 84 746Z"/>
+    <path d="M86 718 C102 690 127 691 143 697 C136 720 114 733 86 718Z"/>
+    <use href="#meadow-blossom" transform="translate(88 642) rotate(-9) scale(1.04)"/>
+    <path d="M609 793 C632 755 607 727 610 685 M623 766 C645 737 666 741 679 752 C667 774 646 781 623 766Z"/>
+    <path d="M616 741 C588 742 570 723 568 704 C595 702 613 718 616 741Z"/>
+    <use href="#meadow-blossom" transform="translate(612 658) rotate(13) scale(.93)"/>
+    <path d="M153 774 Q153 754 163 747 Q170 757 168 769 Q180 755 189 757 Q187 772 171 779 M541 786 Q536 765 542 756 Q552 765 552 776 Q560 763 569 765 Q569 780 555 790"/>
+  </g>
+</svg>
