@@ -1,4 +1,4 @@
-// One CPU-only preparation owner for both fixed coloring derivatives.
+// One CPU-only preparation owner for fixed coloring derivatives.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { withPrintBrowser, measureArtworkCrops, stageInventory } from '../scripts/print-artifacts.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const inputs = Object.freeze({ bunny: 'bunny-01-sitting.png', turtle: 'turtle-01-walking.png' });
+const inputs = Object.freeze({ bunny: 'bunny-01-sitting.png', turtle: 'turtle-01-walking.png',
+  unicorn: 'unicorn-01-standing.png' });
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 
 export async function prepareColoringCharacter(animal) {

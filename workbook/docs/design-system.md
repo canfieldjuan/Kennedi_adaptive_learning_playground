@@ -2,6 +2,35 @@
 
 ## Original coloring pack template
 
+### Layered scene proof: unicorn meadow
+
+Approval: owner visually approved this composition ("looks good", 2026-10-11).
+This does not approve a full art family or physical printing. One fixed selection,
+`unicorn-meadow`, reuses the established unicorn, not a new character/pose.
+Wide rainbow bands, sparse rolling hills and two large organic flowers provide
+open crayon-sized regions. Hills sit below the face; the ground meets the
+hooves, and a clear gap separates the tail from the right flower. No dense
+grass texture, new gray fills, worksheet boxes or cast expansion.
+
+Editable source: `design-source/coloring/scenes/unicorn-meadow.svg`. Keep the
+named Inkscape layers and fixed `unicorn-reference` image slot linked to
+`../characters/unicorn-coloring-opaque.svg`. The shared fixed-slot publisher
+embeds vectors at the artist's coordinates. Both files enter recipe locks.
+Canonical unicorn PNG/SVG are untouched. Preparation uses the same CPU-only
+threshold/Potrace owner through `tools/prepare-coloring-unicorn.mjs` and emits
+a separate review candidate/receipt, not automatic adoption.
+
+Tests compare every normalized contour command to canonical art, check opaque
+interiors/exterior transparency, and compare linked versus inline scene
+rasters. Measured unicorn-specific Chrome edge antialiasing is bounded;
+shift/scale/geometry mutations fail. Existing bunny/turtle bounds are unchanged.
+Reprints need only saved SVGs, Chrome and Poppler, not a GPU or image model.
+
+Recipe: `recipes/coloring-unicorn-meadow.json`. Durable review root:
+`/home/juan-canfield/Desktop/codex-evidence/kennedi-workbook/unicorn-meadow-proof-2026-10-11-p40wU0/`.
+Final output is under `proof/`, frozen replay under `replay/`; initial proof
+is retained separately for comparison. Physical printing remains untested.
+
 ### Layered scene proof: turtle pond
 
 `turtle-pond` is the next fixed coloring selection. Use the established walking

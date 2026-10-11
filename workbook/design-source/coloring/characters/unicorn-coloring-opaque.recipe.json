@@ -1,0 +1,17 @@
+{
+  "aiGeneratedSource": true,
+  "artModified": false,
+  "vectorExportModified": true,
+  "input": "design-source/animals/locked-poses/unicorn-01-standing.png",
+  "inputSha256": "15b80cfef3eaffc2156290d53e2d9b5b6a76859f74a2e01bebae16a24ad57256",
+  "output": "design-source/coloring/characters/unicorn-coloring-opaque.svg",
+  "outputSha256": "b38cafa1ddc3e7d4fa57a39fb734c27e1a3d601f1bbc3019cd00e3aedd29a40f",
+  "thresholdPercent": 70,
+  "opaqueWhiteInteriors": true,
+  "tools": {
+    "convert": "Version: ImageMagick 6.9.12-98 Q16 x86_64 18038 https://legacy.imagemagick.org",
+    "potrace": "potrace 1.16. Copyright (C) 2001-2019 Peter Selinger."
+  },
+  "crop": "129.18 -15.03 799.22 1008.03",
+  "approval": "draft / owner visual approval required"
+}

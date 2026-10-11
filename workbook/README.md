@@ -127,7 +127,7 @@ source/published scene parity, and preserve the starter's exact HTML hashes.
 Reprinting uses the saved SVG, not this preparation tool. Dependencies for
 derivative preparation are ImageMagick, potrace and the existing Chrome setup.
 
-Both preparation commands share `tools/prepare-coloring-character.mjs`. Tracing,
+All fixed preparation commands share `tools/prepare-coloring-character.mjs`. Tracing,
 cropping and the matching receipt are prepared in private staging, then published
 only to a unique ignored `design-source/coloring/.characters-*/export/` candidate.
 The JSON result reports `candidateDirectory`; the receipt's `output` remains the
@@ -174,6 +174,33 @@ No GPU or model is required to prepare this export or reproduce the page.
 Both canonical turtle PNG/SVG remain unchanged. Tests measure white interior
 occlusion, outline preservation, artist/publication parity and rejected drift.
 
+### Owner-approved Unicorn meadow
+
+`unicorn-meadow` reuses the established unicorn beneath a wide-band rainbow,
+with rolling hills and two large flowers. The owner visually approved this
+composition ("looks good"). It does not replace the saved bunny/turtle pair
+or approve future scenes; physical printing remains untested.
+From `workbook/`, on Node 20:
+
+```bash
+node scripts/workbook.mjs all --recipe recipes/coloring-unicorn-meadow.json --out dist-recipes/unicorn-meadow
+xdg-open dist-recipes/unicorn-meadow/preview.html
+node scripts/workbook.mjs all --recipe dist-recipes/unicorn-meadow/recipe.json --out dist-recipes/unicorn-meadow-replay
+npm run coloring:test
+```
+
+PDF: `dist-recipes/unicorn-meadow/pdf/kennedi-coloring.pdf`. The matching source
+checkout is required for frozen replay. Use an absolute `--out` outside worktrees
+for durable review evidence. Inspect `pdf-raster/page-1.png` at Actual size / 100%.
+
+Edit `design-source/coloring/scenes/unicorn-meadow.svg` in Inkscape. Keep its
+rainbow/cloud/hill/ground/unicorn/flower layers and the fixed `unicorn-reference`
+linked to `../characters/unicorn-coloring-opaque.svg`. The publisher embeds
+vector contours and hashes both assets. No source art is changed while printing.
+If necessary, `node tools/prepare-coloring-unicorn.mjs` prepares a CPU-only review
+candidate from the original PNG, using the same shared threshold/Potrace owner.
+It never promotes candidates or changes canonical art automatically.
+
 ### Make another coloring pack
 
 Copy `recipes/coloring-starter.json` and change only the ordered `pages` list:
@@ -182,7 +209,7 @@ Copy `recipes/coloring-starter.json` and change only the ordered `pages` list:
 {"schemaVersion":1,"template":"coloring-pages-v1","pages":["whale","bunny","turtle"]}
 ```
 
-Choose 1-24 entries from `bunny`, `turtle`, `unicorn`, `whale`, `bunny-garden`, `turtle-pond`. Repeated entries
+Choose 1-24 entries from `bunny`, `turtle`, `unicorn`, `whale`, `bunny-garden`, `turtle-pond`, `unicorn-meadow`. Repeated entries
 are allowed; each gets its own page. No file paths, HTML, prompts or arbitrary
 captions are accepted. A local language model only needs to emit this JSON;
 no model runtime integration is required. List choices with

@@ -9,10 +9,53 @@ not a blanket approval of future scenes, Pippa/Kennedi poses or the art family.
 Physical printing remains untested. The dated draft entries/derivative receipts
 below preserve their creation-stage status, not the current scene decision.
 
+Owner also visually approved the final Unicorn Meadow ("looks good", 2026-10-11).
+This accepts the specific composition/derivative below, not future scenes or cast.
+
 Published pair: `docs/art/coloring-approved/`, with contact sheet, Letter PDF,
 frozen recipe and source/export hash receipt. Editable selection recipe:
 `recipes/coloring-scenes.json`. Sources remain under `design-source/coloring/`;
 no new model inference, photos or original-art edits during publication.
+
+## 2026-10-11: Unicorn meadow proof
+
+Approval: **owner visually approved** the final composition ("looks good",
+2026-10-11), built from 85bb0f14a4667a15f9494eb36fa19f5949639994.
+Approved PDF SHA256: 85d3e56fa81bf6ac89b737b20c60354815453462fbf9effc09d08591ccd7d11c.
+Approved raster SHA256: c4a3fbd1c1deef24602ce553dae5940957f06ced4696870504bdfcd437863b84.
+Creation-stage derivative/proof receipts remain draft historical records;
+this section records subsequent owner acceptance. No cast/future-scene rollout
+or physical-print qualification is implied.
+
+| Asset | Source/tool | Modification | Editable / consumed source |
+| --- | --- | --- | --- |
+| Unicorn opaque derivative | Existing AI-generated FLUX.1-dev PNG; CPU ImageMagick 6.9.12-98 threshold 70 percent, Potrace 1.16 `--opaque`, Chrome-measured crop | White interior contours; original geometry/identity unchanged, no new inference | `design-source/coloring/characters/unicorn-coloring-opaque.svg` |
+| Unicorn meadow | Assistant-authored, AI-assisted native SVG composition | New rainbow/clouds, hills, ground and flowers; source refinements ground hooves and separate flower/tail/face contours | `design-source/coloring/scenes/unicorn-meadow.svg` |
+
+Not human-authored. No hosted model, GPU, photo upload or generation call was
+used in this slice. Original input remains
+`design-source/animals/locked-poses/unicorn-01-standing.{png,svg}`. Derivative
+hashes, tools, crop and status live in
+`design-source/coloring/characters/unicorn-coloring-opaque.recipe.json`.
+CPU reproduction: `node tools/prepare-coloring-unicorn.mjs`; review its unique
+candidate before adoption. Printing consumes saved assets without retracing.
+
+All 6,625 normalized contour tokens match canonical art exactly. Opaque versus
+canonical render differs only at antialiased edges: 264 threshold crossings,
+0.028709 mean gray delta, no black/white-interior changes. Linked versus inline
+scene rendering has one edge threshold crossing, 37 gray levels maximum and
+0.000277 mean delta. These are narrowly bounded by the new unicorn test;
+deliberate shift/scale/contour mutations fail. Existing accepted scene tests and
+limits are not relaxed. White face/body samples cover a black backdrop while
+the exterior remains transparent. This is not byte-identical RGBA rendering.
+
+Recipe: `recipes/coloring-unicorn-meadow.json`. Scene/character source files
+are separate from generated standalone HTML/PDF exports under the chosen output.
+Durable proof root:
+`/home/juan-canfield/Desktop/codex-evidence/kennedi-workbook/unicorn-meadow-proof-2026-10-11-p40wU0/`.
+Use `proof/` for final print/browser output, `replay/` for frozen reproduction,
+and the final source archive for matching-checkout retention. No physical-printer
+claim; remote CI/review and merge remain separate from visual acceptance.
 
 ## 2026-10-07: Turtle pond companion coloring proof
 
