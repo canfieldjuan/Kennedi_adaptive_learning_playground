@@ -40,11 +40,21 @@ Raster filenames come from Poppler's validated numeric inventory (for example,
 `page-01.png` in a ten-page pack), not a naming guess. Verification derives the
 actual regular-file inventory and rejects missing, extra or linked entries.
 
-Each coloring command marks `verification.json` as `NOT_VERIFIED` before recipe
-compatibility checks or output changes; only complete verification writes `PASS`.
-The generic workbook CLI delegates the entire coloring run to the same owner.
-One output directory allows one cooperating run at a time, including `all` and
-its rendering metadata. A contender fails without changing the owner's files.
+Each coloring attempt against existing output marks `verification.json` as
+`NOT_VERIFIED` before recipe parsing, compatibility checks or output changes;
+only complete verification
+writes `PASS`. The generic CLI claims an existing explicit `--out` before any
+incoming or saved recipe is read, even if input is missing, unreadable, malformed
+or schema-invalid. This attempt lifetime also applies to explicitly targeted
+existing non-coloring outputs; their rendering and recipe dispatch are unchanged.
+Without `--out`, the generic CLI selects a default only after valid input names
+a template; invalid input selects no output. Invalid new recipes create no
+directory. `validate`/`catalog` and malformed command flags never claim output.
+The generic CLI calls the coloring runner in-process using the same owner's
+private capability, not a child-process lock bypass or an error-cleanup writer.
+One output directory allows one cooperating coloring run (or generic CLI run
+against an existing explicit target) at a time, including `all` and its rendering
+metadata. A contender fails without changing the owner's files.
 The private `.coloring-run-lock` is released on normal success/failure; a killed
 process may leave it behind. Confirm no process owns that output before manually
 recovering an interrupted lock. Do not steal a live lock. This is not protection

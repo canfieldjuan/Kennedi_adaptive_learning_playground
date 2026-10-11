@@ -1,43 +1,26 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, chmodSync, cpSync, renameSync, rmSync, rmdirSync, lstatSync, existsSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, chmodSync, cpSync, renameSync, rmSync, existsSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { readRecipe, resolveRecipe, WORKBOOK_ROOT as root } from '../src/recipes.mjs';
 import { renderDocument } from '../src/render.mjs';
 import { inlineImageFile } from '../src/content/asset-inline.mjs';
-import { withPrintBrowser, measureArtworkCrops, stageInventory, savePdfHashes,
+import { withPrintOutput, withPrintBrowser, measureArtworkCrops, stageInventory, savePdfHashes,
   assertPdfHashes, replacePdfRasters, readPdfRasterInventory, printTool } from './print-artifacts.mjs';
 
-const args = process.argv.slice(2), stage = args.shift() ?? 'all';
 const stages = ['build', 'pdf', 'screenshots', 'rasterize', 'verify'];
-const options = {};
-if (![...stages, 'all'].includes(stage)) throw new TypeError('Unknown coloring stage.');
-for (let i = 0; i < args.length; i += 2) {
-  const flag = args[i], value = args[i + 1];
-  if (!['--recipe', '--out'].includes(flag) || !value || value.startsWith('--') || Object.hasOwn(options, flag))
-    throw new TypeError('Usage: node scripts/coloring.mjs [all|build|pdf|screenshots|rasterize|verify] [--recipe FILE] [--out DIRECTORY]');
-  options[flag] = value;
-}
-const out = path.resolve(options['--out'] ?? path.join(root, 'dist-recipes/coloring-pages-v1'));
-function resolveInput() {
-  const input = readRecipe(path.resolve(options['--recipe'] ?? path.join(root, 'recipes/coloring-starter.json')));
-  if (input.template !== 'coloring-pages-v1') throw new TypeError('Expected a coloring-pages-v1 recipe.');
-  return resolveRecipe(input);
-}
-// Invalid new recipes create no output. Existing output is invalidated before
-// fallible recipe checks, under the same exclusive owner as all stage writes.
-let resolved = existsSync(out) ? undefined : resolveInput();
-mkdirSync(out, { recursive: true, mode: 0o700 });
-assert.ok(lstatSync(out).isDirectory() && !lstatSync(out).isSymbolicLink(), 'Coloring output must be a real directory.');
-const lock = path.join(out, '.coloring-run-lock');
-try { mkdirSync(lock, { mode: 0o700 }); }
-catch (error) {
-  if (error.code === 'EEXIST') throw new Error('Coloring output is already owned by another run; inspect the owner before recovering an interrupted lock.', { cause: error });
-  throw error;
-}
-try {
-  writeFileSync(path.join(out, 'verification.json'), JSON.stringify({ status: 'NOT_VERIFIED', stage }) + '\n', { mode: 0o600 });
-  chmodSync(path.join(out, 'verification.json'), 0o600);
+export async function runColoring(stage, options, owner) {
+  const out = path.resolve(options['--out'] ?? path.join(root, 'dist-recipes/coloring-pages-v1'));
+  function resolveInput() {
+    const input = readRecipe(path.resolve(options['--recipe'] ?? path.join(root, 'recipes/coloring-starter.json')));
+    if (input.template !== 'coloring-pages-v1') throw new TypeError('Expected a coloring-pages-v1 recipe.');
+    return resolveRecipe(input);
+  }
+  // Invalid new recipes create no output. Existing output is invalidated before
+  // fallible recipe checks, under the same exclusive owner as all stage writes.
+  let resolved = existsSync(out) ? undefined : resolveInput();
+  return withPrintOutput(out, stage, async () => {
   resolved ??= resolveInput();
   const { book, recipe } = resolved;
   const { pages, assets } = book;
@@ -224,6 +207,17 @@ try {
     if (name !== 'build') assert.deepEqual(resolveRecipe(readRecipe(path.join(out, 'recipe.json'))).recipe, recipe, 'Output was built from a different recipe.');
     await operations[name]();
   }
-} finally {
-  rmdirSync(lock);
+  }, owner);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const args = process.argv.slice(2), stage = args.shift() ?? 'all', options = {};
+  if (![...stages, 'all'].includes(stage)) throw new TypeError('Unknown coloring stage.');
+  for (let i = 0; i < args.length; i += 2) {
+    const flag = args[i], value = args[i + 1];
+    if (!['--recipe', '--out'].includes(flag) || !value || value.startsWith('--') || Object.hasOwn(options, flag))
+      throw new TypeError('Usage: node scripts/coloring.mjs [all|build|pdf|screenshots|rasterize|verify] [--recipe FILE] [--out DIRECTORY]');
+    options[flag] = value;
+  }
+  await runColoring(stage, options);
 }

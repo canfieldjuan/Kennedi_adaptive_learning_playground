@@ -1,5 +1,124 @@
 # Coloring artifact ownership consolidation
 
+## Approved Dispatch-Owner Amendment (2026-10-11)
+
+Owner accepted revised root note issuecomment-6104675919 with "I approve it".
+My 962c75ea introduced workbook.mjs:25 parsing before dispatch ownership;
+schema-invalid, malformed and missing inputs fail before old PASS invalidation.
+Prior durable entrypoint replay isolates wrapper PASS versus direct NOT_VERIFIED.
+
+Correct fix must touch workbook.mjs, coloring.mjs, print-artifacts.mjs,
+coloring-ownership.test.mjs, README and this contract. Put the existing output
+lock/status lifetime in one shared callback owner, entered by the generic CLI
+before parsing whenever an explicit --out exists. Call the coloring runner
+in-process so it can share that owner without child-process bypass flags or a
+second lifecycle writer. Direct coloring remains owner-covered; invalid new
+recipes resolve before directory creation. Validate/catalog never claim output.
+
+Contract revision from dispatch inspection: unreadable input has no trustworthy
+template, and saved recipe metadata can itself be the malformed incoming file.
+Therefore existing explicit targets are claimed independently of template.
+This narrowly extends NOT_VERIFIED-on-attempt to non-coloring explicit targets;
+their dispatch, content, render/export operations and successful verification
+remain unchanged. No output metadata heuristic or duplicate JSON parser.
+Default generic output is selected only after valid input identifies a template;
+an invalid input without --out selects no target and changes no output.
+
+Preserve approved art/PDFs/recipes, schemas, source locks, dependencies, other
+worktrees and new-scene boundaries. Preserve .coloring-run-lock recovery
+semantics without renaming/stealing old locks. Same-process nested coloring
+execution reuses the active owner; other processes still reject. No global
+filesystem/editor transaction guarantee is added.
+
+Verification: fail-first regression for incoming parse failures through both
+entrypoints and every stage; missing/directory/oversized/invalid-lock inputs;
+input aliasing saved recipe; mixed-template attempts; invalid-new no creation;
+validate/catalog no mutation; contenders reject without changing receipt,
+including aliases and generic entrypoints; real valid coloring all; existing
+non-coloring recipe callers. Syntax/whitespace, cold diff audit and actual PDF
+proof inspection before one push. Fresh review/subscription and stop afterward.
+
+### Implementation Summary / Six-Step Record
+
+1. Reproduce: declared incoming-failure regression on 962c75ea gave 1 fail /
+   0 pass, with schema-invalid/launcher/all retaining PASS instead of
+   NOT_VERIFIED. Original-head source archive retained outside the worktree.
+2. Isolate: workbook.mjs:25 previously called readRecipe before launching the
+   coloring owner. Saved output metadata is not required to reproduce this;
+   parsing occurs outside ownership even if it aliases that incoming file.
+3. Explain: my 962c75ea selected a template before claiming its lifetime,
+   incorrectly assuming input could always be read/validated to route it.
+4. Fix: print-artifacts.mjs:13-40 owns lock, status invalidation and cleanup.
+   workbook.mjs:26-64 enters that owner for an existing explicit target before
+   dispatch parses input. coloring.mjs:13-23,210-223 exports an in-process
+   runner and shares the existing owner's private capability. Its independent
+   lock/status block and child-process handoff are removed, not supplemented.
+5. Prove: isolated initial replay 3 pass / 0 fail. Final ownership/recipe
+   command 20 pass / 0 fail, including 84 rejected incoming cases with cleared
+   status, metadata/input alias, invalid-new/default/validate non-mutation,
+   mismatch preservation, capability boundaries and both entrypoint owners.
+   Real 9/10/24-page all pipelines PASS. Shared print callers 3 pass / 0 fail:
+   counting shrink, portable recipe pipelines, raster publication guards.
+   After the POSIX-only EACCES condition/indentation test adjustment, affected
+   incoming/overlap probes rerun 2 pass / 0 fail; production source unchanged.
+   Actual scene-pair all command PASS; both grayscale PDF rasters inspected.
+   Contact PNG equals approved bytes. Syntax/whitespace checks passed.
+6. Prevent: existing npm/CI ownership entry includes committed cross-entrypoint,
+   every-stage and input-failure tests, owner forgery/falsy/cross-target/released
+   capability tests, normal failure cleanup, symlink rejection and overlap
+   contenders with valid/missing inputs. No tests removed or weakened.
+
+### Cold Diff Audit
+
+- workbook/scripts/workbook.mjs:26-64: defer recipe work into owned dispatch,
+  call coloring in-process, remove the now-unreachable coloring child mapping.
+  Fail-first/replay, default/validate, mismatches and portable callers cover it.
+- workbook/scripts/coloring.mjs:13-23,210-223: callable runner plus standalone
+  CLI guard; same stages/content/PDF verification, shared lifetime instead of
+  duplicate locks/status writer. Real all/stage failures and overlap cover it.
+- workbook/scripts/print-artifacts.mjs:10-40: sole callback output owner with
+  explicit per-directory process-local capability. Forged/falsy/cross-target/
+  released capabilities and contenders reject; valid handoff preserves receipt;
+  callback failure releases ownership. Legacy lock name remains unchanged.
+- workbook/tests/coloring-ownership.test.mjs:24-148,194-228: regression matrix
+  and boundary/overlap coverage described above. POSIX EACCES probe is omitted
+  for privileged/non-POSIX hosts where chmod denial is not meaningful.
+- workbook/README.md:43-64: document explicit-target status lifetime, unchanged
+  dispatch, invalid-new/validate/default rules and participating entrypoints.
+- This amendment: approved root plan, narrowly necessary shared target lifetime,
+  evidence and current gaps. Older sections below are historical, not a claim
+  that this commit already has remote approval.
+
+effect-trace: stale PASS removed before incoming failures | generic dispatch
+enters withPrintOutput before readRecipe, same owner runs coloring | 84 rejection
+cases return NOT_VERIFIED; metadata alias and non-coloring targets do too.
+boundary-probe: valid handoff/all runs accept; forged/falsy/released/cross-target
+capabilities and concurrent writers reject without receipt changes; invalid new
+recipes/default selection/validate do not mutate; valid recipe families retain
+content and export behavior, including portable existing callers.
+
+Durable alias coloring-dispatch-owner-fix-2026-10-11 under operator
+codex-evidence/kennedi-workbook, outside worktrees; directories 700/files 600:
+- before-source.tar SHA256 e95fd6cb355ddd75c91f60016594b088f12d96cbf4de0c5cdeaca059b8b8548c
+- fixed-source.tar SHA256 913597828b8e85c81240209106309bcfd12b4a02b219576653d099f36940ca46
+- before.log SHA256 a865bf0a271432fca4d2ef416f2b7698871f8d350ca17a5ba67263abb848f216
+- after-final.log SHA256 adf2da42c595dc410377f437fd6b7e24fb86ba78163c03cf81e4f7439e47ed96
+- after-portable-probe.log SHA256 342d518652ce2df6c43ecafaefad9bdc065a92a6e9aaa15d9c425d5ad8459e34
+- adjacent-print.log SHA256 48751973b7729e7cfbeef2d56d06b2ce5d4fb7ded917cbce7fc5b767416ff409
+- proof.log SHA256 48b10a977d62526883fbdb7e33fca6c342857728063e71c3e7d585bdcc6647eb
+- proof/pdf/kennedi-coloring.pdf SHA256 93961985d9f81e5097683e162e724390b0653225dacedd2763a14b0f0380fadb
+- proof/contact-sheet.png SHA256 54b240299ca8e43ca7f24c66526c7d192e83d78e571fc510363bf1f2c1b27d6c
+
+### Gap Audit
+
+NOT DONE for remote readiness. Local repair/verification/cold audit complete.
+Single publication, finding reconciliation and fresh exact-head review remain.
+No physical printer trial, immunity to editor writes, crash-lock stealing or
+ownership claim for direct non-coloring scripts. No broad duplicate local CI
+suite; remote CI owns it. No merge or next scene in this fix worker.
+
+## Historical Preceding Consolidation (962c75ea)
+
 ## Root Cause
 
 Owner accepted the third-round plan in PR 158 issuecomment-6086201958 on
