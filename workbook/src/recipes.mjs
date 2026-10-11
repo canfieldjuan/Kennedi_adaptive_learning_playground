@@ -5,12 +5,14 @@ import { fileURLToPath } from 'node:url';
 import { alphabet, pages as alphabetPages } from './content/alphabet-practice.mjs';
 import { assets as numberAssets, pages as numberPages } from './content/numbers-practice.mjs';
 import { animals, createCountingBook, createCountingBookFromGroups } from './content/counting-practice.mjs';
+import { coloringCatalog, createColoringBook } from './content/coloring-pages.mjs';
 
 export const WORKBOOK_ROOT = fileURLToPath(new URL('../', import.meta.url));
 export const RECIPE_MAX_BYTES = 65536;
 export const recipeSchema = JSON.parse(readFileSync(new URL('../recipes/workbook.schema.json', import.meta.url), 'utf8'));
 export const templates = Object.freeze({
   'alphabet-rows-v1': 'alphabet', 'numbers-1-20-v1': 'numbers', 'count-and-trace-v1': 'counting',
+  'coloring-pages-v1': 'coloring',
 });
 const hash = data => createHash('sha256').update(data).digest('hex');
 const assetId = file => path.basename(file, '.svg');
@@ -77,6 +79,7 @@ export function catalog() {
   return {
     schemaVersion: 1, templates: Object.keys(templates),
     countingAnimals: animals.map(({ animal }) => animal),
+    coloringSubjects: coloringCatalog.map(({ id, title }) => ({ id, title })),
     artwork: [...new Set([...alphabet.map(entry => entry.illustrationPath), ...numberAssets])].map(assetId),
   };
 }
@@ -90,6 +93,7 @@ export function sourceFingerprint(template) {
     alphabet: ['src/content/alphabet-practice.mjs', 'src/components/alphabet-practice.mjs', 'src/components/manuscript-glyphs.mjs'],
     numbers: ['src/content/numbers-practice.mjs', 'src/components/number-glyphs.mjs'],
     counting: ['src/content/counting-practice.mjs', 'src/content/numbers-practice.mjs', 'src/components/count-and-trace.mjs', 'src/components/number-glyphs.mjs'],
+    coloring: ['src/content/coloring-pages.mjs', 'src/components/coloring-scene.mjs'],
   };
   const kind = templates[template];
   if (!kind) throw new TypeError('Unknown workbook template.');
@@ -108,6 +112,7 @@ export function freezeRecipe(template, book) {
         animal, count, ...(choices ? { choices: [...choices] } : {}),
       }))) });
   }
+  if (template === 'coloring-pages-v1') content.pages = [...book.selections];
   return { ...content, lock: { sourceSha256: sourceFingerprint(template), contentSha256: hash(JSON.stringify(content)),
     artwork: book.assets.map(file => ({ asset: assetId(file), sha256: hash(readFileSync(path.join(WORKBOOK_ROOT, file))) })) } };
 }
@@ -121,6 +126,8 @@ export function resolveRecipe(recipe) {
       : createCountingBook(recipe.seed, recipe.mode);
   } else if (recipe.template === 'alphabet-rows-v1') {
     book = { pages: alphabetPages, assets: alphabet.map(entry => entry.illustrationPath) };
+  } else if (recipe.template === 'coloring-pages-v1') {
+    book = createColoringBook(recipe.pages);
   } else book = { pages: numberPages, assets: numberAssets };
   const frozen = freezeRecipe(recipe.template, book);
   if (Object.hasOwn(recipe, 'lock')) {

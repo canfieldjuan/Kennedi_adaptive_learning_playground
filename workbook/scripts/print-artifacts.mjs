@@ -1,12 +1,44 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync, mkdirSync, mkdtempSync, readdirSync, chmodSync, lstatSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, readdirSync, chmodSync, lstatSync, renameSync, rmdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { inlineSvgFile } from '../src/content/asset-inline.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+const outputOwners = new Map();
+// One process-local capability lets the launcher call its coloring runner
+// without releasing/reacquiring ownership. It is never an argv/env bypass.
+export async function withPrintOutput(directory, stage, fn, owner) {
+  const out = path.resolve(directory);
+  if (owner !== undefined) {
+    assert.equal(outputOwners.get(out), owner, 'Output owner does not match this run.');
+    return fn(owner);
+  }
+  mkdirSync(out, { recursive: true, mode: 0o700 });
+  const stat = lstatSync(out);
+  assert.ok(stat.isDirectory() && !stat.isSymbolicLink(), 'Print output must be a real directory.');
+  // Preserve the existing lock name and interrupted-lock recovery behavior.
+  const lock = path.join(out, '.coloring-run-lock');
+  try { mkdirSync(lock, { mode: 0o700 }); }
+  catch (error) {
+    if (error.code === 'EEXIST') throw new Error('Print output is already owned by another run; inspect the owner before recovering an interrupted lock.', { cause: error });
+    throw error;
+  }
+  const capability = Object.freeze({});
+  outputOwners.set(out, capability);
+  try {
+    const receipt = path.join(out, 'verification.json');
+    writeFileSync(receipt, JSON.stringify({ status: 'NOT_VERIFIED', stage }) + '\n', { mode: 0o600 });
+    chmodSync(receipt, 0o600);
+    return await fn(capability);
+  } finally {
+    outputOwners.delete(out);
+    rmdirSync(lock);
+  }
+}
+
 export async function withPrintBrowser(fn) {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   try { return await fn(browser); } finally { await browser.close(); }
@@ -68,13 +100,24 @@ export function stageInventory(directory) {
   } };
 }
 
+export function readPdfRasterInventory(directory, pages) {
+  assert.ok(Number.isSafeInteger(pages) && pages > 0, 'Expected a positive raster page count.');
+  const output = lstatSync(directory);
+  assert.ok(output.isDirectory() && !output.isSymbolicLink(), 'Raster inventory must be a real directory.');
+  const images = readdirSync(directory).sort((a, b) =>
+    Number(/^page-(\d+)\.png$/.exec(a)?.[1]) - Number(/^page-(\d+)\.png$/.exec(b)?.[1]));
+  assert.deepEqual(images.map(name => /^page-(\d+)\.png$/.exec(name)?.[1]).map(Number),
+    Array.from({ length: pages }, (_, index) => index + 1), 'Unexpected raster page inventory.');
+  assert.ok(images.every(name => lstatSync(path.join(directory, name)).isFile()), 'Raster inventory must contain regular files.');
+  return images;
+}
+
 export function replacePdfRasters(file, directory, pages, grayscale = false) {
   assert.ok(Number.isSafeInteger(pages) && pages > 0, 'Expected a positive raster page count.');
   const inventory = stageInventory(directory);
   const staging = inventory.directory;
   printTool('pdftoppm', ['-png', ...(grayscale ? ['-gray'] : []), '-r', '150', file, path.join(staging, 'page')], { stdio: 'inherit' });
-  const images = readdirSync(staging).sort();
-  assert.deepEqual(images.map(name => /^page-(\d+)\.png$/.exec(name)?.[1]).map(Number),
-    Array.from({ length: pages }, (_, index) => index + 1), 'Unexpected raster page inventory.');
-  return inventory.publish(images);
+  const images = readPdfRasterInventory(staging, pages);
+  inventory.publish(images);
+  return images;
 }
