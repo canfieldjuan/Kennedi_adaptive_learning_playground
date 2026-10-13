@@ -1397,7 +1397,7 @@ def case_personal_story_check(root):
           code and "can't be the hero" in out and not (root / "design-source").exists(), out.strip()[-160:])
     (root / "children" / "pippa-kid.json").unlink()
     code, out = run(root, "selftest")
-    check("the proof story as committed passes", not code and "2 personal stories" in out, out.strip()[-200:])
+    check("the proof story as committed passes", not code and "3 personal stories" in out, out.strip()[-200:])
 
 
 EDITION = "whispering-moss"
@@ -1551,6 +1551,31 @@ def case_story_editions(root):
           "only failure is the edition's now-stale record of it",
           code and out.count("FAIL ") == 1 and f"personal-stories/{EDITION}.json" in out and "as it was once" in out,
           out.strip()[-300:])
+
+
+def case_second_edition(root):
+    """The second edition, "{name} and the Humming Bridge", is sound input: eight pages, Sora and Ravi, never more than
+    three in a picture, the refrain three times, and no edition_of (Amendment 1 to story-editions)."""
+    name = "humming-bridge"
+    story = json.loads((root / "personal-stories" / f"{name}.json").read_text())
+    daily = json.loads((root / "stories" / f"{STORY}.json").read_text())
+    lights = {"morning", "day", "late-afternoon", "dusk", "evening", "night"}
+    code, out = run(root, "selftest")
+    check("it passes selftest, with three personal stories counted", not code and "3 personal stories" in out,
+          out.strip()[-200:])
+    code, out = run(root, "--server", "http://127.0.0.1:9", "book-page", name, "kennedi", 1)
+    check("book-page takes it as input (it stops at kennedi's missing sheet, not at the story)",
+          code and "can't be drawn from" not in out and "has no locked sheet" in out, out.strip()[-200:])
+    pages = story["pages"]
+    check("it has eight pages, one per paragraph, and no cast over three",
+          len(pages) == 8 == len(story["text"].split("\n\n")) and max(len(p["cast"]) for p in pages) == 3, "")
+    check("its cast is the child, Sora, Ravi, Pippa and Bramble, and nobody else",
+          {m for p in pages for m in p["cast"]} == {"{child}", "Sora", "Ravi", "Pippa", "Bramble"}, "")
+    check("Sora is on five pages and Ravi on five",
+          [sum(m in p["cast"] for p in pages) for m in ("Sora", "Ravi")] == [5, 5], "")
+    check("every page's time is one of the six", all(p["time"] in lights for p in pages), "")
+    check("it keeps the refrain three times, as the nightly stories do, and is not an edition of one",
+          story["text"].count(daily["refrain"]) == 3 and "edition_of" not in story["source"], "")
 
 
 def case_filling(root):
@@ -1897,7 +1922,7 @@ def case_mixing_rule(root):
           out.strip()[-160:])
     (root / "children" / "maya-kid.json").unlink()
     code, out = run(root, "selftest")
-    check("the revised proof story as committed passes", not code and "2 personal stories" in out, out.strip()[-200:])
+    check("the revised proof story as committed passes", not code and "3 personal stories" in out, out.strip()[-200:])
 
 
 def case_book_lock_follows_friends(root):
@@ -1960,7 +1985,7 @@ def main():
              case_reference_fingerprints, case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check,
              case_lost_comfy_keeps_finished_seeds, case_resume_needs_the_same_recipe, case_character_sets_resume_too,
              case_bad_replies_are_not_kept, case_child_sheets, case_profile_check, case_personal_story_check,
-             case_two_stage_sheets, case_two_stage_resume, case_v1_locks_still_hold, case_story_editions,
+             case_two_stage_sheets, case_two_stage_resume, case_v1_locks_still_hold, case_story_editions, case_second_edition,
              case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals,
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
              case_book_lock_follows_friends]
