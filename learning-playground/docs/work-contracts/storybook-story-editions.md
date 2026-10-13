@@ -231,4 +231,27 @@ None yet.
 
 ## Verification
 
-Filled in with the implementation.
+- `storybook/tools/test-story-recipe.py`: 352 of 352 checks on Python 3.13
+  and on 3.12. The new case, `case_story_editions`, covers each rule on both
+  sides: 3, 4, 12 and 13 pages; a scene and a place naming an uncast animal
+  or friend, in another case, as a possessive, and inside a longer word
+  (before and after); a cast member the scene never names, for the child, a
+  friend and an animal; "moon" in a place and a scene in four spellings, and
+  "moon" in the text alone accepted; `[cue]`, `[` and `]`; an edition of a
+  missing story, of a path outside `stories/`, with a stale hash, a missing
+  key, an extra key, a non-record and a non-text hash; a refrain one short
+  and one over; a daily story with no refrain, a blank one and a non-text
+  one; and a page that isn't a record, a cast that isn't a list or isn't
+  names, and a scene that isn't text, each refused without a traceback. The
+  daily story, with a moon, a cue and an uncast name added, is not held to
+  the personal rules.
+- **Mutation run:** 31 deliberate breaks of the new checks, each in a copy
+  of the tool with the full suite run against it. 30 failed a test at
+  first. The survivor, matching a name inside the end of a longer word, now
+  fails the "word that ends in a name" case. Final: 31 of 31.
+- `story-recipe.py selftest` on the real tree: 2 personal stories, 0
+  problems.
+- The first edition as committed has eight pages, no cast over three,
+  Maya on pages 2 and 4, Theo on page 6, Pippa on every page, Bramble on 5,
+  Barnaby on 7, the refrain three times as the daily story has it, and 420
+  words (the daily story has 335).

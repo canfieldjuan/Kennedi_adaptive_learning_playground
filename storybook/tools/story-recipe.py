@@ -158,6 +158,10 @@ CHILD = "{child}"
 # without being read: a field that may not fill in the child (the season is the story's) must have no slot at all.
 STORY_TEXT = {"title": True, "text": True, "season": False}
 PAGE_TEXT = {"place": True, "scene": True}
+# A personal story is the input of a render line that costs about 28 minutes a page for each child (story-editions
+# contract): its pages are bounded, and what a page says is read against who is cast in it.
+PERSONAL_PAGES = range(4, 13)
+EDITION_KEYS = {"story", "content_sha256"}
 # One book, one style: the v2 sheet style. Like every template, a version is never edited.
 CHILD_TEMPLATES = {"v1": {
     "style": SHEET_TEMPLATES["v2"]["style"],
@@ -379,6 +383,42 @@ def paragraphs(text):
     return [p for p in re.split(r"\n[ \t]*\n", text.strip()) if p.strip()]
 
 
+def names_in(text, names):
+    """The names, of names, that text says as whole words in any case ("Pippa's" says Pippa; "Mayan" doesn't say
+    Maya)."""
+    return {name for name in names if re.search(rf"(?<!\w){re.escape(name)}(?!\w)", text, re.I)}
+
+
+def edition_problems(story):
+    """Why a personal story's source.edition_of can't stand, or [] when it is absent or sound: it is exactly a
+    story and a content_sha256, the story is in STORIES/, that hash is the story's own recorded one, and the
+    edition's text holds the story's refrain as many times as the story's text does."""
+    source = story["source"] if isinstance(story.get("source"), dict) else {}
+    if "edition_of" not in source:
+        return []
+    edition = source["edition_of"]
+    if not (isinstance(edition, dict) and set(edition) == EDITION_KEYS
+            and all(isinstance(value, str) for value in edition.values())):
+        return [f"its source.edition_of is not exactly {sorted(EDITION_KEYS)}, both text"]
+    path = STORYBOOK / STORIES / f"{edition['story']}.json"
+    try:
+        daily = json.loads(path.read_text()) if STORY_NAME.fullmatch(edition["story"]) else None
+    except (OSError, ValueError):
+        daily = None
+    if not isinstance(daily, dict):
+        return [f"it is an edition of {edition['story']!r}, which is not a story in {STORIES}/"]
+    daily_source = daily["source"] if isinstance(daily.get("source"), dict) else {}
+    if edition["content_sha256"] != daily_source.get("content_sha256"):
+        return [f"it is an edition of {edition['story']!r} as it was once: the hash it records is not that story's "
+                f"content_sha256 now"]
+    refrain, daily_text = daily.get("refrain"), daily.get("text")
+    if not (isinstance(refrain, str) and refrain.strip() and isinstance(daily_text, str)):
+        return [f"{edition['story']!r}, which it is an edition of, records no refrain to keep"]
+    kept, wanted = story["text"].count(refrain), daily_text.count(refrain)
+    return [] if kept == wanted else [f"its text holds the refrain {refrain!r} {kept} times, and "
+                                      f"{edition['story']!r} holds it {wanted}"]
+
+
 def story_problems(story, canon, personal=False, friends=None):
     """Why a story's snapshot and page plan can't be drawn from; an empty list when they can. A personal story
     (personal=True) is checked the same way, and also: every free-text field in STORY_TEXT and PAGE_TEXT is read
@@ -386,7 +426,9 @@ def story_problems(story, canon, personal=False, friends=None):
     and a friend (friends: id -> profile, the roster) by their name; a page whose place or scene fills in a slot --
     each one is the child -- must cast {child}, so the child is never drawn without their sheet; at least one page
     must; and a book mixes children and animals: at least one page casts a friend, and at least one a canon
-    character."""
+    character. A personal story also has PERSONAL_PAGES pages; a page's place or scene names nobody the page doesn't
+    cast, its scene names everybody it does (the child by a slot), and neither says "moon" (the picture model draws
+    one); its text has no [cue]; and an edition_of record is true (edition_problems)."""
     source = story.get("source") if isinstance(story.get("source"), dict) else {}
     text = story.get("text")
     if not isinstance(text, str) or hashlib.sha256(text.encode()).hexdigest() != source.get("content_sha256"):
@@ -431,6 +473,14 @@ def story_problems(story, canon, personal=False, friends=None):
                 problems += read_field(story[key], f"its {key}", slotted)[1]
         casts = [set(map(str, page["cast"])) for page in pages
                  if isinstance(page, dict) and isinstance(page.get("cast"), list)]
+        if len(pages) not in PERSONAL_PAGES:
+            problems.append(f"it has {len(pages)} pages; a personal story has {PERSONAL_PAGES.start} to "
+                            f"{PERSONAL_PAGES.stop - 1}")
+        if isinstance(text, str) and ("[" in text or "]" in text):
+            problems.append("its text has a [cue] in square brackets, which would print in the book")
+        problems += edition_problems(story)
+        for number, page in enumerate(pages, 1):
+            problems += page_cast_problems(number, page, canon_names + friend_names)
         if not any(CHILD in cast for cast in casts):
             problems.append(f"no page's cast has {CHILD}, and the child is the hero")
         # The operator, 2026-10-06: "I do t want there to just a kid and a bunch of animals, we mix it up."
@@ -438,6 +488,31 @@ def story_problems(story, canon, personal=False, friends=None):
             problems.append(f"no page's cast has a friend from {FRIENDS}/, and a book mixes children and animals")
         if not any(cast & set(canon_names) for cast in casts):
             problems.append(f"no page's cast has a character from {CANON}, and a book mixes children and animals")
+    return problems
+
+
+def page_cast_problems(number, page, characters):
+    """Why a personal story's page says more or less than it casts (characters: every name a cast may hold but the
+    child): its place or scene names someone the cast lacks, who would be drawn without their sheet; its scene
+    leaves out someone the cast has, who is drawn anyway; or it says "moon". Nothing for a page the plan check has
+    already refused as malformed."""
+    if not (isinstance(page, dict) and set(page) == PAGE_KEYS and isinstance(page["cast"], list)
+            and all(isinstance(member, str) for member in page["cast"])
+            and all(isinstance(page[key], str) for key in PAGE_TEXT)):
+        return []
+    problems, cast = [], page["cast"]
+    uninvited = names_in(f"{page['place']} {page['scene']}", characters) - set(cast)
+    if uninvited:
+        problems.append(f"page {number}'s place or scene names {', '.join(sorted(uninvited))}, who is not in its "
+                        f"cast, so they would be drawn without their sheet")
+    for member in cast:
+        if member == CHILD and not slots(page["scene"], "")[0]:
+            problems.append(f"page {number}'s cast has {CHILD} but its scene fills in no slot for the child")
+        elif member != CHILD and not names_in(page["scene"], [member]):
+            problems.append(f"page {number}'s cast has {member} but its scene never names them, and the picture "
+                            f"would draw them anyway")
+    problems += [f"page {number}'s {key} says 'moon', which makes the picture model draw a moon; a page's light "
+                 f"comes from its time" for key in PAGE_TEXT if "moon" in page[key].lower()]
     return problems
 
 

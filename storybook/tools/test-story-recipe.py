@@ -1397,7 +1397,160 @@ def case_personal_story_check(root):
           code and "can't be the hero" in out and not (root / "design-source").exists(), out.strip()[-160:])
     (root / "children" / "pippa-kid.json").unlink()
     code, out = run(root, "selftest")
-    check("the proof story as committed passes", not code and "1 personal stories" in out, out.strip()[-200:])
+    check("the proof story as committed passes", not code and "2 personal stories" in out, out.strip()[-200:])
+
+
+EDITION = "whispering-moss"
+REFRAIN = "The lanterns dim, and the forest grows hushed."
+
+
+def case_story_editions(root):
+    """A personal story has 4 to 12 pages; a page's place and scene name everyone it casts and no one else, and
+    never say "moon"; its text has no [cue]; and an edition of a daily story records a true edition_of and keeps the
+    refrain."""
+    path = root / "personal-stories" / f"{EDITION}.json"
+    original = json.loads(path.read_text())
+    real = json.loads((root / "stories" / f"{STORY}.json").read_text())
+
+    def rehash(story):
+        story["source"]["content_sha256"] = sha(story["text"].encode())
+
+    def text(old, new):
+        def mutate(story):
+            assert old in story["text"], old
+            story["text"] = story["text"].replace(old, new, 1)
+            rehash(story)
+        return mutate
+
+    def page(number, **fields):
+        return lambda story: story["pages"][number - 1].update(fields)
+
+    def pages_of(count):
+        """An original story (no edition_of) of count pages, cycling the edition's pages and paragraphs."""
+        def mutate(story):
+            paras = story["text"].split("\n\n")
+            story["pages"] = [json.loads(json.dumps(story["pages"][i % 8])) for i in range(count)]
+            story["text"] = "\n\n".join(paras[i % 8] for i in range(count))
+            story["source"].pop("edition_of")
+            rehash(story)
+        return mutate
+
+    def edition_of(value):
+        return lambda story: story["source"].__setitem__("edition_of", value)
+
+    def attempt(label, mutate, why=None):
+        """why None: the story must pass selftest and book-page must take it; else both must refuse it with why."""
+        story = json.loads(json.dumps(original))
+        mutate(story)
+        path.write_text(json.dumps(story))
+        code, out = run(root, "selftest")
+        code2, out2 = run(root, "--server", "http://127.0.0.1:9", "book-page", EDITION, "kennedi", 1)
+        if why is None:
+            check(f"{label} passes selftest", not code and "Traceback" not in out, out.strip()[-200:])
+            check(f"{label}: book-page takes it (it fails only on reaching ComfyUI)",
+                  "can't be drawn from" not in out2 and "Traceback" not in out2, out2.strip()[-200:])
+        else:
+            check(f"{label} fails selftest, and book-page refuses it",
+                  code and why in out and "Traceback" not in out and code2 and "can't be drawn from" in out2
+                  and why in out2, (out + out2).strip()[-240:])
+
+    attempt("the first edition as committed", lambda story: None)
+    check("it has eight pages, nobody casts more than three, and its friends are Maya and Theo",
+          len(original["pages"]) == 8 and max(len(p["cast"]) for p in original["pages"]) == 3
+          and {m for p in original["pages"] for m in p["cast"]} == {"{child}", "Pippa", "Bramble", "Barnaby", "Maya", "Theo"},
+          "")
+    check("it keeps the daily story's refrain exactly as often, and records the daily story's hash",
+          original["text"].count(REFRAIN) == real["text"].count(REFRAIN) == 3
+          and original["source"]["edition_of"] == {"story": STORY, "content_sha256": real["source"]["content_sha256"]},
+          "")
+
+    for count, why in [(3, "it has 3 pages; a personal story has 4 to 12"), (4, None), (12, None),
+                       (13, "it has 13 pages; a personal story has 4 to 12")]:
+        attempt(f"an original story of {count} pages", pages_of(count), why)
+
+    for label, mutate, why in [
+            ("a scene that names a canon character who isn't cast", page(1, scene="{name} follows tiny Pippa while "
+             "Bramble watches"), "page 1's place or scene names Bramble, who is not in its cast"),
+            ("a place that names a friend who isn't cast", page(2, place="a winding path where Theo waits"),
+             "page 2's place or scene names Theo, who is not in its cast"),
+            ("a name in another case", page(1, scene="{name} follows tiny Pippa while BRAMBLE watches"),
+             "names Bramble"),
+            ("a possessive name", page(3, cast=["{child}"], scene="{name} kneels at Pippa's moss"),
+             "page 3's place or scene names Pippa"),
+            ("a cast member the scene never names", page(2, scene="{name} and tiny Pippa hurry down the path"),
+             "page 2's cast has Maya but its scene never names them"),
+            ("a friend the scene never names", page(6, scene="tiny Pippa sits on the rock beside {name}, watching "
+             "fireflies"), "page 6's cast has Theo but its scene never names them"),
+            ("a canon character the scene never names", page(5, scene="{name} watches a small smooth stone"),
+             "page 5's cast has Pippa but its scene never names them"),
+            ("a child the scene never fills in", page(1, scene="tiny Pippa scurries over a fallen log"),
+             "page 1's cast has {child} but its scene fills in no slot for the child"),
+            ("a child known only by a place slot", lambda s: (page(1, scene="tiny Pippa scurries over a fallen log")(s),
+                                                            page(1, place="{possessive} fallen log")(s)),
+             "page 1's cast has {child} but its scene fills in no slot"),
+            ("moon in a place", page(1, place="the Moon Berry Forest path"), "page 1's place says 'moon'"),
+            ("moonlight in a scene", page(3, scene="{name} kneels in the moonlight by tiny Pippa"),
+             "page 3's scene says 'moon'"),
+            ("Moonlit in a scene", page(3, scene="{name} kneels by tiny Pippa in a Moonlit glade"),
+             "page 3's scene says 'moon'"),
+            ("MOON in a place", page(8, place="UNDER THE MOON"), "page 8's place says 'moon'"),
+            ("a cue in the text", text("fallen log", "fallen log [pause]"), "a [cue] in square brackets"),
+            ("an opening bracket alone", text("fallen log", "fallen log ["), "a [cue] in square brackets"),
+            ("a closing bracket alone", text("fallen log", "fallen log ]"), "a [cue] in square brackets"),
+            ("an edition of a story that isn't there", edition_of({"story": "no-such-story",
+             "content_sha256": real["source"]["content_sha256"]}), "is not a story in stories/"),
+            ("an edition of a path outside stories/", edition_of({"story": "../children/kennedi",
+             "content_sha256": real["source"]["content_sha256"]}), "is not a story in stories/"),
+            ("an edition recording a stale hash", edition_of({"story": STORY, "content_sha256": "0" * 64}),
+             "as it was once"),
+            ("an edition with no hash", edition_of({"story": STORY}), "is not exactly"),
+            ("an edition with an extra key", edition_of({"story": STORY, "content_sha256":
+             real["source"]["content_sha256"], "note": "x"}), "is not exactly"),
+            ("an edition that isn't a record", edition_of(STORY), "is not exactly"),
+            ("an edition with a hash that isn't text", edition_of({"story": STORY, "content_sha256": 5}),
+             "is not exactly"),
+            ("an edition one refrain short", text(" " + REFRAIN, ""), "holds the refrain"),
+            ("an edition one refrain over", text("hushed.", "hushed. " + REFRAIN), "holds the refrain"),
+            ("a page that isn't a record", lambda s: s["pages"].__setitem__(2, "a page"), "page 3 is not exactly"),
+            ("a cast that isn't a list", page(2, cast="Maya"), "page 2's cast 'Maya' is not one to three"),
+            ("a cast of something other than names", page(2, cast=[1, 2]), "page 2's cast [1, 2] names someone"),
+            ("a scene that isn't text", page(2, scene=5), "page 2 has no scene")]:
+        attempt(label, mutate, why)
+
+    for label, mutate in [
+            ("an original story, with no edition_of", lambda s: s["source"].pop("edition_of")),
+            ("a place with a word that starts with a name", page(1, place="a fallen log near the Mayan ruins")),
+            ("a place with a word that ends in a name", page(1, place="a fallen log near the Kamaya hollow")),
+            ("a child known by each slot form", lambda s: (page(1, scene="{Subject} follows tiny Pippa over a "
+                                                         "fallen log")(s),
+                                                         page(2, scene="Maya waves tiny Pippa and {reflexive} on")(s))),
+            ("moon in the text, where the pictures never read it", text("Moon Berry Forest", "Moon Berry Forest, by "
+                                                                           "moonlight,"))]:
+        attempt(label, mutate)
+
+    path.write_text(json.dumps(original))
+    daily_path = root / "stories" / f"{STORY}.json"
+    daily_original = daily_path.read_text()
+    for label, refrain in [("no refrain", None), ("a blank refrain", "  "), ("a refrain that isn't text", 5)]:
+        daily = json.loads(daily_original)
+        daily.pop("refrain") if refrain is None else daily.__setitem__("refrain", refrain)
+        daily_path.write_text(json.dumps(daily))
+        code, out = run(root, "selftest")
+        check(f"an edition of a story with {label} is refused, not crashed on",
+              code and "records no refrain to keep" in out and "Traceback" not in out, out.strip()[-200:])
+    daily_path.write_text(daily_original)
+    code, out = run(root, "selftest")
+    check("and passes again once the daily story's refrain is back", not code, out.strip()[-200:])
+    daily = json.loads(daily_original)
+    daily["pages"][0]["scene"] += " under the moon, near Bramble"
+    daily["text"] += " [pause]"
+    daily["source"]["content_sha256"] = sha(daily["text"].encode())
+    daily_path.write_text(json.dumps(daily))
+    code, out = run(root, "selftest")
+    check("the daily story, with a moon, a [cue] and an uncast name in it, is not held to the personal rules: the "
+          "only failure is the edition's now-stale record of it",
+          code and out.count("FAIL ") == 1 and f"personal-stories/{EDITION}.json" in out and "as it was once" in out,
+          out.strip()[-300:])
 
 
 def case_filling(root):
@@ -1724,6 +1877,7 @@ def case_mixing_rule(root):
               code and why in out and code2 and "can't be drawn from" in out2 and why in out2, (out + out2).strip()[-200:])
     story = json.loads(json.dumps(original))
     story["pages"][1]["cast"] = ["{child}", "Pippa", "Theo"]
+    story["pages"][1]["scene"] += ", with Theo standing beside them"    # a cast member the scene names (story-editions)
     story_path.write_text(json.dumps(story))
     code, out = run(root, "selftest")
     check("a story with two friends and an animal passes", not code, out.strip()[-200:])
@@ -1743,7 +1897,7 @@ def case_mixing_rule(root):
           out.strip()[-160:])
     (root / "children" / "maya-kid.json").unlink()
     code, out = run(root, "selftest")
-    check("the revised proof story as committed passes", not code and "1 personal stories" in out, out.strip()[-200:])
+    check("the revised proof story as committed passes", not code and "2 personal stories" in out, out.strip()[-200:])
 
 
 def case_book_lock_follows_friends(root):
@@ -1806,7 +1960,7 @@ def main():
              case_reference_fingerprints, case_relocked_sheet, case_story_edits, case_page_lock_is_its_page, case_plan_check,
              case_lost_comfy_keeps_finished_seeds, case_resume_needs_the_same_recipe, case_character_sets_resume_too,
              case_bad_replies_are_not_kept, case_child_sheets, case_profile_check, case_personal_story_check,
-             case_two_stage_sheets, case_two_stage_resume, case_v1_locks_still_hold,
+             case_two_stage_sheets, case_two_stage_resume, case_v1_locks_still_hold, case_story_editions,
              case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals,
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
              case_book_lock_follows_friends]
