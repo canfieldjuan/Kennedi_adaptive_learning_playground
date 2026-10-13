@@ -315,3 +315,11 @@ editions of other nightly stories, and the drawing.
   Maya on pages 2 and 4, Theo on page 6, Pippa on every page, Bramble on 5,
   Barnaby on 7, the refrain three times as the daily story has it, and 420
   words (the daily story has 335).
+- **Amendment 1, the second edition:** `case_second_edition` adds 7 checks, so
+  359 of 359 on Python 3.13 and on 3.12. The committed "{name} and the
+  Humming Bridge" passes `selftest` (3 personal stories, 0 problems);
+  `book-page` takes it as input; it has eight pages, no cast over three,
+  the child, Sora, Ravi, Pippa and Bramble and nobody else, Sora and Ravi on
+  five pages each, every time one of the six, the refrain three times, and
+  no `edition_of`. Its text is 360 words, against the "about 340" the
+  amendment says. No code changed, so there is no new mutation run.

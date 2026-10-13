@@ -1,0 +1,91 @@
+{
+ "source": {
+  "written_by": "the storybook story-editions slice, Amendment 1",
+  "contract": "learning-playground/docs/work-contracts/storybook-story-editions.md",
+  "accepted": "operator, 2026-10-13",
+  "content_sha256": "f940485c77ac1be339c3091d4247a86e6a2c3ebfd5706851ed3508ec9bf46bc8"
+ },
+ "title": "{name} and the Humming Bridge",
+ "season": "gentle autumn",
+ "text": "On a golden autumn afternoon, Sora unfolded her map on a flat rock beside the winding path. {name} leaned in close to look. Sora tapped one small mark with her finger. \"The old stone bridge,\" she said. \"That is where the moss hums.\"\n\nRavi came bouncing down the path to join them, making up a silly song about the map, with a silly verse about a frog who could not read. Sora counted her steps out loud and never lost her place.\n\nJust then, something tumbled out from under a fern. It was Pippa, in her red acorn cap, blinking up at them. Ravi sang her right into his song, and Pippa squeaked along in her tiny voice, a little bit off the tune.\n\nAt a fork in the path, Sora stopped and turned her map one way, then the other. \"The map says left,\" she said, \"but the path goes right.\" Pippa sniffed the air. The way to the right smelled of warm berries, so they followed her nose.\n\nThe path ended at the old stone bridge, just as the light turned deep amber. Ravi's song grew slower, and slower, until it was only a hum. The lanterns dim, and the forest grows hushed.\n\nSora tucked her map into her big pocket. Then {name}, Sora and Ravi lay on their tummies and pressed their ears to the soft moss at the end of the bridge. And the moss hummed back, very softly, in Ravi's own tune. Nobody said a word.\n\nWhen the first stars peeked out, Bramble came along the brook path with his small lantern. \"Come along, little ones,\" he said softly. \"It is time to settle down.\" Ravi hummed the tune again, and yawned right in the middle of it. The lanterns dim, and the forest grows hushed.\n\nAt the end of the path, a bed of soft moss was waiting. {name} curled up on it, and Pippa, who had trotted along all the way, tucked in close. The humming was still there, very faintly, like a lullaby the whole forest knew. {Subject} smiled, and drifted off to sleep. The lanterns dim, and the forest grows hushed.",
+ "pages": [
+  {
+   "cast": [
+    "{child}",
+    "Sora"
+   ],
+   "place": "a flat rock beside the winding path",
+   "time": "late-afternoon",
+   "scene": "Sora unfolds her map on the rock and puts one finger on a small mark, while {name} leans in close to look"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Sora",
+    "Ravi"
+   ],
+   "place": "a winding path among the autumn trees",
+   "time": "late-afternoon",
+   "scene": "Ravi bounces along the path with his mouth open in a silly song, while Sora walks beside {name} holding her folded map and counting her steps"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Ravi",
+    "Pippa"
+   ],
+   "place": "a fern by the path",
+   "time": "late-afternoon",
+   "scene": "Tiny Pippa tumbles out from under a fern, her paws empty, and squeaks, while Ravi sings and {name} laughs"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Sora",
+    "Pippa"
+   ],
+   "place": "a fork in the path among the autumn trees",
+   "time": "late-afternoon",
+   "scene": "Sora frowns at her map at the fork while tiny Pippa sniffs the air and points one paw down the right-hand path, and {name} watches the two of them"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Sora",
+    "Ravi"
+   ],
+   "place": "the old stone bridge over the Berry Brook",
+   "time": "dusk",
+   "scene": "{name}, Sora and Ravi stand at the old stone bridge over the brook in the deep amber light, with Ravi singing softly, his eyes half closed"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Sora",
+    "Ravi"
+   ],
+   "place": "the mossy end of the old stone bridge",
+   "time": "dusk",
+   "scene": "{name}, Sora and Ravi lie on their tummies with their ears pressed to the soft moss at the end of the bridge, listening, with Sora's folded map tucked in her pocket"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Ravi",
+    "Bramble"
+   ],
+   "place": "a path home beside the Berry Brook",
+   "time": "evening",
+   "scene": "Bramble walks ahead along the brook holding his small lantern, while {name} and a yawning Ravi follow, Ravi's mouth open in a sleepy hum"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa"
+   ],
+   "place": "a soft bed of moss under the trees",
+   "time": "night",
+   "scene": "{name} sleeps curled up on soft moss with tiny Pippa asleep tucked in close beside {object}, the moss around them glowing like stars"
+  }
+ ]
+}
