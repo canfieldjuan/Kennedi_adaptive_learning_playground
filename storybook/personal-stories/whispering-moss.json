@@ -1,0 +1,94 @@
+{
+ "source": {
+  "written_by": "the storybook story-editions slice",
+  "contract": "learning-playground/docs/work-contracts/storybook-story-editions.md",
+  "accepted": "operator, 2026-10-13",
+  "content_sha256": "93bd35c04ce01dd52ab8d8fb02e480776d9d6a2eb0b13075df9ed44b70c6b7a9",
+  "edition_of": {
+   "story": "pippa-and-the-whispering-moss",
+   "content_sha256": "25185b28a2b64fa8770602dbafa9cd46862e4e3fd2d186d0a3bd61b243cf5eee"
+  }
+ },
+ "title": "{name} and the Whispering Moss",
+ "season": "gentle autumn",
+ "text": "The golden light of late afternoon slipped through the trees of Moon Berry Forest, painting the leaves in honey and rust. {name} followed tiny Pippa, who scurried over a fallen log in her red acorn cap, her paws tapping a quick rhythm. Pippa was on a mission: to find the softest moss in all the forest.\n\nDown the winding path came Maya, first as always, with her little lantern swinging. \"I know where the softest moss grows,\" she said. \"Beside the silver grass, by the Berry Brook.\" So the three of them hurried on together, and the leaves whispered under their feet.\n\nAt the edge of the glade, where the grass turned silver and the air smelled of warm earth, they slowed down. There, tucked under a mossy rock near the Berry Brook, lay a patch of moss so pale and fine it looked like spun silk. {name} knelt, held {possessive} breath, and reached out one finger.\n\nThe moss felt like a cloud made of velvet, cool and gentle. {name} giggled, and Pippa giggled, and even Maya forgot to hurry. The forest seemed to sigh around them. The lanterns dim, and the forest grows hushed.\n\nBramble stepped out from behind a willow, his patchwork vest rustling. \"Ah, Pippa,\" he said softly. \"You've found the moss that sings in the quiet.\" He handed her a small, smooth stone wrapped in a soft fern. \"For your collection. It's not the softest thing, but it holds warmth.\" Then, with a slow wave, he ambled off toward home.\n\nTheo, who had been sitting quietly nearby, came over and opened his hand. In it lay a soft grey feather from his pocket. \"For your collection too,\" he whispered. Pippa tucked the stone and the feather into her cap. They all sat on the mossy rock and watched fireflies rise like tiny stars, while the golden light faded to deep amber. The lanterns dim, and the forest grows hushed.\n\nBarnaby's porch swing creaked softly as he sipped his tea. He waved a slow hello, and {name} and Pippa waved back, their eyes heavy. Maya and Theo had wandered home with their lantern and their pockets full, and the whole forest felt safe and still.\n\n{name} curled up on a bed of soft moss, with Pippa tucked in close. Tonight, they would dream of moss that glowed like stars. And tomorrow, Pippa wondered, what if the moss near the old stone bridge hums when the wind blows just right? The lanterns dim, and the forest grows hushed.",
+ "pages": [
+  {
+   "cast": [
+    "{child}",
+    "Pippa"
+   ],
+   "place": "a fallen log among the autumn trees",
+   "time": "late-afternoon",
+   "scene": "{name} follows tiny Pippa, who scurries over a fallen log, her paws empty, the leaves around them glowing honey and rust"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa",
+    "Maya"
+   ],
+   "place": "a winding path among the autumn trees",
+   "time": "late-afternoon",
+   "scene": "Maya strides ahead down the path holding her small lantern and waving them on, while {name} and tiny Pippa hurry after her"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa"
+   ],
+   "place": "the edge of a glade of silver grass, by a mossy rock near the Berry Brook",
+   "time": "late-afternoon",
+   "scene": "{name} kneels at a mossy rock and reaches one finger toward a patch of moss pale and fine as silver silk, with tiny Pippa beside {object}, her paws empty"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa",
+    "Maya"
+   ],
+   "place": "a mossy rock near the Berry Brook",
+   "time": "late-afternoon",
+   "scene": "{name}, tiny Pippa and Maya gather around the pale, velvety moss, all giggling, with Maya's small lantern set down beside them"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa",
+    "Bramble"
+   ],
+   "place": "beside a willow near the Berry Brook",
+   "time": "late-afternoon",
+   "scene": "Bramble steps out from behind a willow and holds out a small smooth stone wrapped in a soft fern leaf to tiny Pippa, while {name} watches"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa",
+    "Theo"
+   ],
+   "place": "the mossy rock near the Berry Brook",
+   "time": "dusk",
+   "scene": "Theo opens his hand to show a soft grey feather to tiny Pippa, who sits on the rock with a fern-wrapped stone tucked under her acorn cap, while {name} sits beside them watching fireflies rise like tiny stars"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa",
+    "Barnaby"
+   ],
+   "place": "Barnaby's porch",
+   "time": "evening",
+   "scene": "Barnaby sits on his porch swing with a mug of tea, waving a slow hello, while {name} and a sleepy-eyed Pippa wave back from the path below"
+  },
+  {
+   "cast": [
+    "{child}",
+    "Pippa"
+   ],
+   "place": "a soft bed of moss under the trees",
+   "time": "night",
+   "scene": "{name} sleeps curled up on soft moss with tiny Pippa asleep tucked in close beside {object}, the moss around them glowing like stars"
+  }
+ ]
+}
