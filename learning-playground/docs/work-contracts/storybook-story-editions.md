@@ -227,7 +227,67 @@ passing side:
 
 ## Contract Amendments
 
-None yet.
+### Amendment 1: The Second Edition, with Sora and Ravi
+
+Operator, 2026-10-13, on the plan to give the other two friends a story:
+"ets get started on that". This adds a story file and its test. It changes
+no rule and no code.
+
+**Decisions made here (change any):**
+
+- **An original story, not an edition.** `edition_of` points at a daily
+  story snapshotted in `stories/`, and only "Pippa and the Whispering Moss"
+  is. Editions of other nightly stories need their own snapshots first, which
+  is its own slice. The story has no `edition_of`, which the rules allow.
+- **It picks up where the first edition ends.** That story closes on Pippa
+  wondering whether the moss near the old stone bridge hums. This one is
+  the walk to find out, so two books read in order feel like one world.
+- **Sora and Ravi, five pages each, in a cast that never passes three.**
+  Sora is the planner with the folded map, Ravi the joker who makes up silly
+  songs; the plot uses both. Pippa and Bramble are the animals; Barnaby
+  sits this one out.
+- **The same refrain, three times,** as every Moon Berry Forest story. The
+  text is about 340 words, close to the daily story's 335, and the
+  operator reads every word in the pull request before merge.
+- **A small problem, solved gently.** The map is wrong at a fork in the
+  path, and the answer comes from Pippa's nose, not from the map. No fear,
+  no danger, nothing from the canon's avoid list.
+
+**"{name} and the Humming Bridge" (part of what you accept).** Season:
+gentle autumn. Eight pages, one per paragraph:
+
+| Page | Cast | Place | Time | What happens |
+|---|---|---|---|---|
+| 1 | {child}, Sora | a flat rock beside the winding path | late-afternoon | Sora unfolds her map on the rock and puts a finger on the old stone bridge: "That is where the moss hums." |
+| 2 | {child}, Sora, Ravi | a winding path among the autumn trees | late-afternoon | Ravi bounces along making up a silly song about the map while Sora counts steps. |
+| 3 | {child}, Ravi, Pippa | a fern by the path | late-afternoon | Pippa tumbles out from under a fern; Ravi sings her into the song, and she squeaks along. |
+| 4 | {child}, Sora, Pippa | a fork in the path among the autumn trees | late-afternoon | The map and the path disagree. Sora frowns; Pippa sniffs the air and points to the way that smells of warm berries. |
+| 5 | {child}, Sora, Ravi | the old stone bridge over the Berry Brook | dusk | They reach the bridge. Ravi's song slows and fades to a hum. Refrain. |
+| 6 | {child}, Sora, Ravi | the mossy end of the old stone bridge | dusk | They lay their ears to the moss, and it hums back, softly, in Ravi's tune. Nobody says a word. |
+| 7 | {child}, Ravi, Bramble | a path home beside the Berry Brook | evening | Bramble comes with his small lantern to light the way, and Ravi hums as he yawns. Refrain. |
+| 8 | {child}, Pippa | a soft bed of moss under the trees | night | The child falls asleep with Pippa tucked in close, the humming still in their ears. Refrain. |
+
+- Friends: Sora on 1, 2, 4, 5 and 6; Ravi on 2, 3, 5, 6 and 7. Animals:
+  Pippa on 3, 4 and 8; Bramble on 7. Largest cast: three.
+- To draw it for a child: Sora's and Ravi's sheets first (two friends at four
+  seeds, about 70 minutes), then eight pages at about 28 minutes each, about
+  3.7 hours for one child's book. Nothing here is drawn yet.
+
+**Settling evidence.** `test-story-recipe.py` gains one case. It reads the
+committed story and checks that:
+
+- it passes `selftest` and `book-page` accepts it as an input, with 3
+  personal stories counted (the two counts the tests assert move from 2 to
+  3);
+- it has eight pages, no cast over three, exactly Sora, Ravi, Pippa and
+  Bramble as the named cast, and every page's time is one of the six;
+- the refrain appears three times, and it has no `edition_of`.
+
+It adds no code and no rule, so there is no new mutation run. Every rule it
+passes is already held by the 352 checks of this contract.
+
+**Not in this amendment:** a story that casts all four friends together,
+editions of other nightly stories, and the drawing.
 
 ## Verification
 
