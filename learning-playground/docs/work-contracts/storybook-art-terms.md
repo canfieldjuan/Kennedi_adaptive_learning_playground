@@ -61,10 +61,10 @@ approval, is recorded under "Owner Approval" at the end.
 
 ### 2. Models
 
-Every file a storybook recipe can name. All six repos (the four files and the
-two upstream models they are quantised from) declare `license: apache-2.0` in
-their Hugging Face card metadata, carry the `license:apache-2.0` tag, and are
-not gated.
+Every file a storybook recipe can name, and the Lightning LoRA that
+Amendment 2 adds for page render v2. Every repo in this table, and every
+upstream repo it names, declares `license: apache-2.0` in its Hugging Face
+card metadata, carries the `license:apache-2.0` tag, and is not gated.
 
 | Role | File | Bytes | From | Upstream |
 |---|---|---|---|---|
@@ -72,9 +72,12 @@ not gated.
 | Pages, child cleanup (`edit_unet`) | `qwen-image-edit-2511-Q4_K_S.gguf` | 12,410,747,488 | `unsloth/Qwen-Image-Edit-2511-GGUF` | `Qwen/Qwen-Image-Edit-2511` |
 | Text encoder (`clip`) | `qwen_2.5_vl_7b_fp8_scaled.safetensors` | 9,384,670,680 | `Comfy-Org/Qwen-Image_ComfyUI` | `Qwen/Qwen2.5-VL-7B-Instruct` |
 | VAE (`vae`) | `qwen_image_vae.safetensors` | 253,806,246 | `Comfy-Org/Qwen-Image_ComfyUI` | `Qwen/Qwen-Image` |
+| Pages, render v2 (`edit_lightning`, Amendment 2) | `Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors` | 849,608,296 | `lightx2v/Qwen-Image-Edit-2511-Lightning` at revision `d74eba145674fd7e31b949324e148e21e7118abd` | `Qwen/Qwen-Image-Edit-2511` |
 
 SHA-256, the same in three places: the Hub's published digest, the local file
-on the Dev-Drive, and `MODELS` in the tool.
+on the Dev-Drive, and `MODELS` in the tool. The LoRA joins `MODELS` with the
+Lightning pages change (`storybook-lightning-pages.md`); until then it is in
+the first two only.
 
 - `qwen-image-Q8_0.gguf`:
   `43142b32778dc0568c27395abc6f8291ac53f1de0b98eed919712cf161f248de`
@@ -84,10 +87,12 @@ on the Dev-Drive, and `MODELS` in the tool.
   `cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4`
 - `qwen_image_vae.safetensors`:
   `a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f`
+- `Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors`:
+  `22226e8d05d354bb356627d428809f5afd7819399b077238a2b70a82883a904f`
 
 Licence text: only `Qwen/Qwen-Image` ships a `LICENSE` file at its root, and
-it is the standard Apache License, Version 2.0, January 2004. The other five
-repos state the licence in card metadata only.
+it is the standard Apache License, Version 2.0, January 2004. The other repos
+state the licence in card metadata only.
 
 ### 3. Commercial Terms
 
@@ -133,11 +138,17 @@ grounding, document-parsing, OCR, video and agent data. The report does not
 list the sources or licences either. The encoder reads the prompt, and on
 pages the reference sheets; it does not draw the picture.
 
+The Lightning LoRA (`lightx2v/Qwen-Image-Edit-2511-Lightning`, Amendment 2)
+is a step-distilled LoRA made from the edit model. Its README describes
+"Step Distillation" that cuts 40 steps to 4 and says nothing about training
+data. It inherits everything above about the edit model, and adds no
+disclosure of its own.
+
 ### 6. Indemnification
 
 None. Apache-2.0 disclaims all warranties (section 7) and limits liability
 (section 8). Section 9 lets a redistributor offer an indemnity for a fee, and
-none of the six repos offers one. The project carries this risk.
+none of the repos in section 2 offers one. The project carries this risk.
 
 ### 7. Protected-Character and Artist-Imitation Risk
 
@@ -167,7 +178,8 @@ Every candidate's `*-recipe.json` records the full prompt, seed, model files
 and graph, and every rendered PNG embeds its graph. The nine locked
 storybook PNGs (Pippa, Bramble and Barnaby on `main` and in the render
 worktree; Kennedi's two files and Leo's in the render worktree) embed only
-the four files above.
+the sheet model, edit model, encoder and VAE from section 2; none uses the
+LoRA.
 
 ### 10. Editability
 
@@ -187,12 +199,13 @@ which has not been run.
 
 ## What Approval Covers
 
-- The four files above, for storybook art, for any use including commercial:
+- The files in section 2, for storybook art, for any use including commercial:
   the nightly story's pictures and the books we sell, once "Owner Approval"
   records the approval.
-- Nothing else. Any new model, LoRA or encoder (for example a step-distilled
-  "Lightning" LoRA to cut render time) needs its own row here, checked the
-  same way and approved, before a recipe can name it.
+- Nothing else. Any other model, LoRA or encoder needs its own row here,
+  checked the same way and approved, before a recipe can name it. The 8-step
+  Lightning file is downloaded beside the 4-step one but has no row, so no
+  recipe may name it.
 
 ## Not Addressed
 
@@ -222,6 +235,15 @@ above:
 The operator approved the record before these disclosures, so approval of the
 amended record is asked for again (see "Owner Approval").
 
+### Amendment 2: The Lightning LoRA for Faster Pages (2026-10-14)
+
+Operator, 2026-10-14: "continue with what we have and add the add ons to
+speed it up for now." Section 2 gains the 4-step Lightning LoRA, and section
+5 its provenance. It is used only by page render v2, which is specified in
+`storybook-lightning-pages.md`. Downloaded to the Dev-Drive at revision
+`d74eba145674fd7e31b949324e148e21e7118abd`; the 4-step and 8-step files are
+849,608,296 bytes each, and their local SHA-256 equals the Hub's.
+
 ## Verification
 
 Run 2026-10-14, read-only:
@@ -231,6 +253,10 @@ Run 2026-10-14, read-only:
   tag and `gated: False` for all six.
 - Hub `paths-info` for the four files: sizes and SHA-256 as in the table.
 - `sha256sum` of the four Dev-Drive files: identical digests.
+- Amendment 2: `lightx2v/Qwen-Image-Edit-2511-Lightning` card metadata and
+  README front matter `license: apache-2.0`, tag `license:apache-2.0`,
+  `gated: False`; Hub `paths-info` and `sha256sum` of the downloaded files
+  agree.
 - `Qwen/Qwen-Image` repo tree: the only `LICENSE` file among the six repos;
   its header and sections 7 and 9 match Apache-2.0.
 - PNG text chunks of the nine locked storybook PNGs: model files named are
@@ -247,5 +273,8 @@ This section is the one place that says whether the record is approved.
 - Amendment 1 then added disclosures that the first version lacked: the edit
   model's merged community LoRAs, the text encoder's training provenance, and
   the correction that re-rendering is unverified.
-- **Pending:** the operator re-confirms the amended record as a whole. Until
-  that is recorded here, no model in section 2 is cleared.
+- Operator, 2026-10-14, on the edit model's merged LoRAs: "edit model is ok".
+- **Pending:** the operator re-confirms the amended record as a whole: the
+  encoder's training provenance and the re-render correction from Amendment
+  1, and the Lightning LoRA from Amendment 2. Until that is recorded here, no
+  model in section 2 is cleared.
