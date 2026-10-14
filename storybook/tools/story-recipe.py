@@ -93,9 +93,14 @@ MODELS = {
     "edit_unet": {"file": "qwen-image-edit-2511-Q4_K_S.gguf",
                   "source": "unsloth/Qwen-Image-Edit-2511-GGUF (from Qwen/Qwen-Image-Edit-2511)", "license": "apache-2.0",
                   "sha256": "df952ef0d2b46463bd95d9afbb78e045ec5412316f453a7ad5a3d7bcbb111b72"},
+    # Page render v2 only: the 4-step distilled LoRA for the edit model (storybook-lightning-pages contract; its
+    # licence row is Amendment 2 of storybook-art-terms; Hub digest matched the Dev-Drive copy 2026-10-14).
+    "edit_lightning": {"file": "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
+                       "source": "lightx2v/Qwen-Image-Edit-2511-Lightning", "license": "apache-2.0",
+                       "sha256": "22226e8d05d354bb356627d428809f5afd7819399b077238a2b70a82883a904f"},
 }
 LOADERS = {"unet": ("UnetLoaderGGUF", "unet_name"), "clip": ("CLIPLoader", "clip_name"), "vae": ("VAELoader", "vae_name"),
-           "edit_unet": ("UnetLoaderGGUF", "unet_name")}
+           "edit_unet": ("UnetLoaderGGUF", "unet_name"), "edit_lightning": ("LoraLoaderModelOnly", "lora_name")}
 SHEET_ROLES, PAGE_ROLES = ("unet", "clip", "vae"), ("edit_unet", "clip", "vae")
 
 # Versions are never edited: a lock must keep rebuilding from its recipe, so a change is a new version.
@@ -136,7 +141,17 @@ PAGE_TEMPLATES["v2"] = {**PAGE_TEMPLATES["v1"], "style": SHEET_TEMPLATES["v2"]["
 # than image1's, and the model is the GGUF; the reference method is the one its note says repackaged files need.
 PAGE_RENDERS = {"v1": {"size": 1328, "shift": 3.1, "cfg_norm": 1.0, "reference_method": "index_timestep_zero",
                        "steps": 40, "cfg": 4.0, "sampler": "euler", "scheduler": "simple"}}
-PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"
+# v2 (storybook-lightning-pages, 2026-10-14): v1 with the 4-step Lightning LoRA on the edit model. A v1 page took
+# 566-770 s a seed, 40 steps at cfg 4 (two model passes a step); v2 is 4 steps at cfg 1 (one pass). The LoRA is named
+# by its role, so the render version alone says which models a page names.
+PAGE_RENDERS["v2"] = {**PAGE_RENDERS["v1"], "steps": 4, "cfg": 1.0, "lora": "edit_lightning", "lora_strength": 1.0}
+PAGE_TEMPLATE, PAGE_RENDER = "v2", "v2"
+
+
+def page_roles(render_version):
+    """The models a page render at this version names: the edit model, encoder and VAE, and its LoRA if it has one."""
+    lora = PAGE_RENDERS[render_version].get("lora")
+    return PAGE_ROLES + ((lora,) if lora else ())
 PAGE_KEYS = {"cast", "place", "time", "scene"}
 
 # A child is the answers a parent gives on the form; the form slice turns the phrases into closed choices. Boy or
@@ -587,7 +602,8 @@ def page_graph(recipe, seed, prefix):
         "2": {"class_type": "CLIPLoader", "inputs": {"clip_name": files["clip"], "type": "qwen_image",
                                                      "device": "default"}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": files["vae"]}},
-        "4": {"class_type": "ModelSamplingAuraFlow", "inputs": {"model": ["1", 0], "shift": settings["shift"]}},
+        "4": {"class_type": "ModelSamplingAuraFlow", "inputs": {"model": ["14", 0] if "lora" in settings else ["1", 0],
+                                                                  "shift": settings["shift"]}},
         "5": {"class_type": "CFGNorm", "inputs": {"model": ["4", 0], "strength": settings["cfg_norm"]}},
         "6": {"class_type": "TextEncodeQwenImageEditPlus", "inputs": {
             "clip": ["2", 0], "prompt": recipe["prompt"], "vae": ["3", 0], **images}},
@@ -606,6 +622,10 @@ def page_graph(recipe, seed, prefix):
         "12": {"class_type": "VAEDecode", "inputs": {"samples": ["11", 0], "vae": ["3", 0]}},
         "13": {"class_type": "SaveImage", "inputs": {"images": ["12", 0], "filename_prefix": prefix}},
     }
+    if "lora" in settings:
+        # A render version with a LoRA (v2) loads it onto the edit model; every other node is the same as without.
+        graph["14"] = {"class_type": "LoraLoaderModelOnly", "inputs": {
+            "model": ["1", 0], "lora_name": files[settings["lora"]], "strength_model": settings["lora_strength"]}}
     for i, reference in enumerate(recipe["references"], 1):
         graph[str(20 + i)] = {"class_type": "LoadImage", "inputs": {"image": reference_name(reference["sha256"])}}
     return graph
@@ -626,7 +646,7 @@ def page_manifest(name, number, template_version, render_version, story, canon, 
                 "cast": [{"name": member, "species": species} for member, species in cast],
                 "template_version": template_version, "render_version": render_version, "template": template,
                 "prompt": page_prompt(template, story, page, cast), "settings": PAGE_RENDERS[render_version],
-                "models": [{"role": role, **MODELS[role]} for role in PAGE_ROLES],
+                "models": [{"role": role, **MODELS[role]} for role in page_roles(render_version)],
                 "references": [{"name": member.lower(), "sha256": sheets.get(member.lower())} for member, _ in cast],
                 "seeds": list(SEEDS)}
     manifest["graph"] = page_graph(manifest, 0, f"storybook/{name}/{page_stem(number)}")
@@ -787,7 +807,7 @@ def person_manifest(kind, person_id, template_version, render_version, profile):
             "prompt": template["cleanup"].format(child=profile["child"],
                                                  possessive=PRONOUNS[profile["child"]]["possessive"]),
             "render_version": template["cleanup_render"], "settings": PAGE_RENDERS[template["cleanup_render"]],
-            "models": [{"role": role, **MODELS[role]} for role in PAGE_ROLES]}
+            "models": [{"role": role, **MODELS[role]} for role in page_roles(template["cleanup_render"])]}
     manifest["graph"] = recipe_graph(manifest, 0, f"storybook/{PEOPLE[kind]['folder']}/{person_id}")
     return manifest
 
@@ -904,7 +924,7 @@ def book_page_manifest(name, child_id, number, template_version, render_version,
                 "cast": [{"name": member, "drawn_as": drawn_as} for member, drawn_as in cast],
                 "template_version": template_version, "render_version": render_version, "template": template,
                 "prompt": page_prompt(template, story, filled, cast), "settings": PAGE_RENDERS[render_version],
-                "models": [{"role": role, **MODELS[role]} for role in PAGE_ROLES],
+                "models": [{"role": role, **MODELS[role]} for role in page_roles(render_version)],
                 "references": [{"kind": kind, "name": ref, "sha256": sheets.get((kind, ref))}
                                for kind, ref in references],
                 "seeds": list(SEEDS)}
@@ -1004,6 +1024,11 @@ def render(server, graph, out, timeout=1800):
             return
         time.sleep(2)
     raise RenderFailed(f"timed out after {timeout}s")
+
+
+def manifest_roles(manifest):
+    """The model roles a manifest names, so a render checks exactly the models its own recipe will load."""
+    return [model["role"] for model in manifest["models"]]
 
 
 def require_models(server, roles):
@@ -1226,7 +1251,7 @@ def cmd_page(args):
     manifest = page_manifest(args.story, number, PAGE_TEMPLATE, PAGE_RENDER, story, canon,
                              {member: hashlib.sha256(data).hexdigest() for member, data in sheets.items()})
     require_nodes(args.server, manifest["graph"])
-    require_models(args.server, PAGE_ROLES)
+    require_models(args.server, manifest_roles(manifest))
     for reference in manifest["references"]:
         upload(args.server, sheets[reference["name"]], reference_name(reference["sha256"]))
     render_set(args.server, page_folder(args.story, "drafts"), stem, manifest, page_graph,
@@ -1325,7 +1350,7 @@ def draw_person(server, kind, person_id, profile):
     manifest = person_manifest(kind, person_id, CHILD_TEMPLATE, RENDER, profile)
     require_models(server, SHEET_ROLES)
     if "cleanup" in manifest:
-        require_models(server, PAGE_ROLES)
+        require_models(server, manifest_roles(manifest["cleanup"]))
         require_nodes(server, page_graph(cleanup_recipe(manifest, "0" * 64), 0, "check"))
     real_folder(drafts)
     render_set(server, drafts, person_id, manifest, recipe_graph, f"storybook/{PEOPLE[kind]['folder']}/{person_id}")
@@ -1410,7 +1435,7 @@ def cmd_book_page(args):
     manifest = book_page_manifest(args.story, args.child, number, PAGE_TEMPLATE, PAGE_RENDER, story, profile, canon,
                                   {key: hashlib.sha256(data).hexdigest() for key, data in sheets.items()}, friends)
     require_nodes(args.server, manifest["graph"])
-    require_models(args.server, PAGE_ROLES)
+    require_models(args.server, manifest_roles(manifest))
     for reference in manifest["references"]:
         upload(args.server, sheets[(reference["kind"], reference["name"])], reference_name(reference["sha256"]))
     labels = {("child", args.child): profile["name"]}
