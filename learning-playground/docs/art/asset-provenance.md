@@ -545,14 +545,15 @@ Paths in this entry are from the repository root, not `learning-playground/`.
 - **Asset family:** Bedtime storybook character sheets for the three canon
   animals: Pippa (dormouse), Bramble (badger), Barnaby (bear)
 - **Game:** Storybook (bedtime picture books and the nightly story)
-- **Status:** `look_approved` (rights verified by the approved AI art terms;
-  owner picked and locked each sheet, 2026-10-04)
+- **Status:** `draft` (the owner picked and locked each sheet, 2026-10-04;
+  the AI art terms await the owner's re-confirmation, see "AI approval/terms
+  record")
 - **Production path(s):** `storybook/design-source/characters/locked/pippa.png`,
   `bramble.png`, `barnaby.png` in the same folder
 - **Editable source path(s):** the lock recipes
   `storybook/design-source/characters/locked/{pippa,bramble,barnaby}.recipe.json`
-  (prompt, seed, settings and graph; they re-render the same picture on the
-  same build), plus the four candidates, contact sheet and recipe per
+  (they record the prompt, seed, settings, graph, model files and ComfyUI
+  build used; a re-render is not verified, see section 10 of the terms), plus the four candidates, contact sheet and recipe per
   character in `storybook/design-source/characters/drafts/`
 - **Creator:** Project developer (Claude Code storybook session), rendered by
   `storybook/tools/story-recipe.py` (`character`, then `lock`)
@@ -579,10 +580,11 @@ Paths in this entry are from the repository root, not `learning-playground/`.
 - **Public repository distribution permitted:** yes
 - **Continued use after subscription ends:** not applicable
 - **Attribution requirement:** None for the pictures
-- **AI assistance:** production use approved
+- **AI assistance:** production use, pending the owner's approval of the
+  amended terms
 - **AI approval/terms record:**
-  `learning-playground/docs/work-contracts/storybook-art-terms.md`, approved
-  by the operator 2026-10-14 ("I approve #163")
+  `learning-playground/docs/work-contracts/storybook-art-terms.md`. Its "Owner
+  Approval" section is the only record of whether the terms are approved
 - **Contact sheet path:**
   `storybook/design-source/characters/drafts/{pippa,bramble,barnaby}-contact-sheet.png`
 - **Desktop screenshot path(s):** not applicable (not shown in the app)
