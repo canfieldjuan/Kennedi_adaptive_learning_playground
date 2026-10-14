@@ -537,3 +537,48 @@ and must also document every legacy asset family it modifies or re-exports.
   standard seat size. Dark-sky worlds drive the palette textInk/textSoft
   capability. The scene is inline SVG cropped at compact widths
   (mobile mode 'inline-crop').
+
+## Luna doll + wardrobe + scenes (Dress-Up Studio)
+
+- **Asset family:** Luna dress-up doll (layered body + three skin tones,
+  four hairstyles + three hair colors, optional glasses), wardrobe (tops,
+  bottoms, dresses, shoes, jackets, accessories), four scene backdrops
+  (birthday, park, dance stage, rainy day), three card frames, three card
+  stickers, and the composed fashion card.
+- **Game:** Dress-Up Studio (creative-play route `#dress-up`)
+- **Status:** `draft` (look approval pending owner sign-off on the
+  representative proof; the game is parent-launched only and not on the
+  child home grid until then)
+- **Production path(s):** in-code renderers (inline SVG, no standalone
+  runtime asset):
+  `src/modules/dress-up-studio/doll-art.ts` (doll body, hair, face,
+  glasses, composition) and
+  `src/modules/dress-up-studio/wardrobe-art.ts` (clothing, scenes, frames,
+  stickers). Palette/catalog data in
+  `src/modules/dress-up-studio/wardrobe-catalog.ts`.
+- **Editable source path(s):** the inline-SVG renderers are the editable
+  source (hand-authored path data in the illustrated standard); no separate
+  binary source file. A headless render proof was generated for review.
+- **Creator:** Project developer (session-authored)
+- **Creation date:** 2026-07-20
+- **Creation tool:** Hand-authored vectors in the illustrated standard
+  (purple ink #3a2461, warm flat fills, rounded geometry); headless-render
+  verified via the pre-installed Chromium.
+- **Origin:** Category A original composition. Luna is an original fashion
+  doll character (own silhouette, palette, face construction) built from the
+  playground's project-owned figure language (round face, dot eyes, purple
+  ink). NOT based on any branded fashion doll, mascot, or third-party kit.
+- **Third-party elements:** None
+- **AI assistance:** Vector path data authored by the coding assistant as
+  rule-based SVG (no generative image model). Redraw/edit freely.
+- **Commercial use / modification / distribution / public repository:**
+  Project-owned, permitted
+- **Owner look approval:** PENDING — a representative proof (all tones,
+  hairstyles, sample outfits, four scenes, and finished fashion cards) was
+  rendered for owner review. Do not expand the doll/wardrobe style or add a
+  child-home entry until the owner approves the look.
+- **Restrictions and notes:** No `<text>`, emoji, base64, or remote refs in
+  any scene. Clothing is authored against fixed doll anchor points (viewBox
+  0 0 200 340); composition is fail-safe (an unknown id draws no layer).
+  Expressive choices are never scored (see the ownership-completion
+  contract and `fashion-cards.ts`).
