@@ -196,4 +196,4 @@ Run 2026-10-14, read-only:
 
 ## Owner Approval
 
-Pending. Approve by saying so in the conversation or on the PR.
+Approved. Operator, 2026-10-14, in the conversation: "I approve #163".
