@@ -34,8 +34,10 @@ approval, is recorded under "Owner Approval" at the end.
 ### Correct Fix Must Touch
 
 - This file: the record and the approval it asks for.
-- After approval, and in a separate commit: `docs/art/asset-provenance.md`
-  entries for the locked storybook families, citing this file.
+- `docs/art/asset-provenance.md`: an entry for the locked canon sheets, in its
+  own commit. It is `draft` and reads its approval state from "Owner
+  Approval" below. It becomes approved when that section records the
+  approval.
 
 ### Must Not Change
 
@@ -197,7 +199,8 @@ which has not been run.
 - Legal advice. This record states what the licences and the report say. A
   lawyer's read before printed books are sold is the operator's call.
 - The workbook's FLUX.1-dev art (non-commercial; unchanged).
-- Ledger entries, which follow approval in their own commit.
+- Ledger entries for child sheets, friend sheets and book pages: none is
+  committed or locked yet.
 
 ## Contract Amendments
 
