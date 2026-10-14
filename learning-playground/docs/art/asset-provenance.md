@@ -545,9 +545,9 @@ Paths in this entry are from the repository root, not `learning-playground/`.
 - **Asset family:** Bedtime storybook character sheets for the three canon
   animals: Pippa (dormouse), Bramble (badger), Barnaby (bear)
 - **Game:** Storybook (bedtime picture books and the nightly story)
-- **Status:** `draft` (the owner picked and locked each sheet, 2026-10-04;
-  the AI art terms await the owner's re-confirmation, see "AI approval/terms
-  record")
+- **Status:** `look_approved` (the owner picked and locked each sheet,
+  2026-10-04; rights verified under the approved AI art terms, see "AI
+  approval/terms record")
 - **Production path(s):** `storybook/design-source/characters/locked/pippa.png`,
   `bramble.png`, `barnaby.png` in the same folder
 - **Editable source path(s):** the lock recipes
@@ -580,8 +580,7 @@ Paths in this entry are from the repository root, not `learning-playground/`.
 - **Public repository distribution permitted:** yes
 - **Continued use after subscription ends:** not applicable
 - **Attribution requirement:** None for the pictures
-- **AI assistance:** production use, pending the owner's approval of the
-  amended terms
+- **AI assistance:** production use approved
 - **AI approval/terms record:**
   `learning-playground/docs/work-contracts/storybook-art-terms.md`. Its "Owner
   Approval" section is the only record of whether the terms are approved
