@@ -119,4 +119,27 @@ None yet.
 
 ## Verification
 
-To be filled in at implementation.
+Implementation `870f0ac`, run 2026-10-14 on CPU with the fake ComfyUI:
+
+- `python3 -B tools/test-story-recipe.py`: 370 of 370 checks, the 359 that
+  were there plus 11 in `case_lightning_pages`.
+- `case_lightning_pages`:
+  - a page locked by the tool before v2 checks out under v2;
+  - adding the LoRA to a v1 recipe, or dropping it from a v2 recipe, fails with
+    "its recorded models is not what the tool records";
+  - naming the 8-step file fails as "not on the licence allowlist";
+  - a v2 page's graph loads the LoRA at strength 1.0 onto the edit model,
+    which then feeds `ModelSamplingAuraFlow`, and samples 4 steps at cfg 1;
+  - a ComfyUI that does not list the LoRA gets no render, and the tool names
+    `extra_model_paths.yaml`;
+  - a child sheet's cleanup still renders at v1 with no LoRA.
+- Mutation run: each change broken on purpose, one at a time. All 10 mutants
+  are caught: the LoRA dropped from v2's roles, the LoRA added to every
+  render, the sampler chain skipping the LoRA, no LoRA node, a different
+  strength, 40 steps, cfg 4, the default left at v1, the ComfyUI check using
+  the base roles, and the cleanup taking the LoRA.
+- `selftest` with the new tool: clean on `main`'s locks, and on a copy of the
+  render worktree, including the uncommitted Kennedi and Leo child locks
+  ("2 child locks ... 0 problems").
+- Not yet run: the GPU comparison under "Settling Evidence", planned for the
+  first overnight window after merge.
