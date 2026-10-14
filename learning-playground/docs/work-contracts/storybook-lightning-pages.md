@@ -1,7 +1,9 @@
 # Storybook: Faster Pages with the Lightning LoRA
 
 Branch `feat/storybook-lightning-pages`. Operator, 2026-10-14: "continue with
-what we have and add the add ons to speed it up for now."
+what we have and add the add ons to speed it up for now." Accepted by the
+operator, 2026-10-14: "yes to bth 1 and 2" (2 was this contract; 1 was the
+amended art terms, which carry the LoRA's licence row).
 
 ## Before Code
 
