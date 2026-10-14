@@ -537,3 +537,59 @@ and must also document every legacy asset family it modifies or re-exports.
   standard seat size. Dark-sky worlds drive the palette textInk/textSoft
   capability. The scene is inline SVG cropped at compact widths
   (mobile mode 'inline-crop').
+
+## Storybook canon character sheets (Pippa, Bramble, Barnaby)
+
+Paths in this entry are from the repository root, not `learning-playground/`.
+
+- **Asset family:** Bedtime storybook character sheets for the three canon
+  animals: Pippa (dormouse), Bramble (badger), Barnaby (bear)
+- **Game:** Storybook (bedtime picture books and the nightly story)
+- **Status:** `look_approved` (rights verified by the approved AI art terms;
+  owner picked and locked each sheet, 2026-10-04)
+- **Production path(s):** `storybook/design-source/characters/locked/pippa.png`,
+  `bramble.png`, `barnaby.png` in the same folder
+- **Editable source path(s):** the lock recipes
+  `storybook/design-source/characters/locked/{pippa,bramble,barnaby}.recipe.json`
+  (prompt, seed, settings and graph; they re-render the same picture on the
+  same build), plus the four candidates, contact sheet and recipe per
+  character in `storybook/design-source/characters/drafts/`
+- **Creator:** Project developer (Claude Code storybook session), rendered by
+  `storybook/tools/story-recipe.py` (`character`, then `lock`)
+- **Creation date:** 2026-10-04 (lock commit `e716ca0`)
+- **Creation tool and version:** ComfyUI 0.25.0 with ComfyUI-GGUF; template
+  `v2`, render version `v1`; models `qwen-image-Q8_0.gguf`,
+  `qwen_2.5_vl_7b_fp8_scaled.safetensors`, `qwen_image_vae.safetensors`
+- **Origin category:** A original (project-written prompts from the
+  `bedtime_broadcast` visual canon; no reference image)
+- **Original or third-party status:** Original characters; generated output
+- **Project-owned source material used:** The locked visual canon of the
+  three characters (species, build, colours, garment, props)
+- **Third-party elements:** None in the pictures. The models are third-party
+  tools, not incorporated content
+- **Source URL(s):** https://huggingface.co/city96/Qwen-Image-gguf,
+  https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI,
+  https://huggingface.co/Qwen/Qwen-Image
+- **License name and version/date:** Apache License 2.0 (the models); the
+  pictures carry no licence terms from them
+- **License file path:** https://huggingface.co/Qwen/Qwen-Image/blob/main/LICENSE
+- **Commercial use permitted:** yes
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None for the pictures
+- **AI assistance:** production use approved
+- **AI approval/terms record:**
+  `learning-playground/docs/work-contracts/storybook-art-terms.md`, approved
+  by the operator 2026-10-14 ("I approve #163")
+- **Contact sheet path:**
+  `storybook/design-source/characters/drafts/{pippa,bramble,barnaby}-contact-sheet.png`
+- **Desktop screenshot path(s):** not applicable (not shown in the app)
+- **Mobile screenshot path(s):** not applicable
+- **Owner look approval:** APPROVED. The owner named each seed (Pippa 72,
+  Bramble 83, Barnaby 61), locked in `e716ca0`
+- **Restrictions and notes:** Raster output; an edit is a new recipe version
+  and a new pick, never a retouched PNG. AI output is not assumed exclusive or
+  copyrightable. Child sheets (Kennedi, Leo), friend sheets and book pages are
+  not in this entry: none is committed or locked here.
