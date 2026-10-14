@@ -32,13 +32,15 @@ CHILD_DRAFTS, CHILD_LOCKED = "design-source/children/drafts", "design-source/chi
 FRIEND_DRAFTS, FRIEND_LOCKED = "design-source/friends/drafts", "design-source/friends/locked"
 BOOK = "meeting-pippa"
 EDIT_MODEL = "qwen-image-edit-2511-Q4_K_S.gguf"
+LIGHTNING = "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
 MODEL_FILES = {"UnetLoaderGGUF": ("unet_name", ["qwen-image-Q8_0.gguf", EDIT_MODEL]),
                "CLIPLoader": ("clip_name", ["qwen_2.5_vl_7b_fp8_scaled.safetensors"]),
-               "VAELoader": ("vae_name", ["qwen_image_vae.safetensors"])}
+               "VAELoader": ("vae_name", ["qwen_image_vae.safetensors"]),
+               "LoraLoaderModelOnly": ("lora_name", [LIGHTNING])}
 # Every node the sheet and page graphs use, as a ComfyUI with ComfyUI-GGUF has them.
 NODES = {"UnetLoaderGGUF", "CLIPLoader", "VAELoader", "ModelSamplingAuraFlow", "CLIPTextEncode", "EmptySD3LatentImage",
          "KSampler", "VAEDecode", "SaveImage", "CFGNorm", "TextEncodeQwenImageEditPlus",
-         "FluxKontextMultiReferenceLatentMethod", "LoadImage"}
+         "FluxKontextMultiReferenceLatentMethod", "LoadImage", "LoraLoaderModelOnly"}
 results = []
 
 
@@ -1978,6 +1980,72 @@ def case_book_lock_follows_friends(root):
         comfy.close()
 
 
+def case_lightning_pages(root):
+    """Page render v2 loads the Lightning LoRA onto the edit model at 4 steps and cfg 1. A v1 page still checks out,
+    a recipe can neither add the LoRA to v1 nor drop it from v2, and ComfyUI must list it before anything renders."""
+    drawn(root, "pippa")
+    drawn(root, "bramble", seed=61)
+    source = root / "tools/story-recipe.py"
+    current = source.read_text()
+    assert current.count('PAGE_TEMPLATE, PAGE_RENDER = "v2", "v2"') == 1
+    source.write_text(current.replace('PAGE_TEMPLATE, PAGE_RENDER = "v2", "v2"', 'PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"'))
+    try:
+        paged(root, 4)                                   # a page locked by the tool before v2
+    finally:
+        source.write_text(current)
+    lock_path = root / PAGE_LOCKED / "page-04.recipe.json"
+    v1 = json.loads(lock_path.read_text())
+    check("a v1 page names no LoRA and samples 40 steps at cfg 4",
+          v1["render_version"] == "v1" and [m["role"] for m in v1["models"]] == ["edit_unet", "clip", "vae"]
+          and v1["settings"]["steps"] == 40 and v1["settings"]["cfg"] == 4.0, v1["models"])
+    code, out = run(root, "selftest")
+    check("and its lock still checks out under the v2 tool", not code and "1 page locks" in out, out.strip()[-200:])
+    lightning = {"role": "edit_lightning", "file": LIGHTNING, "source": "lightx2v/Qwen-Image-Edit-2511-Lightning",
+                 "license": "apache-2.0", "sha256": "22226e8d05d354bb356627d428809f5afd7819399b077238a2b70a82883a904f"}
+    lock_path.write_text(json.dumps({**v1, "models": [*v1["models"], lightning]}))
+    code, out = run(root, "selftest")
+    check("a v1 recipe that adds the LoRA fails selftest",
+          code and "page-04.recipe.json: its recorded models is not what the tool records" in out, out.strip()[-200:])
+    lock_path.write_text(json.dumps(v1))
+
+    paged(root, 4, force=True)                           # the same page at v2, the default
+    v2 = json.loads(lock_path.read_text())
+    graph = json.loads(Image.open(root / PAGE_LOCKED / "page-04.png").info["prompt"])
+    ids = {node["class_type"]: node_id for node_id, node in graph.items()}
+    loras = [node["inputs"] for node in graph.values() if node["class_type"] == "LoraLoaderModelOnly"]
+    sampler = graph[ids["KSampler"]]["inputs"]
+    check("a v2 page names the edit model, encoder, VAE and the Lightning LoRA",
+          v2["render_version"] == "v2" and v2["models"] == [*v1["models"], lightning], v2["models"])
+    check("its graph loads the LoRA at strength 1.0 onto the edit model, which then feeds the sampler's chain",
+          loras == [{"model": [ids["UnetLoaderGGUF"], 0], "lora_name": LIGHTNING, "strength_model": 1.0}]
+          and graph[ids["ModelSamplingAuraFlow"]]["inputs"]["model"] == [ids["LoraLoaderModelOnly"], 0], loras)
+    check("and samples 4 steps at cfg 1", sampler["steps"] == 4 and sampler["cfg"] == 1.0, sampler)
+    code, out = run(root, "selftest")
+    check("the v2 lock checks out", not code and "1 page locks" in out, out.strip()[-200:])
+    for label, models, why in [
+            ("a v2 recipe without the LoRA", v2["models"][:-1],
+             "page-04.recipe.json: its recorded models is not what the tool records"),
+            ("a v2 recipe naming the 8-step LoRA, which has no licence row",
+             [*v2["models"][:-1], {**lightning, "file": "Qwen-Image-Edit-2511-Lightning-8steps-V1.0-bf16.safetensors"}],
+             "not on the licence allowlist")]:
+        lock_path.write_text(json.dumps({**v2, "models": models}))
+        code, out = run(root, "selftest")
+        check(f"{label} fails selftest", code and why in out, out.strip()[-200:])
+    lock_path.write_text(json.dumps(v2))
+
+    no_lora = {**MODEL_FILES, "LoraLoaderModelOnly": ("lora_name", [])}
+    comfy = FakeComfy(models=no_lora)
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 4)
+        check("a ComfyUI that doesn't list the LoRA gets no render, and the tool says where to look",
+              code and f"can't see {LIGHTNING}" in out and "extra_model_paths.yaml" in out and not comfy.sent,
+              out.strip()[-200:])
+        code, out = run(root, "--server", comfy.url, "child", "leo")
+        check("a child sheet's cleanup is still render v1, so it needs no LoRA", not code, out.strip()[-200:])
+    finally:
+        comfy.close()
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
@@ -1988,7 +2056,7 @@ def main():
              case_two_stage_sheets, case_two_stage_resume, case_v1_locks_still_hold, case_story_editions, case_second_edition,
              case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals,
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
-             case_book_lock_follows_friends]
+             case_book_lock_follows_friends, case_lightning_pages]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
