@@ -186,8 +186,8 @@ which has not been run.
 ## What Approval Covers
 
 - The four files above, for storybook art, for any use including commercial:
-  the nightly story's pictures and the books we sell. The edit model is
-  covered only once its re-confirmation under "Owner Approval" is recorded.
+  the nightly story's pictures and the books we sell, once "Owner Approval"
+  records the approval.
 - Nothing else. Any new model, LoRA or encoder (for example a step-distilled
   "Lightning" LoRA to cut render time) needs its own row here, checked the
   same way and approved, before a recipe can name it.
@@ -216,8 +216,8 @@ above:
   It does not. Section 10 now says re-rendering is unverified and what it
   depends on.
 
-The operator approved the record before the merged LoRAs were disclosed, so
-that approval is asked for again for the edit model (see "Owner Approval").
+The operator approved the record before these disclosures, so approval of the
+amended record is asked for again (see "Owner Approval").
 
 ## Verification
 
@@ -237,10 +237,12 @@ Run 2026-10-14, read-only:
 
 ## Owner Approval
 
-Approved. Operator, 2026-10-14, in the conversation: "I approve #163".
+This section is the one place that says whether the record is approved.
 
-Pending, for the edit model only (`qwen-image-edit-2511-Q4_K_S.gguf`, the
-model that draws book pages and the child-sheet cleanup): the operator
-re-confirms its clearance now that section 5 records its merged community
-LoRAs of unassessed origin. Until then the sheet model, the text encoder and
-the VAE are cleared, and pages are not.
+- First version approved: operator, 2026-10-14, in the conversation: "I
+  approve #163".
+- Amendment 1 then added disclosures that the first version lacked: the edit
+  model's merged community LoRAs, the text encoder's training provenance, and
+  the correction that re-rendering is unverified.
+- **Pending:** the operator re-confirms the amended record as a whole. Until
+  that is recorded here, no model in section 2 is cleared.
