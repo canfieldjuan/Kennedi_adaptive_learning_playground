@@ -274,7 +274,7 @@ This section is the one place that says whether the record is approved.
   model's merged community LoRAs, the text encoder's training provenance, and
   the correction that re-rendering is unverified.
 - Operator, 2026-10-14, on the edit model's merged LoRAs: "edit model is ok".
-- **Pending:** the operator re-confirms the amended record as a whole: the
-  encoder's training provenance and the re-render correction from Amendment
-  1, and the Lightning LoRA from Amendment 2. Until that is recorded here, no
-  model in section 2 is cleared.
+- **Approved as amended.** Operator, 2026-10-14, re-confirming the record as
+  it stands after Amendments 1 and 2 (the encoder's training provenance, the
+  re-render correction, the Lightning LoRA): "yes to bth 1 and 2". Every model
+  in section 2 is cleared for the uses under "What Approval Covers".
