@@ -359,7 +359,10 @@ def render_problems(png, expected, seed, build_graph):
     """Why png is not the render of the recipe expected at this seed: it must embed the graph build_graph builds from
     the recipe, as ComfyUI embeds it (comfy_embed), at the recipe's size. An empty list when it is."""
     problems = []
-    image = Image.open(png)
+    try:
+        image = Image.open(png)
+    except OSError as error:
+        return [f"{png.name} is not a readable image ({error})"]
     if "prompt" not in image.info:
         return problems + [f"{png.name} has no embedded graph"]
     if image.size != (expected["settings"]["size"],) * 2:
@@ -1400,7 +1403,7 @@ def cmd_lock_friend(args):
     lock_person(args, "friend", args.friend, profile)
 
 
-def book_inputs(args):
+def book_inputs(args, whole=False):
     """The canon, the personal story, the child's profile, the friends and the page number a book command draws on,
     or exit when any of them can't be drawn from."""
     canon = load_canon()
@@ -1413,12 +1416,53 @@ def book_inputs(args):
     clash = name_clash(story, profile)
     if clash:
         sys.exit(f"{args.child} can't be the hero of {args.story}: " + "; ".join(clash))
-    return canon, story, profile, friends, page_number(args.story, story, args.number)
+    return canon, story, profile, friends, None if whole else page_number(args.story, story, args.number)
 
 
 # Where each kind of book-page reference is locked, and the commands that draw and lock it.
 SHEET_KINDS = {"child": (CHILD_LOCKED, "child", "lock-child"), "friend": (FRIEND_LOCKED, "friend", "lock-friend"),
                "character": (LOCKED, "character", "lock")}
+
+
+def book_sheets(canon, child_id, profile, friends, references):
+    """Validated sheet bytes and every problem keyed by (kind, id). Caller holds art_lock through the read."""
+    references = list(dict.fromkeys(references))
+    folders = {kind: STORYBOOK / data[0] for kind, data in SHEET_KINDS.items()}
+    problems = {"character": locked_problems(canon),
+                "child": person_locked_problems("child", {child_id: profile}),
+                "friend": person_locked_problems("friend", friends)}
+    sheets, issues = {}, {}
+    for kind, ref in references:
+        folder = folders[kind]
+        whys = [f"{path.name}: {why}" for path, why in problems[kind]
+                if path == folder or path.name.split(".")[0] == ref]
+        path = folder / f"{ref}.png"
+        if not path.is_file():
+            _, draw, lock = SHEET_KINDS[kind]
+            whys.append(f"{ref} has no locked sheet -- run `{draw} {ref}`, then `{lock} {ref}`, first")
+        if not (folder / f"{ref}.recipe.json").is_file():
+            whys.append(f"{ref} has no lock recipe")
+        if whys:
+            issues[(kind, ref)] = whys
+        else:
+            sheets[(kind, ref)] = path.read_bytes()
+    return sheets, issues
+
+
+def cmd_book_ready(args):
+    canon, story, profile, friends, _ = book_inputs(args, whole=True)
+    pages = {}
+    for number, page in enumerate(story["pages"], 1):
+        for reference in book_references(page, args.child, friends):
+            pages.setdefault(reference, []).append(number)
+    with art_lock():
+        _, issues = book_sheets(canon, args.child, profile, friends, pages)
+    print(json.dumps({"story": args.story, "child": args.child, "scope": "reference-sheets-only",
+                      "runtime_checked": False, "references_ready": not issues,
+                      "references": [{"kind": kind, "name": ref, "pages": numbers,
+                                      "problems": issues.get((kind, ref), [])}
+                                     for (kind, ref), numbers in pages.items()]}, indent=2))
+    sys.exit(1 if issues else 0)
 
 
 def cmd_book_page(args):
@@ -1430,24 +1474,10 @@ def cmd_book_page(args):
     with art_lock():
         # Each sheet is read once, under the lock, after its lock checks out: the bytes checked are the bytes
         # uploaded and recorded.
-        cast = {ref for kind, ref in references if kind == "character"}
-        friend_cast = {ref for kind, ref in references if kind == "friend"}
-        broken = [(path, why) for path, why in locked_problems(canon)
-                  if path == STORYBOOK / LOCKED or path.name.split(".")[0] in cast]
-        broken += [(path, why) for path, why in person_locked_problems("child", {args.child: profile})
-                   if path == STORYBOOK / CHILD_LOCKED or path.name.split(".")[0] == args.child]
-        broken += [(path, why) for path, why in person_locked_problems("friend", friends)
-                   if path == STORYBOOK / FRIEND_LOCKED or path.name.split(".")[0] in friend_cast]
-        if broken:
-            sys.exit("the cast's locked sheets fail their checks (run `selftest`): "
-                     + "; ".join(f"{path.name}: {why}" for path, why in broken))
-        sheets = {}
-        for kind, ref in references:
-            folder, draw, lock = SHEET_KINDS[kind]
-            path = STORYBOOK / folder / f"{ref}.png"
-            if not path.is_file():
-                sys.exit(f"{ref} has no locked sheet -- run `{draw} {ref}`, then `{lock} {ref}`, first")
-            sheets[(kind, ref)] = path.read_bytes()
+        sheets, issues = book_sheets(canon, args.child, profile, friends, references)
+        if issues:
+            sys.exit("the cast's locked sheets fail their checks (run `selftest`): " + "; ".join(
+                f"{ref}: {why}" for (kind, ref), problems in issues.items() for why in problems))
     manifest = book_page_manifest(args.story, args.child, number, PAGE_TEMPLATE, render_version, story, profile, canon,
                                   {key: hashlib.sha256(data).hexdigest() for key, data in sheets.items()}, friends)
     require_nodes(args.server, manifest["graph"])
@@ -1486,7 +1516,14 @@ def lock_folder_problems(folder, kind, recipe_problems, owns=lambda manifest, pn
             problems.append((entry, "is not a regular file; the locked folder holds only files with a record"))
     for recipe in (e for e in entries if e.name.endswith(".recipe.json") and e.is_file() and not e.is_symlink()):
         owners.setdefault(recipe, []).append(recipe)
-        manifest = json.loads(recipe.read_text())
+        try:
+            manifest = json.loads(recipe.read_text())
+        except (OSError, ValueError) as error:
+            problems.append((recipe, f"cannot read lock recipe ({error})"))
+            continue
+        if not isinstance(manifest, dict):
+            problems.append((recipe, "lock recipe is not a JSON object"))
+            continue
         files = manifest.get("files") if isinstance(manifest.get("files"), dict) else {}
         png = folder / f"{recipe.name.removesuffix('.recipe.json')}.png"
         owned = owns(manifest, png)
@@ -1697,6 +1734,9 @@ def main():
         if command == "lock-book-page":
             bp.add_argument("--seed", type=int, required=True)
             bp.add_argument("--force", action="store_true")
+    ready = sub.add_parser("book-ready", help="report every required reference sheet without rendering")
+    ready.add_argument("story")
+    ready.add_argument("child")
     sub.add_parser("selftest")
     args = ap.parse_args()
     STORYBOOK = args.storybook.resolve()
@@ -1704,7 +1744,7 @@ def main():
     try:
         {"character": cmd_character, "lock": cmd_lock, "page": cmd_page, "lock-page": cmd_lock_page,
          "child": cmd_child, "lock-child": cmd_lock_child, "friend": cmd_friend, "lock-friend": cmd_lock_friend,
-         "book-page": cmd_book_page,
+         "book-page": cmd_book_page, "book-ready": cmd_book_ready,
          "lock-book-page": cmd_lock_book_page, "selftest": cmd_selftest}[args.cmd](args)
     except LOST_COMFY as error:
         sys.exit(f"ComfyUI at {args.server} is unreachable or answered badly "
