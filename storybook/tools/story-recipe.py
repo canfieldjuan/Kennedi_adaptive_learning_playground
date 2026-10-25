@@ -211,12 +211,12 @@ class BadReply(Exception):
 # as a lost server.
 LOST_COMFY = (urllib.error.URLError, ConnectionError, TimeoutError, http.client.HTTPException, BadReply)
 # The set writer, recorded in every draft recipe it writes. Only a set recorded seed by seed -- each seed's bytes and
-# ComfyUI build checked before it is recorded -- can be resumed; a recipe from an earlier writer, which read the
-# build once after all four renders, starts a fresh set. A change to how sets are recorded is a new number.
-SET_WRITER = 1
-# Keys a recipe gains outside draft_manifest(): the set writer, the ComfyUI version and the candidates' SHA-256,
+# observed runtime checked before and after the seed -- can be resumed. Older writers record less identity and
+# start a fresh set. A change to how sets are recorded is a new number.
+SET_WRITER = 2
+# Keys a recipe gains outside draft_manifest(): the writer, runtime, ComfyUI version and candidates' SHA-256,
 # noted at render time, and what `lock` adds.
-ADDED_KEYS = {"set_writer", "comfyui_version", "candidates", "chosen_seed", "source", "files"}
+ADDED_KEYS = {"set_writer", "comfyui_version", "runtime", "candidates", "chosen_seed", "source", "files"}
 
 
 def added_keys(expected):
@@ -1102,11 +1102,34 @@ def contact_sheet(tiles, out, tile=480, references=(), reference_tile=240):
     sheet.save(out)
 
 
-def server_version(server):
-    """The ComfyUI build serving now, as /system_stats reports it: a non-empty string, or None when it doesn't say."""
-    system = api(server, "/system_stats", timeout=10).get("system")
-    version = system.get("comfyui_version") if isinstance(system, dict) else None
-    return version if isinstance(version, str) and version else None
+def server_runtime(server):
+    """API-observed identity, not loaded-weight attestation. Volatile allocation counters are excluded."""
+    stats = api(server, "/system_stats", timeout=10)
+    system = stats.get("system")
+    if not isinstance(system, dict) or not isinstance(system.get("comfyui_version"), str) or not system["comfyui_version"]:
+        return None
+    fields = ("comfyui_version", "os", "python_version", "pytorch_version")
+    observed = {key: system.get(key) for key in fields}
+    if any(value is not None and not isinstance(value, str) for value in observed.values()):
+        raise BadReply("/system_stats has a malformed runtime version field")
+    observed["embedded_python"] = system.get("embedded_python")
+    if observed["embedded_python"] is not None and type(observed["embedded_python"]) is not bool:
+        raise BadReply("/system_stats has malformed embedded_python")
+    argv = system.get("argv")
+    if argv is not None and (not isinstance(argv, list) or not all(isinstance(arg, str) for arg in argv)):
+        raise BadReply("/system_stats has malformed argv")
+    observed["argv"] = argv
+    devices = stats.get("devices")
+    if devices is not None:
+        if not isinstance(devices, list) or not all(isinstance(device, dict) for device in devices):
+            raise BadReply("/system_stats has malformed devices")
+        devices = [{key: device.get(key) for key in ("name", "type", "index")} for device in devices]
+        if any((device["index"] is not None and type(device["index"]) is not int)
+               or any(device[key] is not None and not isinstance(device[key], str) for key in ("name", "type"))
+               for device in devices):
+            raise BadReply("/system_stats has malformed device identity")
+    return {"schema": 1, "source": "server-reported", "system": observed, "devices": devices,
+            "unverified": ["model_file_bytes", "custom_node_revisions", "driver_version", "environment_overrides"]}
 
 
 def candidate_problem(path, manifest, seed, build_graph):
@@ -1127,10 +1150,10 @@ def candidate_problem(path, manifest, seed, build_graph):
     return f"ComfyUI's image for seed {seed} isn't this recipe's render: " + "; ".join(problems) if problems else None
 
 
-def kept_candidates(drafts, stem, manifest, version):
+def kept_candidates(drafts, stem, manifest, runtime):
     """({candidate: SHA-256}, {text render: SHA-256}) of the draft set already in drafts that this run can keep: none
     unless its recipe rebuilds to this one (every key but the render-time ones), it was written by this set writer and
-    rendered by the same ComfyUI version (render_set only calls this with a known one), a two-stage set records the
+    rendered with the same observed runtime (render_set only calls this with a known build), a two-stage set records the
     text render of exactly the seeds it has candidates for, and every file it records is still on disk with its
     recorded SHA-256."""
     path = drafts / f"{stem}-recipe.json"
@@ -1141,7 +1164,8 @@ def kept_candidates(drafts, stem, manifest, version):
     candidates = earlier.get("candidates") if isinstance(earlier, dict) else None
     renders = earlier.get("renders", {}) if isinstance(earlier, dict) and "cleanup" in manifest else {}
     if (not isinstance(candidates, dict) or not isinstance(renders, dict) or earlier.get("set_writer") != SET_WRITER
-            or earlier.get("comfyui_version") != version
+            or earlier.get("runtime") != runtime
+            or earlier.get("comfyui_version") != runtime["system"]["comfyui_version"]
             or {key: value for key, value in earlier.items() if key not in added_keys(manifest)} != manifest
             or not set(candidates) <= {f"{stem}-candidate-{seed}.png" for seed in SEEDS}
             or ("cleanup" in manifest and set(renders) != {draft_render(stem, seed) for seed in SEEDS
@@ -1162,19 +1186,20 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
     After each seed, its candidate and the draft recipe, which records every seed rendered so far, land in the
     drafts folder together under the art lock, once the bytes are a valid candidate and the ComfyUI build is still the
     set's. So a ComfyUI lost mid-set keeps what finished, and a run that fails before its first seed leaves the
-    previous set as it was. A set already there for the same recipe and ComfyUI
-    version is resumed: its seeds are kept, not re-rendered. The contact sheet is written once every seed is in.
+    previous set as it was. A set already there for the same recipe and observed runtime is resumed:
+    its seeds are kept, not re-rendered. The contact sheet is written once every seed is in.
     """
     drafts = real_folder(drafts_rel)
-    version = server_version(server)
-    if version is None:
+    runtime = server_runtime(server)
+    if runtime is None:
         # Every seed of a set must come from one known build; with no version there is nothing to compare.
         sys.exit(f"ComfyUI at {server} doesn't report its version (/system_stats system.comfyui_version), so a set "
                  f"can't be tied to one build; nothing was written")
+    version = runtime["system"]["comfyui_version"]
     two_stage = "cleanup" in manifest
     with art_lock():
-        kept, kept_renders = kept_candidates(drafts, stem, manifest, version)
-    recipe = {**manifest, "set_writer": SET_WRITER, "comfyui_version": version, "candidates": dict(kept),
+        kept, kept_renders = kept_candidates(drafts, stem, manifest, runtime)
+    recipe = {**manifest, "set_writer": SET_WRITER, "comfyui_version": version, "runtime": runtime, "candidates": dict(kept),
               **({"renders": kept_renders} if two_stage else {})}
     for name in sorted(kept):
         print(f"kept {name} from an earlier run")
@@ -1188,6 +1213,8 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
             # A two-stage sheet renders its text render first, and the candidate is that render's cleanup.
             text = Path(tmp) / draft_render(stem, seed)
             try:
+                if server_runtime(server) != runtime:
+                    raise RenderFailed("ComfyUI runtime changed before this seed; nothing new was recorded")
                 render(server, build_graph(manifest, seed, f"{prefix}-{seed}"), text if two_stage else out)
                 problem = candidate_problem(text if two_stage else out, manifest, seed, build_graph)
                 if two_stage and not problem:
@@ -1200,10 +1227,13 @@ def render_set(server, drafts_rel, stem, manifest, build_graph, prefix, referenc
                     raise RenderFailed(problem)
                 # Every recorded seed comes from the set's build: a ComfyUI restarted or upgraded between seeds
                 # would otherwise add the new build's renders under the old version.
-                now = server_version(server)
-                if now != version:
-                    raise RenderFailed(f"ComfyUI changed from {version!r} to {now!r} during the set, so this seed "
-                                       f"isn't recorded; the next run starts a fresh set")
+                now = server_runtime(server)
+                if now != runtime:
+                    now_version = now["system"]["comfyui_version"] if now else None
+                    detail = (f"changed from {version!r} to {now_version!r}" if now_version != version
+                              else "runtime changed")
+                    raise RenderFailed(f"ComfyUI {detail} during the set, so this seed isn't recorded; "
+                                       "the next run starts a fresh set")
             except (*LOST_COMFY, RenderFailed) as error:
                 done = sorted(recipe["candidates"])
                 sys.exit(f"lost the render of seed {seed} ({error}); " + (
