@@ -2046,6 +2046,51 @@ def case_lightning_pages(root):
         comfy.close()
 
 
+def case_render_comparisons(root):
+    """Explicit page render versions have isolated, resumable comparison sets; normal drafts stay unchanged."""
+    drawn(root, "pippa")
+    drawn(root, "bramble")
+    child_drawn(root)
+    comfy = FakeComfy()
+    try:
+        for command, folder in [(("page", STORY, 4), PAGE_DRAFTS),
+                                (("book-page", BOOK, "kennedi", 2), book_folder("kennedi", "drafts"))]:
+            code, out = run(root, "--server", comfy.url, *command)
+            assert code == 0, out
+            drafts = root / folder
+            before = {p.name: p.read_bytes() for p in drafts.iterdir()}
+            recipes = []
+            for version in ("v1", "v2"):
+                code, out = run(root, "--server", comfy.url, *command, "--render-version", version)
+                assert code == 0, out
+                comparison = drafts.parent / "comparisons" / version
+                recipe = json.loads(next(comparison.glob("*-recipe.json")).read_text())
+                recipes.append(recipe)
+                check(f"{command[0]} comparison uses {version}", recipe["render_version"] == version)
+                sampler = next(n["inputs"] for n in comfy.sent[-1].values() if n["class_type"] == "KSampler")
+                check("actual sampler receives the selected settings",
+                      (sampler["steps"], sampler["cfg"]) == ((40, 4.0) if version == "v1" else (4, 1.0)))
+                if version == "v1":
+                    old_comparison = {p.name: p.read_bytes() for p in comparison.iterdir()}
+                else:
+                    first = comparison.parent / "v1"
+                    check("v2 leaves v1 comparison bytes intact",
+                          old_comparison == {p.name: p.read_bytes() for p in first.iterdir()})
+                check("comparison output does not suggest locking it", "lock-page" not in out and "lock-book-page" not in out)
+                count = len(comfy.sent)
+                code, out = run(root, "--server", comfy.url, *command, "--render-version", version)
+                check("same-version comparison resumes without new jobs", code == 0 and len(comfy.sent) == count, out)
+            check("versions retain identical prompts, references and seeds",
+                  all(recipes[0][key] == recipes[1][key] for key in ("prompt", "references", "seeds")))
+            check("comparison preserves every normal draft byte", before == {p.name: p.read_bytes() for p in drafts.iterdir()})
+            for invalid in ("", "v0", "v3", "../drafts", "0"):
+                count = len(comfy.sent)
+                code, out = run(root, "--server", comfy.url, *command, "--render-version", invalid)
+                check("invalid version refused before rendering", code != 0 and "invalid choice" in out and len(comfy.sent) == count, out)
+    finally:
+        comfy.close()
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
@@ -2056,7 +2101,7 @@ def main():
              case_two_stage_sheets, case_two_stage_resume, case_v1_locks_still_hold, case_story_editions, case_second_edition,
              case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals,
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
-             case_book_lock_follows_friends, case_lightning_pages]
+             case_book_lock_follows_friends, case_lightning_pages, case_render_comparisons]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:

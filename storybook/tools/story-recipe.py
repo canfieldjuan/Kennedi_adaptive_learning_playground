@@ -580,6 +580,21 @@ def page_folder(name, kind):
     return f"{PAGES}/{name}/{kind}"
 
 
+def page_render_target(args, drafts):
+    """Explicit versions are comparison proofs beside drafts; normal generation keeps its existing target."""
+    version = args.render_version or PAGE_RENDER
+    folder = str(Path(drafts).parent / "comparisons" / version) if args.render_version else drafts
+    return version, folder
+
+
+def report_page_set(args, number, drafts, lock_command):
+    print(f"wrote page {number}'s candidates, contact sheet and recipe to {drafts}")
+    if args.render_version:
+        print("comparison candidates only; normal drafts and locks were not replaced")
+    else:
+        print(f"pick a seed, then `{lock_command}`")
+
+
 def reference_name(digest):
     """The name a locked sheet is uploaded under: its content, so the recipe alone determines the graph."""
     return f"storybook-{digest}.png"
@@ -1233,7 +1248,8 @@ def cmd_page(args):
         sys.exit(f"{STORIES}/{args.story}.json can't be drawn from: " + "; ".join(problems))
     number = page_number(args.story, story, args.number)
     stem, cast = page_stem(number), [member.lower() for member in story["pages"][number - 1]["cast"]]
-    real_folder(page_folder(args.story, "drafts"))
+    render_version, drafts = page_render_target(args, page_folder(args.story, "drafts"))
+    real_folder(drafts)
     with art_lock():
         # Each sheet is read once, under the lock, after its lock checks out: the bytes checked are the bytes
         # uploaded and recorded.
@@ -1248,16 +1264,15 @@ def cmd_page(args):
             if not path.is_file():
                 sys.exit(f"{member} has no locked sheet -- run `character {member}`, then `lock {member}`, first")
             sheets[member] = path.read_bytes()
-    manifest = page_manifest(args.story, number, PAGE_TEMPLATE, PAGE_RENDER, story, canon,
+    manifest = page_manifest(args.story, number, PAGE_TEMPLATE, render_version, story, canon,
                              {member: hashlib.sha256(data).hexdigest() for member, data in sheets.items()})
     require_nodes(args.server, manifest["graph"])
     require_models(args.server, manifest_roles(manifest))
     for reference in manifest["references"]:
         upload(args.server, sheets[reference["name"]], reference_name(reference["sha256"]))
-    render_set(args.server, page_folder(args.story, "drafts"), stem, manifest, page_graph,
+    render_set(args.server, drafts, stem, manifest, page_graph,
                f"storybook/{args.story}/{stem}", references=[(member, sheets[member]) for member in cast])
-    print(f"wrote page {number}'s candidates, contact sheet and recipe to {page_folder(args.story, 'drafts')} -- "
-          f"pick a seed, then `lock-page {args.story} {number}`")
+    report_page_set(args, number, drafts, f"lock-page {args.story} {number}")
 
 
 def commit_lock(drafts_rel, locked_rel, stem, seed, force, command, check):
@@ -1408,7 +1423,8 @@ SHEET_KINDS = {"child": (CHILD_LOCKED, "child", "lock-child"), "friend": (FRIEND
 
 def cmd_book_page(args):
     canon, story, profile, friends, number = book_inputs(args)
-    stem, drafts = page_stem(number), book_folder(args.story, args.child, "drafts")
+    stem = page_stem(number)
+    render_version, drafts = page_render_target(args, book_folder(args.story, args.child, "drafts"))
     references = book_references(story["pages"][number - 1], args.child, friends)
     real_folder(drafts)
     with art_lock():
@@ -1432,7 +1448,7 @@ def cmd_book_page(args):
             if not path.is_file():
                 sys.exit(f"{ref} has no locked sheet -- run `{draw} {ref}`, then `{lock} {ref}`, first")
             sheets[(kind, ref)] = path.read_bytes()
-    manifest = book_page_manifest(args.story, args.child, number, PAGE_TEMPLATE, PAGE_RENDER, story, profile, canon,
+    manifest = book_page_manifest(args.story, args.child, number, PAGE_TEMPLATE, render_version, story, profile, canon,
                                   {key: hashlib.sha256(data).hexdigest() for key, data in sheets.items()}, friends)
     require_nodes(args.server, manifest["graph"])
     require_models(args.server, manifest_roles(manifest))
@@ -1441,8 +1457,7 @@ def cmd_book_page(args):
     labels = {("child", args.child): profile["name"]}
     render_set(args.server, drafts, stem, manifest, page_graph, f"storybook/books/{args.story}/{args.child}/{stem}",
                references=[(labels.get(key, key[1]), sheets[key]) for key in references])
-    print(f"wrote page {number}'s candidates, contact sheet and recipe to {drafts} -- pick a seed, then "
-          f"`lock-book-page {args.story} {args.child} {number}`")
+    report_page_set(args, number, drafts, f"lock-book-page {args.story} {args.child} {number}")
 
 
 def cmd_lock_book_page(args):
@@ -1654,6 +1669,8 @@ def main():
     pg = sub.add_parser("page")
     pg.add_argument("story")
     pg.add_argument("number", type=int)
+    pg.add_argument("--render-version", choices=tuple(PAGE_RENDERS),
+                    help="render an isolated comparison set at this version, leaving normal drafts unchanged")
     lp = sub.add_parser("lock-page")
     lp.add_argument("story")
     lp.add_argument("number", type=int)
@@ -1674,6 +1691,9 @@ def main():
         bp.add_argument("story")
         bp.add_argument("child")
         bp.add_argument("number", type=int)
+        if command == "book-page":
+            bp.add_argument("--render-version", choices=tuple(PAGE_RENDERS),
+                            help="render an isolated comparison set at this version, leaving normal drafts unchanged")
         if command == "lock-book-page":
             bp.add_argument("--seed", type=int, required=True)
             bp.add_argument("--force", action="store_true")
