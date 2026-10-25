@@ -2091,6 +2091,66 @@ def case_render_comparisons(root):
         comfy.close()
 
 
+def readiness(root, story=BOOK, child="kennedi"):
+    code, out = run(root, "--server", "http://127.0.0.1:9", "book-ready", story, child)
+    assert out.lstrip().startswith("{"), out
+    return code, json.loads(out)
+
+
+def case_book_ready_missing(root):
+    """All absent references and their pages are reported without writing art or contacting ComfyUI."""
+    before = {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+    code, report = readiness(root)
+    refs = {(r["kind"], r["name"]): r for r in report["references"]}
+    check("a missing book is not reference-ready", code == 1 and report["references_ready"] is False)
+    check("every unique cast reference is reported once", set(refs) == {("child", "kennedi"), ("character", "pippa"), ("friend", "maya")})
+    check("shared and later-page dependencies have exact page mappings",
+          refs[("child", "kennedi")]["pages"] == [1, 2, 3, 4] and refs[("character", "pippa")]["pages"] == [2, 3, 4]
+          and refs[("friend", "maya")]["pages"] == [3])
+    check("missing records all carry problems", all(r["problems"] for r in refs.values()))
+    check("report states runtime is unchecked", report["scope"] == "reference-sheets-only" and report["runtime_checked"] is False)
+    check("readiness writes no file", before == {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()})
+    for args in (("no-such-story", "kennedi"), (BOOK, "../kennedi"), (BOOK, "")):
+        code, out = run(root, "book-ready", *args)
+        check("unknown story or invalid child is refused", code != 0 and "Traceback" not in out, out)
+
+
+def case_book_ready_valid_and_invalid(root):
+    """Valid and partial books, stale bytes, malformed recipes and PNGs agree with actual page generation."""
+    drawn(root, "pippa")
+    child_drawn(root)
+    code, report = readiness(root)
+    check("partial book reports only Maya blocked", code == 1 and [r["name"] for r in report["references"] if r["problems"]] == ["maya"])
+    friend_drawn(root)
+    code, report = readiness(root)
+    check("complete references pass even with no book-page locks", code == 0 and report["references_ready"] is True)
+    book_paged(root, "kennedi", 3)
+    png = root / FRIEND_LOCKED / "maya.png"
+    recipe = root / FRIEND_LOCKED / "maya.recipe.json"
+    good_png, good_recipe = png.read_bytes(), recipe.read_bytes()
+    for label, bad_recipe, bad_png in (("malformed JSON", b"{", good_png),
+                                        ("wrong JSON type", b"[]", good_png),
+                                        ("unreadable PNG", good_recipe, b"not an image")):
+        recipe.write_bytes(bad_recipe)
+        png.write_bytes(bad_png)
+        code, report = readiness(root)
+        maya = next(r for r in report["references"] if r["name"] == "maya")
+        check(f"{label} is an invalid reference, not a crash", code == 1 and bool(maya["problems"]))
+        comfy = FakeComfy()
+        try:
+            code, out = run(root, "--server", comfy.url, "book-page", BOOK, "kennedi", 3)
+            check(f"{label} also stops generation before model calls", code != 0 and "Traceback" not in out and not comfy.sent, out)
+        finally:
+            comfy.close()
+    recipe.write_bytes(good_recipe)
+    png.write_bytes(good_png)
+    code, report = readiness(root)
+    check("restored reference is ready again", code == 0 and report["references_ready"] is True)
+    recipe.unlink()
+    code, report = readiness(root)
+    check("PNG without recipe cannot pass readiness", code == 1 and any(r["name"] == "maya" and r["problems"] for r in report["references"]))
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
@@ -2101,7 +2161,8 @@ def main():
              case_two_stage_sheets, case_two_stage_resume, case_v1_locks_still_hold, case_story_editions, case_second_edition,
              case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals,
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
-             case_book_lock_follows_friends, case_lightning_pages, case_render_comparisons]
+             case_book_lock_follows_friends, case_lightning_pages, case_render_comparisons,
+             case_book_ready_missing, case_book_ready_valid_and_invalid]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
