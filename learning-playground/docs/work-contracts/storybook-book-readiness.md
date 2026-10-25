@@ -14,7 +14,7 @@ selftest checks the consistency of existing locks, not whether a selected book h
 Successful selftest semantics, prompts, model pins, render defaults, reference approval/lock commands, generated art, comparison PR, ComfyUI processes, machine settings, runtime provenance or GPU generation. Readiness is a point-in-time report; book-page revalidates at generation. Reporting does not approve art or create locks.
 
 ### Assumptions and Publication
-Build independently from origin/main. PR 166 remains the owned active PR; this follow-up is prepared locally and must not open a second active PR while that gate remains pending. No second review or merge authority inferred.
+Originally built independently from origin/main. PR 166 is now merged as deaa81d; this slice is reconciled onto that base and becomes the sole owned active PR on publication. Runtime provenance remains a separate queued change. Connector review and exact-head CI remain required; this contract does not claim current remote approval.
 
 ### Verification Plan
 Declared fail-first: new missing-reference case should fail because book-ready is an unknown CLI command. Then run all new readiness cases and existing book-page reference/refusal and folder-record callers. Source selftest and git diff --check; CI owns a duplicate broad suite after publication. Exercise book-ready against the existing real art directory read-only and preserve the report outside worktrees.
@@ -25,13 +25,13 @@ Integration after PR 166: comparison selectors and version-specific output folde
 
 ## Cold Diff Audit
 ### Gaps
-Implementation and targeted verification complete. Publication/remote CI and independent review remain queued behind the owned active comparison PR. No GPU or visual-quality claim.
+Implementation and integration verification complete. Publication and remote connector review/CI remain pending. No GPU or visual-quality claim.
 
 ### Change By Change Reconstruction
-- storybook/tools/story-recipe.py:1391 shares story/profile validation with book-ready without requiring a page number.
-- storybook/tools/story-recipe.py:1412 owns reference validation and the validated byte read. book-page and book-ready both call it under art_lock, replacing the copied page-only checks. Missing sheets and missing recipes are both diagnosed.
-- storybook/tools/story-recipe.py:1437 maps each required reference to every affected page, emits reference-sheets-only JSON with runtime_checked=false, and exits nonzero when blocked. CLI registration at :1717 reaches this owner.
-- storybook/tools/story-recipe.py:362 and :1504 convert unreadable PNG and malformed/non-object lock JSON into validation problems at the original readers. git blame identifies both unguarded readers in 3c7f367c; no downstream exception suppression was added.
+- storybook/tools/story-recipe.py:1406 shares story/profile validation with book-ready without requiring a page number.
+- storybook/tools/story-recipe.py:1427 owns reference validation and the validated byte read. book-page and book-ready both call it under art_lock, replacing the copied page-only checks. Missing sheets and missing recipes are both diagnosed.
+- storybook/tools/story-recipe.py:1452 maps each required reference to every affected page, emits reference-sheets-only JSON with runtime_checked=false, and exits nonzero when blocked. CLI registration in main() reaches this owner.
+- storybook/tools/story-recipe.py:362 and the lock_folder_problems JSON reader convert unreadable PNG and malformed/non-object lock JSON into validation problems at the original readers. git blame identifies both unguarded readers in 3c7f367c; no downstream exception suppression was added.
 - storybook/tools/test-story-recipe.py adds CLI missing/partial/complete/tampered reference cases and registers them in the existing test runner. Existing book/refusal/folder/character/two-stage callers were exercised.
 
 ### Contract Traceability
@@ -45,6 +45,8 @@ All source changes implement the selected-book reference report or keep its exis
 - New source selftest: 0 problems. git diff --check clean.
 - Real art check: meeting-pippa blocked on Maya page 3; whispering-moss on Maya pages 2/4 and Theo page 6; humming-bridge on Sora pages 1/2/4/5/6 and Ravi pages 2/3/5/6/7. SHA-256 snapshots of 176 source/art files were unchanged.
 - Model calls: none against real ComfyUI. FakeComfy owns all generation in tests. The new report succeeds with a deliberately unreachable server when references are complete.
+- Post-PR-166 integration: readiness missing/partial/complete/invalid cases, case_render_comparisons, book refusals and friend-lock callers pass READINESS_COMPARISON_INTEGRATION 72 / 72. Raw integration-tests.log is preserved outside the worktree.
+- Post-integration source selftest: 0 problems; git diff --check clean. Real Whispering Moss report still blocks on Maya pages 2/4 and Theo page 6; snapshots of 176 source/art files remain unchanged.
 - Broad duplicate suite deferred to CI after publication.
 
 ### Usage
