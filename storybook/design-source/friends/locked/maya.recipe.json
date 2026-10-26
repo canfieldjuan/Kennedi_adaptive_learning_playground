@@ -1,0 +1,232 @@
+{
+ "kind": "friend-sheet",
+ "friend": "maya",
+ "template_version": "v2",
+ "render_version": "v1",
+ "profile": {
+  "name": "Maya",
+  "child": "girl",
+  "age": 5,
+  "appearance": {
+   "skin": "deep brown skin",
+   "hair": "black hair in two round puffs, each tied with a yellow ribbon",
+   "eyes": "dark brown eyes",
+   "outfit": "a yellow raincoat over a teal dress, and yellow rain boots",
+   "glasses": false
+  },
+  "personality": "the bold one, always first down the path",
+  "role": "friend",
+  "source": "Invented for the storybook friends roster; not a real child. Accepted with learning-playground/docs/work-contracts/storybook-friends.md (2026-10-07)."
+ },
+ "template": {
+  "style": "soft storybook watercolor illustration, gentle warm palette, clean confident outlines, cozy picture-book style",
+  "text": "{style}. A single young {child}, about {age} years old, standing in a relaxed three-quarter view. {Subject} has {skin}, {eyes}, and {hair}. {Subject} is wearing {outfit}{glasses}. Plain soft cream background, full body, centered, no text",
+  "cleanup_render": "v1",
+  "cleanup": "Take away the pink blush on the {child}'s cheeks and the pink on {possessive} nose. Keep {possessive} skin exactly the colour it is, and keep everything else in picture 1 exactly the same."
+ },
+ "prompt": "soft storybook watercolor illustration, gentle warm palette, clean confident outlines, cozy picture-book style. A single young girl, about 5 years old, standing in a relaxed three-quarter view. She has deep brown skin, dark brown eyes, and black hair in two round puffs, each tied with a yellow ribbon. She is wearing a yellow raincoat over a teal dress, and yellow rain boots. Plain soft cream background, full body, centered, no text",
+ "settings": {
+  "size": 1328,
+  "shift": 3.1,
+  "steps": 20,
+  "cfg": 4.0,
+  "sampler": "euler",
+  "scheduler": "simple"
+ },
+ "models": [
+  {
+   "role": "unet",
+   "file": "qwen-image-Q8_0.gguf",
+   "source": "city96/Qwen-Image-gguf",
+   "license": "apache-2.0",
+   "sha256": "43142b32778dc0568c27395abc6f8291ac53f1de0b98eed919712cf161f248de"
+  },
+  {
+   "role": "clip",
+   "file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "source": "Comfy-Org/Qwen-Image_ComfyUI (from Qwen/Qwen2.5-VL-7B-Instruct)",
+   "license": "apache-2.0",
+   "sha256": "cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4"
+  },
+  {
+   "role": "vae",
+   "file": "qwen_image_vae.safetensors",
+   "source": "Comfy-Org/Qwen-Image_ComfyUI",
+   "license": "apache-2.0",
+   "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f"
+  }
+ ],
+ "seeds": [
+  61,
+  72,
+  83,
+  94
+ ],
+ "cleanup": {
+  "prompt": "Take away the pink blush on the girl's cheeks and the pink on her nose. Keep her skin exactly the colour it is, and keep everything else in picture 1 exactly the same.",
+  "render_version": "v1",
+  "settings": {
+   "size": 1328,
+   "shift": 3.1,
+   "cfg_norm": 1.0,
+   "reference_method": "index_timestep_zero",
+   "steps": 40,
+   "cfg": 4.0,
+   "sampler": "euler",
+   "scheduler": "simple"
+  },
+  "models": [
+   {
+    "role": "edit_unet",
+    "file": "qwen-image-edit-2511-Q4_K_S.gguf",
+    "source": "unsloth/Qwen-Image-Edit-2511-GGUF (from Qwen/Qwen-Image-Edit-2511)",
+    "license": "apache-2.0",
+    "sha256": "df952ef0d2b46463bd95d9afbb78e045ec5412316f453a7ad5a3d7bcbb111b72"
+   },
+   {
+    "role": "clip",
+    "file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "source": "Comfy-Org/Qwen-Image_ComfyUI (from Qwen/Qwen2.5-VL-7B-Instruct)",
+    "license": "apache-2.0",
+    "sha256": "cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4"
+   },
+   {
+    "role": "vae",
+    "file": "qwen_image_vae.safetensors",
+    "source": "Comfy-Org/Qwen-Image_ComfyUI",
+    "license": "apache-2.0",
+    "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f"
+   }
+  ]
+ },
+ "graph": {
+  "1": {
+   "class_type": "UnetLoaderGGUF",
+   "inputs": {
+    "unet_name": "qwen-image-Q8_0.gguf"
+   }
+  },
+  "2": {
+   "class_type": "CLIPLoader",
+   "inputs": {
+    "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+    "type": "qwen_image",
+    "device": "default"
+   }
+  },
+  "3": {
+   "class_type": "VAELoader",
+   "inputs": {
+    "vae_name": "qwen_image_vae.safetensors"
+   }
+  },
+  "4": {
+   "class_type": "ModelSamplingAuraFlow",
+   "inputs": {
+    "model": [
+     "1",
+     0
+    ],
+    "shift": 3.1
+   }
+  },
+  "5": {
+   "class_type": "CLIPTextEncode",
+   "inputs": {
+    "clip": [
+     "2",
+     0
+    ],
+    "text": "soft storybook watercolor illustration, gentle warm palette, clean confident outlines, cozy picture-book style. A single young girl, about 5 years old, standing in a relaxed three-quarter view. She has deep brown skin, dark brown eyes, and black hair in two round puffs, each tied with a yellow ribbon. She is wearing a yellow raincoat over a teal dress, and yellow rain boots. Plain soft cream background, full body, centered, no text"
+   }
+  },
+  "6": {
+   "class_type": "CLIPTextEncode",
+   "inputs": {
+    "clip": [
+     "2",
+     0
+    ],
+    "text": ""
+   }
+  },
+  "7": {
+   "class_type": "EmptySD3LatentImage",
+   "inputs": {
+    "width": 1328,
+    "height": 1328,
+    "batch_size": 1
+   }
+  },
+  "8": {
+   "class_type": "KSampler",
+   "inputs": {
+    "model": [
+     "4",
+     0
+    ],
+    "positive": [
+     "5",
+     0
+    ],
+    "negative": [
+     "6",
+     0
+    ],
+    "latent_image": [
+     "7",
+     0
+    ],
+    "seed": 0,
+    "steps": 20,
+    "cfg": 4.0,
+    "sampler_name": "euler",
+    "scheduler": "simple",
+    "denoise": 1.0
+   }
+  },
+  "9": {
+   "class_type": "VAEDecode",
+   "inputs": {
+    "samples": [
+     "8",
+     0
+    ],
+    "vae": [
+     "3",
+     0
+    ]
+   }
+  },
+  "10": {
+   "class_type": "SaveImage",
+   "inputs": {
+    "images": [
+     "9",
+     0
+    ],
+    "filename_prefix": "storybook/friends/maya"
+   }
+  }
+ },
+ "set_writer": 1,
+ "comfyui_version": "0.25.0",
+ "candidates": {
+  "maya-candidate-61.png": "317b05a5bb7be15fc83c6e0ff6d3744430b6fcb79c0d0aa760b8435af67e85b2",
+  "maya-candidate-72.png": "a8a7a78e806781090055b005059e867e81044b72a31d649fc18f09440f429a9d",
+  "maya-candidate-83.png": "2bc9f2b26a136b6dfabd128a07f777968da968a724a59b7254a97036f5467695",
+  "maya-candidate-94.png": "3e49f93722c7bfd091cea5196b3c4dd19d1382814dbf8a1a27ca44caf476a378"
+ },
+ "renders": {
+  "maya-render-61.png": "c6b472d22df1130cddc02dfd26fb604bb097686c09b05a06e3e8e4fb5f2ab286",
+  "maya-render-72.png": "7a8f4444bffc9914fcd249b0a71375736715a53c2fee72e8be9e8d178c993b5b",
+  "maya-render-83.png": "7d2658e7073a909fad955536def21a503b1aa61ab7d87a75b1337ea70c85dff1",
+  "maya-render-94.png": "2edba35e66b5a12e810991fa96ecdbbe1c20ca1cbd05128faf8f4375ff12d1b1"
+ },
+ "chosen_seed": 61,
+ "source": "design-source/friends/drafts/maya-candidate-61.png",
+ "files": {
+  "maya.png": "317b05a5bb7be15fc83c6e0ff6d3744430b6fcb79c0d0aa760b8435af67e85b2",
+  "maya-render.png": "c6b472d22df1130cddc02dfd26fb604bb097686c09b05a06e3e8e4fb5f2ab286"
+ }
+}
