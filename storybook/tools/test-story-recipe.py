@@ -2241,6 +2241,90 @@ def case_runtime_drift_and_validation(root):
         comfy.close()
 
 
+def case_paired_proof(root):
+    """One matched real-CLI pair, isolated from art; incomplete or changed-runtime pairs fail closed."""
+    drawn(root, "pippa")
+    drawn(root, "bramble")
+    child_drawn(root)
+    before = {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+    args = ("compare-book-page", BOOK, "kennedi", 2, "--seed", 72)
+    output = root.parent / "pair"
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, *args, "--output", output)
+        check("paired CLI completes with exactly two renders", code == 0 and len(comfy.sent) == 2, out)
+        if code:
+            return
+        receipt = json.loads((output / "comparison.json").read_text())
+        recipes = [receipt["renders"][v]["recipe"] for v in ("v1", "v2")]
+        samplers = [g["11"]["inputs"] for g in comfy.sent]
+        check("pair uses actual slow/Lightning graphs at the same seed",
+              [(x["seed"], x["steps"], x["cfg"]) for x in samplers] == [(72, 40, 4.0), (72, 4, 1.0)]
+              and "14" not in comfy.sent[0] and comfy.sent[1]["14"]["inputs"]["lora_name"] == LIGHTNING)
+        check("pair preserves the same prompt, ordered reference bytes, profile and template",
+              all(recipes[0][key] == recipes[1][key] for key in ("prompt", "references", "profile", "template"))
+              and set(comfy.uploads) == {f"storybook-{r['sha256']}.png" for r in recipes[0]["references"]})
+        check("complete draft receipt binds outputs, runtime, timings and labeled contact sheet",
+              receipt["status"] == "complete" and receipt["art_approved"] is False
+              and receipt["runtime"]["system"]["comfyui_version"] == "fake"
+              and all(r["elapsed_seconds"] >= 0 and hashlib.sha256((output / r["file"]).read_bytes()).hexdigest()
+                      == r["sha256"] for r in receipt["renders"].values())
+              and hashlib.sha256((output / "comparison.png").read_bytes()).hexdigest()
+              == receipt["contact_sheet"]["sha256"])
+        for seed in (61, 83, 94):
+            dest = root.parent / f"valid-seed-{seed}"
+            code, out = run(root, "--server", comfy.url, "compare-book-page", BOOK, "kennedi", 2,
+                            "--seed", seed, "--output", dest)
+            check(f"allowed seed {seed} reaches both samplers", code == 0 and all(
+                g["11"]["inputs"]["seed"] == seed for g in comfy.sent[-2:]), out)
+        sent = len(comfy.sent)
+        alias = root.parent / "storybook-alias"
+        alias.symlink_to(root, target_is_directory=True)
+        code, out = run(root, "--server", comfy.url, *args, "--output", alias / "new-proof")
+        check("resolved symlink into storybook is refused", code != 0 and len(comfy.sent) == sent, out)
+        saved = {p.name: p.read_bytes() for p in output.iterdir()}
+        code, out = run(root, "--server", comfy.url, *args, "--output", output)
+        check("existing proof is refused without re-render or overwrite", code != 0 and len(comfy.sent) == sent
+              and saved == {p.name: p.read_bytes() for p in output.iterdir()}, out)
+        for dest in (root, root / "design-source/books/new-proof"):
+            code, out = run(root, "--server", comfy.url, *args, "--output", dest)
+            check("output inside the storybook is refused before rendering", code != 0 and len(comfy.sent) == sent, out)
+        for seed in (0, "", False, 60, 95):
+            code, out = run(root, "--server", comfy.url, "compare-book-page", BOOK, "kennedi", 2,
+                            "--seed", seed, "--output", root.parent / "invalid-seed")
+            check(f"unsupported seed {seed!r} is refused", code != 0 and len(comfy.sent) == sent, out)
+    finally:
+        comfy.close()
+    check("comparison leaves every source, draft and lock byte unchanged",
+          before == {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()})
+    for label, options in (("runtime-drift", {"upgrade_after": 1}),
+                           ("bad-first-image", {"bad_view": {0: b"not an image"}}),
+                           ("bad-second-image", {"bad_view": {1: b"not an image"}}),
+                           ("missing-model", {"models": {**MODEL_FILES, "LoraLoaderModelOnly": ("lora_name", [])}}),
+                           ("missing-version", {"version": None})):
+        dest = root.parent / label
+        comfy = FakeComfy(**options)
+        try:
+            code, out = run(root, "--server", comfy.url, *args, "--output", dest)
+            receipt = json.loads((dest / "comparison.json").read_text()) if (dest / "comparison.json").exists() else {}
+            check(f"{label} cannot produce a complete proof", code != 0 and receipt.get("status") != "complete"
+                  and not (dest / "comparison.png").exists(), out)
+            if label in ("missing-model", "missing-version"):
+                check(f"{label} refuses before uploads and output creation", not comfy.sent and not comfy.uploads
+                      and not dest.exists(), out)
+        finally:
+            comfy.close()
+    (root / CHILD_LOCKED / "kennedi.png").unlink()
+    comfy = FakeComfy()
+    try:
+        dest = root.parent / "missing-sheet"
+        code, out = run(root, "--server", comfy.url, *args, "--output", dest)
+        check("missing locked sheet refuses before upload or output creation",
+              code != 0 and not comfy.uploads and not comfy.sent and not dest.exists(), out)
+    finally:
+        comfy.close()
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
@@ -2253,7 +2337,7 @@ def main():
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
              case_book_lock_follows_friends, case_lightning_pages, case_render_comparisons,
              case_book_ready_missing, case_book_ready_valid_and_invalid,
-             case_runtime_record_and_resume, case_runtime_drift_and_validation]
+             case_runtime_record_and_resume, case_runtime_drift_and_validation, case_paired_proof]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
