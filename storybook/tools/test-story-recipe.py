@@ -2083,7 +2083,7 @@ def case_render_comparisons(root):
             check("versions retain identical prompts, references and seeds",
                   all(recipes[0][key] == recipes[1][key] for key in ("prompt", "references", "seeds")))
             check("comparison preserves every normal draft byte", before == {p.name: p.read_bytes() for p in drafts.iterdir()})
-            for invalid in ("", "v0", "v3", "../drafts", "0"):
+            for invalid in ("", "v0", "unknown-render-version", "../drafts", "0"):
                 count = len(comfy.sent)
                 code, out = run(root, "--server", comfy.url, *command, "--render-version", invalid)
                 check("invalid version refused before rendering", code != 0 and "invalid choice" in out and len(comfy.sent) == count, out)
@@ -2325,6 +2325,59 @@ def case_paired_proof(root):
         comfy.close()
 
 
+def case_v1_step_comparison(root):
+    """V3 changes only V1's steps; real CLI selection and versioned generation keep it isolated."""
+    drawn(root, "pippa")
+    drawn(root, "bramble")
+    child_drawn(root)
+    before = {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+    no_lora = {**MODEL_FILES, "LoraLoaderModelOnly": ("lora_name", [])}
+    comfy = FakeComfy(models=no_lora)
+    args = ("compare-book-page", BOOK, "kennedi", 2, "--seed", 72)
+    output = root.parent / "step-pair"
+    try:
+        code, out = run(root, "--server", comfy.url, *args, "--against-render-version", "v3", "--output", output)
+        check("V1/V3 comparison works without a Lightning model", code == 0 and len(comfy.sent) == 2, out)
+        if code:
+            return
+        receipt = json.loads((output / "comparison.json").read_text())
+        recipes = [receipt["renders"][v]["recipe"] for v in ("v1", "v3")]
+        a, b = recipes
+        check("V3 changes exactly V1 step count in recorded settings",
+              a["settings"]["steps"] == 40 and b["settings"]["steps"] == 20
+              and {k: v for k, v in a["settings"].items() if k != "steps"}
+              == {k: v for k, v in b["settings"].items() if k != "steps"})
+        check("pair inputs and model files are identical except declared version/settings/graph",
+              {k: v for k, v in a.items() if k not in ("render_version", "settings", "graph")}
+              == {k: v for k, v in b.items() if k not in ("render_version", "settings", "graph")})
+        samplers = [g["11"]["inputs"] for g in comfy.sent]
+        check("actual sampler steps change from 40 to 20 at fixed CFG4/seed72 and no LoRA",
+              [(x["steps"], x["cfg"], x["seed"]) for x in samplers] == [(40, 4.0, 72), (20, 4.0, 72)]
+              and all("14" not in g for g in comfy.sent))
+        check("complete receipt is still an unapproved draft",
+              receipt["status"] == "complete" and receipt["art_approved"] is False
+              and set(receipt["renders"]) == {"v1", "v3"} and (output / "comparison.png").is_file())
+        check("pair preserves original source, drafts and locks",
+              before == {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()})
+        sent = len(comfy.sent)
+        for invalid in ("v1", "", "v0", "v4"):
+            dest = root.parent / "invalid-version"
+            code, out = run(root, "--server", comfy.url, *args, "--against-render-version", invalid, "--output", dest)
+            check(f"comparator {invalid!r} is refused before rendering or output",
+                  code != 0 and len(comfy.sent) == sent and not dest.exists(), out)
+        for command, folder in ((("page", STORY, 4), PAGE_DRAFTS),
+                                (("book-page", BOOK, "kennedi", 2), book_folder("kennedi", "drafts"))):
+            start = len(comfy.sent)
+            code, out = run(root, "--server", comfy.url, *command, "--render-version", "v3")
+            comparison = (root / folder).parent / "comparisons/v3"
+            check(f"{command[0]} explicit V3 uses isolated 20-step recipe without LoRA",
+                  code == 0 and len(comfy.sent) == start + 4 and comparison.is_dir()
+                  and all(g["11"]["inputs"]["steps"] == 20 and "14" not in g for g in comfy.sent[start:])
+                  and not (root / folder).exists(), out)
+    finally:
+        comfy.close()
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
@@ -2337,7 +2390,7 @@ def main():
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
              case_book_lock_follows_friends, case_lightning_pages, case_render_comparisons,
              case_book_ready_missing, case_book_ready_valid_and_invalid,
-             case_runtime_record_and_resume, case_runtime_drift_and_validation, case_paired_proof]
+             case_runtime_record_and_resume, case_runtime_drift_and_validation, case_paired_proof, case_v1_step_comparison]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
