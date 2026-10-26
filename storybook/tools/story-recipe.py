@@ -145,6 +145,8 @@ PAGE_RENDERS = {"v1": {"size": 1328, "shift": 3.1, "cfg_norm": 1.0, "reference_m
 # 566-770 s a seed, 40 steps at cfg 4 (two model passes a step); v2 is 4 steps at cfg 1 (one pass). The LoRA is named
 # by its role, so the render version alone says which models a page names.
 PAGE_RENDERS["v2"] = {**PAGE_RENDERS["v1"], "steps": 4, "cfg": 1.0, "lora": "edit_lightning", "lora_strength": 1.0}
+# v3: isolated step-count experiment derived from v1; no LoRA or CFG change, not the default.
+PAGE_RENDERS["v3"] = {**PAGE_RENDERS["v1"], "steps": 20}
 PAGE_TEMPLATE, PAGE_RENDER = "v2", "v2"
 
 
@@ -1521,7 +1523,7 @@ def cmd_book_page(args):
 
 
 def cmd_compare_book_page(args):
-    """One matched v1/v2 draft pair, using the normal recipe owners; never a lockable candidate set."""
+    """V1 against a selected alternative, using the normal recipe owners; never a lockable candidate set."""
     output = args.output.resolve()
     if output == STORYBOOK or STORYBOOK in output.parents or output.exists():
         sys.exit("comparison output must be a new directory outside the storybook")
@@ -1534,7 +1536,7 @@ def cmd_compare_book_page(args):
                 f"{ref}: {why}" for (_, ref), problems in issues.items() for why in problems))
     digests = {key: hashlib.sha256(data).hexdigest() for key, data in sheets.items()}
     recipes = {version: book_page_manifest(args.story, args.child, number, PAGE_TEMPLATE, version,
-                                          story, profile, canon, digests, friends) for version in ("v1", "v2")}
+                                          story, profile, canon, digests, friends) for version in ("v1", args.against_render_version)}
     for recipe in recipes.values():
         require_nodes(args.server, recipe["graph"])
         require_models(args.server, manifest_roles(recipe))
@@ -1831,12 +1833,14 @@ def main():
         if command == "lock-book-page":
             bp.add_argument("--seed", type=int, required=True)
             bp.add_argument("--force", action="store_true")
-    compare = sub.add_parser("compare-book-page", help="write one matched v1/v2 draft pair outside the storybook")
+    compare = sub.add_parser("compare-book-page", help="write V1 and an alternative as a matched draft pair outside the storybook")
     compare.add_argument("story")
     compare.add_argument("child")
     compare.add_argument("number", type=int)
     compare.add_argument("--seed", type=int, choices=SEEDS, required=True)
     compare.add_argument("--output", type=Path, required=True)
+    compare.add_argument("--against-render-version", choices=("v2", "v3"), default="v2",
+                         help="alternative to V1; v3 changes only its step count to 20")
     ready = sub.add_parser("book-ready", help="report every required reference sheet without rendering")
     ready.add_argument("story")
     ready.add_argument("child")
