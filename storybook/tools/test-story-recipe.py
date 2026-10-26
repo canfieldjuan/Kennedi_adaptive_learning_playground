@@ -2378,6 +2378,113 @@ def case_v1_step_comparison(root):
         comfy.close()
 
 
+def case_actor_scene_proof(root):
+    """Explicit actor fragments preserve source prose and render only as an unapproved external proof."""
+    drawn(root, "pippa")
+    child_drawn(root)
+    friend_drawn(root)
+    module = tool(root)
+    check("versioned actor-scene builder exists", hasattr(module, "actor_scene_manifest"))
+    if not hasattr(module, "actor_scene_manifest"):
+        return
+    args = module.argparse.Namespace(story=BOOK, child="kennedi", number=3)
+    canon, story, profile, friends, number = module.book_inputs(args)
+    refs = module.book_references(story["pages"][2], "kennedi", friends)
+    base = module.book_page_manifest(BOOK, "kennedi", 3, "v2", "v1", story, profile, canon,
+                                     module.book_sheet_digests(refs), friends)
+    parts = [{"picture": 1, "source": "Kennedi"}, " kneels at a mossy rock, gently touching moss pale and fine as silver silk, with ",
+             {"picture": 2, "source": "tiny Pippa", "prefix": "tiny "}, " sitting on the rock beside ",
+             {"picture": 1, "source": "her"}, " and ", {"picture": 3, "source": "Maya"},
+             " standing nearby holding her small lantern"]
+    before = json.dumps(base, sort_keys=True)
+    bound = module.actor_scene_manifest(base, parts)
+    check("binding preserves base and all non-prompt generation inputs", before == json.dumps(base, sort_keys=True)
+          and all(bound[k] == base[k] for k in ("settings", "references", "models", "template", "entry", "profile")))
+    check("bound actions match proven direct-picture wording", "the girl from picture 1 kneels" in bound["prompt"]
+          and "the tiny dormouse from picture 2 sitting" in bound["prompt"]
+          and "beside the girl from picture 1 and the girl from picture 3 standing" in bound["prompt"])
+    for count, scene in ((1, "{name} waits"), (2, "{name} meets Pippa")):
+        entry = {**base["entry"], "scene": scene}
+        smaller = {**base, "entry": entry, "cast": base["cast"][:count], "references": base["references"][:count]}
+        segments = [{"picture": 1, "source": "Kennedi"}, " waits"] if count == 1 else [
+            {"picture": 1, "source": "Kennedi"}, " meets ", {"picture": 2, "source": "Pippa"}]
+        check(f"valid minimum/partial cast of {count} binds without requiring unused pictures",
+              "the girl from picture 1" in module.actor_scene_manifest(smaller, segments)["prompt"])
+    maximum = parts + [""] * (2 * len(module.fill(base["entry"]["scene"], profile)) + 1 - len(parts))
+    check("largest admitted fragment list preserves prompt", module.actor_scene_manifest(base, maximum)["prompt"] == bound["prompt"])
+    invalid = [None, False, "", [], maximum + [""], [module.fill(base["entry"]["scene"], profile)], parts[:-1],
+               [*parts[:-2], "Maya", parts[-1]]]
+    for picture in (0, False, "", 4, -1, 1.5):
+        invalid.append([{**parts[0], "picture": picture}, *parts[1:]])
+    for extra in ({"source": "Maya"}, {"source": ""}, {"prefix": False}, {"prefix": 0}, {"oops": 1}):
+        invalid.append([{**parts[0], **extra}, *parts[1:]])
+    for i, bad in enumerate(invalid):
+        try:
+            module.actor_scene_manifest(base, bad)
+        except ValueError:
+            check(f"actor fragments refuse malformed/source-drifting/unbound input {i}", True)
+        else:
+            check(f"actor fragments refuse malformed/source-drifting/unbound input {i}", False)
+    config = root.parent / "actors.json"
+    config.write_text(json.dumps(parts))
+    snapshot = {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+    comfy = FakeComfy()
+    dest = root.parent / "scene-proof"
+    command = ("probe-book-scene", BOOK, "kennedi", 3, "--seed", 72, "--actors", config)
+    try:
+        code, out = run(root, "--server", comfy.url, *command, "--output", dest)
+        check("actual actor-scene CLI renders exactly one V1 proof", not code and len(comfy.sent) == 1, out)
+        if code:
+            return
+        receipt = json.loads((dest / "comparison.json").read_text())
+        proof = receipt["renders"]["actor-v1"]
+        graph = comfy.sent[0]
+        check("proof is complete, unapproved and uses recorded validated actor data",
+              receipt["status"] == "complete" and receipt["art_approved"] is False
+              and proof["recipe"] == bound and bound["scene_binding"] == {"version": "v1", "parts": parts})
+        check("real sampler/conditioning preserve seed,40steps,CFG4 and reference order",
+              (graph["11"]["inputs"]["seed"], graph["11"]["inputs"]["steps"], graph["11"]["inputs"]["cfg"])
+              == (72, 40, 4.0) and graph["7"] == base["graph"]["7"] and "14" not in graph
+              and graph["6"]["inputs"]["prompt"] == bound["prompt"])
+        check("experimental recipe cannot rebuild as a normal book-page lock",
+              bool(module.book_page_embedded_problems(dest / proof["file"], bound, 72, canon,
+                   {BOOK: story}, {"kennedi": profile}, friends)))
+        sent = len(comfy.sent)
+        comfy.uploads.clear()
+        for contents in ("{", "null", "false", '""', json.dumps([parts[0], {"picture": 2}])):
+            config.write_text(contents)
+            bad = root.parent / "bad-json"
+            code, out = run(root, "--server", comfy.url, *command, "--output", bad)
+            check(f"invalid or mixed actor JSON {contents!r} refuses without output/render",
+                  code != 0 and len(comfy.sent) == sent and not comfy.uploads and not bad.exists(), out)
+        config.write_text(json.dumps([{**parts[0], "picture": 0}, *parts[1:]]))
+        code, out = run(root, "--server", comfy.url, *command, "--output", root.parent / "bad-actors")
+        check("invalid binding refuses before uploads/output/render",
+              code != 0 and len(comfy.sent) == sent and not comfy.uploads and not (root.parent / "bad-actors").exists(), out)
+        check("proof leaves original stories, drafts, references and locks intact",
+              snapshot == {str(p.relative_to(root)): p.read_bytes() for p in root.rglob("*") if p.is_file()})
+    finally:
+        comfy.close()
+
+
+def case_contact_sheet_reference_width(root):
+    """A one-image proof still shows every reference; larger candidate rows retain their geometry."""
+    module = tool(root)
+    page = root.parent / "page.png"
+    Image.new("RGB", (8, 8), "white").save(page)
+    refs = []
+    for color in ("red", "green", "blue"):
+        stream = io.BytesIO()
+        Image.new("RGB", (8, 8), color).save(stream, "PNG")
+        refs.append((color, stream.getvalue()))
+    for count in (1, 2, 4):
+        out = root.parent / f"sheet-{count}.png"
+        module.contact_sheet([(str(i), page) for i in range(count)], out, tile=32, references=refs, reference_tile=16)
+        with Image.open(out) as image:
+            check(f"{count}-candidate sheet fits both rows and retains blue reference",
+                  image.width == max(32 * count, 48) and image.getpixel((40, 35)) == (0, 0, 255), image.size)
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
@@ -2390,7 +2497,7 @@ def main():
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
              case_book_lock_follows_friends, case_lightning_pages, case_render_comparisons,
              case_book_ready_missing, case_book_ready_valid_and_invalid,
-             case_runtime_record_and_resume, case_runtime_drift_and_validation, case_paired_proof, case_v1_step_comparison]
+             case_runtime_record_and_resume, case_runtime_drift_and_validation, case_paired_proof, case_v1_step_comparison, case_actor_scene_proof, case_contact_sheet_reference_width]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
