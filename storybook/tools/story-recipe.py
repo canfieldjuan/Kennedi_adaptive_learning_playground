@@ -952,6 +952,52 @@ def book_page_manifest(name, child_id, number, template_version, render_version,
     return manifest
 
 
+
+# Immutable experimental scene form; normal templates/locks never select it implicitly.
+SCENE_BINDINGS = {"v1": "the {prefix}{drawn_as} from picture {picture}"}
+
+
+def actor_scene_manifest(base, parts):
+    """Bind explicitly authored actor fragments, without guessing names or pronoun antecedents."""
+    scene = fill(base["entry"]["scene"], base["profile"])
+    cast = base["cast"]
+    if not isinstance(parts, list) or not 1 <= len(parts) <= 2 * len(scene) + 1:
+        raise ValueError("actors must be a bounded non-empty list of literals and picture/source objects")
+    source, rendered, named = [], [], set()
+    for part in parts:
+        if isinstance(part, str):
+            if names_in(part, [c["name"] for c in cast]):
+                raise ValueError("cast names must be explicit actor fragments, not literal text")
+            source.append(part)
+            rendered.append(part)
+            continue
+        if not isinstance(part, dict) or set(part) not in ({"picture", "source"}, {"picture", "source", "prefix"}):
+            raise ValueError("each actor needs only picture, source and an optional prefix")
+        picture, text, prefix = part["picture"], part["source"], part.get("prefix", "")
+        if type(picture) is not int or not 1 <= picture <= len(cast):
+            raise ValueError("actor picture is outside this page's reference order")
+        if not isinstance(prefix, str) or (prefix and not prefix.endswith(" ")):
+            raise ValueError("actor prefix must be text ending in a space, or empty")
+        member = cast[picture - 1]
+        pronouns = PRONOUNS.get(member["drawn_as"], {})
+        if text == prefix + member["name"]:
+            named.add(picture)
+        elif prefix or not isinstance(text, str) or text not in (pronouns.get("subject"), pronouns.get("object")):
+            raise ValueError("actor source must name that reference or declare its subject/object pronoun")
+        if not isinstance(text, str) or not text:
+            raise ValueError("actor source must be non-empty text")
+        source.append(text)
+        rendered.append(SCENE_BINDINGS["v1"].format(prefix=prefix, drawn_as=member["drawn_as"], picture=picture))
+    if "".join(source) != scene or named != set(range(1, len(cast) + 1)):
+        raise ValueError("actor fragments must reconstruct the exact scene and bind every named cast member")
+    page = {**base["entry"], "place": fill(base["entry"]["place"], base["profile"]), "scene": "".join(rendered)}
+    manifest = {**base, "kind": "book-page-scene-proof", "scene_binding": {"version": "v1", "parts": parts},
+                "prompt": page_prompt(base["template"], {"season": base["season"]}, page,
+                                      [(c["name"], c["drawn_as"]) for c in cast])}
+    manifest["graph"] = page_graph(manifest, 0, base["graph"]["13"]["inputs"]["filename_prefix"])
+    return manifest
+
+
 def book_page_embedded_problems(png, manifest, seed, canon, stories, profiles, friends):
     """Why png is not the book page its recipe describes at this seed, from the personal story (stories: name -> a
     story that passes its check), the child's profile (profiles: id -> a profile that passes its check), the friends
@@ -1092,7 +1138,7 @@ def contact_sheet(tiles, out, tile=480, references=(), reference_tile=240):
     """The candidates side by side; for a page, the cast's locked sheets in a strip above them, so picking a seed
     is also a consistency read."""
     top = reference_tile + 30 if references else 0
-    sheet = Image.new("RGB", (tile * len(tiles), top + tile + 30), "white")
+    sheet = Image.new("RGB", (max(tile * len(tiles), reference_tile * len(references)), top + tile + 30), "white")
     draw = ImageDraw.Draw(sheet)
     for i, (label, data) in enumerate(references):
         sheet.paste(Image.open(io.BytesIO(data)).convert("RGB").resize((reference_tile, reference_tile)),
@@ -1522,11 +1568,14 @@ def cmd_book_page(args):
     report_page_set(args, number, drafts, f"lock-book-page {args.story} {args.child} {number}")
 
 
-def cmd_compare_book_page(args):
-    """V1 against a selected alternative, using the normal recipe owners; never a lockable candidate set."""
-    output = args.output.resolve()
+def proof_output(path):
+    output = path.resolve()
     if output == STORYBOOK or STORYBOOK in output.parents or output.exists():
         sys.exit("comparison output must be a new directory outside the storybook")
+    return output
+
+
+def book_proof_inputs(args):
     canon, story, profile, friends, number = book_inputs(args)
     references = book_references(story["pages"][number - 1], args.child, friends)
     with art_lock():
@@ -1535,8 +1584,33 @@ def cmd_compare_book_page(args):
             sys.exit("the cast's locked sheets fail their checks: " + "; ".join(
                 f"{ref}: {why}" for (_, ref), problems in issues.items() for why in problems))
     digests = {key: hashlib.sha256(data).hexdigest() for key, data in sheets.items()}
+    return canon, story, profile, friends, number, references, sheets, digests
+
+
+def cmd_compare_book_page(args):
+    """V1 against a selected alternative; never a lockable candidate set."""
+    output = proof_output(args.output)
+    canon, story, profile, friends, number, references, sheets, digests = book_proof_inputs(args)
     recipes = {version: book_page_manifest(args.story, args.child, number, PAGE_TEMPLATE, version,
                                           story, profile, canon, digests, friends) for version in ("v1", args.against_render_version)}
+    write_book_proof(args, output, recipes, references, sheets, profile, number)
+
+
+def cmd_probe_book_scene(args):
+    """One explicitly bound V1 scene; isolated evidence, not normal page art."""
+    output = proof_output(args.output)
+    canon, story, profile, friends, number, references, sheets, digests = book_proof_inputs(args)
+    base = book_page_manifest(args.story, args.child, number, PAGE_TEMPLATE, "v1", story, profile, canon, digests, friends)
+    try:
+        recipe = actor_scene_manifest(base, json.loads(args.actors.read_text()))
+    except (OSError, ValueError) as error:
+        sys.exit(f"invalid actor scene: {error}")
+    write_book_proof(args, output, {"actor-v1": recipe}, references, sheets, profile, number,
+                     kind="book-page-scene-proof")
+
+
+def write_book_proof(args, output, recipes, references, sheets, profile, number, kind="book-page-comparison"):
+    """The single proof writer: runtime boundaries, validation and retained partial receipts."""
     for recipe in recipes.values():
         require_nodes(args.server, recipe["graph"])
         require_models(args.server, manifest_roles(recipe))
@@ -1545,7 +1619,7 @@ def cmd_compare_book_page(args):
         sys.exit("comparison needs a reported ComfyUI version")
     # Exclusive creation prevents replacing an earlier proof. No resume: a pair belongs to one invocation.
     output.mkdir(mode=0o700)
-    receipt = {"kind": "book-page-comparison", "status": "incomplete", "art_approved": False,
+    receipt = {"kind": kind, "status": "incomplete", "art_approved": False,
                "seed": args.seed, "runtime": runtime, "renders": {},
                "timing_scope": "sequential end-to-end including queue, model loading and download; not a benchmark"}
 
@@ -1556,7 +1630,7 @@ def cmd_compare_book_page(args):
 
     record()
     try:
-        for reference in recipes["v1"]["references"]:
+        for reference in next(iter(recipes.values()))["references"]:
             upload(args.server, sheets[(reference["kind"], reference["name"])], reference_name(reference["sha256"]))
         for version, recipe in recipes.items():
             if server_runtime(args.server) != runtime:
@@ -1841,6 +1915,13 @@ def main():
     compare.add_argument("--output", type=Path, required=True)
     compare.add_argument("--against-render-version", choices=("v2", "v3"), default="v2",
                          help="alternative to V1; v3 changes only its step count to 20")
+    probe = sub.add_parser("probe-book-scene", help="render one explicit actor-bound V1 draft outside the storybook")
+    probe.add_argument("story")
+    probe.add_argument("child")
+    probe.add_argument("number", type=int)
+    probe.add_argument("--seed", type=int, choices=SEEDS, required=True)
+    probe.add_argument("--actors", type=Path, required=True, help="JSON array of literals and picture/source/prefix objects")
+    probe.add_argument("--output", type=Path, required=True)
     ready = sub.add_parser("book-ready", help="report every required reference sheet without rendering")
     ready.add_argument("story")
     ready.add_argument("child")
@@ -1851,7 +1932,7 @@ def main():
     try:
         {"character": cmd_character, "lock": cmd_lock, "page": cmd_page, "lock-page": cmd_lock_page,
          "child": cmd_child, "lock-child": cmd_lock_child, "friend": cmd_friend, "lock-friend": cmd_lock_friend,
-         "book-page": cmd_book_page, "book-ready": cmd_book_ready, "compare-book-page": cmd_compare_book_page,
+         "probe-book-scene": cmd_probe_book_scene, "book-page": cmd_book_page, "book-ready": cmd_book_ready, "compare-book-page": cmd_compare_book_page,
          "lock-book-page": cmd_lock_book_page, "selftest": cmd_selftest}[args.cmd](args)
     except LOST_COMFY as error:
         sys.exit(f"ComfyUI at {args.server} is unreachable or answered badly "
