@@ -125,7 +125,7 @@ class FakeComfy:
                     return self.reply(served(fake.images[pid]) if callable(served) else served, "image/png")
                 if path == "/system_stats":
                     if stats is not None:
-                        return self.reply(stats)
+                        return self.reply(stats(fake) if callable(stats) else stats)
                     upgraded = upgrade_after is not None and len(fake.images) > upgrade_after
                     return self.reply({"system": {"comfyui_version": f"{version}-new" if upgraded else version}})
                 if path.startswith("/object_info/"):
@@ -2151,6 +2151,96 @@ def case_book_ready_valid_and_invalid(root):
     check("PNG without recipe cannot pass readiness", code == 1 and any(r["name"] == "maya" and r["problems"] for r in report["references"]))
 
 
+def runtime_stats(**system):
+    return {"system": {"comfyui_version": "fake", "os": "linux", "python_version": "3.13",
+                       "pytorch_version": "2.8", "embedded_python": False, "argv": ["main.py", "--cache-none"], **system},
+            "devices": [{"name": "fake-gpu", "type": "cuda", "index": 0, "vram_free": 10}]}
+
+
+def case_runtime_record_and_resume(root):
+    """Server-reported runtime records participate in resume; allocation counters do not."""
+    def draw(stats):
+        comfy = FakeComfy(stats=stats)
+        try:
+            code, out = run(root, "--server", comfy.url, "character", "pippa")
+            assert code == 0, out
+            return len(comfy.sent)
+        finally:
+            comfy.close()
+    draw(runtime_stats())
+    recipe_path = root / DRAFTS / "pippa-recipe.json"
+    recipe = json.loads(recipe_path.read_text())
+    assert "runtime" in recipe, "render recipe has no runtime provenance"
+    check("recipe records observed system/device fields", recipe["runtime"]["system"] == runtime_stats()["system"]
+          and recipe["runtime"]["devices"] == [{"name": "fake-gpu", "type": "cuda", "index": 0}])
+    check("unattested facts are explicitly unknown", "model_file_bytes" in recipe["runtime"]["unverified"]
+          and "custom_node_revisions" in recipe["runtime"]["unverified"])
+    changed = runtime_stats();changed["devices"][0]["vram_free"] = 999
+    check("memory fluctuations do not rerender", draw(changed) == 0)
+    for label, stats in (("Python", runtime_stats(python_version="3.14")),
+                         ("PyTorch", runtime_stats(python_version="3.14", pytorch_version="2.9")),
+                         ("launch arguments", runtime_stats(argv=["main.py", "--fast"]))):
+        check(f"changed {label} starts a fresh set", draw(stats) == 4)
+    changed = runtime_stats(argv=["main.py", "--fast"]);changed["devices"][0]["name"] = "other-gpu"
+    check("changed device starts a fresh set", draw(changed) == 4)
+    legacy = json.loads(recipe_path.read_text());legacy.pop("runtime");legacy["set_writer"] = 1
+    recipe_path.write_text(json.dumps(legacy))
+    check("older sets without runtime are not resumed", draw(changed) == 4)
+    code, out = run(root, "lock", "pippa", "--seed", 72)
+    code2, out2 = run(root, "selftest")
+    check("runtime metadata does not break locking", code == code2 == 0, out + out2)
+    lock = root / LOCKED / "pippa.recipe.json";d=json.loads(lock.read_text());d.pop("runtime");d["set_writer"] = 1;lock.write_text(json.dumps(d))
+    code, out = run(root, "selftest")
+    check("legacy locks remain valid", code == 0, out)
+
+
+def case_runtime_drift_and_validation(root):
+    """Invalid snapshots fail before jobs; drift rejects a new seed and retains previously completed candidates."""
+    def changing(fake):
+        return runtime_stats(pytorch_version="2.8" if len(fake.images) < 2 else "2.9")
+    comfy = FakeComfy(stats=changing)
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "pippa")
+        recipe = json.loads((root / DRAFTS / "pippa-recipe.json").read_text())
+        check("runtime drift discards the changed seed", code != 0 and "runtime changed" in out
+              and list(recipe["candidates"]) == ["pippa-candidate-61.png"], out)
+    finally:
+        comfy.close()
+    for field, bad in (("argv", "--fast"), ("argv", [False]), ("pytorch_version", 0), ("embedded_python", "false")):
+        comfy = FakeComfy(stats=runtime_stats(**{field: bad}))
+        try:
+            code, out = run(root, "--server", comfy.url, "character", "bramble")
+            check("malformed runtime fails before jobs", code != 0 and not comfy.sent and "Traceback" not in out, out)
+        finally:
+            comfy.close()
+    invalid_devices = ("gpu", ["gpu"], [{"name": "good", "type": "cuda", "index": 0}, False], [{"name": "gpu", "index": False}])
+    for devices in invalid_devices:
+        stats = runtime_stats();stats["devices"] = devices
+        comfy = FakeComfy(stats=stats)
+        try:
+            code, out = run(root, "--server", comfy.url, "character", "bramble")
+            check("malformed or mixed devices fail before jobs", code != 0 and not comfy.sent and "Traceback" not in out, out)
+        finally:
+            comfy.close()
+    def changed_before_job(fake):
+        fake.stats_reads = getattr(fake, "stats_reads", 0) + 1
+        return runtime_stats(pytorch_version="2.8" if fake.stats_reads == 1 else "2.9")
+    comfy = FakeComfy(stats=changed_before_job)
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "barnaby")
+        check("runtime drift before a seed queues no job", code != 0 and not comfy.sent and "runtime changed before" in out, out)
+    finally:
+        comfy.close()
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "character", "bramble")
+        d = json.loads((root / DRAFTS / "bramble-recipe.json").read_text())
+        check("older server responses retain explicit missing values", code == 0 and d["runtime"]["system"]["pytorch_version"] is None
+              and d["runtime"]["devices"] is None)
+    finally:
+        comfy.close()
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
@@ -2162,7 +2252,8 @@ def main():
              case_filling, case_book_page_lock_selftest, case_book_lock_follows_its_inputs, case_book_refusals,
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
              case_book_lock_follows_friends, case_lightning_pages, case_render_comparisons,
-             case_book_ready_missing, case_book_ready_valid_and_invalid]
+             case_book_ready_missing, case_book_ready_valid_and_invalid,
+             case_runtime_record_and_resume, case_runtime_drift_and_validation]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:
