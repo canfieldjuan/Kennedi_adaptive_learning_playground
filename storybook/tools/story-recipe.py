@@ -1520,6 +1520,73 @@ def cmd_book_page(args):
     report_page_set(args, number, drafts, f"lock-book-page {args.story} {args.child} {number}")
 
 
+def cmd_compare_book_page(args):
+    """One matched v1/v2 draft pair, using the normal recipe owners; never a lockable candidate set."""
+    output = args.output.resolve()
+    if output == STORYBOOK or STORYBOOK in output.parents or output.exists():
+        sys.exit("comparison output must be a new directory outside the storybook")
+    canon, story, profile, friends, number = book_inputs(args)
+    references = book_references(story["pages"][number - 1], args.child, friends)
+    with art_lock():
+        sheets, issues = book_sheets(canon, args.child, profile, friends, references)
+        if issues:
+            sys.exit("the cast's locked sheets fail their checks: " + "; ".join(
+                f"{ref}: {why}" for (_, ref), problems in issues.items() for why in problems))
+    digests = {key: hashlib.sha256(data).hexdigest() for key, data in sheets.items()}
+    recipes = {version: book_page_manifest(args.story, args.child, number, PAGE_TEMPLATE, version,
+                                          story, profile, canon, digests, friends) for version in ("v1", "v2")}
+    for recipe in recipes.values():
+        require_nodes(args.server, recipe["graph"])
+        require_models(args.server, manifest_roles(recipe))
+    runtime = server_runtime(args.server)
+    if runtime is None:
+        sys.exit("comparison needs a reported ComfyUI version")
+    # Exclusive creation prevents replacing an earlier proof. No resume: a pair belongs to one invocation.
+    output.mkdir(mode=0o700)
+    receipt = {"kind": "book-page-comparison", "status": "incomplete", "art_approved": False,
+               "seed": args.seed, "runtime": runtime, "renders": {},
+               "timing_scope": "sequential end-to-end including queue, model loading and download; not a benchmark"}
+
+    def record():
+        path = output / "comparison.json"
+        path.write_text(json.dumps(receipt, indent=2) + "\n")
+        path.chmod(0o600)
+
+    record()
+    try:
+        for reference in recipes["v1"]["references"]:
+            upload(args.server, sheets[(reference["kind"], reference["name"])], reference_name(reference["sha256"]))
+        for version, recipe in recipes.items():
+            if server_runtime(args.server) != runtime:
+                raise RenderFailed("runtime changed before comparison render")
+            path = output / f"{version}.png"
+            prefix = f"storybook/comparison/{args.story}/{args.child}/{page_stem(number)}-{args.seed}-{version}"
+            print(f"rendering {version}, seed {args.seed}", flush=True)
+            started = time.perf_counter()
+            render(args.server, page_graph(recipe, args.seed, prefix), path)
+            path.chmod(0o600)
+            elapsed = time.perf_counter() - started
+            problem = candidate_problem(path, recipe, args.seed, page_graph)
+            if problem:
+                raise RenderFailed(problem)
+            if server_runtime(args.server) != runtime:
+                raise RenderFailed("runtime changed during comparison render")
+            receipt["renders"][version] = {"recipe": recipe, "file": path.name, "sha256": sha256(path),
+                                           "elapsed_seconds": elapsed}
+            record()
+            print(f"validated {version} in {elapsed:.1f}s", flush=True)
+        sheet = output / "comparison.png"
+        contact_sheet([(f"{v} / seed {args.seed} / draft", output / f"{v}.png") for v in recipes], sheet,
+                      references=[(profile["name"] if key == ("child", args.child) else key[1], sheets[key])
+                                  for key in references])
+        sheet.chmod(0o600)
+        receipt.update(status="complete", contact_sheet={"file": sheet.name, "sha256": sha256(sheet)})
+        record()
+    except (*LOST_COMFY, RenderFailed) as error:
+        sys.exit(f"comparison incomplete ({error}); evidence retained in {output}")
+    print(f"draft comparison: {output}; no art approved")
+
+
 def cmd_lock_book_page(args):
     canon, story, profile, friends, number = book_inputs(args)
     stem = page_stem(number)
@@ -1764,6 +1831,12 @@ def main():
         if command == "lock-book-page":
             bp.add_argument("--seed", type=int, required=True)
             bp.add_argument("--force", action="store_true")
+    compare = sub.add_parser("compare-book-page", help="write one matched v1/v2 draft pair outside the storybook")
+    compare.add_argument("story")
+    compare.add_argument("child")
+    compare.add_argument("number", type=int)
+    compare.add_argument("--seed", type=int, choices=SEEDS, required=True)
+    compare.add_argument("--output", type=Path, required=True)
     ready = sub.add_parser("book-ready", help="report every required reference sheet without rendering")
     ready.add_argument("story")
     ready.add_argument("child")
@@ -1774,7 +1847,7 @@ def main():
     try:
         {"character": cmd_character, "lock": cmd_lock, "page": cmd_page, "lock-page": cmd_lock_page,
          "child": cmd_child, "lock-child": cmd_lock_child, "friend": cmd_friend, "lock-friend": cmd_lock_friend,
-         "book-page": cmd_book_page, "book-ready": cmd_book_ready,
+         "book-page": cmd_book_page, "book-ready": cmd_book_ready, "compare-book-page": cmd_compare_book_page,
          "lock-book-page": cmd_lock_book_page, "selftest": cmd_selftest}[args.cmd](args)
     except LOST_COMFY as error:
         sys.exit(f"ComfyUI at {args.server} is unreachable or answered badly "
