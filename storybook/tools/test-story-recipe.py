@@ -1987,19 +1987,14 @@ def case_lightning_pages(root):
     drawn(root, "bramble", seed=61)
     source = root / "tools/story-recipe.py"
     current = source.read_text()
-    assert current.count('PAGE_TEMPLATE, PAGE_RENDER = "v2", "v2"') == 1
-    source.write_text(current.replace('PAGE_TEMPLATE, PAGE_RENDER = "v2", "v2"', 'PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"'))
-    try:
-        paged(root, 4)                                   # a page locked by the tool before v2
-    finally:
-        source.write_text(current)
+    paged(root, 4)                                       # the selected V1 baseline
     lock_path = root / PAGE_LOCKED / "page-04.recipe.json"
     v1 = json.loads(lock_path.read_text())
     check("a v1 page names no LoRA and samples 40 steps at cfg 4",
           v1["render_version"] == "v1" and [m["role"] for m in v1["models"]] == ["edit_unet", "clip", "vae"]
           and v1["settings"]["steps"] == 40 and v1["settings"]["cfg"] == 4.0, v1["models"])
     code, out = run(root, "selftest")
-    check("and its lock still checks out under the v2 tool", not code and "1 page locks" in out, out.strip()[-200:])
+    check("and its lock checks out", not code and "1 page locks" in out, out.strip()[-200:])
     lightning = {"role": "edit_lightning", "file": LIGHTNING, "source": "lightx2v/Qwen-Image-Edit-2511-Lightning",
                  "license": "apache-2.0", "sha256": "22226e8d05d354bb356627d428809f5afd7819399b077238a2b70a82883a904f"}
     lock_path.write_text(json.dumps({**v1, "models": [*v1["models"], lightning]}))
@@ -2008,7 +2003,14 @@ def case_lightning_pages(root):
           code and "page-04.recipe.json: its recorded models is not what the tool records" in out, out.strip()[-200:])
     lock_path.write_text(json.dumps(v1))
 
-    paged(root, 4, force=True)                           # the same page at v2, the default
+    # Historical V2 lock fixture: emulate its old default in a fresh draft folder, preserving the V1 set.
+    (root / PAGE_DRAFTS).rename(root.parent / "v1-page-drafts")
+    assert current.count('PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"') == 1
+    source.write_text(current.replace('PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"', 'PAGE_TEMPLATE, PAGE_RENDER = "v2", "v2"'))
+    try:
+        paged(root, 4, force=True)
+    finally:
+        source.write_text(current)
     v2 = json.loads(lock_path.read_text())
     graph = json.loads(Image.open(root / PAGE_LOCKED / "page-04.png").info["prompt"])
     ids = {node["class_type"]: node_id for node_id, node in graph.items()}
@@ -2022,6 +2024,15 @@ def case_lightning_pages(root):
     check("and samples 4 steps at cfg 1", sampler["steps"] == 4 and sampler["cfg"] == 1.0, sampler)
     code, out = run(root, "selftest")
     check("the v2 lock checks out", not code and "1 page locks" in out, out.strip()[-200:])
+    saved = {p.name: p.read_bytes() for p in (root / PAGE_DRAFTS).iterdir()}
+    comfy = FakeComfy()
+    try:
+        code, out = run(root, "--server", comfy.url, "page", STORY, 4)
+        check("the restored V1 default cannot overwrite historical V2 drafts",
+              code != 0 and "page format" in out and not comfy.sent
+              and saved == {p.name: p.read_bytes() for p in (root / PAGE_DRAFTS).iterdir()}, out)
+    finally:
+        comfy.close()
     for label, models, why in [
             ("a v2 recipe without the LoRA", v2["models"][:-1],
              "page-04.recipe.json: its recorded models is not what the tool records"),
@@ -2036,7 +2047,7 @@ def case_lightning_pages(root):
     no_lora = {**MODEL_FILES, "LoraLoaderModelOnly": ("lora_name", [])}
     comfy = FakeComfy(models=no_lora)
     try:
-        code, out = run(root, "--server", comfy.url, "page", STORY, 4)
+        code, out = run(root, "--server", comfy.url, "page", STORY, 4, "--render-version", "v2")
         check("a ComfyUI that doesn't list the LoRA gets no render, and the tool says where to look",
               code and f"can't see {LIGHTNING}" in out and "extra_model_paths.yaml" in out and not comfy.sent,
               out.strip()[-200:])
@@ -2485,6 +2496,149 @@ def case_contact_sheet_reference_width(root):
                   image.width == max(32 * count, 48) and image.getpixel((40, 35)) == (0, 0, 255), image.size)
 
 
+def case_page_format_stability(root):
+    """Normal pages use the selected V1 format and cannot silently replace it or permute the same cast."""
+    drawn(root, "pippa")
+    drawn(root, "bramble")
+    child_drawn(root)
+    friend_drawn(root)
+    style = ("soft storybook watercolor illustration, gentle warm palette, clean confident outlines, "
+             "cozy picture-book style")
+    for command, folder, story_path, index in [
+            (("page", STORY, 4), PAGE_DRAFTS, root / "stories" / f"{STORY}.json", 3),
+            (("book-page", BOOK, "kennedi", 3), book_folder("kennedi", "drafts"),
+             root / "personal-stories" / f"{BOOK}.json", 2)]:
+        comfy = FakeComfy()
+        try:
+            code, out = run(root, "--server", comfy.url, *command)
+            assert not code, out
+            drafts = root / folder
+            saved = {p.name: p.read_bytes() for p in drafts.iterdir()}
+            recipe_path = next(drafts.glob("*-recipe.json"))
+            recipe = json.loads(recipe_path.read_text())
+            check(f"{command[0]} normal route uses V1,40steps,CFG4 and no Lightning model",
+                  recipe["render_version"] == "v1" and all(g["11"]["inputs"]["steps"] == 40
+                  and g["11"]["inputs"]["cfg"] == 4.0 and "14" not in g for g in comfy.sent),
+                  [(g["11"]["inputs"]["steps"], g["11"]["inputs"]["cfg"]) for g in comfy.sent])
+            check(f"{command[0]} sends selected watercolor style and one ordered content-addressed image per actor",
+                  all(g["6"]["inputs"]["prompt"].startswith(style + ". ")
+                      and [g[str(21 + i)]["inputs"]["image"] for i in range(len(recipe["references"]))]
+                      == [f"storybook-{ref['sha256']}.png" for ref in recipe["references"]]
+                      and all(g["6"]["inputs"][f"image{i + 1}"] == [str(21 + i), 0]
+                              == g["7"]["inputs"][f"image{i + 1}"] for i in range(len(recipe["references"])))
+                      for g in comfy.sent))
+            image_path = next(drafts.glob("*-candidate-61.png"))
+            with Image.open(image_path) as image:
+                check(f"{command[0]} decoded output remains a1328-square PNG", image.format == "PNG" and image.size == (1328, 1328))
+                embedded = json.loads(image.info["prompt"])
+                pixels = image.copy()
+            changes = [("template version", {**recipe, "template_version": "v1"}),
+                       ("render version", {**recipe, "render_version": "v3"}),
+                       ("style", {**recipe, "template": {**recipe["template"], "style": "photorealistic"}}),
+                       ("settings", {**recipe, "settings": {**recipe["settings"], "size": 960}}),
+                       ("models", {**recipe, "models": recipe["models"][:-1]})]
+            for label, refs in [("mixed references", [recipe["references"][0], None]),
+                                ("missing reference name", [{}]), ("bad reference name", [{"name": False}]),
+                                ("bad reference kind", [{"name": "pippa", "kind": []}]),
+                                ("duplicate references", [recipe["references"][0]] * 2),
+                                ("too many references", [recipe["references"][0]] * 4)]:
+                changes.append((label, {**recipe, "references": refs}))
+            for key in ("template_version", "render_version", "template", "settings", "models", "references"):
+                changes.append((f"missing {key}", {k: v for k, v in recipe.items() if k != key}))
+                for value in (None, False, 0, "", []):
+                    changes.append((f"{key}={value!r}", {**recipe, key: value}))
+            for label, changed in changes + [("null recipe", None), ("list recipe", [])]:
+                recipe_path.write_text(json.dumps(changed))
+                before = {p.name: p.read_bytes() for p in drafts.iterdir()}
+                sent = len(comfy.sent)
+                code, out = run(root, "--server", comfy.url, *command)
+                check(f"{command[0]} refuses {label} before rendering/replacing any draft",
+                      code != 0 and "page format" in out and "Traceback" not in out
+                      and len(comfy.sent) == sent and before == {p.name: p.read_bytes() for p in drafts.iterdir()}, out)
+                for name, data in saved.items():
+                    (drafts / name).write_bytes(data)
+            recipe_path.write_text("{")
+            sent = len(comfy.sent)
+            code, out = run(root, "--server", comfy.url, *command)
+            check(f"{command[0]} refuses unreadable existing page format without replacing it",
+                  code != 0 and "page format" in out and len(comfy.sent) == sent and recipe_path.read_text() == "{", out)
+            for name, data in saved.items():
+                (drafts / name).write_bytes(data)
+            original = story_path.read_text()
+            story = json.loads(original)
+            story["pages"][index]["cast"].reverse()
+            story_path.write_text(json.dumps(story))
+            sent = len(comfy.sent)
+            code, out = run(root, "--server", comfy.url, *command)
+            check(f"{command[0]} same-cast permutation cannot silently redraw reference associations",
+                  code != 0 and "reference order" in out and len(comfy.sent) == sent
+                  and saved == {p.name: p.read_bytes() for p in drafts.iterdir()}, out)
+            story_path.write_text(original)
+            for name, data in saved.items():
+                (drafts / name).write_bytes(data)
+            sent = len(comfy.sent)
+            code, out = run(root, "--server", comfy.url, *command)
+            check(f"{command[0]} valid same-format resume still succeeds without rendering",
+                  code == 0 and len(comfy.sent) == sent, out)
+            module = tool(root)
+            for label, node, field, value in [("style", "6", "prompt", "photorealistic portrait"),
+                                             ("sampler", "11", "steps", 4),
+                                             ("model", "1", "unet_name", "qwen-image-Q8_0.gguf"),
+                                             ("reference", "21", "image", "different.png"),
+                                             ("canvas", "10", "width", 960)]:
+                graph = json.loads(json.dumps(embedded))
+                graph[node]["inputs"][field] = value
+                meta = PngInfo()
+                meta.add_text("prompt", json.dumps(graph))
+                bad = root.parent / f"changed-{label}.png"
+                pixels.save(bad, "PNG", pnginfo=meta)
+                check(f"{command[0]} returned {label} graph drift fails real candidate validation",
+                      module.candidate_problem(bad, recipe, 61, module.page_graph) is not None)
+            story = json.loads(original)
+            story["pages"][index]["scene"] += " beside a fallen leaf"
+            story_path.write_text(json.dumps(story))
+            sent = len(comfy.sent)
+            code, out = run(root, "--server", comfy.url, *command)
+            check(f"{command[0]} same-format content edit still redraws all seeds",
+                  code == 0 and len(comfy.sent) == sent + 4, out)
+            story_path.write_text(original)
+        finally:
+            comfy.close()
+
+
+def case_page_format_boundaries(root):
+    """The cache owner rejects format/order changes but allows new content, reference bytes and cast membership."""
+    module = tool(root)
+    canon, story = module.load_canon(), module.load_story(STORY)
+    manifest = module.page_manifest(STORY, 4, "v2", "v1", story, canon,
+                                    {name.lower(): "a" * 64 for name in story["pages"][3]["cast"]})
+    runtime = {"system": {"comfyui_version": "fake"}}
+    earlier = {**manifest, "set_writer": module.SET_WRITER, "runtime": runtime, "comfyui_version": "fake", "candidates": {}}
+    drafts = root.parent / "format-boundaries"
+    drafts.mkdir()
+    path = drafts / "page-recipe.json"
+
+    def probe(label, old, current, reason=None):
+        path.write_text(json.dumps(old))
+        error = ""
+        try:
+            module.kept_candidates(drafts, "page", current, runtime)
+        except SystemExit as exc:
+            error = str(exc)
+        check(label, reason in error if reason else not error, error)
+
+    probe("matching page format is admitted", earlier, manifest)
+    for key, value in (("template_version", "v1"), ("render_version", "v3"), ("template", {}), ("settings", {}), ("models", [])):
+        probe(f"cache owner refuses changed {key}", {**earlier, key: value}, manifest, "page format")
+    probe("cache owner refuses same-cast permutation", earlier,
+          {**manifest, "references": list(reversed(manifest["references"]))}, "reference order")
+    probe("new bytes for the same ordered references remain admitted", earlier,
+          {**manifest, "references": [{**ref, "sha256": "b" * 64} for ref in manifest["references"]]})
+    for count in (1, 3):
+        refs = manifest["references"][:1] if count == 1 else [*manifest["references"], {"name": "barnaby", "sha256": "c" * 64}]
+        probe(f"authored cast membership change to {count} references remains admitted", earlier, {**manifest, "references": refs})
+
+
 def main():
     cases = [case_fresh_storybook, case_character_lock_selftest, case_refusals, case_candidate_is_not_its_recipe, case_licence_allowlist,
              case_canon_change, case_lock_is_its_character, case_real_folders_only,
@@ -2497,7 +2651,7 @@ def main():
              case_friend_sheets, case_friend_profile_check, case_friend_names, case_mixing_rule,
              case_book_lock_follows_friends, case_lightning_pages, case_render_comparisons,
              case_book_ready_missing, case_book_ready_valid_and_invalid,
-             case_runtime_record_and_resume, case_runtime_drift_and_validation, case_paired_proof, case_v1_step_comparison, case_actor_scene_proof, case_contact_sheet_reference_width]
+             case_runtime_record_and_resume, case_runtime_drift_and_validation, case_paired_proof, case_v1_step_comparison, case_actor_scene_proof, case_contact_sheet_reference_width, case_page_format_stability, case_page_format_boundaries]
     for case in cases:
         print(f"\n== {case.__name__}: {case.__doc__}")
         with tempfile.TemporaryDirectory(prefix="story-test-") as tmp:

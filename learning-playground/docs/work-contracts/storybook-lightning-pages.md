@@ -1,5 +1,9 @@
 # Storybook: Faster Pages with the Lightning LoRA
 
+The default decision below is historical. [Format stability and regressions](storybook-fidelity-binding.md)
+restores the owner-selected V1 baseline; Lightning V2 remains available as an isolated comparison,
+and its existing locks still validate.
+
 Branch `feat/storybook-lightning-pages`. Operator, 2026-10-14: "continue with
 what we have and add the add ons to speed it up for now." Accepted by the
 operator, 2026-10-14: "yes to bth 1 and 2" (2 was this contract; 1 was the

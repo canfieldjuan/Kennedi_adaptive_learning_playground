@@ -147,7 +147,9 @@ PAGE_RENDERS = {"v1": {"size": 1328, "shift": 3.1, "cfg_norm": 1.0, "reference_m
 PAGE_RENDERS["v2"] = {**PAGE_RENDERS["v1"], "steps": 4, "cfg": 1.0, "lora": "edit_lightning", "lora_strength": 1.0}
 # v3: isolated step-count experiment derived from v1; no LoRA or CFG change, not the default.
 PAGE_RENDERS["v3"] = {**PAGE_RENDERS["v1"], "steps": 20}
-PAGE_TEMPLATE, PAGE_RENDER = "v2", "v2"
+# Owner-selected visual baseline; faster render versions remain explicit, isolated comparisons.
+PAGE_TEMPLATE, PAGE_RENDER = "v2", "v1"
+PAGE_FORMAT_KEYS = ("template_version", "render_version", "template", "settings", "models")
 
 
 def page_roles(render_version):
@@ -1205,10 +1207,29 @@ def kept_candidates(drafts, stem, manifest, runtime):
     text render of exactly the seeds it has candidates for, and every file it records is still on disk with its
     recorded SHA-256."""
     path = drafts / f"{stem}-recipe.json"
+    page, recorded = manifest["kind"] in ("story-page", "book-page"), path.is_file()
     try:
-        earlier = json.loads(path.read_text()) if path.is_file() else None
+        earlier = json.loads(path.read_text()) if recorded else None
     except ValueError:
+        if page:
+            sys.exit("existing page format is unreadable; use --render-version for an isolated comparison")
         return {}, {}
+    if page and recorded:
+        # A different format is not a stale scene: never turn it into permission to overwrite the old set.
+        if not isinstance(earlier, dict) or any(earlier.get(key) != manifest[key] for key in PAGE_FORMAT_KEYS):
+            sys.exit("existing page format differs or is incomplete; use --render-version for an isolated comparison")
+        references = earlier.get("references")
+        if (not isinstance(references, list) or not 1 <= len(references) <= 3 or any(
+                not isinstance(ref, dict) or not isinstance(ref.get("name"), str) or not ref["name"]
+                or ref.get("kind") not in (("child", "friend", "character") if manifest["kind"] == "book-page" else (None,))
+                for ref in references)):
+            sys.exit("existing page format has incomplete reference identities; use an isolated comparison")
+        previous_order = [(ref.get("kind"), ref["name"]) for ref in references]
+        current_order = [(ref.get("kind"), ref["name"]) for ref in manifest["references"]]
+        if len(set(previous_order)) != len(previous_order):
+            sys.exit("existing page format has duplicate reference identities; use an isolated comparison")
+        if previous_order != current_order and set(previous_order) == set(current_order):
+            sys.exit("existing page reference order differs; use --render-version for an isolated comparison")
     candidates = earlier.get("candidates") if isinstance(earlier, dict) else None
     renders = earlier.get("renders", {}) if isinstance(earlier, dict) and "cleanup" in manifest else {}
     if (not isinstance(candidates, dict) or not isinstance(renders, dict) or earlier.get("set_writer") != SET_WRITER
