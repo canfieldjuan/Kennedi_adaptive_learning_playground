@@ -522,3 +522,38 @@ plots, geometry diagnosis and diagnostic playback under G / animation-source.
 The next needed work is a coordinated-pose feasibility assessment, with the
 constraints held fixed; further motion authoring remains stopped. No walk
 acceptance or merge authority is inferred.
+
+## Coordination repair after operator resume
+
+Juan resumed the source-coordination repair after the two-strike checkpoint.
+Keep the rig, art, reference bands, sparse-key cap and tangent rule fixed.
+Before further motion edits, add a read-only native-geometry assessment of the
+entire interpolated source. It must use the existing `validate_cycle`, and its
+positions/angles must agree with independently sampled saved Blender geometry.
+It is an authoring diagnostic, never a playback handler or pose correction.
+
+The saved-scene sampler currently omits the IK target position, so the validator
+cannot explicitly distinguish an unreachable target from a near-straight knee.
+Add the required finite target vector to a versioned sample record and report
+`ik_target_unreachable` at the existing validator owner. Reproduce the original
+candidate's overreach without changing any curves; test valid reach and values
+just beyond both boundaries. Preserve old v1 packets; new runs use v2 instead of
+silently inventing a target for old measurements.
+
+Any numerical fit of sparse key values remains outside execution until the
+contract's no-offline-polynomial-solving restriction is explicitly reconciled.
+No numerical fitting, threshold change or third scene is authorized merely by
+adding this assessment. Source-motion design may continue only from explicit
+whole-cycle feasibility evidence, with any needed method amendment recorded.
+
+### Accepted method amendment: bounded sparse-pose fitting
+
+Juan explicitly accepted: "Approve sparse-pose fitting with all constraints
+fixed". Permit an offline standard-library search over finite sparse pose values
+only. Keep key count at twelve or fewer; keep the single PCHIP tangent rule and
+all reference, timing/stride, hold, continuity, rig and art constraints fixed.
+Do not fit polynomial coefficients, Bezier handles or derivatives. Emit static
+editable poses; the normal rebuild must never run a search or correct poses.
+The same whole-cycle validator gates the assessed source and reopened scene.
+Failed searches remain evidence, not qualified motion. Playback acceptance and
+all merge restrictions remain unchanged.
