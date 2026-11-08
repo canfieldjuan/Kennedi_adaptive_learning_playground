@@ -434,9 +434,32 @@ worktree session ledger and persist the durable resume state.
 
 ## Contract Amendments
 
-None after this draft. The interpretations above are part of the initial
-acceptance request. Record new evidence, changed surface, protected surface,
-proof and operator acceptance before expanding scope or changing these gates.
+### 2026-11-08: review correction to observation and contact coverage
+
+PR review reproduced two false passes introduced by the initial validator at
+`61c925db1e61e41c1273c8576e1a059ab8964b36`: supplied exact-event observations were
+required but omitted from geometric checks, and a few early contacts satisfied
+the global gate even when later full cycles had no ground contact. The same
+sample-selection defect also omitted off-grid direction, extrema and angular
+velocity defects.
+
+Correct these at `validate_cycle`: all supplied observations in each complete
+cycle participate in spatial, hold, direction, extrema and angular-velocity
+checks. Only the stall-duration counter keeps fixed quarter-frame intervals.
+Each full cycle requires observed heel contact at both boundaries, matched to
+its own declared timing within at most one quarter frame. Store this positive,
+bounded matching tolerance in the existing closed `GaitSpec`, and report each
+expected/observed match; remove the weaker fixed minimum contact count.
+
+These changes implement the accepted whole-cycle/contact requirements; they do
+not change motion, physical thresholds, reference targets or protected surfaces.
+Fail-first public fixtures must demonstrate both false passes and sibling
+off-grid defects, then pass after repair. Valid timing/geometry boundary controls
+must pass, missing final contacts must fail independently for each leg, and all
+three pinned baseline scenes must still reproduce their intended failures.
+Parity and preservation evidence remain applicable only after a no-relevant-diff
+check of their writer, fixture, inputs and harness. Any future scope expansion or
+motion-target change still requires its own recorded acceptance.
 
 ## Implementation Summary
 

@@ -89,7 +89,7 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
         raise ValueError("Positive finite fps and hip height required")
     if not all(isinstance(r, Sample) for r in samples):
         raise ValueError("Validated sample records required")
-    violations, cycles, contact_events = [], [], []
+    violations, cycles, contact_events, contact_coverage = [], [], [], []
 
     def fail(rule, side, cycle, time, channel, value, limit, unit):
         violations.append({"rule": rule, "side": side.value if side else None,
@@ -109,9 +109,10 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
             fail("scene_inventory", side, None, None, "points/upper", "inconsistent", kind.value, "inventory")
             continue
         # Observe heel contact from evaluated world geometry, not spec events.
-        grid_all = [r for r in rows if abs(r.time*4-round(r.time*4)) < 1e-7 and 0 <= r.time <= 127]
+        timeline = [r for r in rows if 0 <= r.time <= 127]
+        grid_all = [r for r in timeline if abs(r.time*4-round(r.time*4)) < 1e-7]
         previously_down = False
-        for row in grid_all:
+        for row in timeline:
             down = abs(row.points["heel"][2]) <= spec.ground_tolerance and _speed(row.velocity["heel"]) <= spec.speed_epsilon
             if down and not previously_down:
                 contact_events.append({"side": side.value, "time": row.time, "frame": row.time+1,
@@ -151,14 +152,19 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                     run.append((a.time, b.time, speed))
                 else:
                     flush_stall()
-                if held:
-                    anchor = by_time.get(round(origin+holds[point].start*spec.cycle_frames, 9))
-                    if anchor is not None:
-                        drift = math.dist(anchor.points[point], b.points[point])
-                        if drift > spec.hold_position_tolerance:
-                            fail("hold_slip", side, cycle, b.time, point, drift, spec.hold_position_tolerance, "units")
             flush_stall()
         for number, start, end in declared:
+            # Each full cycle needs both observed boundary contacts. A few
+            # early plants cannot establish contact coverage of later cycles.
+            for boundary, time in (("start", start), ("end", end)):
+                matches = [c for c in contact_events if c["side"] == side.value and
+                           abs(c["time"]-time) <= spec.contact_time_tolerance+1e-10]
+                contact_coverage.append({"side": side.value, "cycle": number, "boundary": boundary,
+                                         "expected_frame": time+1, "observed_frames": [c["frame"] for c in matches]})
+                if len(matches) != 1:
+                    fail("contact_coverage", side, number, time, "heel",
+                         {"boundary": boundary, "matches": len(matches), "observed_frames": [c["frame"] for c in matches]},
+                         {"count": 1, "expected_frame": time+1, "tolerance_frames": spec.contact_time_tolerance}, "events")
             expected_times = sorted({round(start, 9), round(end, 9),
                                      *(i/4 for i in range(math.ceil(start*4), math.floor(end*4)+1))})
             event_times = {name: round(start+phase*spec.cycle_frames, 9) for name, phase in
@@ -171,13 +177,15 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                     fail("missing_sample", side, number, t, "coverage", None, "required grid/event sample", "frame")
                 continue
             grid = [by_time[t] for t in expected_times]
-            phases = [(r.time-start)/spec.cycle_frames for r in grid[:-1]]
+            observations = [r for r in rows if start <= r.time <= end]
+            phases = [(r.time-start)/spec.cycle_frames for r in observations[:-1]]
             report = {"side": side.value, "cycle": number, "frames": [start+1, end+1],
-                      "grid_samples": len(grid), "extrema": {}, "point_minimum_speed": {},
+                      "grid_samples": len(grid), "observation_samples": len(observations),
+                      "extrema": {}, "point_minimum_speed": {},
                       "joint_maximum_velocity_change": {}}
             for signal, signature in SIGNATURES.items():
-                values = ([r.points["hip"][2] for r in grid[:-1]] if signal == "pelvis_height"
-                          else [r.angles[signal] for r in grid[:-1]])
+                values = ([r.points["hip"][2] for r in observations[:-1]] if signal == "pelvis_height"
+                          else [r.angles[signal] for r in observations[:-1]])
                 prominence = spec.height_prominence if signal == "pelvis_height" else spec.angular_prominence
                 peaks = extrema(phases, values, prominence)
                 report["extrema"][signal] = [vars(p) for p in peaks]
@@ -204,7 +212,7 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                              assignments[i], {"count": 1, "kind": expected.kind, "window": [expected.start, expected.end]}, "extrema")
 
             for lo, hi in ((.95, .05), (.35, .45)):
-                selected = [r for r, p in zip(grid[:-1], phases)
+                selected = [r for r, p in zip(observations[:-1], phases)
                             if ((p >= lo or p <= hi) if lo > hi else lo <= p <= hi)]
                 if not selected:
                     fail("missing_window_samples", side, number, start, "knee", 0, [lo, hi], "cycle fraction")
@@ -216,8 +224,20 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                 fail("knee_contact_extension", side, number, start, "knee", grid[0].angles["knee"], [0, 5], "degrees")
 
             for point in sorted(primary_points):
+                # Spatial safety applies to every observed point, including
+                # exact events and one-sided samples. Only the duration-based
+                # stall counter above intentionally uses a quarter-frame grid.
+                for row in observations:
+                    if point in ("heel", "ball", "toe") and row.points[point][2] < -spec.height_prominence:
+                        fail("ground_penetration", side, number, row.time, point, row.points[point][2], -spec.height_prominence, "units")
+                    phase = (row.time-start)/spec.cycle_frames
+                    if point in holds and holds[point].covers(phase, phase):
+                        anchor = by_time[round(start+holds[point].start*spec.cycle_frames, 9)]
+                        drift = math.dist(anchor.points[point], row.points[point])
+                        if drift > spec.hold_position_tolerance:
+                            fail("hold_slip", side, number, row.time, point, drift, spec.hold_position_tolerance, "units")
                 intervals = []
-                for a, b in zip(grid, grid[1:]):
+                for a, b in zip(observations, observations[1:]):
                     dt = b.time-a.time
                     velocity = [(y-x)/dt for x, y in zip(a.points[point], b.points[point])]
                     speed = _speed(velocity)
@@ -226,8 +246,6 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                     progression = point in ("hip", "knee") or (point in ("ankle", "toe") and p0 >= spec.toe_off-1e-10)
                     if progression and velocity[0] < -spec.backward_tolerance:
                         fail("point_backward", side, number, a.time, point, velocity[0], -spec.backward_tolerance, "units/frame")
-                    if point in ("heel", "ball", "toe") and b.points[point][2] < -spec.height_prominence:
-                        fail("ground_penetration", side, number, b.time, point, b.points[point][2], -spec.height_prominence, "units")
                 report["point_minimum_speed"][point] = min(v for v, _ in intervals)
                 if point in holds:
                     hold = holds[point]
@@ -246,9 +264,9 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                         if delta > spec.contact_speed_tolerance:
                             fail("contact_reacceleration", side, number, b.time, point, delta, spec.contact_speed_tolerance, "units/frame")
 
-            for joint in grid[0].angles:
+            for joint in observations[0].angles:
                 jumps = []
-                for a, b in zip(grid, grid[1:]):
+                for a, b in zip(observations, observations[1:]):
                     jump = abs(b.angular_velocity[joint]-a.angular_velocity[joint])*.25/(b.time-a.time)
                     jumps.append(jump)
                     if jump > spec.velocity_change_per_quarter:
@@ -270,7 +288,7 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                 if velocity[0] < -spec.backward_tolerance:
                     fail("release_backward", side, number, release.time, point, velocity[0], -spec.backward_tolerance, "units/frame")
 
-            swing = [r for r in grid if spec.toe_off < (r.time-start)/spec.cycle_frames < 1]
+            swing = [r for r in observations if spec.toe_off < (r.time-start)/spec.cycle_frames < 1]
             sp = [(r.time-start)/spec.cycle_frames for r in swing]
             toe_peaks = extrema(sp, [r.points["toe"][2] for r in swing], spec.height_prominence, circular=False)
             minima = [p for p in toe_peaks if p.kind is Kind.MINIMUM]
@@ -304,8 +322,6 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
             fail("global_step_ratio", Side(b["side"]), None, b["time"], "step_hip_ratio", ratio, spec.expected_step_hip_ratio, "ratio")
         if abs(cadence-spec.expected_cadence) > spec.cadence_tolerance:
             fail("global_cadence", Side(b["side"]), None, b["time"], "cadence", cadence, spec.expected_cadence, "steps/min")
-    if len(steps) < 2:
-        fail("insufficient_observed_contacts", None, None, None, "contacts", len(contacts), "at least three alternating contacts", "events")
     strides = []
     for side in Side:
         same_foot = [c for c in contacts if c["side"] == side.value]
@@ -320,6 +336,7 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                          "expected_cycles": sum(len(spec.cycles(s)) for s in Side), "sample_rows": len(samples)},
             "global": {"fps": fps, "rest_hip_height": rest_hip_height, "contacts": contacts, "steps": steps,
                        "strides": strides,
+                       "contact_coverage": contact_coverage,
                        "expected_cadence": spec.expected_cadence, "expected_step_hip_ratio": spec.expected_step_hip_ratio},
             "cycles": cycles, "violation_counts": dict(sorted(Counter(v["rule"] for v in violations).items())),
             "violations": violations, "artistic_acceptance": False}

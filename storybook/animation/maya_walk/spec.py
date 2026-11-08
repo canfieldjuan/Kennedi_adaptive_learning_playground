@@ -78,6 +78,7 @@ class GaitSpec:
     ratio_tolerance: float = .01
     cadence_tolerance: float = .1
     hold_position_tolerance: float = .00001
+    contact_time_tolerance: float = .25
 
     def __post_init__(self):
         if not isinstance(self.name, str) or not self.name:
@@ -89,6 +90,8 @@ class GaitSpec:
             raise ValueError("Strictly ordered foot events required")
         if type(self.stall_intervals) is not int or self.stall_intervals < 1:
             raise ValueError("Positive integral stall duration required")
+        if not 0 < self.contact_time_tolerance <= .25:
+            raise ValueError("Contact matching tolerance must be at most one quarter frame")
         if any(getattr(self, f.name) <= 0 for f in fields(self)
                if f.name not in {"name", "foot_flat", "heel_off", "ball_off", "toe_off"}):
             raise ValueError("Positive measurement limits required")

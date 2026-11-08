@@ -43,10 +43,12 @@ class ExtremaTests(unittest.TestCase):
 
 class SpecTests(unittest.TestCase):
     def test_falsy_nonfinite_and_wrong_types_cannot_defeat_limits(self):
-        for key in ("cycle_frames", "speed_epsilon", "stall_intervals", "expected_cadence"):
+        for key in ("cycle_frames", "speed_epsilon", "stall_intervals", "expected_cadence", "contact_time_tolerance"):
             for value in (0, "", False, -1, math.inf, math.nan):
                 with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                     replace(BASELINE, **{key: value})
+        with self.assertRaises(ValueError):
+            replace(BASELINE, contact_time_tolerance=.250001)
 
     def test_events_and_hold_inventory_closed(self):
         with self.assertRaises(ValueError):
@@ -110,6 +112,91 @@ class WholeCycleTests(unittest.TestCase):
         rows = [replace(r, points={**r.points, "toe": (r.points["toe"][0]+.01*r.time, 0., 0.)})
                 if 8 <= r.time <= 10 else r for r in self.rows]
         self.assertIn("hold_slip", report(rows)["violation_counts"])
+
+    def test_exact_release_and_one_sided_points_receive_geometry_checks(self):
+        for delay in (0., 1/128):
+            for point in ("heel", "ball", "toe"):
+                def mutate(r):
+                    p = ((r.time+SPEC.offset(r.side))/SPEC.cycle_frames) % 1
+                    if abs(p-(SPEC.toe_off+delay/SPEC.cycle_frames)) < 1e-8:
+                        return replace(r, points={**r.points, point: (*r.points[point][:2], -.1)})
+                    return r
+                with self.subTest(delay=delay, point=point):
+                    result = report([mutate(r) for r in self.rows])
+                    failures = [v for v in result["violations"] if v["rule"] == "ground_penetration" and v["channel"] == point]
+                    self.assertEqual({(v["side"], v["cycle"]) for v in failures},
+                                     {(side.value, n) for side in Side for n, _, _ in SPEC.cycles(side)})
+
+    def test_exact_hold_endpoint_cannot_hide_a_teleport(self):
+        rows = [replace(r, points={**r.points, "toe": (r.points["toe"][0]+.1, *r.points["toe"][1:])})
+                if abs(((r.time+SPEC.offset(r.side))/SPEC.cycle_frames) % 1-SPEC.toe_off) < 1e-8 else r for r in self.rows]
+        self.assertIn("hold_slip", report(rows)["violation_counts"])
+
+    def test_off_grid_observations_participate_in_direction_and_joint_rules(self):
+        for change, rule in (("position", "point_backward"), ("angle", "extrema_count"),
+                             ("velocity", "angular_velocity_jump")):
+            def mutate(r):
+                if abs(((r.time+SPEC.offset(r.side))/SPEC.cycle_frames) % 1-SPEC.toe_off) > 1e-8:
+                    return r
+                if change == "position":
+                    return replace(r, points={**r.points, "hip": (r.points["hip"][0]-.1, *r.points["hip"][1:])})
+                if change == "angle":
+                    return replace(r, angles={**r.angles, "knee": 100.})
+                return replace(r, angular_velocity={**r.angular_velocity, "knee": 100.})
+            with self.subTest(change=change):
+                self.assertIn(rule, report([mutate(r) for r in self.rows])["violation_counts"])
+
+    def test_later_missing_contacts_cannot_hide_behind_early_valid_steps(self):
+        def mutate(r):
+            q = (r.time+SPEC.offset(r.side))/SPEC.cycle_frames
+            # Smooth lift during a swing, then a stationary airborne heel in
+            # every subsequent plant. Preserve the first three valid contacts.
+            start = 1.5
+            u = max(0., min(1., (q-start)/.4))
+            height = .1*(1-math.cos(math.pi*u))/2
+            vz = .1*math.pi*math.sin(math.pi*u)/(2*.4*SPEC.cycle_frames) if 0 < u < 1 else 0.
+            return replace(r, points={**r.points, "heel": (*r.points["heel"][:2], r.points["heel"][2]+height)},
+                           velocity={**r.velocity, "heel": (*r.velocity["heel"][:2], r.velocity["heel"][2]+vz)})
+        result = report([mutate(r) for r in self.rows])
+        self.assertEqual(len(result["global"]["steps"]), 2)
+        self.assertIn("contact_coverage", result["violation_counts"])
+        failures = [v for v in result["violations"] if v["rule"] == "contact_coverage"]
+        self.assertEqual({v["side"] for v in failures}, {"near", "far"})
+
+    def test_final_contact_required_for_each_leg_without_rejecting_other_leg(self):
+        for side in Side:
+            last, _, end = SPEC.cycles(side)[-1]
+            q_end = (end+SPEC.offset(side))/SPEC.cycle_frames
+            def mutate(r):
+                if r.side is not side:
+                    return r
+                q = (r.time+SPEC.offset(side))/SPEC.cycle_frames
+                u = max(0., min(1., (q-(q_end-.5))/.4))
+                height = .1*(1-math.cos(math.pi*u))/2
+                vz = .1*math.pi*math.sin(math.pi*u)/(2*.4*SPEC.cycle_frames) if 0 < u < 1 else 0.
+                return replace(r, points={**r.points, "heel": (*r.points["heel"][:2], r.points["heel"][2]+height)},
+                               velocity={**r.velocity, "heel": (*r.velocity["heel"][:2], r.velocity["heel"][2]+vz)})
+            with self.subTest(side=side):
+                failures = [v for v in report([mutate(r) for r in self.rows])["violations"] if v["rule"] == "contact_coverage"]
+                self.assertEqual([(v["side"], v["cycle"], v["frame"], v["value"]["boundary"]) for v in failures],
+                                 [(side.value, last, end+1, "end")])
+
+    def test_contact_tolerance_matches_observations_at_its_boundary(self):
+        good = report(self.rows)
+        self.assertEqual(good["status"], "PASS")
+        self.assertTrue(all(c["observed_frames"] == [c["expected_frame"]+.25]
+                            for c in good["global"]["contact_coverage"]))
+        narrower = report(self.rows, replace(SPEC, contact_time_tolerance=.249999))
+        self.assertEqual(narrower["violation_counts"]["contact_coverage"], 12)
+
+    def test_event_ground_tolerance_accepts_boundary_and_rejects_beyond(self):
+        for height, rejected in ((-SPEC.height_prominence, False), (-SPEC.height_prominence-1e-7, True)):
+            rows = [replace(r, points={**r.points, "heel": (*r.points["heel"][:2], height)})
+                    if abs(((r.time+SPEC.offset(r.side))/SPEC.cycle_frames) % 1-SPEC.toe_off) < 1e-8 else r for r in self.rows]
+            with self.subTest(height=height):
+                result = report(rows)
+                self.assertEqual("ground_penetration" in result["violation_counts"], rejected)
+                self.assertEqual(result["status"], "FAIL" if rejected else "PASS")
 
     def test_missing_samples_leg_and_empty_never_pass(self):
         for rows in ([], self.rows[2:], [r for r in self.rows if r.side is Side.NEAR],

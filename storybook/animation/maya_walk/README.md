@@ -72,6 +72,14 @@ runs. Contact/cadence/step measurements come from evaluated heel position and
 speed, separately from spec event labels. Both observed and expected values
 appear in reports.
 
+Every exact-event and one-sided observation participates in spatial, direction,
+joint extrema and angular-velocity checks. Only the duration-based stall rule
+counts fixed quarter-frame intervals; declared holds are checked at every
+observation, including their endpoints. Each complete cycle requires an observed
+heel contact at both its start and end, within one quarter frame of the declared
+event. The report lists every expected/observed contact match. A few early
+contacts cannot establish coverage of later cycles.
+
 The six native points (hip, knee, ankle, heel, ball, toe) receive whole-cycle
 checks. The painted heel is an additional release probe; its registered pixel
 is near the support region, not the exact anatomical hinge. Native planted
