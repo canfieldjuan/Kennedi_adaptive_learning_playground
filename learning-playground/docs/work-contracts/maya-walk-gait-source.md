@@ -499,3 +499,26 @@ historical receipts; verified input bytes/hashes; inspected normative sources
 and reference figures; checked the available Blender version. Final contract
 diff/whitespace/scope and input-stability receipts are stored under G after
 drafting. No animation tests are claimed in this step.
+
+## Animation implementation checkpoint: two-strike stop
+
+Juan explicitly released step 4 after checking PR 174 CI and reviews, and
+reaffirmed that merge must wait for his acceptance of the walk. On `c17d60a`,
+quality-gate and storybook-quality-gate passed, and Codex's exact-head review
+completed without findings. Both previously corrected threads were resolved.
+
+Sparse source construction, one-clock upper/lower articulation and the all-action
+rebuild now exist. The two saved candidates both fail the unchanged whole-cycle
+rules. Candidate 2's source target exceeds the fixed two-link reach during
+midstance; analytical geometry agrees with the native IK response. Source pose
+coordination is a confirmed cause. No general rig/reference incompatibility is
+proven; art is not implicated by the passing static, upper and boot visibility
+checks. Full new-gait preservation remains pending.
+
+Per the accepted two-strike rule, stop motion edits here. Do not issue a third
+curve tweak, weaken the reference bands or acceleration limits, change the rig,
+or claim a completed fix. Preserve both attempts, the exact source/measurements,
+plots, geometry diagnosis and diagnostic playback under G / animation-source.
+The next needed work is a coordinated-pose feasibility assessment, with the
+constraints held fixed; further motion authoring remains stopped. No walk
+acceptance or merge authority is inferred.

@@ -17,17 +17,7 @@ class Handle(str, Enum):
     AUTO_CLAMPED = "AUTO_CLAMPED"
 
 
-UPPER_BONES = ("root", "body", "head", "hem_left", "hem_right", "holding_shoulder",
-               "holding_arm", "holding_forearm", "lantern", "free_shoulder", "free_arm", "free_forearm")
-CHANNELS = frozenset(
-    [("CTRL_Hips", "location", i) for i in (0, 2)] +
-    [("Camera_"+view, "location", 0) for view in ("Side", "ThreeQuarter")] +
-    [("CTRL_Foot_"+side, "location", i) for side in ("near", "far") for i in (0, 2)] +
-    [("CTRL_"+control+"_"+side, "rotation_euler", 1)
-     for side in ("near", "far") for control in ("Heel", "BallRoll", "ToePivot")] +
-    [("MAYA_PAINTED_UPPER_RIG", f'pose.bones["{bone}"].{prop}', i)
-     for bone in UPPER_BONES for prop, size in (("location", 3), ("rotation_quaternion", 4), ("scale", 3))
-     for i in range(size)])
+from .spec import UPPER_BONES, CHANNELS
 
 
 @dataclass(frozen=True)

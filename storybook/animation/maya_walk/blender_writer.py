@@ -78,3 +78,36 @@ def replay_legacy(bpy, fixture):
     if not isinstance(fixture, LegacyFixture):
         raise TypeError("A separately typed lossless historical fixture is required")
     _replace_actions(bpy, fixture.curves)
+
+
+def serialize_motion(motion):
+    """Expand validated cycle keys; no resampling or extra fitted keys."""
+    import math
+    from .curves import Motion
+    from .legacy import Interpolation, Handle
+    if type(motion) is not Motion:
+        raise TypeError('Spec-bound sparse Motion required')
+    result=[]
+    duration=motion.spec.cycle_frames
+    for curve in motion.curves:
+        # Rechecking the cap here keeps the writer admission explicit.
+        if len(curve.keys)>12:
+            raise ValueError('Writer refuses more than 12 keys per channel per cycle')
+        owner,path,index=curve.rule.channel
+        offset=.5 if owner.endswith('_far') else 0.
+        rows=[]
+        for n in range(-2,math.ceil(128/duration)+3):
+            for key,slope in zip(curve.keys,curve.slopes):
+                rows.append(((n+key.phase-offset)*duration+1,
+                             key.value+(n-offset)*curve.rule.translation,slope/duration))
+        keys=[]
+        for i,(t,v,m) in enumerate(rows):
+            dl=(t-rows[i-1][0])/3 if i else duration/3
+            dr=(rows[i+1][0]-t)/3 if i+1<len(rows) else duration/3
+            keys.append((t,v,t-dl,v-m*dl,t+dr,v+m*dr))
+        result.append(SerializedCurve(owner,path,index,Interpolation.BEZIER,Handle.FREE,tuple(keys)))
+    return tuple(result)
+
+
+def write_motion(bpy, motion):
+    _replace_actions(bpy,serialize_motion(motion))

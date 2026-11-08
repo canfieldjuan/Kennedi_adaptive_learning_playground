@@ -1,4 +1,4 @@
-"""Local read-only reproduction commands; the motion writer is not released yet."""
+"""Reproduce baselines, prove parity and rebuild the source-owned reference gait."""
 import argparse
 import hashlib
 import json
@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from .spec import BASELINE, SamplePacket
+from .spec import BASELINE, TARGET, SamplePacket
 from .validate import validate_cycle
 from .review import render_plots
 
@@ -30,9 +30,13 @@ def write_json(path, value):
 def analyze(path):
     packet = json.loads(path.read_text())
     model = SamplePacket.from_dict(packet)
-    _, kind, digest = BASELINES[model.alias.value]
-    if model.scene_kind.value != kind or model.scene_sha256 != digest or model.spec != BASELINE:
-        raise ValueError("Baseline identity or policy differs from the sealed owner")
+    if model.alias.value == "candidate":
+        if model.spec != TARGET or model.scene_kind.value != "painted":
+            raise ValueError("Candidate policy differs from the source owner")
+    else:
+        _, kind, digest = BASELINES[model.alias.value]
+        if model.scene_kind.value != kind or model.scene_sha256 != digest or model.spec != BASELINE:
+            raise ValueError("Baseline identity or policy differs from the sealed owner")
     samples = model.samples
     report = validate_cycle(samples, model.spec, model.scene_kind, fps=model.fps,
                             rest_hip_height=model.rest_hip_height, scene_sha256=model.scene_sha256,
@@ -81,6 +85,40 @@ def reproduce(args):
     return 0 if all(r["reproduced"] for r in results.values()) else 1
 
 
+def rebuild(args):
+    output=args.output_dir.resolve()
+    output.mkdir(mode=0o700,parents=True,exist_ok=False)
+    source=Path(__file__).parent
+    write_json(output/'source-inventory.json',{str(p.relative_to(source)):hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in sorted(source.rglob('*.py'))})
+    write_json(output/'revision.json', {
+        'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=source.parents[2],text=True).strip(),
+        'worktree_status':subprocess.check_output(['git','status','--porcelain=v1'],cwd=source.parents[2],text=True)})
+    input_path=args.input_blend.resolve()
+    commands=[]
+    def run(label,scene,script,options):
+        command=[args.blender,'--background','--factory-startup','--disable-autoexec','--threads','2',
+            str(scene),'--python-exit-code','17','--python',str(source/script),'--',*options]
+        with (output/(label+'.log')).open('w') as log:
+            result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,timeout=180)
+        commands.append({'command':command,'exit_code':result.returncode})
+        write_json(output/'commands.json',commands)
+        if result.returncode:
+            print((output/(label+'.log')).read_text(),file=sys.stderr)
+            raise RuntimeError(label+' failed')
+    run('build',input_path,'build_scene.py',['--output-dir',str(output)])
+    scene=output/'maya-reference-walk.blend'
+    digest=hashlib.sha256(scene.read_bytes()).hexdigest()
+    samples=output/'candidate-samples.json'
+    run('sample',scene,'sample_scene.py',['--output',str(samples),'--sha256',digest,'--kind','painted','--alias','candidate'])
+    packet,_,report=analyze(samples)
+    report['plots']=render_plots(packet,report,output)
+    write_json(output/'candidate-validation.json',report)
+    print('CANDIDATE_RESULT',json.dumps({'status':report['status'],'counts':report['violation_counts'],
+        'coverage':report['coverage'],'scene_sha256':digest}),flush=True)
+    return 0 if report['status']=='PASS' else 1
+
+
 def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
@@ -93,10 +131,16 @@ def main():
     port.add_argument("--evidence-root", type=Path, required=True)
     port.add_argument("--output-dir", type=Path, required=True)
     port.add_argument("--blender", default="blender")
+    build=commands.add_parser("rebuild")
+    build.add_argument("--input-blend",type=Path,required=True)
+    build.add_argument("--output-dir",type=Path,required=True)
+    build.add_argument("--blender",default="blender")
     check = commands.add_parser("validate")
     check.add_argument("samples", type=Path)
     check.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.command == "rebuild":
+        return rebuild(args)
     if args.command == "reproduce":
         return reproduce(args)
     if args.command == "port-parity":

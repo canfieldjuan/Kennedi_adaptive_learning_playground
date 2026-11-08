@@ -1,11 +1,51 @@
 # Maya walk source
 
+**NOT DONE: reference candidate fails saved-scene validation. Motion edits are
+stopped after two attempts under the accepted two-strike rule.** CI and Codex
+review cleared prerequisite commit `c17d60a`; that review does not cover this
+new source. No playback acceptance or merge authority exists.
+
+The active source now owns sparse poses for every existing animated scalar,
+including the upper body, on one `GaitSpec` clock. `curves.py` enforces explicit
+derived or spec-matched pinned tangents, declared scalar holds/turnarounds and
+the twelve-key limit. The one Blender writer rebuilds all actions from the
+pinned first-painted input. Legacy dense replay remains separately typed for
+the already-proven parity gate.
+
+```sh
+python3 -B -m storybook.animation.maya_walk rebuild \
+  --input-blend /path/to/pinned/maya-painted-control-rig.blend \
+  --output-dir /new/durable/evidence/directory --blender /path/to/blender
+```
+
+A rebuild always saves the attempted scene, then reopens it in a fresh pinned
+Blender process. It writes source inventory, authored keys, static preservation,
+raw measurements, every gait violation and joint plots. A failing candidate
+returns nonzero; the output is diagnostic evidence, never an approved walk.
+
+The two source attempts are retained under evidence alias G / animation-source.
+Both preserve static rig/art. The second also passes the unchanged historical
+upper-attachment and boot-opening visibility checks. Full new-gait preservation
+is still incomplete. Its measured cadence and step ratio match the accepted
+target; release progresses and the toe dip is retained. However, it has extra
+joint extrema, backward knee motion, contact re-acceleration and excessive
+angular acceleration. Its midstance control target exceeds the fixed leg reach.
+That is a source coordination error, not proof that the rig or art is incapable.
+No third curve tweak or threshold relaxation is authorized by these results.
+
+Remaining: a constraint-based assessment of coordinated pose feasibility before
+further authoring; passing saved-scene and full preservation gates; scene mutation
+proofs; the complete operator review package; and Juan's playback acceptance.
+The package must not be presented as a completed animation fix.
+
+## Prerequisite reproduction and parity
+
 Contract: `learning-playground/docs/work-contracts/maya-walk-gait-source.md`,
 accepted by Juan at commit `b266c7f5679ac4172b63ba13362b60a02795a76f`.
 
-Current phase: **baseline reproduction and unchanged port**. The historical
-replay writes all actions losslessly. Lossless parity must precede the sparse source rewrite; neither
-passing measurements nor this reproduction constitutes playback acceptance.
+Completed prerequisites: **baseline reproduction and unchanged port**. The
+historical replay writes all actions losslessly, and parity was proven before
+reference authoring. These proofs do not constitute playback acceptance.
 
 From the repository root:
 
@@ -17,8 +57,9 @@ python3 -B -m storybook.animation.maya_walk port-parity --evidence-root "$EVIDEN
 
 The output directory must be new. The runner reads only the three hash-pinned
 scenes; each opens in a fresh factory Blender process with autoexec disabled.
-Blender build `d13f752e3b9c` is the recorded qualification runtime. CPU sampling
-only, no rendering, scene saving, GPU use or imported evidence-folder code.
+Blender build `d13f752e3b9c` is the recorded qualification runtime. `reproduce`
+only samples inputs; it does not render or save scenes, use the GPU, or import
+evidence-folder code.
 Its output includes raw samples, command logs, source hashes, every violation,
 global gait measurements and standalone PNG diagnostics.
 
@@ -35,8 +76,8 @@ Binary snapshots and scenes stay in the external output directory.
 `tests/legacy-actions.json` is a hash-pinned, deduplicated **lossless historical
 source fixture**, not new authored motion. It intentionally preserves the dense
 keys and old interpolation so parity is meaningful. `LegacyFixture` has a
-separate replay entry point; there is no general dense-key override. The final
-sparse source model and production rebuild entry point are still gated work.
+separate replay entry point; there is no general dense-key override. The sparse
+source and rebuild entry point are separate and their candidate is unqualified.
 
 `REPRODUCED` means the native and first-painted scenes fail release continuity
 on both legs in every complete cycle, and the current release candidate fails

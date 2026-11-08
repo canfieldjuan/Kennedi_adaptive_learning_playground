@@ -13,7 +13,7 @@ sys.dont_write_bytecode = True
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from storybook.animation.maya_walk.spec import BASELINE, Side, SceneKind
+from storybook.animation.maya_walk.spec import BASELINE, TARGET, GaitSpec, Side, SceneKind
 
 
 def weights_at(point, a, b, c):
@@ -51,7 +51,7 @@ def times(spec):
     # Exact events throughout the scene, not a selected local verification window.
     events = (0., spec.foot_flat, spec.heel_off, spec.ball_off, spec.toe_off)
     for side in Side:
-        for n in range(-1, 6):
+        for n in range(-1, math.ceil(128/spec.cycle_frames)+2):
             for phase in events:
                 t = (n+phase)*spec.cycle_frames-spec.offset(side)
                 if 0 <= t <= 128:
@@ -103,7 +103,9 @@ def main():
     if bpy.app.handlers.frame_change_pre or bpy.app.handlers.frame_change_post:
         raise ValueError("Playback handlers violate source-only native evaluation")
     kind = SceneKind(args.kind)
-    spec = BASELINE
+    spec = TARGET if args.alias == "candidate" else BASELINE
+    if args.alias == "candidate" and GaitSpec(**json.loads(bpy.context.scene.get("gait_spec", "null"))) != spec:
+        raise ValueError("Saved source clock differs from candidate specification")
     scene = bpy.context.scene
     rig = bpy.data.objects["MAYA_CONTROL_RIG"]
     upper = bpy.data.objects.get("MAYA_PAINTED_UPPER_RIG")
