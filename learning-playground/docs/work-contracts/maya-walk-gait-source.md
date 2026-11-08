@@ -557,3 +557,17 @@ editable poses; the normal rebuild must never run a search or correct poses.
 The same whole-cycle validator gates the assessed source and reopened scene.
 Failed searches remain evidence, not qualified motion. Playback acceptance and
 all merge restrictions remain unchanged.
+
+### Accepted method amendment: bounded interior-key timing
+
+Juan explicitly accepted: "Approve bounded interior-key timing fit". Extend the
+accepted offline fit to intermediate key phases between fixed anchors, together
+with their pose values. Keep cycle/fps/stride, contact events, all declared holds
+and extrema anchors, reference bands, validator limits, rig, art, PCHIP tangents
+and the twelve-key cap unchanged. Keep at least one quarter frame between
+neighboring keys and preserve order. Held boundaries and extrema anchors are not
+variables. The legs retain their shared profile and half-cycle offset; every
+channel retains the same clock. No fitted handles or polynomial coefficients,
+dense output, new dependency, playback correction or rig change is permitted.
+Source admission, reopened-scene qualification, preservation, mutations and
+Juan's playback acceptance remain mandatory. No merge authority is granted.
