@@ -1,7 +1,7 @@
 # Maya walk source
 
-**NOT DONE: reference candidate fails saved-scene validation. Motion edits are
-stopped after two attempts under the accepted two-strike rule.** CI and Codex
+**NOT DONE: no reference candidate passes saved-scene validation.** Juan resumed
+the coordination assessment and approved bounded sparse-pose fitting. CI and Codex
 review cleared prerequisite commit `c17d60a`; that review does not cover this
 new source. No playback acceptance or merge authority exists.
 
@@ -18,8 +18,9 @@ python3 -B -m storybook.animation.maya_walk rebuild \
   --output-dir /new/durable/evidence/directory --blender /path/to/blender
 ```
 
-A rebuild always saves the attempted scene, then reopens it in a fresh pinned
-Blender process. It writes source inventory, authored keys, static preservation,
+A rebuild first assesses the entire source and refuses a failed source before
+replacing actions or saving a scene. A passing source is saved and reopened in a
+fresh pinned Blender process. It writes source inventory, authored keys, static preservation,
 raw measurements, every gait violation and joint plots. A failing candidate
 returns nonzero; the output is diagnostic evidence, never an approved walk.
 
@@ -31,10 +32,10 @@ target; release progresses and the toe dip is retained. However, it has extra
 joint extrema, backward knee motion, contact re-acceleration and excessive
 angular acceleration. Its midstance control target exceeds the fixed leg reach.
 That is a source coordination error, not proof that the rig or art is incapable.
-No third curve tweak or threshold relaxation is authorized by these results.
+The later method amendment permits coordinated source fitting; these failed
+scenes themselves do not authorize threshold relaxation.
 
-Remaining: a constraint-based assessment of coordinated pose feasibility before
-further authoring; passing saved-scene and full preservation gates; scene mutation
+Remaining: a passing coordinated source fit; passing saved-scene and full preservation gates; scene mutation
 proofs; the complete operator review package; and Juan's playback acceptance.
 The package must not be presented as a completed animation fix.
 
@@ -97,8 +98,8 @@ scene hash cannot count as reproducing a motion defect.
   registered opaque heel material; signed ankle angle is foot pitch **minus**
   distal shin angle. It never compensates motion or saves a scene.
 - `validate.py`: one `validate_cycle` for the complete timeline. Stall runs span
-  cycle seams; holds require measured position stability. Source sparse-key
-  admission and a retimed upper-body rebuild are later gated work.
+  cycle seams; holds require measured position stability. The same rules gate
+  source geometry before the all-action rebuild.
 - `reference.py`: cited source links and declared engineering bands. Pelvis
   height is a COG proxy. Anatomical ankle dorsiflexion is not ball-roll rotation.
 - `review.py`: standard-library PNG plots. Shaded bands are schematic
@@ -132,3 +133,31 @@ speed epsilon; it tests the rule engine's positive and negative sides, not the
 physical validity of a Blender rig. Actual scene measurements use the accepted
 limits unchanged. Baseline geometry, old receipts, and rejected intermediate
 measurements stay in durable evidence. No binary or private artwork is in git.
+
+
+## Coordination assessment (operator resumed)
+
+`kinematics.NativeGeometry` evaluates the fixed reverse-foot hierarchy and
+nonstretching two-link IK without writing controls. Its samples go through the
+same `validate_cycle`. The writer refuses a source failure before replacing any
+action. A passing source assessment is only a prerequisite; independently
+reopened Blender geometry and painted preservation remain mandatory.
+
+Sample format v2 requires the measured IK target vector. V1 evidence is retained
+unchanged but must be resampled for the new reach rule; the reader never invents
+missing target data. `ik_target_unreachable` covers both maximum extension and
+minimum folded reach, over every observation in every complete cycle, including
+exact events. Limits use the pinned rig proportions and a numeric tolerance.
+
+The two diagnostic candidate scenes have not been changed. Juan accepted the
+bounded method amendment for offline fitting of sparse pose values; no tangents
+or polynomial coefficients may be fitted. Existing reference bands, cadence/step
+targets, point holds, PCHIP rule, key cap, rig and art are unchanged.
+
+`fitting.py` is an offline authoring diagnostic, never a rebuild or playback
+dependency. Ordered value coordinates preserve the declared curve topology.
+Each run holds its sparse phase layout fixed and fits values only; source layouts
+may use up to the existing twelve-key cap. Search guidance and numerical scores
+are not acceptance. Only the unchanged shared validator can admit a source;
+its result and every failed fit remain evidence. A successful fit still needs
+static source transcription and independent saved-scene qualification.

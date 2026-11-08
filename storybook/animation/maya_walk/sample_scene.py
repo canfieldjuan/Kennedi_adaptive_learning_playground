@@ -166,7 +166,8 @@ def main():
                       "knee": math.degrees(thigh_dir.angle(shin_dir)),
                       "ankle": ankle_dorsiflexion(pitch, theta), "foot_pitch": pitch}
             result[side] = {"points": {k: list(v) for k, v in points.items()},
-                            "angles": angles, "upper": arms}
+                            "angles": angles, "upper": arms,
+                            "ik_target": list(bpy.data.objects["MCH_Ankle_"+side.value].evaluated_get(graph).matrix_world.translation)}
         return result
 
     rows = []
@@ -184,7 +185,7 @@ def main():
                          "velocity": velocity, "angular_velocity": omega})
         if index % 100 == 0:
             print(f"SAMPLE_PROGRESS {args.alias} {index}/{len(schedule)}", flush=True)
-    result = {"format": "maya-walk-samples-v1", "alias": args.alias,
+    result = {"format": "maya-walk-samples-v2", "alias": args.alias,
               "scene_sha256": digest, "scene_kind": kind.value,
               "runtime": {"version": bpy.app.version_string, "build": bpy.app.build_hash.decode(),
                           "factory_process": True, "autoexec_disabled": not bpy.context.preferences.filepaths.use_scripts_auto_execute},

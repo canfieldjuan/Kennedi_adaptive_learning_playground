@@ -12,7 +12,7 @@ if __package__ in (None,''):
     sys.path.insert(0,str(Path(__file__).resolve().parents[3]))
 from storybook.animation.maya_walk.__main__ import BASELINES, write_json
 from storybook.animation.maya_walk.poses import author, AMPLITUDES
-from storybook.animation.maya_walk.blender_writer import write_motion
+from storybook.animation.maya_walk.blender_writer import write_motion, InvalidMotion
 from storybook.animation.maya_walk.legacy_scene import static_snapshot
 
 
@@ -36,7 +36,12 @@ def main():
     if before['images'].get('maya-parts-v2.png')!='fed9306a311b64161d269dcaa1a8ddaaa9dc3cc16b8415c255de24caf3e21f81':
         raise ValueError('Packed original atlas mismatch')
     motion=author()
-    write_motion(bpy,motion)
+    try:
+        source_report = write_motion(bpy,motion)
+    except InvalidMotion as error:
+        write_json(out/'source-validation.json',error.report)
+        raise
+    write_json(out/'source-validation.json',source_report)
     after=static_snapshot(bpy)
     if after!=before:
         raise ValueError('Action rebuild changed static rig or artwork')

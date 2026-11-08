@@ -109,5 +109,17 @@ def serialize_motion(motion):
     return tuple(result)
 
 
+class InvalidMotion(ValueError):
+    """An authored source failed the shared whole-cycle rules before writing."""
+    def __init__(self, report):
+        self.report = report
+        super().__init__('Source motion fails whole-cycle admission: '+str(report['violation_counts']))
+
+
 def write_motion(bpy, motion):
+    from .kinematics import NativeGeometry
+    report = NativeGeometry(motion).assess()
+    if report['status'] != 'PASS':
+        raise InvalidMotion(report)
     _replace_actions(bpy,serialize_motion(motion))
+    return report

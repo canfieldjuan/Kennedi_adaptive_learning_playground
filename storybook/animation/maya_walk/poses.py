@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from .curves import ChannelHold, ChannelRule, Curve, Derived, Key, Motion, Turn
 from .reference import Kind
-from .spec import CHANNELS, TARGET, UPPER_BONES, finite
+from .spec import CHANNELS, TARGET, UPPER_BONES, THIGH_LENGTH, SHIN_LENGTH, finite
 
 
 @dataclass(frozen=True)
@@ -27,7 +27,7 @@ class Amplitudes:
 
 AMPLITUDES = Amplitudes()
 HIP_HEIGHT = .94
-THIGH, SHIN, ANKLE = .39, .36, .2
+THIGH, SHIN, ANKLE = THIGH_LENGTH, SHIN_LENGTH, .2
 HEEL, BALL, TIP = -.09, .15, .28
 # Static local axes of world Y from the pinned rest skeleton, not old motion.
 UPPER_AXES = {

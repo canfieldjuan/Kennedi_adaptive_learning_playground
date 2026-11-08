@@ -141,10 +141,14 @@ class Sample:
     angles: dict
     angular_velocity: dict
     upper: dict
+    ik_target: tuple
 
     def __post_init__(self):
         if not finite(self.time) or not isinstance(self.side, Side):
             raise ValueError("Finite sample time and closed side required")
+        if not isinstance(self.ik_target, (list, tuple)) or len(self.ik_target) != 3 or not all(finite(v) for v in self.ik_target):
+            raise ValueError("Finite measured IK target vector required")
+        object.__setattr__(self, "ik_target", tuple(self.ik_target))
         required = {p.value for p in Point if p is not Point.PAINTED_HEEL}
         keys = set(self.points)
         if keys not in (required, required | {Point.PAINTED_HEEL.value}):
@@ -205,7 +209,7 @@ class SamplePacket:
     samples: tuple[Sample, ...]
 
     def __post_init__(self):
-        if self.format != "maya-walk-samples-v1" or not isinstance(self.alias, BaselineAlias):
+        if self.format != "maya-walk-samples-v2" or not isinstance(self.alias, BaselineAlias):
             raise ValueError("Closed baseline alias and sample format required")
         if not isinstance(self.scene_kind, SceneKind) or not isinstance(self.runtime, Runtime):
             raise ValueError("Typed scene kind and runtime required")
@@ -244,3 +248,8 @@ CHANNELS = frozenset(
     [("MAYA_PAINTED_UPPER_RIG", f'pose.bones["{bone}"].{prop}', i)
      for bone in UPPER_BONES for prop, size in (("location", 3), ("rotation_quaternion", 4), ("scale", 3))
      for i in range(size)])
+
+# Fixed proportions of the pinned native rig, shared by authoring and checks.
+THIGH_LENGTH = .39
+SHIN_LENGTH = .36
+REACH_TOLERANCE = 1e-6
