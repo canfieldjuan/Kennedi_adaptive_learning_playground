@@ -89,12 +89,19 @@ def main():
     rep.add_argument("--evidence-root", type=Path, required=True)
     rep.add_argument("--output-dir", type=Path, required=True)
     rep.add_argument("--blender", default="blender")
+    port = commands.add_parser("port-parity")
+    port.add_argument("--evidence-root", type=Path, required=True)
+    port.add_argument("--output-dir", type=Path, required=True)
+    port.add_argument("--blender", default="blender")
     check = commands.add_parser("validate")
     check.add_argument("samples", type=Path)
     check.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "reproduce":
         return reproduce(args)
+    if args.command == "port-parity":
+        from .parity import run_port
+        return run_port(args)
     packet, _, report = analyze(args.samples)
     report["plots"] = render_plots(packet, report, args.output.parent)
     write_json(args.output, report)

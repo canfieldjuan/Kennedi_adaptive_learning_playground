@@ -3,8 +3,8 @@
 Contract: `learning-playground/docs/work-contracts/maya-walk-gait-source.md`,
 accepted by Juan at commit `b266c7f5679ac4172b63ba13362b60a02795a76f`.
 
-Current phase: **whole-cycle baseline reproduction**. This package does not yet
-write motion. Lossless parity must precede the sparse source rewrite; neither
+Current phase: **baseline reproduction and unchanged port**. The historical
+replay writes all actions losslessly. Lossless parity must precede the sparse source rewrite; neither
 passing measurements nor this reproduction constitutes playback acceptance.
 
 From the repository root:
@@ -12,6 +12,7 @@ From the repository root:
 ```sh
 python3 -B -m unittest discover -s storybook/animation/maya_walk/tests -p 'test_*.py'
 python3 -B -m storybook.animation.maya_walk reproduce --evidence-root "$EVIDENCE_ROOT" --output-dir "$NEW_DURABLE_OUTPUT"
+python3 -B -m storybook.animation.maya_walk port-parity --evidence-root "$EVIDENCE_ROOT" --output-dir "$NEW_PARITY_OUTPUT"
 ```
 
 The output directory must be new. The runner reads only the three hash-pinned
@@ -20,6 +21,22 @@ Blender build `d13f752e3b9c` is the recorded qualification runtime. CPU sampling
 only, no rendering, scene saving, GPU use or imported evidence-folder code.
 Its output includes raw samples, command logs, source hashes, every violation,
 global gait measurements and standalone PNG diagnostics.
+
+`port-parity` independently samples the pinned current candidate, rebuilds every
+action from the pinned first-painted scene and the checked-in legacy fixture,
+then opens the result in a fresh process. It compares all quarter frames through
+frame 129 against the supplied lower-rig matrix oracle and the independent
+snapshot: every upper pose bone, object-world matrix and evaluated painted
+vertex. Static rig, mesh, weights, UVs, materials and packed images must also
+match, and the exported action data must be identical. The maximum permitted
+matrix/point coordinate error is `1e-6`; the measured maxima are reported.
+Binary snapshots and scenes stay in the external output directory.
+
+`tests/legacy-actions.json` is a hash-pinned, deduplicated **lossless historical
+source fixture**, not new authored motion. It intentionally preserves the dense
+keys and old interpolation so parity is meaningful. `LegacyFixture` has a
+separate replay entry point; there is no general dense-key override. The final
+sparse source model and production rebuild entry point are still gated work.
 
 `REPRODUCED` means the native and first-painted scenes fail release continuity
 on both legs in every complete cycle, and the current release candidate fails
