@@ -1,9 +1,11 @@
 """Approved offline sparse-pose fitting; never imported by scene playback.
 
-Only key VALUES vary. Phase grid, holds, extrema declarations, PCHIP tangents,
-reference acceptance rules and native proportions are fixed. The shared
-validator, not the numerical objective, decides admission.
+Pose values and, with the accepted timing amendment, interior key phases vary.
+Holds, extrema anchors, PCHIP tangents, reference acceptance rules and native
+proportions are fixed. The shared validator decides admission.
 """
+from dataclasses import asdict, dataclass, replace
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -156,6 +158,104 @@ class PoseChart:
     def project(self,values):return values
 
 
+def time_anchors(name):
+    period=.5 if name.startswith('hip_') else 1.
+    anchors={0.,period}
+    for start,end in HOLDS[name]:anchors.update((start,end))
+    anchors.update(round(p%period,9) for p in (*MINIMA[name],*MAXIMA[name]))
+    # Preserve authored contact-event keys in addition to held boundaries.
+    if name=='ball':anchors.update((.5,TARGET.ball_off,TARGET.toe_off))
+    if name=='toe':anchors.add(TARGET.toe_off)
+    return tuple(sorted(anchors))
+
+
+@dataclass(frozen=True)
+class PhaseLayout:
+    profiles: tuple
+
+    def __post_init__(self):
+        if type(self.profiles) is not tuple or any(type(r) is not tuple or len(r)!=2 for r in self.profiles):
+            raise ValueError('Immutable named phase profiles required')
+        names=[r[0] for r in self.profiles]
+        if len(names)!=len(PHASES) or set(names)!=set(PHASES):
+            raise ValueError('Exactly one phase profile per owned control')
+        spacing=.25/TARGET.cycle_frames
+        for name,phases in self.profiles:
+            period=.5 if name.startswith('hip_') else 1.
+            if type(phases) is not tuple or len(phases)!=len(PHASES[name]) or any(not finite(p) or not 0<=p<period for p in phases):
+                raise ValueError('Complete finite phase profile in its period required')
+            widths=[b-a for a,b in zip(phases,phases[1:])]+[phases[0]+period-phases[-1]]
+            if min(widths)<spacing-1e-12:
+                raise ValueError('Neighboring keys require one quarter frame including the seam')
+            anchors=time_anchors(name)
+            for original,actual in zip(PHASES[name],phases):
+                if any(abs(original-a)<1e-12 for a in anchors):
+                    if actual!=original:raise ValueError('Fixed key anchor moved')
+                else:
+                    lo=max(a for a in anchors if a<original)
+                    hi=min(a for a in anchors if a>original)
+                    if not lo<actual<hi:raise ValueError('Interior key crossed a fixed anchor')
+
+
+class TimingChart:
+    """Ordered interior times; fixed anchors and minimum spacing by construction."""
+    def __init__(self, value_chart):
+        self.value_chart=value_chart
+        self.value_count=len(value_chart.initial)
+        self.initial=list(value_chart.initial)
+        self.parameters=list(value_chart.parameters)
+        self.segments=[]
+        spacing=.25/TARGET.cycle_frames
+        for name,phases in PHASES.items():
+            period=.5 if name.startswith('hip_') else 1.
+            for lo,hi in zip(time_anchors(name),time_anchors(name)[1:]):
+                ids=tuple(i for i,p in enumerate(phases) if lo<p<hi)
+                if not ids:continue
+                minima=[spacing]*(len(ids)+1)
+                if lo==0 and phases[0]!=0:minima[0]=0.
+                if hi==period and phases[0]!=0:minima[-1]=0.
+                slack=hi-lo-sum(minima)
+                if slack<=0:raise ValueError('No room for the fixed sparse key inventory')
+                sequence=[lo,*(phases[i] for i in ids),hi]
+                gaps=[max(b-a-m,1e-6) for a,b,m in zip(sequence,sequence[1:],minima)]
+                encoded=[math.log(v/gaps[-1]) for v in gaps[:-1]]
+                self.segments.append((name,lo,hi,ids,tuple(minima),slack))
+                self.parameters.extend(('phase_'+name,i) for i in ids)
+                self.initial.extend(encoded)
+
+    def layout(self, values):
+        if len(values)!=len(self.initial) or any(not finite(v) for v in values):
+            raise ValueError('Complete finite timed pose vector required')
+        coordinates=values[self.value_count:]
+        if any(abs(v)>20 for v in coordinates):raise ValueError('Bounded phase coordinates required')
+        data={k:list(v) for k,v in PHASES.items()};index=0
+        for name,lo,hi,ids,minima,slack in self.segments:
+            weights=[math.exp(v) for v in coordinates[index:index+len(ids)]]+[1.]
+            total=sum(weights);position=lo
+            for j,i in enumerate(ids):
+                position+=minima[j]+slack*weights[j]/total
+                data[name][i]=position
+            index+=len(ids)
+        return PhaseLayout(tuple((name,tuple(data[name])) for name in sorted(data)))
+
+    def build(self, values):
+        phases=dict(self.layout(values).profiles)
+        motion=self.value_chart.build(values[:self.value_count])
+        result={c.rule.channel:c for c in motion.curves}
+        for name,profile in phases.items():
+            keys=[CHANNEL[name]]
+            if name.startswith('hip_'):
+                profile=(*profile,*(p+.5 for p in profile))
+            else:keys.append((keys[0][0].removesuffix('near')+'far',*keys[0][1:]))
+            if name=='hip_x':keys.extend((camera,'location',0) for camera in ('Camera_Side','Camera_ThreeQuarter'))
+            for key in keys:
+                c=result[key]
+                result[key]=replace(c,keys=tuple(replace(k,phase=p) for k,p in zip(c.keys,profile)))
+        return Motion(motion.spec,tuple(result[k] for k in sorted(result)))
+
+    def project(self,values):return values
+
+
 # Search guide only; final acceptance is the independent validate_cycle result.
 ANCHORS={
     'knee':((0.,3.,0.,5.),(.14,18.,15.,22.),(.4,3.,0.,5.),(.72,61.,60.,65.)),
@@ -175,9 +275,10 @@ def desired(phase, knots):
 
 
 class Objective:
-    def __init__(self, space, velocity_weight=1.):
+    def __init__(self, space, velocity_weight=1., guide_weight=1.):
         self.space=space
         self.velocity_weight=velocity_weight
+        self.guide_weight=guide_weight
         self.schedule=sorted({t for t in times(TARGET) if 0<=t<=24}|
             {24*p for rows in ANCHORS.values() for p,*_ in rows})
         self.calls=0
@@ -196,35 +297,38 @@ class Objective:
             if reach>THIGH_LENGTH+SHIN_LENGTH-1e-5:
                 raise ValueError('Search proposals must remain strictly reachable')
             out.append(max(0.,reach-(THIGH_LENGTH+SHIN_LENGTH-1e-5))/.0001)
-            for point in ('heel','ball','toe'):out.append(max(0.,-pts[point][2]-.0002)/.001)
+            for point in ('heel','ball','toe'):out.append(max(0.,-pts[point][2])/ .001)
+            for point in ('hip','knee','ankle','toe'):
+                applies=point in ('hip','knee') or p>=TARGET.toe_off-1e-9
+                out.append(max(0.,-velocity[point][0]+.0001)/.002 if applies else 0.)
             for joint,anchors in ANCHORS.items():
                 # Low-weight guide, never a new admission band.
-                out.append((a[joint]-desired(p%1,anchors))/5)
-                # Search for the intended order by sign outside the extrema
-                # windows. The validator still uses prominence and all samples.
-                inside_window=any(v.contains(p%1) for v in SIGNATURES[joint])
-                slope=desired((p+1e-5)%1,anchors)-desired((p-1e-5)%1,anchors)
-                sign=1 if slope>=0 else -1
-                out.append(max(0.,-sign*omega[joint]-.02)/.2 if not inside_window else 0.)
+                out.append(self.guide_weight*(a[joint]-desired(p%1,anchors))/5)
+        turns={}
         for joint in ANCHORS:
+            selected=[]
             for expected in SIGNATURES[joint]:
-                values=[row[2][joint] for row in samples if expected.contains((row[0]/24)%1)]
-                v=(min if expected.kind is Kind.MINIMUM else max)(values)
+                rows=[row for row in samples[:-1] if expected.contains((row[0]/24)%1)]
+                row=(min if expected.kind is Kind.MINIMUM else max)(rows,key=lambda row:row[2][joint])
+                v=row[2][joint]
+                selected.append((row[0],expected.kind))
                 low,high=expected.low,expected.high
                 out.append(max(0.,low+.05-v,v-(high-.05))/.15)
-                out.append((v-(low+high)/2)/60)
+                out.append(self.guide_weight*(v-(low+high)/2)/60)
+            turns[joint]=sorted(selected)
         out.append(max(0.,samples[0][2]['knee']-4.95)/.15)
         for a,b in zip(samples,samples[1:]):
             dt=b[0]-a[0]
             for joint in a[3]:out.append(self.velocity_weight*max(0.,abs(b[3][joint]-a[3][joint])*.25/dt-1.98)/.15)
-            for joint,anchors in ANCHORS.items():
-                pa,pb=a[0]/24,b[0]/24
-                outside=[p for p in (pa,pb) if not any(v.contains(p%1) for v in SIGNATURES[joint])]
-                if outside:
-                    p=outside[0]
-                    sign=1 if desired((p+1e-5)%1,anchors)>=desired((p-1e-5)%1,anchors) else -1
-                    out.append(max(0.,-sign*(b[2][joint]-a[2][joint])/dt)/.1)
-                else:out.append(0.)
+            for joint in ANCHORS:
+                # One monotone branch between each window's selected extremum.
+                # This also guides away from extra reversals *inside* a window;
+                # window membership alone does not imply correct peak count.
+                t=(a[0]+b[0])/2
+                prior=[k for u,k in turns[joint] if u<=t]
+                kind=prior[-1] if prior else turns[joint][-1][1]
+                sign=1 if kind is Kind.MINIMUM else -1
+                out.append(max(0.,-sign*(b[2][joint]-a[2][joint])/dt-.001)/.1)
             for point in ('hip','knee','ankle','toe'):
                 vx=(b[1][point][0]-a[1][point][0])/dt
                 applies=point in ('hip','knee') or a[0]>=14.4-1e-9
@@ -248,6 +352,11 @@ class Objective:
         release=min(samples,key=lambda r:abs(r[0]-14.4))
         for point in ('ankle','heel'):
             out.append(max(0.,.006-math.dist(release[4][point],(0,0,0)))/.001)
+        for hold in holds.values():
+            t=hold.end*TARGET.cycle_frames
+            before=model.at(t,Side.NEAR)[0][hold.point.value]
+            after=model.at(t+h,Side.NEAR)[0][hold.point.value]
+            out.append(max(0.,2e-9-math.dist(before,after))/1e-9)
         pre=max(r[1]['toe'][2] for r in samples if .6<r[0]/24<.75)
         dip=min(r[1]['toe'][2] for r in samples if .75<=r[0]/24<=.85)
         post=max(r[1]['toe'][2] for r in samples if .85<r[0]/24<1.)
@@ -263,31 +372,59 @@ class Objective:
         return sum(v*v for v in r),r
 
 
-def solve(matrix, vector):
-    """Pivoted elimination for the small pose-value normal system only."""
-    a=[list(row)+[value] for row,value in zip(matrix,vector)]
-    n=len(a)
-    for i in range(n):
-        pivot=max(range(i,n),key=lambda j:abs(a[j][i]));a[i],a[pivot]=a[pivot],a[i]
-        if abs(a[i][i])<1e-14:raise ValueError('Singular fit step')
-        scale=a[i][i]
-        for k in range(i,n+1):a[i][k]/=scale
-        for j in range(i+1,n):
-            scale=a[j][i]
-            for k in range(i,n+1):a[j][k]-=scale*a[i][k]
-    result=[0.]*n
-    for i in range(n-1,-1,-1):result[i]=a[i][-1]-sum(a[i][j]*result[j] for j in range(i+1,n))
-    return result
+def bounded_step(matrix,vector,limit=.5):
+    """Minimize the damped search quadratic within a parameter trust region.
+
+    Cyclic coordinate minimization starts at the feasible zero step. Each
+    coordinate update decreases the *coupled* quadratic; clipping an already
+    solved unconstrained vector has no such property. This never clamps motion,
+    key values, evaluated frames, derivatives or polynomial coefficients.
+    """
+    if not finite(limit) or limit<=0:raise ValueError('Positive finite step limit required')
+    n=len(vector)
+    if not n or len(matrix)!=n or any(len(row)!=n for row in matrix):
+        raise ValueError('Complete search quadratic required')
+    if any(not finite(v) for row in matrix for v in row) or any(not finite(v) for v in vector):
+        raise ValueError('Finite search quadratic required')
+    if any(matrix[i][i]<=0 for i in range(n)):raise ValueError('Positive damped diagonal required')
+    step=[0.]*n;gradient=[-v for v in vector]
+    for sweep in range(256):
+        largest=0.
+        for i in range(n):
+            candidate=max(-limit,min(limit,step[i]-gradient[i]/matrix[i][i]))
+            delta=candidate-step[i]
+            if delta:
+                step[i]=candidate;largest=max(largest,abs(delta))
+                for j in range(n):gradient[j]+=matrix[j][i]*delta
+        if largest<1e-10:break
+    return step
 
 
-def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1.):
+def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timing=False, value_seed=None, guide_weight=1.):
     if type(iterations) is not int or not 1<=iterations<=1000:
         raise ValueError('Fitting requires an explicit bounded iteration count')
     if not finite(velocity_weight) or not .01<=velocity_weight<=1.:
         raise ValueError('Positive bounded objective weight required; acceptance is always unchanged')
+    if not finite(guide_weight) or not 0<=guide_weight<=1.:
+        raise ValueError('Bounded shaping preference required; acceptance is always unchanged')
+    if sum(p is not None for p in (resume,seed,value_seed))>1:raise ValueError('One explicit starting source required')
+    if type(timing) is not bool or (value_seed and not timing):raise ValueError('Value-to-timing transition requires timing mode')
+    signature=hashlib.sha256(json.dumps({'phases':PHASES,'holds':HOLDS,'minima':MINIMA,'maxima':MAXIMA,
+        'anchors':{n:time_anchors(n) for n in PHASES},'spacing':.25,'timing':timing},sort_keys=True).encode()).hexdigest()
+    starting_path=next((p for p in (resume,seed,value_seed) if p is not None),None)
+    input_pin=hashlib.sha256(Path(starting_path).read_bytes()).hexdigest() if starting_path else None
     seed=PoseSpace().build(json.loads(Path(seed).read_text())['values']) if seed else None
-    space=PoseChart(seed); objective=Objective(space,velocity_weight)
-    x=list(json.loads(Path(resume).read_text())['values']) if resume else space.initial
+    value_chart=PoseChart(seed)
+    space=TimingChart(value_chart) if timing else value_chart
+    objective=Objective(space,velocity_weight,guide_weight);x=list(space.initial)
+    if resume:
+        prior=json.loads(Path(resume).read_text())
+        if prior.get('source_signature')!=signature:raise ValueError('Resume layout or coordinate system differs; use a pinned explicit seed')
+        x=list(prior['values'])
+    if value_seed:
+        prior=json.loads(Path(value_seed).read_text())
+        if prior.get('parameters')!=[list(p) for p in value_chart.parameters]:raise ValueError('Value-seed parameter inventory differs')
+        x[:space.value_count]=prior['values']
     score,r=objective.score(x)
     if r is None:raise ValueError('Initial pose outside closed curve constraints')
     damping=.05;start=time.monotonic();stuck=0
@@ -308,8 +445,7 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1.):
         for attempt in range(9):
             matrix=[row[:] for row in normal]
             for i in range(n):matrix[i][i]+=damping*max(1.,normal[i][i])
-            step=solve(matrix,gradient)
-            step=[max(-.5,min(.5,v)) for v in step]
+            step=bounded_step(matrix,gradient)
             for power in range(14):
                 alpha=.5**power;trial=space.project([a+alpha*b for a,b in zip(x,step)])
                 value,rr=objective.score(trial)
@@ -318,14 +454,17 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1.):
             if accepted:damping=max(1e-7,damping/2);break
             damping*=5
         stuck=0 if accepted else stuck+1
-        record={'iteration':iteration,'score':score,'values':x,'parameters':space.parameters,'velocity_weight':velocity_weight,
+        record={'iteration':iteration,'score':score,'values':x,'parameters':space.parameters,'velocity_weight':velocity_weight,'guide_weight':guide_weight,
+                'source_signature':signature,'input_sha256':input_pin,'timing':timing,
                 'calls':objective.calls,'seconds':time.monotonic()-start,'damping':damping}
         if iteration%10==0 or stuck:
             report=NativeGeometry(space.build(x)).assess()
             record['validation']=report['violation_counts']
+            record['status']=report['status']
             output.write_text(json.dumps(record,indent=2))
             output.with_suffix('.validation.json').write_text(json.dumps(report,indent=2))
-            print('FIT_PROGRESS',json.dumps({k:v for k,v in record.items() if k not in ('values','parameters')}),flush=True)
+            output.with_suffix('.source.json').write_text(json.dumps({'status':report['status'],'motion':asdict(space.build(x))},indent=2))
+            print('FIT_PROGRESS',json.dumps({k:v for k,v in record.items() if k not in ('values','parameters','source_signature','input_sha256')}),flush=True)
             if report['status']=='PASS':return record
         if stuck>=3:break
     report=NativeGeometry(space.build(x)).assess()
@@ -333,6 +472,7 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1.):
     record['status']=report['status']
     output.write_text(json.dumps(record,indent=2))
     output.with_suffix('.validation.json').write_text(json.dumps(report,indent=2))
+    output.with_suffix('.source.json').write_text(json.dumps({'status':report['status'],'motion':asdict(space.build(x))},indent=2))
     return record
 
 
@@ -343,4 +483,6 @@ if __name__=='__main__':
     parser.add_argument('--iterations',type=int,default=160);parser.add_argument('--resume',type=Path)
     parser.add_argument('--seed',type=Path)
     parser.add_argument('--velocity-weight',type=float,default=1.)
-    args=parser.parse_args();fit(args.output,args.iterations,args.resume,args.seed,args.velocity_weight)
+    parser.add_argument('--guide-weight',type=float,default=1.)
+    parser.add_argument('--timing',action='store_true');parser.add_argument('--value-seed',type=Path)
+    args=parser.parse_args();fit(args.output,args.iterations,args.resume,args.seed,args.velocity_weight,args.timing,args.value_seed,args.guide_weight)

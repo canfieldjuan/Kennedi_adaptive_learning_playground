@@ -150,14 +150,31 @@ minimum folded reach, over every observation in every complete cycle, including
 exact events. Limits use the pinned rig proportions and a numeric tolerance.
 
 The two diagnostic candidate scenes have not been changed. Juan accepted the
-bounded method amendment for offline fitting of sparse pose values; no tangents
-or polynomial coefficients may be fitted. Existing reference bands, cadence/step
+bounded method amendments for offline fitting of sparse pose values and interior
+key times between fixed anchors; no tangents or polynomial coefficients may be
+fitted. Existing reference bands, cadence/step
 targets, point holds, PCHIP rule, key cap, rig and art are unchanged.
 
 `fitting.py` is an offline authoring diagnostic, never a rebuild or playback
 dependency. Ordered value coordinates preserve the declared curve topology.
-Each run holds its sparse phase layout fixed and fits values only; source layouts
-may use up to the existing twelve-key cap. Search guidance and numerical scores
+Timing coordinates preserve fixed event, hold-boundary and extremum keys and
+enforce at least one quarter frame between neighbors, including the cycle seam.
+Both legs retain the same profile on the common clock. A typed phase layout
+rejects missing profiles, moved anchors, crossed intervals and crowded keys.
+Resume receipts pin the coordinate layout; a value-only checkpoint requires an
+explicit transition into timing mode. Source layouts may use up to the existing
+twelve-key cap. Search guidance and numerical scores
 are not acceptance. Only the unchanged shared validator can admit a source;
 its result and every failed fit remain evidence. A successful fit still needs
 static source transcription and independent saved-scene qualification.
+
+The bounded timing assessment also remains **FAIL**. Interior-time continuation,
+feasibility-focused continuation and the corrected bounded-step search did not
+produce a source that meets all rules. The active authored curves still equal
+the second saved candidate. Search failure is not a proof of rig/reference
+incompatibility; no further scene or playback acceptance follows from it.
+
+The fitter's earlier unconstrained-step-then-clipping calculation was replaced
+at its owner with bounded coordinate minimization of the coupled search
+quadratic. A two-variable regression fails under the old calculation and passes
+under the new one. This numerical repair changes no gait acceptance rule.

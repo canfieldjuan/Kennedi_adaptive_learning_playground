@@ -81,6 +81,86 @@ class GeometryTests(unittest.TestCase):
 
 
 class FittingTests(unittest.TestCase):
+    def test_bounded_step_solves_coupled_search_not_independent_clipping(self):
+        from storybook.animation.maya_walk.fitting import bounded_step
+        for sign in (-1.,1.):
+            step=bounded_step([[2.,1.],[1.,2.]],[sign*4.,0.])
+            self.assertAlmostEqual(step[0],sign*.5)
+            self.assertAlmostEqual(step[1],-sign*.25)
+        self.assertEqual(bounded_step([[2.,1.],[1.,2.]],[0.,0.]),[0.,0.])
+        for limit in (0.,False,'',-1.,math.nan,math.inf):
+            with self.subTest(limit=limit),self.assertRaises(ValueError):
+                bounded_step([[1.]],[1.],limit)
+
+    def test_timing_chart_preserves_anchors_spacing_and_curve_contract(self):
+        from storybook.animation.maya_walk.fitting import PoseChart,TimingChart,PHASES,time_anchors
+        from storybook.animation.maya_walk.spec import TARGET
+        chart=TimingChart(PoseChart());base=chart.value_chart.build(chart.value_chart.initial)
+        original={c.rule.channel:c for c in base.curves}
+        for delta in (-4.,0.,4.):
+            values=chart.initial[:]
+            for i in range(chart.value_count,len(values)):values[i]+=delta*(1 if i%2 else -1)
+            layout=dict(chart.layout(values).profiles)
+            motion=chart.build(values)
+            self.assertEqual(motion.spec,TARGET)
+            for name,phases in layout.items():
+                period=.5 if name.startswith('hip_') else 1.
+                widths=[b-a for a,b in zip(phases,phases[1:])]+[phases[0]+period-phases[-1]]
+                self.assertGreaterEqual(min(widths),.25/TARGET.cycle_frames-1e-12)
+                for before,after in zip(PHASES[name],phases):
+                    if any(abs(before-a)<1e-12 for a in time_anchors(name)):self.assertEqual(before,after)
+            changed={c.rule.channel:c for c in motion.curves}
+            for c in motion.curves:
+                old=original[c.rule.channel]
+                self.assertEqual(c.rule,old.rule)
+                self.assertEqual([(k.value,k.tangent) for k in c.keys],[(k.value,k.tangent) for k in old.keys])
+                self.assertLessEqual(len(c.keys),12)
+                if '_near' in c.rule.channel[0]:
+                    other=(c.rule.channel[0].replace('_near','_far'),*c.rule.channel[1:])
+                    if c.rule.channel[0].startswith(('CTRL_Foot','CTRL_Heel','CTRL_BallRoll','CTRL_ToePivot')):
+                        self.assertEqual(c.keys,changed[other].keys)
+                if c.rule.channel[0]=='MAYA_PAINTED_UPPER_RIG':self.assertEqual(c,old)
+            self.assertTrue(any(c.rule.channel[0]=='MAYA_PAINTED_UPPER_RIG' for c in motion.curves))
+            root=changed[('CTRL_Hips','location',0)]
+            for camera in ('Camera_Side','Camera_ThreeQuarter'):
+                self.assertEqual([k.phase for k in root.keys],[k.phase for k in changed[(camera,'location',0)].keys])
+            for i in range(6):self.assertAlmostEqual(root.keys[i+6].phase-root.keys[i].phase,.5)
+
+    def test_timing_layout_rejects_moved_anchor_collision_and_incomplete_input(self):
+        from storybook.animation.maya_walk.fitting import PoseChart,TimingChart,PhaseLayout
+        chart=TimingChart(PoseChart());profiles=chart.layout(chart.initial).profiles
+        for bad in ((),profiles[:-1],profiles+(profiles[0],),list(profiles)):
+            with self.assertRaises(ValueError):PhaseLayout(bad)
+        for name,index,value in (('foot_z',4,.73),('foot_x',2,.59),('foot_x',11,.999),
+                                 ('heel',1,.001),('hip_z',1,math.nan)):
+            changed=dict(profiles);phases=list(changed[name]);phases[index]=value;changed[name]=tuple(phases)
+            with self.subTest(name=name,value=value),self.assertRaises(ValueError):PhaseLayout(tuple(changed.items()))
+        for bad in ([],chart.initial[:-1],chart.initial+[0.]):
+            with self.assertRaises(ValueError):chart.build(bad)
+        for index in (0,chart.value_count):
+            for bad in (False,'',math.inf,math.nan,36.):
+                values=chart.initial[:];values[index]=bad
+                with self.subTest(index=index,bad=bad),self.assertRaises(ValueError):chart.build(values)
+
+    def test_timing_resume_rejects_coordinate_system_mismatch(self):
+        import json,tempfile
+        from pathlib import Path
+        from storybook.animation.maya_walk.fitting import fit
+        with tempfile.TemporaryDirectory() as folder:
+            seed=Path(folder)/'seed.json';output=Path(folder)/'result.json'
+            seed.write_text(json.dumps({'values':[],'source_signature':'different'}))
+            with self.assertRaisesRegex(ValueError,'Resume layout'):fit(output,1,resume=seed,timing=True)
+            self.assertFalse(output.exists())
+
+    def test_fit_shaping_weight_cannot_change_admission_or_accept_invalid_weight(self):
+        from pathlib import Path
+        from storybook.animation.maya_walk.fitting import PoseChart,Objective,fit
+        space=PoseChart();strict=Objective(space,guide_weight=0.);guided=Objective(space,guide_weight=1.)
+        self.assertEqual(strict.space.build(space.initial),guided.space.build(space.initial))
+        for weight in (False,'',-1.,1.01,math.nan,math.inf):
+            with self.subTest(weight=weight),self.assertRaises(ValueError):
+                fit(Path('unused-result'),1,guide_weight=weight)
+
     def test_ordered_value_chart_avoids_colliding_key_constraints(self):
         from storybook.animation.maya_walk.fitting import PoseChart
         space=PoseChart()
