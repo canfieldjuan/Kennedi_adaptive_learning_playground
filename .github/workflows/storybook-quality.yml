@@ -45,3 +45,7 @@ jobs:
       # The tool's commands, run against a copy and a fake ComfyUI. CPU only: no GPU, no models.
       - name: Run the story-recipe tests
         run: python3 -B tools/test-story-recipe.py
+
+      - name: Test Maya walk measurement and whole-cycle rules
+        working-directory: .
+        run: python3 -B -m unittest discover -s storybook/animation/maya_walk/tests -p 'test_*.py'
