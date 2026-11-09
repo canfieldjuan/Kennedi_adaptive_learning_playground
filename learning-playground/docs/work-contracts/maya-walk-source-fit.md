@@ -72,7 +72,6 @@ NOT DONE for the walk. This continuation initially adds only this contract and
 starts the bounded source assessment. Run outcome and the next concrete gate
 will be recorded before this slice is handed off or published.
 
-
 ## Numerical repair discovered by the resumed fit
 
 Reproduce: the first resumed run exits normally but reports
@@ -100,7 +99,6 @@ true unresolved signal and valid bounded endpoints; requalify both the original
 frozen numerical problem and this new frozen point before another fit. No
 unlimited probe/search or implicit approval of failed motion is introduced.
 
-
 Probe-range repair proof: the saved-stop regression failed with the expected
 UnreliableJacobian before repair and passes afterward. All 27 numerical/geometry
 tests pass. Both frozen sources resolve all 98 directions under the unchanged
@@ -112,3 +110,26 @@ source/validator/reference/objective files remain unchanged.
 After these gates, resume the saved stop point once with the same bounded run
 settings. Preserve both attempts. The replacement probe ladder is bounded by
 the same named 0.5 trust limit as the solve; it does not widen that limit.
+
+Documentation reconciliation: README.md still described the retired coordinate
+minimizer. Update that reader to the actual shared numerical owner and the
+source-fit status; this changes no source or validation behavior.
+
+## Continuation outcome and stop
+
+The second bounded fit was intentionally stopped after read-only evidence
+isolated another numerical-method limit: the outer fit halves damping after
+any improvement and discards the accepted step fraction/model agreement.
+This policy originated in our 68acce29bccb9c03cbc1ebb715608370a90720c2
+change and was retained by the later numerical repair (0557581, replayed e81ef6e).
+Its last persisted checkpoint remains whole-cycle FAIL. The linear solver is
+converging; that is not whole-search convergence. A frozen-point comparison
+shows substantially better full-step descent with more damping, under exactly
+the same source, objective and constraints.
+
+Do not perform a third fit in this round. Preserve both attempts and the
+outer-step diagnosis. The next required work is a consolidated qualification
+of the outer step-admission/damping policy before another fit. This is a
+fitting-method limitation; rig/reference infeasibility and an art limit are
+not established. Source promotion, a new saved scene, walk acceptance and merge
+of this continuation remain blocked by the failed whole-cycle gate.

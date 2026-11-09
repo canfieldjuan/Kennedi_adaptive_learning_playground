@@ -134,7 +134,6 @@ physical validity of a Blender rig. Actual scene measurements use the accepted
 limits unchanged. Baseline geometry, old receipts, and rejected intermediate
 measurements stay in durable evidence. No binary or private artwork is in git.
 
-
 ## Coordination assessment (operator resumed)
 
 `kinematics.NativeGeometry` evaluates the fixed reverse-foot hierarchy and
@@ -174,7 +173,28 @@ produce a source that meets all rules. The active authored curves still equal
 the second saved candidate. Search failure is not a proof of rig/reference
 incompatibility; no further scene or playback acceptance follows from it.
 
-The fitter's earlier unconstrained-step-then-clipping calculation was replaced
-at its owner with bounded coordinate minimization of the coupled search
-quadratic. A two-variable regression fails under the old calculation and passes
-under the new one. This numerical repair changes no gait acceptance rule.
+`numerics.py` now owns scaled QR/active-set least squares. It replaces both the
+unconstrained-step/clipping path and the capped coordinate-minimization path.
+A typed result records convergence, rank failure or budget exhaustion, and the
+fitter cannot apply an uncertified step. Numerical termination is recorded
+separately from whole-cycle gait status.
+
+Paired finite-difference probes expand geometrically within the same named
+numerical trust bound as the solve. They preserve the source domain and reject
+unresolved directions; the agreement tolerance and all gait constraints remain
+unchanged. Known-solution, badly scaled, duplicate-direction, frozen-stop and
+caller-refusal regressions cover this method. The original frozen checkpoint and
+the first resumed stop point both pass numerical qualification. These proofs
+establish numerical behavior, not a qualified walk.
+
+PR 174 merged the validator/parity prerequisite. The continuation contract is
+`learning-playground/docs/work-contracts/maya-walk-source-fit.md`; bounded source
+fits and their full validation reports remain private evidence. Active authored
+motion is still the failed second saved candidate until a complete source PASS
+permits promotion and independent Blender qualification.
+
+The resumed fit still fails the gait gate. Its inner solves converge, but a
+frozen-source comparison isolates an outer-policy problem: damping is reduced
+after any improvement without retaining step fraction or actual/predicted
+reduction. The second run was intentionally stopped for that diagnosis. A
+third fit and animation promotion remain stopped pending outer-policy proof.
