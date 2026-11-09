@@ -5,12 +5,15 @@ Holds, extrema anchors, PCHIP tangents, reference acceptance rules and native
 proportions are fixed. The shared validator decides admission.
 """
 from dataclasses import asdict, dataclass, replace
+from enum import Enum
 import hashlib
 import json
 import math
 from pathlib import Path
 import time
 
+from .numerics import (bounded_step, bounded_least_squares, SolveStatus,
+                       finite_difference, UnreliableJacobian)
 from .curves import Motion
 from .poses import author, curve, HIP_HEIGHT
 from .spec import TARGET, SceneKind, Side, THIGH_LENGTH, SHIN_LENGTH, finite
@@ -372,32 +375,25 @@ class Objective:
         return sum(v*v for v in r),r
 
 
-def bounded_step(matrix,vector,limit=.5):
-    """Minimize the damped search quadratic within a parameter trust region.
+class FitTermination(str, Enum):
+    RUNNING = 'running'
+    GAIT_PASS = 'gait_pass'
+    ITERATION_LIMIT = 'iteration_limit'
+    NO_DESCENT = 'no_descent'
+    LINEAR_SOLVE_FAILED = 'linear_solve_failed'
+    DERIVATIVES_UNRESOLVED = 'derivatives_unresolved'
 
-    Cyclic coordinate minimization starts at the feasible zero step. Each
-    coordinate update decreases the *coupled* quadratic; clipping an already
-    solved unconstrained vector has no such property. This never clamps motion,
-    key values, evaluated frames, derivatives or polynomial coefficients.
-    """
-    if not finite(limit) or limit<=0:raise ValueError('Positive finite step limit required')
-    n=len(vector)
-    if not n or len(matrix)!=n or any(len(row)!=n for row in matrix):
-        raise ValueError('Complete search quadratic required')
-    if any(not finite(v) for row in matrix for v in row) or any(not finite(v) for v in vector):
-        raise ValueError('Finite search quadratic required')
-    if any(matrix[i][i]<=0 for i in range(n)):raise ValueError('Positive damped diagonal required')
-    step=[0.]*n;gradient=[-v for v in vector]
-    for sweep in range(256):
-        largest=0.
-        for i in range(n):
-            candidate=max(-limit,min(limit,step[i]-gradient[i]/matrix[i][i]))
-            delta=candidate-step[i]
-            if delta:
-                step[i]=candidate;largest=max(largest,abs(delta))
-                for j in range(n):gradient[j]+=matrix[j][i]*delta
-        if largest<1e-10:break
-    return step
+
+def trial_step(objective, space, x, score, solution):
+    """The only consumer of a numerical step requires its convergence receipt."""
+    step = solution.require_converged()
+    for power in range(14):
+        alpha = .5**power
+        trial = space.project([a+alpha*b for a, b in zip(x, step)])
+        value, residuals = objective.score(trial)
+        if residuals is not None and value < score-1e-10:
+            return trial, value, residuals
+    return None
 
 
 def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timing=False, value_seed=None, guide_weight=1.):
@@ -428,49 +424,56 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
     score,r=objective.score(x)
     if r is None:raise ValueError('Initial pose outside closed curve constraints')
     damping=.05;start=time.monotonic();stuck=0
+    termination=FitTermination.RUNNING
     for iteration in range(iterations):
-        jac=[]
-        for j in range(len(x)):
-            epsilon=1e-4;trial=list(x);trial[j]+=epsilon
-            _,rr=objective.score(trial)
-            if rr is None:
-                epsilon=-epsilon;trial[j]=x[j]+epsilon;_,rr=objective.score(trial)
-            if rr is None:jac.append([0.]*len(r))
-            else:jac.append([(b-a)/epsilon for a,b in zip(r,rr)])
-        n=len(x); normal=[[0.]*n for _ in range(n)]
-        for i in range(n):
-            for j in range(i+1):normal[i][j]=normal[j][i]=sum(a*b for a,b in zip(jac[i],jac[j]))
-        gradient=[-sum(a*b for a,b in zip(col,r)) for col in jac]
-        accepted=False
-        for attempt in range(9):
-            matrix=[row[:] for row in normal]
-            for i in range(n):matrix[i][i]+=damping*max(1.,normal[i][i])
-            step=bounded_step(matrix,gradient)
-            for power in range(14):
-                alpha=.5**power;trial=space.project([a+alpha*b for a,b in zip(x,step)])
-                value,rr=objective.score(trial)
-                if value<score-1e-10:
-                    x,score,r=trial,value,rr;accepted=True;break
-            if accepted:damping=max(1e-7,damping/2);break
-            damping*=5
+        derivative=finite_difference(objective.score,x,r)
+        accepted=False;solved=False;solves=[]
+        try:
+            jac=derivative.require_resolved()
+        except UnreliableJacobian:
+            termination=FitTermination.DERIVATIVES_UNRESOLVED
+        else:
+            for attempt in range(9):
+                solution=bounded_least_squares(jac,[-v for v in r],damping)
+                solves.append({k:v for k,v in asdict(solution).items() if k not in ('step','scales')})
+                if solution.status is SolveStatus.CONVERGED:
+                    solved=True
+                    update=trial_step(objective,space,x,score,solution)
+                    if update is not None:
+                        x,score,r=update;accepted=True
+                        damping=max(1e-7,damping/2)
+                        break
+                damping*=5
+            if not solved:termination=FitTermination.LINEAR_SOLVE_FAILED
         stuck=0 if accepted else stuck+1
+        if stuck>=3 and termination is FitTermination.RUNNING:
+            termination=FitTermination.NO_DESCENT
+        if iteration==iterations-1 and termination is FitTermination.RUNNING:
+            termination=FitTermination.ITERATION_LIMIT
         record={'iteration':iteration,'score':score,'values':x,'parameters':space.parameters,'velocity_weight':velocity_weight,'guide_weight':guide_weight,
                 'source_signature':signature,'input_sha256':input_pin,'timing':timing,
-                'calls':objective.calls,'seconds':time.monotonic()-start,'damping':damping}
+                'calls':objective.calls,'seconds':time.monotonic()-start,'damping':damping,
+                'numerics':{'method':'scaled-qr-active-set-v1','solves':solves,
+                            'differences':[asdict(d) for d in derivative.differences]},
+                'termination':termination.value}
         if iteration%10==0 or stuck:
             report=NativeGeometry(space.build(x)).assess()
             record['validation']=report['violation_counts']
             record['status']=report['status']
-            output.write_text(json.dumps(record,indent=2))
+            output.write_text(json.dumps(record,indent=2,allow_nan=False))
             output.with_suffix('.validation.json').write_text(json.dumps(report,indent=2))
             output.with_suffix('.source.json').write_text(json.dumps({'status':report['status'],'motion':asdict(space.build(x))},indent=2))
-            print('FIT_PROGRESS',json.dumps({k:v for k,v in record.items() if k not in ('values','parameters','source_signature','input_sha256')}),flush=True)
-            if report['status']=='PASS':return record
-        if stuck>=3:break
+            print('FIT_PROGRESS',json.dumps({k:v for k,v in record.items() if k not in ('values','parameters','source_signature','input_sha256','numerics')}),flush=True)
+            if report['status']=='PASS':
+                record['termination']=FitTermination.GAIT_PASS.value
+                output.write_text(json.dumps(record,indent=2,allow_nan=False))
+                return record
+        if termination is not FitTermination.RUNNING:break
     report=NativeGeometry(space.build(x)).assess()
     record['validation']=report['violation_counts']
     record['status']=report['status']
-    output.write_text(json.dumps(record,indent=2))
+    if report['status']=='PASS':record['termination']=FitTermination.GAIT_PASS.value
+    output.write_text(json.dumps(record,indent=2,allow_nan=False))
     output.with_suffix('.validation.json').write_text(json.dumps(report,indent=2))
     output.with_suffix('.source.json').write_text(json.dumps({'status':report['status'],'motion':asdict(space.build(x))},indent=2))
     return record

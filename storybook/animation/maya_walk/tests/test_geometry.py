@@ -84,10 +84,10 @@ class FittingTests(unittest.TestCase):
     def test_bounded_step_solves_coupled_search_not_independent_clipping(self):
         from storybook.animation.maya_walk.fitting import bounded_step
         for sign in (-1.,1.):
-            step=bounded_step([[2.,1.],[1.,2.]],[sign*4.,0.])
+            step=bounded_step([[2.,1.],[1.,2.]],[sign*4.,0.]).require_converged()
             self.assertAlmostEqual(step[0],sign*.5)
             self.assertAlmostEqual(step[1],-sign*.25)
-        self.assertEqual(bounded_step([[2.,1.],[1.,2.]],[0.,0.]),[0.,0.])
+        self.assertEqual(bounded_step([[2.,1.],[1.,2.]],[0.,0.]).require_converged(),(0.,0.))
         for limit in (0.,False,'',-1.,math.nan,math.inf):
             with self.subTest(limit=limit),self.assertRaises(ValueError):
                 bounded_step([[1.]],[1.],limit)
