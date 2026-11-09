@@ -11,6 +11,9 @@ import math
 from .spec import finite
 
 
+TRUST_LIMIT = .5
+
+
 class SolveStatus(str, Enum):
     CONVERGED = 'converged'
     ITERATION_LIMIT = 'iteration_limit'
@@ -85,7 +88,7 @@ def _backsolve(matrix, rhs):
     return x
 
 
-def bounded_least_squares(columns, rhs, damping=0., limit=.5, *, max_iterations=1000, tolerance=1e-10):
+def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, max_iterations=1000, tolerance=1e-10):
     """Minimize ||J step-rhs||² + damping*||D step||², |step| <= limit.
 
     D contains nonzero Jacobian column norms (one for zero columns). QR avoids
@@ -180,7 +183,7 @@ def bounded_least_squares(columns, rhs, damping=0., limit=.5, *, max_iterations=
     return result(SolveStatus.ITERATION_LIMIT, max_iterations)
 
 
-def bounded_step(matrix, vector, limit=.5, **options):
+def bounded_step(matrix, vector, limit=TRUST_LIMIT, **options):
     """SPD-quadratic adapter for regressions; production passes J directly.
 
     Factor the already-formed quadratic into the same bounded LS owner. Column
@@ -239,12 +242,24 @@ class JacobianResult:
         return self.columns
 
 
-def finite_difference(score, x, residuals):
+def _probe_sizes(limit):
+    if not finite(limit) or limit <= 0:
+        raise ValueError('Positive finite probe limit required')
+    step = min(1e-4, limit)
+    yield step
+    yield step/10
+    while step < limit:
+        step = min(2*step, limit)
+        yield step
+
+
+def finite_difference(score, x, residuals, limit=TRUST_LIMIT):
     """Compare two probe sizes before scaling a direction, respecting the domain.
 
     Central differences are preferred; a domain boundary uses the same one-sided
     orientation at both sizes. Weak directions try larger probes to overcome
-    cancellation. No failed derivative is silently substituted with a zero.
+    cancellation, up to the same numerical trust bound used by the solve.
+    No failed derivative is silently substituted with a zero.
     Probe sizes and agreement tolerances are numerical, never gait thresholds.
     """
     if not x or not residuals or any(not finite(v) for v in (*x, *residuals)):
@@ -252,7 +267,7 @@ def finite_difference(score, x, residuals):
     columns, differences = [], []
     for i in range(len(x)):
         chosen = None
-        for h in (1e-4, 1e-5, 1e-3, .01, .1):
+        for h in _probe_sizes(limit):
             probes = []
             for delta in (h, -h, h/2, -h/2):
                 trial = list(x)

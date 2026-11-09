@@ -71,3 +71,44 @@ contract/run-only continuation. New code defects require fail-first regression.
 NOT DONE for the walk. This continuation initially adds only this contract and
 starts the bounded source assessment. Run outcome and the next concrete gate
 will be recorded before this slice is handed off or published.
+
+
+## Numerical repair discovered by the resumed fit
+
+Reproduce: the first resumed run exits normally but reports
+`derivatives_unresolved` after its first accepted update; whole-cycle validation
+still FAIL. Re-evaluation reproduces the same foot_z chart direction. The
+largest existing probe gives disagreement 0.06361924204273248; a wider probe
+inside the existing 0.5 trust bound gives 0.030957800318478265, under the unchanged
+0.05 derivative-agreement threshold. This is not a gait threshold change.
+
+Isolate/explain: the fixed probe list in `numerics.finite_difference`, introduced
+by our qualified repair at 0557581 (replayed as e81ef6e), stops at 0.1 even when
+the trust region permits a wider measurement. Weak latent directions remain
+above the model's cancellation noise at that arbitrary cutoff. The guard is
+correct to refuse them; the sampler must exhaust its permitted measurement
+range before concluding it is unresolved.
+
+Correct fix must touch only the numerical step-bound owner and probe generation,
+a public frozen numerical-coordinate fixture and its regression, and this
+contract/evidence. Give solve bounds and derivative probes one named numerical
+trust-limit owner, and expand probe sizes geometrically up to that bound. Keep
+the agreement tolerance unchanged and retain explicit refusal when no probe
+resolves. Do not edit the frozen source, gait rules, objective, controls or rig.
+Prove the exact stop fixture fails before repair and resolves after; cover a
+true unresolved signal and valid bounded endpoints; requalify both the original
+frozen numerical problem and this new frozen point before another fit. No
+unlimited probe/search or implicit approval of failed motion is introduced.
+
+
+Probe-range repair proof: the saved-stop regression failed with the expected
+UnreliableJacobian before repair and passes afterward. All 27 numerical/geometry
+tests pass. Both frozen sources resolve all 98 directions under the unchanged
+agreement tolerance, converge with independent KKT/bounds checks, and admit
+actual objective descent. Forced inner-budget exhaustion remains explicit.
+Only numerics.py, the regression test and numerical fixture changed; all gait
+source/validator/reference/objective files remain unchanged.
+
+After these gates, resume the saved stop point once with the same bounded run
+settings. Preserve both attempts. The replacement probe ladder is bounded by
+the same named 0.5 trust limit as the solve; it does not widen that limit.

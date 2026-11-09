@@ -171,3 +171,38 @@ class NumericalTests(unittest.TestCase):
             def reject(value):raise ValueError(value)
             self.assertEqual(json.loads(output.read_text(),parse_constant=reject)['termination'],'derivatives_unresolved')
             objective.score.assert_called_once_with(chart.initial);solver.assert_not_called()
+
+
+    def test_weak_frozen_direction_uses_available_probe_range(self):
+        import json
+        from pathlib import Path
+        from storybook.animation.maya_walk.fitting import PoseChart,TimingChart,Objective
+        from storybook.animation.maya_walk.numerics import finite_difference
+        fixture=json.loads(Path(__file__).with_name('frozen-derivative-stop.json').read_text())
+        space=TimingChart(PoseChart());objective=Objective(space,guide_weight=0.)
+        values=fixture['values'];index=fixture['unresolved_coordinate']
+        self.assertEqual(list(space.parameters[index]),fixture['parameter'])
+        visited=[]
+        def score(coordinate):
+            changed=values[:];changed[index]=coordinate[0]
+            visited.append(abs(changed[index]-values[index]))
+            return objective.score(changed)
+        _,residuals=score([values[index]])
+        result=finite_difference(score,[values[index]],residuals)
+        result.require_resolved()
+        self.assertLessEqual(max(visited),.5+1e-12)
+        self.assertGreater(max(visited),.1)
+        self.assertLessEqual(result.differences[0].relative_error,.05)
+
+
+    def test_probe_ladder_obeys_closed_positive_bound(self):
+        import math
+        from storybook.animation.maya_walk.numerics import _probe_sizes,TRUST_LIMIT,finite_difference
+        for limit in (1e-6,.1,TRUST_LIMIT):
+            sizes=list(_probe_sizes(limit))
+            self.assertGreater(min(sizes),0.)
+            self.assertEqual(max(sizes),limit)
+            self.assertLess(len(sizes),30)
+        for limit in (0.,False,'',-1.,math.nan,math.inf):
+            with self.subTest(limit=limit),self.assertRaises(ValueError):
+                finite_difference(lambda x:(0.,x),[0.],[0.],limit=limit)
