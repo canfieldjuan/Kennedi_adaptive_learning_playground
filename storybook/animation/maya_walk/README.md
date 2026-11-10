@@ -211,6 +211,7 @@ accepted at the first probe size. It is `flat` only when every probe size was
 evaluated and none responded, and `unresolved` when a response appears but
 never agrees. An unresolved direction still stops the fit.
 
-No fit has been run with the repaired policy. A third fit needs operator
-approval, and animation promotion remains blocked by the failed whole-cycle
-gate.
+The original frozen checkpoint, the first resumed stop point and iteration 60
+of the second run pass numerical requalification under the repaired policy.
+No fit has been run with it. A third fit needs operator approval, and
+animation promotion remains blocked by the failed whole-cycle gate.

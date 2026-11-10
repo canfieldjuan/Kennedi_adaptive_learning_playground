@@ -330,3 +330,60 @@ two open review threads are answered with the fail-before and pass-after
 evidence and left for the reviewer to resolve. A third bounded fit is a
 separate step and needs the operator's go-ahead, since two were stopped.
 The walk remains NOT DONE.
+
+### Proof recorded 2026-11-09
+
+Code under proof: commit 52a28f53a6d8ab0f716d84ce69b9bcef8597143a. No fit was
+run. The evidence files are private; each is named here by alias and SHA256.
+
+- **Fail before.** The final tests run against an archived copy of the
+  pre-repair tree (`fitting.py` 9ced5eef, `numerics.py` c2ac8399, the same
+  pins as the stopped second fit): 37 tests, 8 failures and 17 errors. The
+  behavioral failures are damping 0.025 after an overshooting step, 379
+  objective evaluations where the policy allows 28, and zero-response
+  directions admitted as central. Log `fail-before-tests`, de6fbd6e.
+- **Old policy at iteration 60**, measured on that tree from damping 1e-7:
+  kept 0.001953125 of the step, decrease 0.0006382115252563381, ratio
+  0.011657790633991773, next damping 1e-7. Record
+  `old-policy-at-iteration-60`, 82aa3895.
+- **Pass after.** All 37 numerical tests pass, and the whole `maya_walk`
+  suite passes (99 tests).
+- **Mutants.** 79 single-clause mutants across the damping function, the
+  admission test, the receipt, the attempt loop, the fitter wiring and the
+  zero-response rule: 79 killed. Report `mutation-report`, 1d3e2d29.
+- **Iteration 60 from the collapsed damping 1e-7**, one iteration: three
+  attempts out of domain, four with no decrease, the eighth admitted at
+  damping 0.0078125 as the full solved step with decrease 0.7958631943956789
+  and ratio 0.5023460914432848. Damping stays 0.0078125.
+- **Requalification** of the original frozen point, the first resumed stop and
+  iteration 60, by a new harness with 30 source pins: all 98 directions
+  central at each point, none flat or unresolved, every direction norm above
+  zero, independent scaled KKT below 3e-15, every step within the 0.5 limit,
+  and the kept step equal to the full solve. From the starting damping 0.05:
+
+  | Point | Attempts | Admitted at | Decrease | Ratio | Next damping |
+  | --- | --- | --- | --- | --- | --- |
+  | original frozen point | 3 | 1.25 | 0.01195332892876877 | 0.700 | 1.25 |
+  | first resumed stop | 3 | 1.25 | 0.010368209164653308 | 0.641 | 1.25 |
+  | iteration 60 | 1 | 0.05 | 1.2404570256790066 | 0.980 | 0.025 |
+
+  Report `requalification`, 713b2eb4; harness 98049895.
+
+Two measured limits, recorded so they are not rediscovered:
+
+- From the damping floor, the two older points need 11 attempts before a full
+  step is admitted at 0.9765625. Nine attempts from 1e-7 reach only 0.0390625,
+  so one iteration is rejected and the next one recovers, because damping
+  carries over. That is one of the three allowed rejected iterations. The
+  first version of the harness assumed one iteration and failed there; that
+  failed attempt is kept (c4b09766).
+- At very large damping (about 5e12 and above in the synthetic case) the
+  unchanged inner solver stops certifying its solves. Those attempts are
+  recorded as `unsolved`. The solver is outside this amendment.
+
+One reading of the record format: an out-of-domain attempt records null for
+the actual reduction and the ratio. Its predicted reduction does not depend on
+the score and is kept.
+
+None of this is evidence about the walk. At the two older points the admitted
+full steps lower a score near 430 by about 0.01.
