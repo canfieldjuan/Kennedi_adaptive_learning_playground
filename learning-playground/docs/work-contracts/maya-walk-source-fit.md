@@ -226,6 +226,21 @@ affected any recorded fit.
    is admitted with a zero column, under a new explicit `flat` status in the
    closed derivative-status set, so the record distinguishes it.
 
+**Decisions recorded before coding (2026-11-09).** Implementation planning
+found four points the text above left open. Each takes the stricter reading.
+
+- An attempt whose solve does not converge is never scored. It is recorded
+  with verdict `unsolved` and is a rejection for the damping function (times
+  5, solve again), which is what the attempt loop does today.
+- The verdict set is closed: `admitted`, `unsolved`, `out_of_domain`,
+  `non_finite`, `no_decrease`, `non_positive_prediction`.
+- `flat` requires an evaluated, exactly zero response at every size of the
+  probe ladder. If any size has no probe pair inside the domain, zero response
+  is not established over the trust range and the direction is `unresolved`.
+- The predicted reduction is computed as `-(2 r.Jd + ||Jd||^2)`. It equals
+  `score - ||r + J d||^2` when the score is `||r||^2`, without subtracting two
+  large numbers.
+
 ### Invariants
 
 - Damping is never lowered except by an admitted full step with ratio 0.75 or
