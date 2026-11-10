@@ -384,16 +384,136 @@ class FitTermination(str, Enum):
     DERIVATIVES_UNRESOLVED = 'derivatives_unresolved'
 
 
-def trial_step(objective, space, x, score, solution):
-    """The only consumer of a numerical step requires its convergence receipt."""
+# Existing outer-search constants, named so one function owns damping.
+DAMPING_START = .05
+DAMPING_RAISE = 5.
+DAMPING_FLOOR = 1e-7
+STEP_ATTEMPTS = 9
+DESCENT_FLOOR = 1e-10
+# Conventional gain-ratio bands for damping control: actual reduction over the
+# reduction the undamped linear model predicted. Numerical, never gait limits.
+RATIO_RAISE = .25
+RATIO_LOWER = .75
+
+
+class StepVerdict(str, Enum):
+    ADMITTED = 'admitted'
+    UNSOLVED = 'unsolved'
+    OUT_OF_DOMAIN = 'out_of_domain'
+    NON_FINITE = 'non_finite'
+    NO_DECREASE = 'no_decrease'
+    NON_POSITIVE_PREDICTION = 'non_positive_prediction'
+
+
+@dataclass(frozen=True)
+class StepReceipt:
+    """What one attempt at one damping did; the only input to the next damping.
+
+    actual is the score before minus the score after. predicted is the
+    reduction the undamped linear model gives for the displacement that was
+    evaluated. A value that was not measured, or was not finite, is None.
+    """
+    damping: float
+    verdict: StepVerdict
+    actual: float | None = None
+    predicted: float | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.verdict, StepVerdict):
+            raise ValueError('Closed step verdict required')
+        if not finite(self.damping) or self.damping <= 0:
+            raise ValueError('Positive finite damping required')
+        if any(v is not None and not finite(v) for v in (self.actual, self.predicted)):
+            raise ValueError('A receipt holds finite numbers or nothing')
+        if self.verdict is StepVerdict.ADMITTED and (
+                self.actual is None or self.actual <= DESCENT_FLOOR or self.ratio is None):
+            raise ValueError('Admission requires real descent and a finite positive prediction')
+
+    @property
+    def ratio(self):
+        if self.actual is None or self.predicted is None or self.predicted <= 0:
+            return None
+        value = self.actual/self.predicted
+        return value if math.isfinite(value) else None
+
+    def record(self):
+        return {'damping': self.damping, 'verdict': self.verdict.value,
+                'actual': self.actual, 'predicted': self.predicted, 'ratio': self.ratio}
+
+
+def next_damping(receipt):
+    """The only place damping changes after initialization.
+
+    Only an admitted full step that the linear model predicted well lowers it.
+    """
+    if receipt.verdict is not StepVerdict.ADMITTED or receipt.ratio < RATIO_RAISE:
+        return receipt.damping*DAMPING_RAISE
+    if receipt.ratio < RATIO_LOWER:
+        return receipt.damping
+    return max(DAMPING_FLOOR, receipt.damping/2)
+
+
+def _linear_reduction(columns, residuals, moved):
+    """-(2 r.Jd + |Jd|^2): equals |r|^2 - |r + Jd|^2 without cancellation."""
+    try:
+        effect = [math.fsum(c*d for c, d in zip(row, moved)) for row in zip(*columns)]
+        return -(2*math.fsum(r*e for r, e in zip(residuals, effect))
+                 + math.fsum(e*e for e in effect))
+    except (OverflowError, ValueError):
+        return math.nan
+
+
+def trial_step(objective, space, x, score, residuals, columns, solution, damping):
+    """Score the full converged step once and report what it did.
+
+    The only consumer of a numerical step requires its convergence receipt.
+    There is no shortened retry: a step that is too long is refused, and the
+    caller raises damping and solves again on the same linearization.
+    Returns (receipt, (values, score, residuals)) or (receipt, None).
+    """
     step = solution.require_converged()
-    for power in range(14):
-        alpha = .5**power
-        trial = space.project([a+alpha*b for a, b in zip(x, step)])
-        value, residuals = objective.score(trial)
-        if residuals is not None and value < score-1e-10:
-            return trial, value, residuals
-    return None
+    trial = space.project([a+b for a, b in zip(x, step)])
+    value, after = objective.score(trial)
+    predicted = _linear_reduction(columns, residuals, [a-b for a, b in zip(trial, x)])
+    predicted = predicted if math.isfinite(predicted) else None
+
+    def refuse(verdict, actual=None):
+        return StepReceipt(damping, verdict, actual, predicted), None
+    if after is None:
+        return refuse(StepVerdict.OUT_OF_DOMAIN)
+    actual = score-value
+    if not math.isfinite(actual):
+        return refuse(StepVerdict.NON_FINITE)
+    if actual <= DESCENT_FLOOR:
+        return refuse(StepVerdict.NO_DECREASE, actual)
+    if predicted is None:
+        return refuse(StepVerdict.NON_FINITE, actual)
+    if predicted <= 0:
+        return refuse(StepVerdict.NON_POSITIVE_PREDICTION, actual)
+    if not math.isfinite(actual/predicted):
+        return refuse(StepVerdict.NON_FINITE, actual)
+    return StepReceipt(damping, StepVerdict.ADMITTED, actual, predicted), (trial, value, after)
+
+
+def admit_step(objective, space, x, score, residuals, columns, damping):
+    """One iteration's bounded attempts on one linearization.
+
+    Each attempt solves at the current damping and scores that full step once.
+    Returns (update or None, next damping, receipts, solve records).
+    """
+    receipts, solves = [], []
+    for _ in range(STEP_ATTEMPTS):
+        solution = bounded_least_squares(columns, [-v for v in residuals], damping)
+        solves.append({k: v for k, v in asdict(solution).items() if k not in ('step', 'scales')})
+        if solution.status is SolveStatus.CONVERGED:
+            receipt, update = trial_step(objective, space, x, score, residuals, columns, solution, damping)
+        else:
+            receipt, update = StepReceipt(damping, StepVerdict.UNSOLVED), None
+        receipts.append(receipt)
+        damping = next_damping(receipt)
+        if update is not None:
+            return update, damping, receipts, solves
+    return None, damping, receipts, solves
 
 
 def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timing=False, value_seed=None, guide_weight=1.):
@@ -423,28 +543,22 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
         x[:space.value_count]=prior['values']
     score,r=objective.score(x)
     if r is None:raise ValueError('Initial pose outside closed curve constraints')
-    damping=.05;start=time.monotonic();stuck=0
+    damping=DAMPING_START;start=time.monotonic();stuck=0
     termination=FitTermination.RUNNING
     for iteration in range(iterations):
         derivative=finite_difference(objective.score,x,r)
-        accepted=False;solved=False;solves=[]
+        accepted=False;solves=[];attempts=[]
         try:
             jac=derivative.require_resolved()
         except UnreliableJacobian:
             termination=FitTermination.DERIVATIVES_UNRESOLVED
         else:
-            for attempt in range(9):
-                solution=bounded_least_squares(jac,[-v for v in r],damping)
-                solves.append({k:v for k,v in asdict(solution).items() if k not in ('step','scales')})
-                if solution.status is SolveStatus.CONVERGED:
-                    solved=True
-                    update=trial_step(objective,space,x,score,solution)
-                    if update is not None:
-                        x,score,r=update;accepted=True
-                        damping=max(1e-7,damping/2)
-                        break
-                damping*=5
-            if not solved:termination=FitTermination.LINEAR_SOLVE_FAILED
+            update,damping,receipts,solves=admit_step(objective,space,x,score,r,jac,damping)
+            attempts=[{'solve_status':solve['status'].value,**receipt.record()} for solve,receipt in zip(solves,receipts)]
+            if update is not None:
+                x,score,r=update;accepted=True
+            if all(receipt.verdict is StepVerdict.UNSOLVED for receipt in receipts):
+                termination=FitTermination.LINEAR_SOLVE_FAILED
         stuck=0 if accepted else stuck+1
         if stuck>=3 and termination is FitTermination.RUNNING:
             termination=FitTermination.NO_DESCENT
@@ -453,7 +567,7 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
         record={'iteration':iteration,'score':score,'values':x,'parameters':space.parameters,'velocity_weight':velocity_weight,'guide_weight':guide_weight,
                 'source_signature':signature,'input_sha256':input_pin,'timing':timing,
                 'calls':objective.calls,'seconds':time.monotonic()-start,'damping':damping,
-                'numerics':{'method':'scaled-qr-active-set-v1','solves':solves,
+                'numerics':{'method':'scaled-qr-active-set-v1','solves':solves,'attempts':attempts,
                             'differences':[asdict(d) for d in derivative.differences]},
                 'termination':termination.value}
         if iteration%10==0 or stuck:

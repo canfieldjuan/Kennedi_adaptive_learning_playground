@@ -193,8 +193,24 @@ fits and their full validation reports remain private evidence. Active authored
 motion is still the failed second saved candidate until a complete source PASS
 permits promotion and independent Blender qualification.
 
-The resumed fit still fails the gait gate. Its inner solves converge, but a
-frozen-source comparison isolates an outer-policy problem: damping is reduced
-after any improvement without retaining step fraction or actual/predicted
-reduction. The second run was intentionally stopped for that diagnosis. A
-third fit and animation promotion remain stopped pending outer-policy proof.
+The resumed fit still fails the gait gate. Its inner solves converged, but the
+outer policy lowered damping after any improvement, including a step it had to
+cut to 1/512 of its length. Damping collapsed to its floor and the second run
+was intentionally stopped for that diagnosis.
+
+The outer step is now repaired. Step length has one owner: only the full solved
+step is scored, once. A step that leaves the source domain or does not lower
+the score is refused, damping rises five-fold and the same linearization is
+solved again, within the existing nine attempts. Every attempt leaves a typed
+receipt in the checkpoint. Damping is lowered only by an admitted step whose
+actual reduction is at least 0.75 of what the undamped linear model predicted;
+below 0.25 it rises. These bands are numerical, never gait thresholds.
+
+A finite-difference direction with an exactly zero response is no longer
+accepted at the first probe size. It is `flat` only when every probe size was
+evaluated and none responded, and `unresolved` when a response appears but
+never agrees. An unresolved direction still stops the fit.
+
+No fit has been run with the repaired policy. A third fit needs operator
+approval, and animation promotion remains blocked by the failed whole-cycle
+gate.

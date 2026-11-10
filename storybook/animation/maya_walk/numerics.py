@@ -216,6 +216,7 @@ class DerivativeStatus(str, Enum):
     CENTRAL = 'central'
     FORWARD = 'forward'
     BACKWARD = 'backward'
+    FLAT = 'flat'
     UNRESOLVED = 'unresolved'
 
 
@@ -259,7 +260,11 @@ def finite_difference(score, x, residuals, limit=TRUST_LIMIT):
     Central differences are preferred; a domain boundary uses the same one-sided
     orientation at both sizes. Weak directions try larger probes to overcome
     cancellation, up to the same numerical trust bound used by the solve.
-    No failed derivative is silently substituted with a zero.
+
+    An exactly zero response is absence of signal, not agreement: it never
+    admits a direction at the size where it was seen. A zero column is returned
+    only as FLAT, after every size of the ladder was evaluated and none showed
+    a response. A response that appears but never agrees is UNRESOLVED.
     Probe sizes and agreement tolerances are numerical, never gait thresholds.
     """
     if not x or not residuals or any(not finite(v) for v in (*x, *residuals)):
@@ -267,6 +272,7 @@ def finite_difference(score, x, residuals, limit=TRUST_LIMIT):
     columns, differences = [], []
     for i in range(len(x)):
         chosen = None
+        flat = True
         for h in _probe_sizes(limit):
             probes = []
             for delta in (h, -h, h/2, -h/2):
@@ -290,14 +296,20 @@ def finite_difference(score, x, residuals, limit=TRUST_LIMIT):
                 fine = [(b-a)/(h/2) for a, b in zip(half_minus, residuals)]
                 status = DerivativeStatus.BACKWARD
             else:
+                flat = False
                 continue
+            if not any(coarse) and not any(fine):
+                continue
+            flat = False
             norm = math.hypot(*fine)
             error = math.hypot(*(a-b for a, b in zip(coarse, fine)))
-            relative = error/norm if norm else (0. if error == 0 else math.inf)
+            relative = error/norm if norm else math.inf
             if relative <= .05:
                 chosen = (tuple(fine), Difference(status, h/2, norm, relative))
                 break
-        if chosen is None:
+        if chosen is None and flat:
+            chosen = ((0.,)*len(residuals), Difference(DerivativeStatus.FLAT, h, 0., None))
+        elif chosen is None:
             chosen = ((), Difference(DerivativeStatus.UNRESOLVED, 0., 0., None))
         column, difference = chosen
         columns.append(column)
