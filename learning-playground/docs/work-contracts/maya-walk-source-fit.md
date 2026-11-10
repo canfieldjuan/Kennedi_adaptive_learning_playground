@@ -133,3 +133,185 @@ of the outer step-admission/damping policy before another fit. This is a
 fitting-method limitation; rig/reference infeasibility and an art limit are
 not established. Source promotion, a new saved scene, walk acceptance and merge
 of this continuation remain blocked by the failed whole-cycle gate.
+
+## Amendment 2026-11-09: step admission and zero-response derivatives
+
+Status: **ACCEPTED by the operator on 2026-11-09.** This commit carries the
+contract alone; the implementation follows in separate commits. It was written
+from the code and the frozen numerical inputs, not from a proposed patch.
+
+This amendment supersedes one sentence above: "The fitter's existing initial
+damping and line search remain as implemented." The initial damping stays. The
+line search does not.
+
+### Root Cause
+
+Two defects in our own numerical layer. Neither is evidence about the rig, the
+reference or the gait rules.
+
+**A. Step length has two owners, and the second one hides the first one's
+failure.** `fit` chooses a damping value, and `trial_step`
+(`fitting.py:387-395`) then halves the solved step up to 14 times until the
+score drops. It returns only coordinates, score and residuals. `fit` cannot
+tell a full step that matched the linear model from a 1/512 step that barely
+moved, so `fitting.py:444` halves damping after either. A step that had to be
+cut down is the signal that damping is too low; the current policy answers it
+by lowering damping again. Damping collapses to its floor and the bounded
+iteration budget is spent on negligible steps.
+
+Read-only measurement at the frozen iteration-60 point (score
+428.6851806171568, same coordinates, Jacobian, objective and constraints):
+
+- Current policy at damping 1e-7: accepts 1/512 of the step, decrease
+  0.0006382115252563381, actual/predicted 0.0117. It would then halve damping.
+- Full solved step only, raising damping five-fold on each rejection from
+  1e-7: the first three are outside the source domain, the next four increase
+  the score, and the eighth (damping 0.0078125) is admitted with decrease
+  0.7958631943956789 and actual/predicted 0.502.
+
+**B. A zero response is certified as a derivative.** In
+`numerics.finite_difference` (`numerics.py:294-299`), when both probe
+differences are exactly zero the relative disagreement is set to 0 and the
+direction is admitted at the first probe size. That skips the wider-probe
+repair and contradicts the function's own statement that no failed derivative
+is substituted with a zero. Reproduced on the public frozen fixture with
+coordinate 64 (`phase_foot_x`, index 2) set to -19: the direction is admitted
+as central with norm 0.0, while probes from 0.0032 upward show a nonzero
+response that never reaches the 0.05 agreement tolerance. None of the four
+frozen points used so far has a zero-norm direction, so this defect has not
+affected any recorded fit.
+
+### Required behavior
+
+**A. One owner for step length, with a receipt for every evaluated step.**
+
+1. The only step ever scored is the full converged solve, as actually
+   evaluated (after projection). The halving search in `trial_step` is
+   removed. A step that is too long is shortened by raising damping and
+   solving again on the same linearization.
+2. Every scored step produces a closed, typed receipt holding: the damping
+   used, the actual reduction (score before minus score after), the predicted
+   reduction of the undamped linear model for the evaluated displacement
+   (score before minus `||r + J d||^2`), and their ratio. The solver's own
+   `predicted_reduction` includes the damping term and is recorded but is not
+   the denominator.
+3. A step is admitted only if the score is finite, the actual reduction
+   exceeds the existing 1e-10 floor, and the predicted reduction is finite and
+   positive. Anything else is a rejection with a recorded reason.
+4. The next damping is a pure function of the receipt, and it is the only
+   place damping changes after initialization:
+
+   | Evaluated full step | Step | Next damping |
+   | --- | --- | --- |
+   | rejected (out of domain, no decrease, non-positive prediction) | discarded | times 5, solve again |
+   | admitted, ratio below 0.25 | kept | times 5 |
+   | admitted, ratio from 0.25 up to but not including 0.75 | kept | unchanged |
+   | admitted, ratio 0.75 or above | kept | halved, floor 1e-7 |
+
+   0.25 and 0.75 are the conventional gain-ratio bands for this method. They
+   are named numerical constants, never gait thresholds. The factors, floor,
+   initial 0.05 and nine attempts per iteration are the existing values.
+5. Each checkpoint records every attempt of the iteration (damping, solve
+   status, verdict, actual, predicted, ratio), with nulls where a score was
+   out of domain. Checkpoints stay strict JSON.
+
+**B. Zero response is absence of signal, not agreement.**
+
+1. A probe size at which both differences are exactly zero does not admit the
+   direction. The ladder continues to the same 0.5 trust limit.
+2. A later probe that gives a nonzero response within the unchanged 0.05
+   tolerance admits the direction as today.
+3. A nonzero response somewhere that never agrees is `unresolved`, as today.
+4. Only a direction with exactly zero response at every permitted probe size
+   is admitted with a zero column, under a new explicit `flat` status in the
+   closed derivative-status set, so the record distinguishes it.
+
+### Invariants
+
+- Damping is never lowered except by an admitted full step with ratio 0.75 or
+  above. No other code path assigns damping after initialization.
+- An unconverged solve is never scored. An unresolved derivative means no
+  solve and no step.
+- Parameters change only by an admitted step. A rejected attempt leaves
+  coordinates, score and residuals exactly as they were.
+- Numerical descent never changes gait status. PASS comes only from the
+  unchanged whole-cycle validator.
+- Starting damping is 0.05 on every start, including resume. Checkpoints
+  written under the old policy carry a collapsed damping that must not be
+  trusted.
+- The termination set stays closed. If the repair needs a new member, this
+  contract is amended first.
+
+### Failure cases
+
+- All nine attempts of an iteration rejected: no step, the existing stuck
+  count advances, and three in a row end the run as `no_descent`.
+- No converged solve in an iteration: `linear_solve_failed`, as today.
+- Any unresolved direction: `derivatives_unresolved`, as today. Known
+  consequence of B: a saturated coordinate like the reproduced one now stops
+  the fit instead of being treated as constant. That is the intended refusal.
+  If a real fit stops there, it is diagnosed at its owner, not worked around.
+- Non-finite score, reduction or ratio: rejection, never an admitted receipt
+  and never a non-finite value in a checkpoint.
+
+### Concurrency model
+
+Unchanged and single-owner: one process, one thread, sequential objective
+evaluations. The only shared state is the checkpoint, validation and source
+files of one output path, written by that one fit. No background workers, and
+no two fits on one output path.
+
+### Correct Fix Must Touch
+
+- `storybook/animation/maya_walk/fitting.py`: `trial_step`, the attempt loop
+  and damping update in `fit`, and the checkpoint record.
+- `storybook/animation/maya_walk/numerics.py`: zero-response handling and the
+  docstring in `finite_difference`, and the derivative-status set.
+- `storybook/animation/maya_walk/tests/test_fitting_numerics.py`, plus one new
+  public numerical-coordinate fixture for the iteration-60 point (values
+  only, no private paths), following `frozen-derivative-stop.json`.
+- `storybook/animation/maya_walk/README.md` (the paragraph describing the
+  outer-policy stop) and this contract.
+
+### Must Not Change
+
+Everything in "Must Not Change" above, and in addition: the objective and its
+weights, both charts and the source domain, the inner solver and its
+certificate, the 0.5 trust limit, the 0.05 agreement tolerance, the probe
+ladder sizes, initial damping, the damping factors and floor, the attempt and
+stuck limits, `poses.py`, the validator, and every sealed evidence file. No
+new dependency. No fit is run and no motion is promoted under this amendment.
+
+### Settling evidence
+
+All of it before any new fit:
+
+1. A small synthetic nonlinear regression, no gait code, where the first
+   solved step overshoots. It fails on the current code (damping is lowered
+   after a poorly predicted step) and passes after.
+2. Both sides of every row of the policy table, including exactly 0.25 and
+   exactly 0.75, each rejection reason, and a zero or non-finite prediction.
+3. One mutant per clause of the damping function and of the admission test;
+   each must be killed.
+4. The iteration-60 fixture, started at the collapsed damping 1e-7: the
+   admitted step is a full solved step with ratio at least 0.25 and damping
+   ends above 1e-7. Fails before, passes after.
+5. For B: the coordinate-64 case is admitted as central/zero before and is
+   `unresolved` after. A truly flat synthetic direction is `flat`. A direction
+   that is zero at small probes and consistent at larger ones resolves to its
+   true slope.
+6. The existing refusals still hold: unconverged solve never scored,
+   unresolved derivative never solved, strict JSON on every stop.
+7. Requalification of the original frozen point, the first resumed stop and
+   iteration 60: all 98 directions resolved with no zero-norm direction,
+   independent KKT and bounds checks, and an admitted full step. A new harness
+   with its own source pins; sealed scripts are not edited.
+8. The full `maya_walk` suite on the pushed head.
+
+### Stop
+
+After these gates: one grouped push, record head and review state, stop. The
+two open review threads are answered with the fail-before and pass-after
+evidence and left for the reviewer to resolve. A third bounded fit is a
+separate step and needs the operator's go-ahead, since two were stopped.
+The walk remains NOT DONE.
