@@ -6,6 +6,7 @@ one GaitSpec clock, including constants, quaternion components and followers.
 """
 import math
 from dataclasses import dataclass
+from . import differential as dmath
 
 from .curves import ChannelHold, ChannelRule, Curve, Derived, Key, Motion, Turn
 from .reference import Kind
@@ -50,8 +51,8 @@ def curve(channel, rows, *, holds=(), minima=(), maxima=(), travel=0., constant=
 
 
 def rotate(point,pivot,degrees):
-    x,z=point[0]-pivot,point[1]; a=math.radians(degrees)
-    return pivot+math.cos(a)*x+math.sin(a)*z, -math.sin(a)*x+math.cos(a)*z
+    x,z=point[0]-pivot,point[1]; a=dmath.radians(degrees)
+    return pivot+dmath.cos(a)*x+dmath.sin(a)*z, -dmath.sin(a)*x+dmath.cos(a)*z
 
 
 def author(spec=TARGET, amplitudes=AMPLITUDES):

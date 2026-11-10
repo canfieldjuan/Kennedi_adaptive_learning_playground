@@ -7,6 +7,7 @@ stdlib implementation. Scaling transforms both variables and bounds exactly.
 from dataclasses import dataclass
 from enum import Enum
 import math
+from .differential import Dual, Failure, DifferentiationFailure
 
 from .spec import finite
 
@@ -213,6 +214,7 @@ def bounded_step(matrix, vector, limit=TRUST_LIMIT, **options):
 
 
 class DerivativeStatus(str, Enum):
+    ANALYTIC = 'analytic'
     CENTRAL = 'central'
     FORWARD = 'forward'
     BACKWARD = 'backward'
@@ -230,6 +232,30 @@ class Difference:
     step: float
     norm: float
     relative_error: float | None
+    reason: 'Failure | None' = None
+
+    def __post_init__(self):
+        if not isinstance(self.status, DerivativeStatus) or not all(finite(v) and v >= 0 for v in (self.step,self.norm)):
+            raise ValueError('Closed finite derivative receipt required')
+        if self.relative_error is not None and (not finite(self.relative_error) or not 0 <= self.relative_error <= .05):
+            raise ValueError('Admitted probe disagreement must be bounded')
+        if self.reason is not None and type(self.reason) is not Failure:
+            raise ValueError('Closed derivative refusal reason required')
+        if self.status in (DerivativeStatus.ANALYTIC,DerivativeStatus.UNRESOLVED):
+            if self.step != 0 or self.relative_error is not None:
+                raise ValueError('Analytic/refused direction has no probe step')
+            if self.status is DerivativeStatus.UNRESOLVED and self.norm != 0:
+                raise ValueError('Unresolved direction has no admitted norm')
+        elif self.step <= 0 or self.reason is not None:
+            raise ValueError('Sampled direction requires a probe and no refusal')
+        if self.status is DerivativeStatus.FLAT:
+            if self.norm != 0 or self.relative_error is not None:
+                raise ValueError('Sampled flat direction must have zero response')
+        elif self.status not in (DerivativeStatus.ANALYTIC,DerivativeStatus.UNRESOLVED):
+            if self.norm <= 0 or self.relative_error is None:
+                raise ValueError('Sampled direction requires nonzero measured agreement')
+        if self.status is DerivativeStatus.ANALYTIC and self.reason is not None:
+            raise ValueError('Admitted analytic direction cannot carry a refusal')
 
 
 @dataclass(frozen=True)
@@ -237,10 +263,70 @@ class JacobianResult:
     columns: tuple
     differences: tuple
 
+    def __post_init__(self):
+        if type(self.columns) is not tuple or type(self.differences) is not tuple or not self.columns or len(self.columns) != len(self.differences):
+            raise ValueError('Complete immutable Jacobian inventory required')
+        sizes=set()
+        for column,difference in zip(self.columns,self.differences):
+            if type(column) is not tuple or type(difference) is not Difference:
+                raise ValueError('Typed immutable Jacobian direction required')
+            if difference.status is DerivativeStatus.UNRESOLVED:
+                if column:raise ValueError('Unresolved direction cannot carry an admitted column')
+            else:
+                if not column or any(not finite(v) for v in column) or math.hypot(*column) != difference.norm:
+                    raise ValueError('Column must match its finite admitted norm')
+                sizes.add(len(column))
+        if len(sizes)>1:raise ValueError('Residual dimensions differ')
+
     def require_resolved(self):
         if any(d.status is DerivativeStatus.UNRESOLVED for d in self.differences):
             raise UnreliableJacobian('Unresolved numerical directions; no trial step allowed')
         return self.columns
+
+
+def analytic_jacobian(score, x, residuals):
+    """Differentiate shared arithmetic, preserving tiny nonzero directions.
+
+    Exact primal parity is required. Unsupported/nonsmooth evaluations refuse;
+    no finite-difference fallback or manufactured flat direction is admitted.
+    """
+    if not x or not residuals or any(not finite(v) for v in (*x, *residuals)):
+        raise ValueError('Complete finite linearization point required')
+    size = len(x)
+    def refused(reason):
+        return JacobianResult(tuple(() for _ in x), tuple(
+            Difference(DerivativeStatus.UNRESOLVED, 0., 0., None, reason) for _ in x))
+    try:
+        _, values = score([Dual.variable(v,i,size) for i,v in enumerate(x)])
+        if values is None or len(values) != len(residuals):
+            return refused(Failure.PRIMAL_MISMATCH)
+        rows, uncertain = [], set()
+        for value, expected in zip(values,residuals):
+            if type(value) is Dual:
+                if len(value.gradient) != size:
+                    raise ValueError('Residual derivative dimensions differ')
+                actual = value.value
+                rows.append(value.gradient)
+                uncertain.update(value.uncertain)
+            elif finite(value):
+                actual = value
+                rows.append((0.,)*size)
+            else:
+                return refused(Failure.NONFINITE)
+            if actual != expected:
+                return refused(Failure.PRIMAL_MISMATCH)
+        columns = tuple(tuple(row[i] for row in rows) for i in range(size))
+        norms = tuple(math.hypot(*c) for c in columns)
+        if any(not finite(norm) for norm in norms):
+            return refused(Failure.NONFINITE)
+        return JacobianResult(tuple(() if i in uncertain else c for i,c in enumerate(columns)), tuple(
+            Difference(DerivativeStatus.UNRESOLVED, 0., 0., None, Failure.NONSMOOTH) if i in uncertain
+            else Difference(DerivativeStatus.ANALYTIC, 0., norm, None)
+            for i,norm in enumerate(norms)))
+    except DifferentiationFailure as error:
+        return refused(error.reason)
+    except OverflowError:
+        return refused(Failure.NONFINITE)
 
 
 def _probe_sizes(limit):

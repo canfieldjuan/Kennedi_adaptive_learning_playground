@@ -11,9 +11,10 @@ import json
 import math
 from pathlib import Path
 import time
+from . import differential as dmath
 
 from .numerics import (bounded_step, bounded_least_squares, SolveStatus,
-                       finite_difference, UnreliableJacobian)
+                       analytic_jacobian, UnreliableJacobian)
 from .curves import Motion
 from .poses import author, curve, HIP_HEIGHT
 from .spec import TARGET, SceneKind, Side, THIGH_LENGTH, SHIN_LENGTH, finite
@@ -66,7 +67,7 @@ class PoseSpace:
             raise ValueError('Complete closed pose-value vector required')
         data={name:list(vals) for name,vals in self.fixed.items()}
         for (name,i),x,scale in zip(self.parameters,values,self.scales):
-            if not finite(x):raise ValueError('Finite fit values required')
+            if not dmath.finite(x):raise ValueError('Finite fit values required')
             if name=='plant_x':
                 plant=x*scale
                 data['foot_x'][0]=plant;data['foot_x'][1]=plant
@@ -130,13 +131,13 @@ class PoseChart:
         push('toe',[math.log(peak),*ramp([0,*z[2:7]]),fraction(z[7],0,peak)])
 
     def build(self,values):
-        if len(values)!=len(self.initial) or any(not finite(x) or abs(x)>35 for x in values):
+        if len(values)!=len(self.initial) or any(not dmath.finite(x) or abs(x)>35 for x in values):
             raise ValueError('Complete finite bounded pose-value chart required')
         it=iter(values)
         def take(n):return [next(it) for _ in range(n)]
-        def fraction(v,lo,hi):return lo+(hi-lo)/(1+math.exp(-v))
+        def fraction(v,lo,hi):return lo+(hi-lo)/(1+dmath.exp(-v))
         def ramp(lo,hi,params):
-            weights=[math.exp(v) for v in params]+[1.];total=sum(weights);out=[];c=0.
+            weights=[dmath.exp(v) for v in params]+[1.];total=dmath.total(weights);out=[];c=0.
             for w in weights[:-1]:c+=w;out.append(lo+(hi-lo)*c/total)
             return out
         d={name:list(vals) for name,vals in self.owner.fixed.items()}
@@ -149,11 +150,11 @@ class PoseChart:
         a,*rest=take(10);peak=fraction(a,0,.25)
         z2,z3=ramp(0,peak,rest[:2]);tail=ramp(0,peak,rest[2:])
         d['foot_z']=[0.,0.,z2,z3,peak,*reversed(tail)]
-        a,*rest=take(8);lo=-math.exp(a);z7,z6=ramp(lo,0,rest[:2]);z9,z0,z1,z2,z3=ramp(lo,0,rest[2:])
+        a,*rest=take(8);lo=-dmath.exp(a);z7,z6=ramp(lo,0,rest[:2]);z9,z0,z1,z2,z3=ramp(lo,0,rest[2:])
         d['heel']=[z0,z1,z2,z3,0.,0.,z6,z7,lo,z9]
-        a,*rest=take(9);peak=math.exp(a);rise=ramp(0,peak,rest[:6]);z10,z9=ramp(0,peak,rest[6:])
+        a,*rest=take(9);peak=dmath.exp(a);rise=ramp(0,peak,rest[:6]);z10,z9=ramp(0,peak,rest[6:])
         d['ball']=[0.,0.,*rise,peak,z9,z10,0.]
-        a,*rest=take(6);peak=math.exp(a);rise=ramp(0,peak,rest[:4]);z7=fraction(rest[4],0,peak)
+        a,*rest=take(6);peak=dmath.exp(a);rise=ramp(0,peak,rest[:4]);z7=fraction(rest[4],0,peak)
         d['toe']=[0.,0.,*rise,peak,z7,0.]
         raw=[plant]+[d[name][i] for name,ids in ACTIVE.items() for i in ids]
         return self.owner.build([v/s for v,s in zip(raw,self.owner.scales)])
@@ -185,7 +186,7 @@ class PhaseLayout:
         spacing=.25/TARGET.cycle_frames
         for name,phases in self.profiles:
             period=.5 if name.startswith('hip_') else 1.
-            if type(phases) is not tuple or len(phases)!=len(PHASES[name]) or any(not finite(p) or not 0<=p<period for p in phases):
+            if type(phases) is not tuple or len(phases)!=len(PHASES[name]) or any(not dmath.finite(p) or not 0<=p<period for p in phases):
                 raise ValueError('Complete finite phase profile in its period required')
             widths=[b-a for a,b in zip(phases,phases[1:])]+[phases[0]+period-phases[-1]]
             if min(widths)<spacing-1e-12:
@@ -227,14 +228,14 @@ class TimingChart:
                 self.initial.extend(encoded)
 
     def layout(self, values):
-        if len(values)!=len(self.initial) or any(not finite(v) for v in values):
+        if len(values)!=len(self.initial) or any(not dmath.finite(v) for v in values):
             raise ValueError('Complete finite timed pose vector required')
         coordinates=values[self.value_count:]
         if any(abs(v)>20 for v in coordinates):raise ValueError('Bounded phase coordinates required')
         data={k:list(v) for k,v in PHASES.items()};index=0
         for name,lo,hi,ids,minima,slack in self.segments:
-            weights=[math.exp(v) for v in coordinates[index:index+len(ids)]]+[1.]
-            total=sum(weights);position=lo
+            weights=[dmath.exp(v) for v in coordinates[index:index+len(ids)]]+[1.]
+            total=dmath.total(weights);position=lo
             for j,i in enumerate(ids):
                 position+=minima[j]+slack*weights[j]/total
                 data[name][i]=position
@@ -296,14 +297,14 @@ class Objective:
             velocity={k:tuple((v-u)/(2*h) for u,v in zip(b[k],c[k])) for k in pts}
             samples.append((t,pts,a,omega,velocity))
             p=t/24
-            reach=math.dist(pts['hip'],target)
+            reach=dmath.dist(pts['hip'],target)
             if reach>THIGH_LENGTH+SHIN_LENGTH-1e-5:
                 raise ValueError('Search proposals must remain strictly reachable')
-            out.append(max(0.,reach-(THIGH_LENGTH+SHIN_LENGTH-1e-5))/.0001)
-            for point in ('heel','ball','toe'):out.append(max(0.,-pts[point][2])/ .001)
+            out.append(dmath.maximum(0.,reach-(THIGH_LENGTH+SHIN_LENGTH-1e-5))/.0001)
+            for point in ('heel','ball','toe'):out.append(dmath.maximum(0.,-pts[point][2])/ .001)
             for point in ('hip','knee','ankle','toe'):
                 applies=point in ('hip','knee') or p>=TARGET.toe_off-1e-9
-                out.append(max(0.,-velocity[point][0]+.0001)/.002 if applies else 0.)
+                out.append(dmath.maximum(0.,-velocity[point][0]+.0001)/.002 if applies else 0.)
             for joint,anchors in ANCHORS.items():
                 # Low-weight guide, never a new admission band.
                 out.append(self.guide_weight*(a[joint]-desired(p%1,anchors))/5)
@@ -312,17 +313,17 @@ class Objective:
             selected=[]
             for expected in SIGNATURES[joint]:
                 rows=[row for row in samples[:-1] if expected.contains((row[0]/24)%1)]
-                row=(min if expected.kind is Kind.MINIMUM else max)(rows,key=lambda row:row[2][joint])
+                row=(dmath.minimum if expected.kind is Kind.MINIMUM else dmath.maximum)(rows,key=lambda row:row[2][joint])
                 v=row[2][joint]
                 selected.append((row[0],expected.kind))
                 low,high=expected.low,expected.high
-                out.append(max(0.,low+.05-v,v-(high-.05))/.15)
+                out.append(dmath.maximum(0.,low+.05-v,v-(high-.05))/.15)
                 out.append(self.guide_weight*(v-(low+high)/2)/60)
             turns[joint]=sorted(selected)
-        out.append(max(0.,samples[0][2]['knee']-4.95)/.15)
+        out.append(dmath.maximum(0.,samples[0][2]['knee']-4.95)/.15)
         for a,b in zip(samples,samples[1:]):
             dt=b[0]-a[0]
-            for joint in a[3]:out.append(self.velocity_weight*max(0.,abs(b[3][joint]-a[3][joint])*.25/dt-1.98)/.15)
+            for joint in a[3]:out.append(self.velocity_weight*dmath.maximum(0.,abs(b[3][joint]-a[3][joint])*.25/dt-1.98)/.15)
             for joint in ANCHORS:
                 # One monotone branch between each window's selected extremum.
                 # This also guides away from extra reversals *inside* a window;
@@ -331,48 +332,48 @@ class Objective:
                 prior=[k for u,k in turns[joint] if u<=t]
                 kind=prior[-1] if prior else turns[joint][-1][1]
                 sign=1 if kind is Kind.MINIMUM else -1
-                out.append(max(0.,-sign*(b[2][joint]-a[2][joint])/dt-.001)/.1)
+                out.append(dmath.maximum(0.,-sign*(b[2][joint]-a[2][joint])/dt-.001)/.1)
             for point in ('hip','knee','ankle','toe'):
                 vx=(b[1][point][0]-a[1][point][0])/dt
                 applies=point in ('hip','knee') or a[0]>=14.4-1e-9
-                out.append(max(0.,-vx+.0001)/.002 if applies else 0.)
+                out.append(dmath.maximum(0.,-vx+.0001)/.002 if applies else 0.)
         grid=[r for r in samples if abs(r[0]*4-round(r[0]*4))<1e-8]
         holds={v.point.value:v for v in TARGET.holds(SceneKind.NATIVE)}
         for point in ('hip','knee','ankle','heel','ball','toe'):
             prior=None
             for a,b in zip(grid,grid[1:]):
                 held=point in holds and holds[point].covers(a[0]/24,b[0]/24)
-                speed=math.dist(a[1][point],b[1][point])/(b[0]-a[0])
-                out.append(max(0.,.0055-max(prior,speed))/.001 if prior is not None and not held else 0.)
+                speed=dmath.dist(a[1][point],b[1][point])/(b[0]-a[0])
+                out.append(dmath.maximum(0.,.0055-dmath.maximum(prior,speed))/.001 if prior is not None and not held else 0.)
                 prior=None if held else speed
             if point in holds:
                 hold=holds[point];entry=hold.start*24
                 # The heel's approach crosses the seam; translate sample time.
                 approach=[r for r in samples if (entry-hold.approach*24 <= r[0]<=entry)] if entry else [r for r in samples if r[0]>=24*(1-hold.approach)]
                 for a,b in zip(approach,approach[1:]):
-                    change=math.dist(b[4][point],(0,0,0))-math.dist(a[4][point],(0,0,0))
-                    out.append(max(0.,change-.0003)/.001)
-        release=min(samples,key=lambda r:abs(r[0]-14.4))
+                    change=dmath.dist(b[4][point],(0,0,0))-dmath.dist(a[4][point],(0,0,0))
+                    out.append(dmath.maximum(0.,change-.0003)/.001)
+        release=dmath.minimum(samples,key=lambda r:abs(r[0]-14.4))
         for point in ('ankle','heel'):
-            out.append(max(0.,.006-math.dist(release[4][point],(0,0,0)))/.001)
+            out.append(dmath.maximum(0.,.006-dmath.dist(release[4][point],(0,0,0)))/.001)
         for hold in holds.values():
             t=hold.end*TARGET.cycle_frames
             before=model.at(t,Side.NEAR)[0][hold.point.value]
             after=model.at(t+h,Side.NEAR)[0][hold.point.value]
-            out.append(max(0.,2e-9-math.dist(before,after))/1e-9)
-        pre=max(r[1]['toe'][2] for r in samples if .6<r[0]/24<.75)
-        dip=min(r[1]['toe'][2] for r in samples if .75<=r[0]/24<=.85)
-        post=max(r[1]['toe'][2] for r in samples if .85<r[0]/24<1.)
-        for peak in (pre,post):out.append(max(0.,.0015-(peak-dip))/.0001)
+            out.append(dmath.maximum(0.,2e-9-dmath.dist(before,after))/1e-9)
+        pre=dmath.maximum(r[1]['toe'][2] for r in samples if .6<r[0]/24<.75)
+        dip=dmath.minimum(r[1]['toe'][2] for r in samples if .75<=r[0]/24<=.85)
+        post=dmath.maximum(r[1]['toe'][2] for r in samples if .85<r[0]/24<1.)
+        for peak in (pre,post):out.append(dmath.maximum(0.,.0015-(peak-dip))/.0001)
         for phase,sign in ((.75,-1),(.85,1)):
-            row=min(samples,key=lambda r:abs(r[0]-phase*24))
-            out.append(max(0.,-sign*row[4]['toe'][2])/.001)
+            row=dmath.minimum(samples,key=lambda r:abs(r[0]-phase*24))
+            out.append(dmath.maximum(0.,-sign*row[4]['toe'][2])/.001)
         return out
 
     def score(self,x):
         try:r=self.residuals(x)
         except (ValueError,ZeroDivisionError):return math.inf,None
-        return sum(v*v for v in r),r
+        return dmath.total(v*v for v in r),r
 
 
 class FitTermination(str, Enum):
@@ -546,7 +547,7 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
     damping=DAMPING_START;start=time.monotonic();stuck=0
     termination=FitTermination.RUNNING
     for iteration in range(iterations):
-        derivative=finite_difference(objective.score,x,r)
+        derivative=analytic_jacobian(objective.score,x,r)
         accepted=False;solves=[];attempts=[]
         try:
             jac=derivative.require_resolved()
@@ -567,7 +568,7 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
         record={'iteration':iteration,'score':score,'values':x,'parameters':space.parameters,'velocity_weight':velocity_weight,'guide_weight':guide_weight,
                 'source_signature':signature,'input_sha256':input_pin,'timing':timing,
                 'calls':objective.calls,'seconds':time.monotonic()-start,'damping':damping,
-                'numerics':{'method':'scaled-qr-active-set-v1','solves':solves,'attempts':attempts,
+                'numerics':{'method':'scaled-qr-active-set-v1','jacobian':'forward-mode-v1','solves':solves,'attempts':attempts,
                             'differences':[asdict(d) for d in derivative.differences]},
                 'termination':termination.value}
         if iteration%10==0 or stuck:
