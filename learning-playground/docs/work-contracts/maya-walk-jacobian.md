@@ -144,24 +144,87 @@ None at the initial contract commit.
 
 ## Implementation summary
 
-NOT DONE. Contract only; implementation follows in separate commits.
+Implemented and qualified. `differential.py` owns immutable forward-mode
+arithmetic and explicit uncertainty; `numerics.py` admits only finite,
+primal-matching Jacobians. The fitter consumes that owner. Numeric dispatch in
+the existing chart/curve/rotation/geometry owners preserves their formulas.
+No second motion model, primitive-float conversion fallback or optimizer was
+introduced. Ordinary evaluation remains bit-identical across the frozen packet.
 
 ## Cold Diff Audit
 
 ### Gaps
 
-Repair, isolated/frozen qualification and regression proof remain outstanding.
+No standing numerical-repair gap. Remote CI/review and any future fit remain
+separate gates. The walk remains unqualified and unaccepted.
 
 ### Change By Change Reconstruction
 
-This file records the frozen cause, exact preservation surface, closed analytic
-measurement mechanism, Rule 20 inventory and verification gates before code.
+- `differential.py:38`: finite immutable value/gradient state; implicit float
+  conversion refuses. Arithmetic/transcendental helpers retain sensitivities and
+  preserve the original primitive value operations. Uncertainty is explicit.
+- `differential.py:231`: shared compensated sum preserves Python's native float
+  sum behavior; naive repeated scalar addition would alter the source values.
+- `numerics.py:230`: closed, finite derivative receipts and matching columns;
+  `numerics.py:287` checks analytic primal parity and refusal reasons.
+- `fitting.py:134,237,291,550`: shared arithmetic in the unchanged chart and
+  objective, then one analytic measurement call. Step admission is unchanged.
+- `curves.py:12,97`, `poses.py:54`, `kinematics.py:38-66`: scalar dispatch and
+  PCHIP boundary uncertainty only; source values/formulas remain unchanged.
+- `tests/test_differential.py`: arithmetic, boundaries, conversion/refusal,
+  weak-response integration, moving-key/seam and real frozen-point regressions.
+  `tests/frozen-jacobian-stop.json` holds numeric coordinates only. Existing
+  synthetic tests follow the new derivative interface, preserving their purpose.
+- README and this contract describe the measured behavior and remaining gates.
 
 ### Contract Traceability
 
-Contract-only change; no source, tests, dependencies or animation changed.
+All touched files map to Correct Fix Must Touch. The small numeric type is the
+stated Rule 22 mechanism; it adds no dependency/framework. Protected files match
+their original hashes. AST comparison proves the inner solver, finite-difference
+owner, step-admission/damping owners and authored pose definitions unchanged.
 
 ### Verification
 
-Source and diagnosis inspected at the pinned base. Code tests not rerun for
-this contract-only commit. The diagnostic packet remains the fail-first evidence.
+The initial contract commit ran no code tests. Final qualification:
+
+- Contract committed alone as 892d64fae391e2972b36296aac53817d348a395e.
+- Implementation ae02aa424f28c1224ca9118e9b21a378b78b49d7; additional timing
+  regression 64f059f9b32b509ed11dec116dc89be4503c3988.
+- Full pure suite: 116 tests PASS on 64f059f9b32b509ed11dec116dc89be4503c3988.
+- Nine primal cases: exact canonical equality of keys/phases/slopes, all model
+  samples and residual vectors against the before-code packet.
+- Six frozen points: all 98 analytic directions resolve, all norms nonzero;
+  reused admission/KKT harness confirms full bounded steps and actual descent.
+  Independent scaled KKT errors are below 3e-12.
+- Floating-point comparisons exposed disputed weak columns. The archived
+  pre-repair formulas evaluated by the independent precision oracle agree with
+  the analytic columns at multiple sizes under the unchanged .05 limit.
+  This failed intermediate comparison is retained, not relabeled as passing.
+- Sixteen single-clause mutants killed, including erased phase sensitivities,
+  lost chain terms, false smoothness, primal-check bypass and old fitter routing.
+  Every retained mutant copy matches final source/tests except its named clause.
+
+Evidence alias `jacobian-repair-2026-11-09`: fail-before.log, primal-parity.json,
+pure-tests.log/json, requalification.json, jacobian-comparison.json,
+precision-oracle.json, oracle-case-parity.json, mutation-report.json and
+integrity.json. Artifacts stay outside Git and are hash-pinned in the review.
+
+### Observed limits
+
+The newest stop needs 13 attempts across two rounds at one fixed linearization
+before a full step is admitted, with actual decrease 1.6582805528742028e-07.
+This passes the existing numerical gate but does not predict a passing fit.
+Branch refusal remains intentional; there is no fallback or new tolerance.
+
+The first implementation exposed a primal mismatch from Python's compensated
+float sum versus iterative Dual addition; the shared sum owner and regression
+close that class. A finite-component/infinite-norm regression also exposed an
+untyped error, now a typed nonfinite refusal. Failed harness/test attempts and
+their explanations remain in qualification-errors.json.
+
+### Gap audit
+
+DONE for this numerical implementation and local qualification. Remote review
+is pending. NOT DONE for the walk: no new real gait fit, source promotion or
+saved scene was produced. No merge or playback acceptance is inferred.
