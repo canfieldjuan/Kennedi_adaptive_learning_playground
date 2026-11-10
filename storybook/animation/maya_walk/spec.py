@@ -29,6 +29,7 @@ class BaselineAlias(str, Enum):
     NATIVE = "native"
     PAINTED = "painted"
     RELEASE = "release"
+    CANDIDATE = "candidate"
 
 
 def finite(value):
@@ -79,6 +80,7 @@ class GaitSpec:
     cadence_tolerance: float = .1
     hold_position_tolerance: float = .00001
     contact_time_tolerance: float = .25
+    fps: int = 24
 
     def __post_init__(self):
         if not isinstance(self.name, str) or not self.name:
@@ -88,6 +90,8 @@ class GaitSpec:
             raise ValueError("Finite numeric spec fields required")
         if not 0 < self.foot_flat < self.heel_off < self.ball_off < self.toe_off < 1:
             raise ValueError("Strictly ordered foot events required")
+        if type(self.fps) is not int or not 1 <= self.fps <= 240:
+            raise ValueError("Integral fps between 1 and 240 required")
         if type(self.stall_intervals) is not int or self.stall_intervals < 1:
             raise ValueError("Positive integral stall duration required")
         if not 0 < self.contact_time_tolerance <= .25:
@@ -137,10 +141,14 @@ class Sample:
     angles: dict
     angular_velocity: dict
     upper: dict
+    ik_target: tuple
 
     def __post_init__(self):
         if not finite(self.time) or not isinstance(self.side, Side):
             raise ValueError("Finite sample time and closed side required")
+        if not isinstance(self.ik_target, (list, tuple)) or len(self.ik_target) != 3 or not all(finite(v) for v in self.ik_target):
+            raise ValueError("Finite measured IK target vector required")
+        object.__setattr__(self, "ik_target", tuple(self.ik_target))
         required = {p.value for p in Point if p is not Point.PAINTED_HEEL}
         keys = set(self.points)
         if keys not in (required, required | {Point.PAINTED_HEEL.value}):
@@ -201,7 +209,7 @@ class SamplePacket:
     samples: tuple[Sample, ...]
 
     def __post_init__(self):
-        if self.format != "maya-walk-samples-v1" or not isinstance(self.alias, BaselineAlias):
+        if self.format != "maya-walk-samples-v2" or not isinstance(self.alias, BaselineAlias):
             raise ValueError("Closed baseline alias and sample format required")
         if not isinstance(self.scene_kind, SceneKind) or not isinstance(self.runtime, Runtime):
             raise ValueError("Typed scene kind and runtime required")
@@ -226,3 +234,22 @@ class SamplePacket:
                       "runtime": Runtime(**data["runtime"]), "spec": GaitSpec(**data["spec"]),
                       "time_domain": tuple(data["time_domain"]), "validation_domain": tuple(data["validation_domain"]),
                       "actions": tuple(data["actions"]), "samples": tuple(Sample.from_dict(r) for r in data["samples"])})
+
+
+# Single inventory shared by legacy parity and authored motion.
+UPPER_BONES = ("root", "body", "head", "hem_left", "hem_right", "holding_shoulder",
+               "holding_arm", "holding_forearm", "lantern", "free_shoulder", "free_arm", "free_forearm")
+CHANNELS = frozenset(
+    [("CTRL_Hips", "location", i) for i in (0, 2)] +
+    [("Camera_"+view, "location", 0) for view in ("Side", "ThreeQuarter")] +
+    [("CTRL_Foot_"+side, "location", i) for side in ("near", "far") for i in (0, 2)] +
+    [("CTRL_"+control+"_"+side, "rotation_euler", 1)
+     for side in ("near", "far") for control in ("Heel", "BallRoll", "ToePivot")] +
+    [("MAYA_PAINTED_UPPER_RIG", f'pose.bones["{bone}"].{prop}', i)
+     for bone in UPPER_BONES for prop, size in (("location", 3), ("rotation_quaternion", 4), ("scale", 3))
+     for i in range(size)])
+
+# Fixed proportions of the pinned native rig, shared by authoring and checks.
+THIGH_LENGTH = .39
+SHIN_LENGTH = .36
+REACH_TOLERANCE = 1e-6

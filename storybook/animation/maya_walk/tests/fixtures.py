@@ -64,5 +64,5 @@ def fixture():
             after, aa = at(t+h, side)
             velocity = {p: tuple((b-a)/(2*h) for a, b in zip(before[p], after[p])) for p in points}
             omega = {key: (aa[key]-ba[key])/(2*h) for key in angles}
-            rows.append(Sample(t, side, points, velocity, angles, omega, {}))
+            rows.append(Sample(t, side, points, velocity, angles, omega, {}, (points["hip"][0], 0., points["hip"][2]-.74)))
     return rows

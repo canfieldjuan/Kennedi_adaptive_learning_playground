@@ -11,9 +11,9 @@ class AdmissionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         r = fixture()[0]
-        cls.row = {"time": r.time, "side": r.side.value,
+        cls.row = {"time": r.time, "side": r.side.value, "ik_target": r.ik_target,
                    **{key: dict(getattr(r, key)) for key in ("points", "velocity", "angles", "angular_velocity", "upper")}}
-        cls.packet = {"format": "maya-walk-samples-v1", "alias": "native", "scene_sha256": BASELINES["native"][2],
+        cls.packet = {"format": "maya-walk-samples-v2", "alias": "native", "scene_sha256": BASELINES["native"][2],
                       "scene_kind": "native", "runtime": {"version": "fixture", "build": "fixture", "factory_process": True, "autoexec_disabled": True},
                       "fps": 24, "scene_units_meters": 1., "rest_hip_height": .94, "spec": BASELINE.to_dict(),
                       "time_domain": [0, 128], "validation_domain": [0, 127], "derivative_half_width": 1/128,

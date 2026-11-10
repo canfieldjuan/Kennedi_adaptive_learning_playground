@@ -4,7 +4,8 @@ from dataclasses import dataclass
 import math
 
 from .reference import Kind, SIGNATURES, SOURCES
-from .spec import GaitSpec, Point, Sample, SceneKind, Side, finite
+from .spec import (GaitSpec, Point, Sample, SceneKind, Side, finite,
+                   THIGH_LENGTH, SHIN_LENGTH, REACH_TOLERANCE)
 
 
 @dataclass(frozen=True)
@@ -183,6 +184,12 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                       "grid_samples": len(grid), "observation_samples": len(observations),
                       "extrema": {}, "point_minimum_speed": {},
                       "joint_maximum_velocity_change": {}}
+            for row in observations:
+                reach = math.dist(row.points["hip"], row.ik_target)
+                low, high = abs(THIGH_LENGTH-SHIN_LENGTH), THIGH_LENGTH+SHIN_LENGTH
+                if not low-REACH_TOLERANCE <= reach <= high+REACH_TOLERANCE:
+                    fail("ik_target_unreachable", side, number, row.time, "ik_target", reach,
+                         {"minimum": low, "maximum": high, "tolerance": REACH_TOLERANCE}, "units")
             for signal, signature in SIGNATURES.items():
                 values = ([r.points["hip"][2] for r in observations[:-1]] if signal == "pelvis_height"
                           else [r.angles[signal] for r in observations[:-1]])

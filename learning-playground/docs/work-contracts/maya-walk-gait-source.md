@@ -499,3 +499,151 @@ historical receipts; verified input bytes/hashes; inspected normative sources
 and reference figures; checked the available Blender version. Final contract
 diff/whitespace/scope and input-stability receipts are stored under G after
 drafting. No animation tests are claimed in this step.
+
+## Animation implementation checkpoint: two-strike stop
+
+Juan explicitly released step 4 after checking PR 174 CI and reviews, and
+reaffirmed that merge must wait for his acceptance of the walk. On `c17d60a`,
+quality-gate and storybook-quality-gate passed, and Codex's exact-head review
+completed without findings. Both previously corrected threads were resolved.
+
+Sparse source construction, one-clock upper/lower articulation and the all-action
+rebuild now exist. The two saved candidates both fail the unchanged whole-cycle
+rules. Candidate 2's source target exceeds the fixed two-link reach during
+midstance; analytical geometry agrees with the native IK response. Source pose
+coordination is a confirmed cause. No general rig/reference incompatibility is
+proven; art is not implicated by the passing static, upper and boot visibility
+checks. Full new-gait preservation remains pending.
+
+Per the accepted two-strike rule, stop motion edits here. Do not issue a third
+curve tweak, weaken the reference bands or acceleration limits, change the rig,
+or claim a completed fix. Preserve both attempts, the exact source/measurements,
+plots, geometry diagnosis and diagnostic playback under G / animation-source.
+The next needed work is a coordinated-pose feasibility assessment, with the
+constraints held fixed; further motion authoring remains stopped. No walk
+acceptance or merge authority is inferred.
+
+## Coordination repair after operator resume
+
+Juan resumed the source-coordination repair after the two-strike checkpoint.
+Keep the rig, art, reference bands, sparse-key cap and tangent rule fixed.
+Before further motion edits, add a read-only native-geometry assessment of the
+entire interpolated source. It must use the existing `validate_cycle`, and its
+positions/angles must agree with independently sampled saved Blender geometry.
+It is an authoring diagnostic, never a playback handler or pose correction.
+
+The saved-scene sampler currently omits the IK target position, so the validator
+cannot explicitly distinguish an unreachable target from a near-straight knee.
+Add the required finite target vector to a versioned sample record and report
+`ik_target_unreachable` at the existing validator owner. Reproduce the original
+candidate's overreach without changing any curves; test valid reach and values
+just beyond both boundaries. Preserve old v1 packets; new runs use v2 instead of
+silently inventing a target for old measurements.
+
+Any numerical fit of sparse key values remains outside execution until the
+contract's no-offline-polynomial-solving restriction is explicitly reconciled.
+No numerical fitting, threshold change or third scene is authorized merely by
+adding this assessment. Source-motion design may continue only from explicit
+whole-cycle feasibility evidence, with any needed method amendment recorded.
+
+### Accepted method amendment: bounded sparse-pose fitting
+
+Juan explicitly accepted: "Approve sparse-pose fitting with all constraints
+fixed". Permit an offline standard-library search over finite sparse pose values
+only. Keep key count at twelve or fewer; keep the single PCHIP tangent rule and
+all reference, timing/stride, hold, continuity, rig and art constraints fixed.
+Do not fit polynomial coefficients, Bezier handles or derivatives. Emit static
+editable poses; the normal rebuild must never run a search or correct poses.
+The same whole-cycle validator gates the assessed source and reopened scene.
+Failed searches remain evidence, not qualified motion. Playback acceptance and
+all merge restrictions remain unchanged.
+
+### Accepted method amendment: bounded interior-key timing
+
+Juan explicitly accepted: "Approve bounded interior-key timing fit". Extend the
+accepted offline fit to intermediate key phases between fixed anchors, together
+with their pose values. Keep cycle/fps/stride, contact events, all declared holds
+and extrema anchors, reference bands, validator limits, rig, art, PCHIP tangents
+and the twelve-key cap unchanged. Keep at least one quarter frame between
+neighboring keys and preserve order. Held boundaries and extrema anchors are not
+variables. The legs retain their shared profile and half-cycle offset; every
+channel retains the same clock. No fitted handles or polynomial coefficients,
+dense output, new dependency, playback correction or rig change is permitted.
+Source admission, reopened-scene qualification, preservation, mutations and
+Juan's playback acceptance remain mandatory. No merge authority is granted.
+
+
+### Authorized numerical repair: scaling and convergence
+
+Juan directed: "fix the fitter’s scaling and convergence handling. Prove it
+passes the isolated and frozen numerical checks before another fit. Keep the
+gait constraints fixed and don’t merge."
+
+**Root Cause.** The numerical owner in `fitting.py` forms unscaled normal
+equations from severely unequal and nearly duplicate Jacobian columns, and
+`bounded_step` returns its final iterate after a fixed sweep cap without an
+optimality certificate. Our commit `21f7585` introduced that silent cap exit;
+the earlier value chart in `68acce29` introduced saturating coordinates.
+The isolated positive-definite two-variable problem returns approximately
+0.000128 instead of 0.25; the frozen real subproblem also exhausts its cap.
+
+**Correct Fix Must Touch.** Replace the numerical step owner with scaled,
+QR-based bounded least squares, explicitly preserving the original coordinate
+trust bounds under scaling. Use a closed convergence status and measured KKT
+optimality; iteration/rank/numerical failures cannot be consumed as solved steps.
+Route the fitter through that owner and record numerical termination separately
+from gait validation. Qualify finite-difference directions at the frozen source,
+using reproducible central differences and reporting unresolvable directions.
+The allowed surface is `fitting.py`, a stdlib numerical helper, focused numerical
+tests (and existing callers), and this contract. Retire the silent sweep solver
+and the unscaled normal-equation path. An adapter for the original quadratic
+regression may factor its already-formed matrix into the same solver; the fitter
+must pass its Jacobian directly.
+
+**Must Not Change.** Pose-chart coordinate meaning and frozen seed bytes;
+`poses.py`, curve tangents, gait spec, objective weights/terms, all validation
+rules, reference bands, rig, art, cameras, holds, fixed phase anchors, minimum
+key spacing and key cap. No dependencies, dense motion, saved-scene changes,
+source promotion, remote mutation or merge. Numerical qualification does not
+prove whole-gait feasibility or playback acceptance.
+
+**Assumptions / Blockers.** Existing value/timing approvals cover this numerical
+repair. A nonconverged subproblem is a method failure, never evidence that the
+fixed gait is impossible. No new fit is permitted before both checks pass.
+
+**Verification Plan.** First run the isolated known-solution regression against
+the existing solver and retain its expected failure. Cover both bound signs,
+interior solutions, badly scaled and nearly duplicate directions, rank deficiency,
+zero directions, malformed/falsy inputs and forced budget exhaustion. Freeze the
+real checkpoint Jacobian/residuals before repair; test convergence, independent
+KKT residuals, box feasibility, predicted descent and actual objective descent at
+that unchanged source. Compare central-difference sizes at the same checkpoint.
+Force nonconvergence at the fitter caller and prove it cannot apply a trial.
+Run adjacent geometry tests and the pure suite (local numerical behavior is the
+required proof here), inspect the cold diff, and pin the protected source before
+and after. Evidence stays under G with private permissions.
+
+**Implementation / Cold Diff / Gap Audit.** DONE for the numerical repair;
+NOT DONE for the walk. `numerics.py` owns scaled QR/active-set steps, exact
+transformation of trust bounds, closed optimality status, and paired-size
+differences. `fitting.py` consumes only certified steps and records numerical
+termination separately from gait status. The former sweep and unscaled normal
+system are removed. The existing quadratic regression now uses an adapter to
+the same solver; no alternate production solver remains.
+
+`test_fitting_numerics.py` preserves the isolated failure, scaling/bounds,
+duplicate/zero directions, constructed KKT solutions, invalid inputs, forced
+budget exhaustion, and caller refusal of unfinished solves and unresolved
+derivatives. `test_geometry.py` only follows the explicit-result API. All other
+existing package source hashes and the chart/objective AST match the pre-repair
+checkpoint. The full pure suite passes (74 tests); whitespace and syntax checks
+pass. The existing CI discovery includes these tests without workflow changes.
+
+Local evidence alias `numerical-repair-2026-11-09` contains the failing-before
+receipt, frozen inputs, reproducible qualification script and passing report.
+The exact original frozen quadratic and the direct-Jacobian production path
+both converge, satisfy independent KKT/bounds checks, and yield actual descent
+at the unchanged source. Every frozen derivative resolves under paired probes;
+forced exhaustion remains explicitly unusable. These are numerical tests, not
+a passing walk. No new iterative fit, source promotion, Blender scene, remote
+mutation or merge was performed. Remaining whole-walk obligations are unchanged.
