@@ -147,6 +147,15 @@ class ScalarTests(unittest.TestCase):
         for actual,measured in zip(expected,reference):
             for a,b in zip(actual,measured):self.assertAlmostEqual(a,b,delta=1e-4)
 
+    def test_timing_chart_retains_every_interior_phase_sensitivity(self):
+        from storybook.animation.maya_walk.fitting import PoseChart,TimingChart
+        space=TimingChart(PoseChart());x=space.initial
+        def phases(x):return [p for _,profile in space.layout(x).profiles for p in profile]
+        result=analytic_jacobian(lambda x:(0.,phases(x)),x,phases(x))
+        result.require_resolved()
+        self.assertTrue(all(v.norm==0 for v in result.differences[:space.value_count]))
+        self.assertTrue(all(v.norm>0 for v in result.differences[space.value_count:]))
+
     def test_adapter_refuses_bad_primal_and_unsupported_math_without_fallback(self):
         result=analytic_jacobian(lambda x:(0.,[math.sin(x[0])]),[.2],[math.sin(.2)])
         self.assertIs(result.differences[0].reason,d.Failure.UNSUPPORTED)
