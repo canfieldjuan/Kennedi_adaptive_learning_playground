@@ -3,6 +3,7 @@ from contextlib import ExitStack
 from dataclasses import dataclass
 import json
 import math
+from storybook.animation.maya_walk import differential as dmath
 from pathlib import Path
 import tempfile
 import unittest
@@ -43,7 +44,7 @@ class _Arctangent:
 
     def score(self, x):
         self.calls += 1
-        r = [math.atan(10*v) for v in x]
+        r = [dmath.atan(10*v) for v in x]
         return sum(v*v for v in r), r
 
 
@@ -70,7 +71,7 @@ def _synthetic_fit(objective, iterations=1, derivative=None, prior=None, solver=
         geometry = stack.enter_context(patch(FITTING+'.NativeGeometry'))
         geometry.return_value.assess.return_value = FAILED_GAIT
         if derivative is not None:
-            stack.enter_context(patch(FITTING+'.finite_difference', return_value=derivative))
+            stack.enter_context(patch(FITTING+'.analytic_jacobian', return_value=derivative))
         if solver is not None:
             stack.enter_context(patch(FITTING+'.bounded_least_squares', **solver))
         resume = None
@@ -218,7 +219,7 @@ class NumericalTests(unittest.TestCase):
         report={'status':'FAIL','violation_counts':{'synthetic':1}}
         with tempfile.TemporaryDirectory() as folder, \
              patch('storybook.animation.maya_walk.fitting.Objective',return_value=objective), \
-             patch('storybook.animation.maya_walk.fitting.finite_difference',return_value=derivative), \
+             patch('storybook.animation.maya_walk.fitting.analytic_jacobian',return_value=derivative), \
              patch('storybook.animation.maya_walk.fitting.bounded_least_squares',return_value=bad), \
              patch('storybook.animation.maya_walk.fitting.NativeGeometry') as geometry:
             geometry.return_value.assess.return_value=report
@@ -251,7 +252,7 @@ class NumericalTests(unittest.TestCase):
         objective=Mock();objective.score.return_value=(1.,[1.]);objective.calls=1
         with tempfile.TemporaryDirectory() as folder, \
              patch('storybook.animation.maya_walk.fitting.Objective',return_value=objective), \
-             patch('storybook.animation.maya_walk.fitting.finite_difference',return_value=unresolved), \
+             patch('storybook.animation.maya_walk.fitting.analytic_jacobian',return_value=unresolved), \
              patch('storybook.animation.maya_walk.fitting.bounded_least_squares') as solver, \
              patch('storybook.animation.maya_walk.fitting.NativeGeometry') as geometry:
             geometry.return_value.assess.return_value={'status':'FAIL','violation_counts':{'synthetic':1}}

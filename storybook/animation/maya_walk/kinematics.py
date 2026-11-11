@@ -6,6 +6,7 @@ models the existing IK reach limit and also reports the unclipped target, so an
 unreachable source cannot masquerade as a valid straight leg.
 """
 import math
+from . import differential as dmath
 
 from .curves import Motion
 from .poses import ANKLE, BALL, HEEL, TIP, HIP_HEIGHT, rotate
@@ -34,7 +35,7 @@ class NativeGeometry:
         root_x = value('CTRL_Foot_'+side.value,'location',0,q)
         root_x -= self.curves[('CTRL_Foot_'+side.value,'location',0)].rule.translation*(q-p)
         root_z = value('CTRL_Foot_'+side.value,'location',2,q)
-        heel, ball, toe = (math.degrees(value('CTRL_'+name+'_'+side.value,'rotation_euler',1,q))
+        heel, ball, toe = (dmath.degrees(value('CTRL_'+name+'_'+side.value,'rotation_euler',1,q))
                            for name in ('Heel','BallRoll','ToePivot'))
         def point(x,z,chain):
             v=(x,z)
@@ -44,20 +45,20 @@ class NativeGeometry:
         chain=((BALL,ball),(TIP,toe),(HEEL,heel))
         target=point(0.,ANKLE,chain)
         dx,dz=target[0]-hip[0],target[1]-hip[1]
-        distance=math.hypot(dx,dz)
+        distance=dmath.hypot(dx,dz)
         if distance == 0:
             raise ValueError('Coincident hip and target has no defined sagittal direction')
         # Emulate native nonstretching IK only in this diagnostic. The original
         # target is retained for the validator's explicit feasibility rule.
-        reach=min(THIGH_LENGTH+SHIN_LENGTH,max(abs(THIGH_LENGTH-SHIN_LENGTH),distance))
+        reach=dmath.minimum(THIGH_LENGTH+SHIN_LENGTH,dmath.maximum(abs(THIGH_LENGTH-SHIN_LENGTH),distance))
         projection=(THIGH_LENGTH**2-SHIN_LENGTH**2+reach**2)/(2*reach)
-        perpendicular=math.sqrt(max(0.,THIGH_LENGTH**2-projection**2))
+        perpendicular=dmath.sqrt(dmath.maximum(0.,THIGH_LENGTH**2-projection**2))
         ux,uz=dx/distance,dz/distance
         knee=(hip[0]+projection*ux-perpendicular*uz,
               hip[1]+projection*uz+perpendicular*ux)
         ankle=(hip[0]+reach*ux,hip[1]+reach*uz)
-        thigh_angle=math.degrees(math.atan2(knee[0]-hip[0],hip[1]-knee[1]))
-        shin_angle=math.degrees(math.atan2(ankle[0]-knee[0],knee[1]-ankle[1]))
+        thigh_angle=dmath.degrees(dmath.atan2(knee[0]-hip[0],hip[1]-knee[1]))
+        shin_angle=dmath.degrees(dmath.atan2(ankle[0]-knee[0],knee[1]-ankle[1]))
         pitch=-heel-ball-toe
         points={'hip':hip,'knee':knee,'ankle':ankle,'heel':point(HEEL,0.,chain),
                 'ball':point(BALL,0.,chain),'toe':point(TIP,0.,((TIP,toe),(HEEL,heel)))}

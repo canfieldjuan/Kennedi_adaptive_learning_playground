@@ -179,7 +179,7 @@ A typed result records convergence, rank failure or budget exhaustion, and the
 fitter cannot apply an uncertified step. Numerical termination is recorded
 separately from whole-cycle gait status.
 
-Paired finite-difference probes expand geometrically within the same named
+Independent paired finite-difference probes expand geometrically within the same named
 numerical trust bound as the solve. They preserve the source domain and reject
 unresolved directions; the agreement tolerance and all gait constraints remain
 unchanged. Known-solution, badly scaled, duplicate-direction, frozen-stop and
@@ -210,6 +210,18 @@ A finite-difference direction with an exactly zero response is no longer
 accepted at the first probe size. It is `flat` only when every probe size was
 evaluated and none responded, and `unresolved` when a response appears but
 never agrees. An unresolved direction still stops the fit.
+
+The fitter now measures its Jacobian by forward-mode differentiation through the
+same chart, PCHIP, geometry and residual expressions. This preserves weak nonzero
+sensitivities before geometry rounding and nested residual differences lose them.
+Ordinary keys, phases, slopes, geometry and residuals must remain exactly equal.
+`differential.py` owns the stdlib scalar arithmetic; implicit conversion through
+an unsupported primitive refuses rather than erasing a derivative. Branch ties,
+singular norms, nonfinite derivatives and primal mismatches have explicit refusal
+receipts. Analytic zero derivatives remain distinct from sampled `flat` responses.
+The independent finite-difference owner keeps its existing comparison rules;
+there is no fallback that admits an unreliable analytic result. This numerical
+repair does not authorize another fit or establish a passing walk.
 
 The original frozen checkpoint, the first resumed stop point and iteration 60
 of the second run pass numerical requalification under the repaired policy.

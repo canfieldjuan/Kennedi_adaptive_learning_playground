@@ -8,7 +8,8 @@ from enum import Enum
 import math
 
 from .reference import Kind
-from .spec import CHANNELS, GaitSpec, finite
+from .spec import CHANNELS, GaitSpec
+from .differential import finite, zero_branch
 
 
 class Reason(str, Enum):
@@ -93,7 +94,7 @@ class ChannelRule:
 def pchip(h0, h1, d0, d1):
     """Fritsch–Butland weighted harmonic mean, including periodic neighbors."""
     if d0*d1 <= 0:
-        return 0.
+        return zero_branch(d0*d1)
     w1, w2 = 2*h1+h0, h1+2*h0
     return (w1+w2)/(w1/d0+w2/d1)
 
