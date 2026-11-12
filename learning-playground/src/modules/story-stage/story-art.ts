@@ -141,6 +141,43 @@ const POPPY_COZY_TOWN_LOST_SCENE_ASSETS: Readonly<Record<string, ProductionScene
   },
 };
 
+const POPPY_CLOUD_VILLAGE_DELIVERY_SCENE_ASSETS: Readonly<
+  Record<string, ProductionSceneAsset>
+> = {
+  'delivery-intro': {
+    id: 'story-stage-delivery-intro-poppy-cloud-village',
+    href: '/assets/images/story-stage-delivery-intro-poppy-cloud-village.svg',
+  },
+  'delivery-problem': {
+    id: 'story-stage-delivery-problem-poppy-cloud-village',
+    href: '/assets/images/story-stage-delivery-problem-poppy-cloud-village.svg',
+  },
+  'delivery-route': {
+    id: 'story-stage-delivery-route-poppy-cloud-village',
+    href: '/assets/images/story-stage-delivery-route-poppy-cloud-village.svg',
+  },
+  'delivery-bridge': {
+    id: 'story-stage-delivery-bridge-poppy-cloud-village',
+    href: '/assets/images/story-stage-delivery-bridge-poppy-cloud-village.svg',
+  },
+  'delivery-meadow': {
+    id: 'story-stage-delivery-meadow-poppy-cloud-village',
+    href: '/assets/images/story-stage-delivery-meadow-poppy-cloud-village.svg',
+  },
+  'delivery-protect': {
+    id: 'story-stage-delivery-protect-poppy-cloud-village',
+    href: '/assets/images/story-stage-delivery-protect-poppy-cloud-village.svg',
+  },
+  'delivery-ending-high': {
+    id: 'story-stage-delivery-ending-high-poppy-cloud-village',
+    href: '/assets/images/story-stage-delivery-ending-high-poppy-cloud-village.svg',
+  },
+  'delivery-ending-wagon': {
+    id: 'story-stage-delivery-ending-wagon-poppy-cloud-village',
+    href: '/assets/images/story-stage-delivery-ending-wagon-poppy-cloud-village.svg',
+  },
+};
+
 export type StoryMood = 'happy' | 'worried' | 'curious' | 'celebrating';
 
 /** Shared face marks so every character emotes in the same language. */
@@ -611,7 +648,9 @@ export function storySceneSvg(artKey: string, ctx: SceneArtContext): string {
           POPPY_FOREST_DELIVERY_SCENE_ASSETS[artKey]
         : ctx.settingArt === 'cozy-town'
           ? POPPY_COZY_TOWN_LOST_SCENE_ASSETS[artKey]
-          : undefined
+          : ctx.settingArt === 'cloud-village'
+            ? POPPY_CLOUD_VILLAGE_DELIVERY_SCENE_ASSETS[artKey]
+            : undefined
       : undefined;
   if (productionAsset) {
     return `<svg class="story-stage__scene-svg" viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><image data-production-art="${productionAsset.id}" href="${productionAsset.href}" width="400" height="250" preserveAspectRatio="xMidYMid slice"/></svg>`;

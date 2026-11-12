@@ -1,0 +1,169 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="400" height="250" viewBox="0 0 400 250" version="1.1">
+  <defs>
+    <linearGradient id="di-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9eef8" />
+      <stop offset="1" stop-color="#f9e5cf" />
+    </linearGradient>
+    <linearGradient id="di-path" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff4d6" />
+      <stop offset="1" stop-color="#e5c18a" />
+    </linearGradient>
+    <filter id="di-shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur stdDeviation="2.3" />
+    </filter>
+    <linearGradient id="cv-intro-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#91cff0" />
+      <stop offset="0.58" stop-color="#d9eef8" />
+      <stop offset="1" stop-color="#f9e5cf" />
+    </linearGradient>
+  </defs>
+  <g inkscape:groupmode="layer" inkscape:label="01 Cloud Village intro sky" id="cv-intro-01-layer">
+    <rect width="400" height="250" fill="url(#cv-intro-sky)" />
+    <circle cx="68" cy="43" r="27" fill="#ffe39a" opacity="0.38" />
+    <circle cx="68" cy="43" r="15" fill="#fff5ca" />
+    <g transform="translate(128 69) scale(0.48)" opacity="0.55">
+      <ellipse cx="0" cy="0" rx="35" ry="14" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="-20" cy="-8" r="16" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="2" cy="-14" r="22" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="24" cy="-7" r="15" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <path d="M-31 6 Q0 25 31 6" fill="#b9d9ee" opacity="0.58" />
+    </g>
+    <g transform="translate(310 85) scale(0.4)" opacity="0.45">
+      <ellipse cx="0" cy="0" rx="35" ry="14" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="-20" cy="-8" r="16" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="2" cy="-14" r="22" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="24" cy="-7" r="15" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <path d="M-31 6 Q0 25 31 6" fill="#b9d9ee" opacity="0.58" />
+    </g>
+    <g fill="#fff7ca" stroke="#3a2461" stroke-width="1.2" opacity="0.85">
+      <path d="M164 42 l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" />
+      <path d="M246 72 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" />
+      <path d="M364 34 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" />
+    </g>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="02 floating village depth" id="cv-intro-02-layer">
+    <g transform="translate(62 132) scale(0.72)" opacity="0.78">
+      <ellipse cx="0" cy="0" rx="35" ry="14" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="-20" cy="-8" r="16" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="2" cy="-14" r="22" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="24" cy="-7" r="15" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <path d="M-31 6 Q0 25 31 6" fill="#b9d9ee" opacity="0.58" />
+    </g>
+    <g transform="translate(62 125) scale(0.72)">
+      <rect x="-19" y="-34" width="38" height="35" rx="12" fill="#f4b5c9" stroke="#3a2461" stroke-width="2.5" />
+      <path d="M-24 -31 Q0 -55 24 -31 Q11 -36 0 -34 Q-11 -36 -24 -31Z" fill="#d887b1" stroke="#3a2461" stroke-width="2.4" />
+      <rect x="-5" y="-16" width="10" height="17" rx="5" fill="#75558f" />
+      <circle cx="2" cy="-8" r="1.4" fill="#ffe493" />
+      <rect x="-14" y="-25" width="8" height="8" rx="3" fill="#fff4b8" stroke="#3a2461" stroke-width="1.4" />
+      <rect x="7" y="-25" width="8" height="8" rx="3" fill="#fff4b8" stroke="#3a2461" stroke-width="1.4" />
+    </g>
+    <g transform="translate(337 120) scale(0.68)" opacity="0.72">
+      <ellipse cx="0" cy="0" rx="35" ry="14" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="-20" cy="-8" r="16" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="2" cy="-14" r="22" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="24" cy="-7" r="15" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <path d="M-31 6 Q0 25 31 6" fill="#b9d9ee" opacity="0.58" />
+    </g>
+    <g transform="translate(337 113) scale(0.68)">
+      <rect x="-19" y="-34" width="38" height="35" rx="12" fill="#b8dff1" stroke="#3a2461" stroke-width="2.5" />
+      <path d="M-24 -31 Q0 -55 24 -31 Q11 -36 0 -34 Q-11 -36 -24 -31Z" fill="#79b8dc" stroke="#3a2461" stroke-width="2.4" />
+      <rect x="-5" y="-16" width="10" height="17" rx="5" fill="#75558f" />
+      <circle cx="2" cy="-8" r="1.4" fill="#ffe493" />
+      <rect x="-14" y="-25" width="8" height="8" rx="3" fill="#fff4b8" stroke="#3a2461" stroke-width="1.4" />
+      <rect x="7" y="-25" width="8" height="8" rx="3" fill="#fff4b8" stroke="#3a2461" stroke-width="1.4" />
+    </g>
+    <path d="M93 123 C145 103 205 107 261 124" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.5" />
+    <path d="M184 116 Q211 91 238 116 Q226 108 211 108 Q196 108 184 116Z" fill="#dbc5ef" stroke="#3a2461" stroke-width="2" opacity="0.82" />
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="03 cloud-island route surface" id="cv-intro-03-layer">
+    <path d="M-18 184 Q62 151 144 176 Q211 139 282 171 Q347 151 418 181 V250 H-18Z" fill="#fffdf7" stroke="#3a2461" stroke-width="2.5" />
+    <path d="M-18 211 Q64 182 146 201 Q218 170 290 200 Q351 182 418 207 V250 H-18Z" fill="#cbe4f2" opacity="0.72" />
+    <path d="M96 250 Q145 210 204 197 Q264 184 325 201" fill="none" stroke="#f8e4b9" stroke-width="21" stroke-linecap="round" opacity="0.92" />
+    <path d="M104 250 Q151 217 206 205 Q262 193 318 207" fill="none" stroke="#fff8df" stroke-width="3" stroke-linecap="round" opacity="0.9" />
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="04 Cloud Village framing" id="cv-intro-04-layer">
+    <g transform="translate(15 184) scale(0.56)" opacity="0.94">
+      <ellipse cx="0" cy="0" rx="35" ry="14" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="-20" cy="-8" r="16" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="2" cy="-14" r="22" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="24" cy="-7" r="15" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <path d="M-31 6 Q0 25 31 6" fill="#b9d9ee" opacity="0.58" />
+    </g>
+    <g transform="translate(390 181) scale(0.58)" opacity="0.94">
+      <ellipse cx="0" cy="0" rx="35" ry="14" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="-20" cy="-8" r="16" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="2" cy="-14" r="22" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <circle cx="24" cy="-7" r="15" fill="#fffdf8" stroke="#3a2461" stroke-width="2.4" />
+      <path d="M-31 6 Q0 25 31 6" fill="#b9d9ee" opacity="0.58" />
+    </g>
+    <path d="M12 136 Q200 102 388 136" fill="none" stroke="#75558f" stroke-width="2" opacity="0.65" />
+    <g fill="#bfe8f6" stroke="#3a2461" stroke-width="1.4">
+      <path d="M35 128 q9-9 18 0 q-9 8-18 0" />
+      <path d="M346 124 q9-9 18 0 q-9 8-18 0" />
+    </g>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="05 special-day welcome flags" id="di-flags-layer">
+    <path d="M118 65 C171 44 231 44 286 65" fill="none" stroke="#3a2461" stroke-width="2.2" />
+    <path d="M129 61 l9 16 9-16Z" fill="#f36fa3" stroke="#3a2461" stroke-width="1.8" />
+    <path d="M174 50 l9 16 9-16Z" fill="#f7c54a" stroke="#3a2461" stroke-width="1.8" />
+    <path d="M220 50 l9 16 9-16Z" fill="#9fc7e8" stroke="#3a2461" stroke-width="1.8" />
+    <path d="M264 59 l9 16 9-16Z" fill="#a777bb" stroke="#3a2461" stroke-width="1.8" />
+    <g fill="#f7c54a" stroke="#3a2461" stroke-width="1.5">
+      <path d="M190 103 l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" />
+      <path d="M305 140 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" />
+    </g>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="06 sunshine berry basket" id="di-basket-layer">
+    <ellipse cx="278" cy="231" rx="49" ry="8" fill="#3a2461" opacity="0.14" filter="url(#di-shadow)" />
+    <path d="M244 194 Q278 159 312 194" fill="none" stroke="#8b5a3c" stroke-width="8" stroke-linecap="round" />
+    <path d="M239 194 H317 L309 228 Q278 238 247 228Z" fill="#dba95e" stroke="#3a2461" stroke-width="3.2" stroke-linejoin="round" />
+    <path d="M246 204 H311 M250 216 H307 M258 194 L260 231 M278 193 V233 M298 194 L296 231" fill="none" stroke="#9f6d3f" stroke-width="2" opacity="0.72" />
+    <g fill="#f26f6f" stroke="#3a2461" stroke-width="1.8">
+      <circle cx="258" cy="190" r="8" />
+      <circle cx="274" cy="186" r="8" />
+      <circle cx="291" cy="190" r="8" />
+      <circle cx="304" cy="185" r="7" />
+    </g>
+    <g fill="#f7c54a" stroke="#3a2461" stroke-width="1.3">
+      <path d="M278 167 l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" />
+      <path d="M320 181 l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" />
+    </g>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="07 Princess Poppy ready" id="di-poppy-layer">
+    <ellipse cx="134" cy="232" rx="36" ry="7" fill="#3a2461" opacity="0.15" filter="url(#di-shadow)" />
+    <path d="M111 181 C99 184 95 194 100 202 M157 181 C169 184 174 193 171 201" fill="none" stroke="#f6d3b3" stroke-width="6.5" stroke-linecap="round" />
+    <path d="M110 172 C113 160 121 154 134 154 C147 154 155 161 158 174 L162 218 C145 223 122 223 105 217Z" fill="#f36fa3" stroke="#3a2461" stroke-width="3.4" />
+    <path d="M124 219 v10 M146 219 v10" stroke="#5b4677" stroke-width="7" stroke-linecap="round" />
+    <path d="M117 231 h15 M139 231 h15" stroke="#3a2461" stroke-width="5" stroke-linecap="round" />
+    <circle cx="134" cy="136" r="20" fill="#f6d3b3" stroke="#3a2461" stroke-width="3.3" />
+    <path d="M115 135 C111 118 122 109 136 109 C149 109 157 119 154 135 C148 126 141 122 131 122 C125 122 120 127 115 135Z" fill="#8a5a34" stroke="#3a2461" stroke-width="3" />
+    <path d="M117 129 q-8 8-2 18 M153 129 q8 8 2 18" fill="none" stroke="#8a5a34" stroke-width="5" stroke-linecap="round" />
+    <circle cx="127" cy="137" r="2.1" fill="#3a2461" />
+    <circle cx="141" cy="137" r="2.1" fill="#3a2461" />
+    <path d="M128 146 q6 5 12 0" fill="none" stroke="#3a2461" stroke-width="2.2" stroke-linecap="round" />
+    <path d="M113 117 H156 L151 109 H118Z" fill="#e8c07a" stroke="#3a2461" stroke-width="2.7" />
+    <path d="M121 109 L126 98 L134 107 L141 97 L148 109Z" fill="#f6c343" stroke="#3a2461" stroke-width="2.4" />
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="08 readiness connection" id="di-connection-layer">
+    <path d="M162 177 C185 165 208 166 231 180" fill="none" stroke="#fff3d4" stroke-width="4" stroke-linecap="round" opacity="0.8" />
+    <g fill="#f39ab7" stroke="#3a2461" stroke-width="1.4">
+      <circle cx="92" cy="214" r="3.5" />
+      <circle cx="331" cy="211" r="3.5" />
+    </g>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="09 foreground cloud wisps" id="cv-intro-09-layer">
+    <g fill="#d8ecf6" stroke="#3a2461" stroke-width="1.8" opacity="0.94">
+      <circle cx="-4" cy="248" r="30" />
+      <circle cx="28" cy="247" r="22" />
+      <circle cx="54" cy="252" r="19" />
+      <circle cx="404" cy="247" r="31" />
+      <circle cx="371" cy="248" r="23" />
+      <circle cx="345" cy="253" r="18" />
+    </g>
+    <g fill="#ffffff" opacity="0.7">
+      <ellipse cx="30" cy="240" rx="24" ry="7" />
+      <ellipse cx="372" cy="239" rx="25" ry="7" />
+    </g>
+  </g>
+</svg>
