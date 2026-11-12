@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inlineSvgFile, withSvgLabel, withViewBox } from './asset-inline.mjs';
 import { bunnyGarden, inlineBunnyGarden, turtlePond, inlineTurtlePond,
-  unicornMeadow, inlineUnicornMeadow } from '../components/coloring-scene.mjs';
+  unicornMeadow, inlineUnicornMeadow, whaleReef, inlineWhaleReef } from '../components/coloring-scene.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 // Deliberately curated: not every shaded workbook SVG is suitable for coloring.
@@ -20,6 +20,9 @@ export const coloringCatalog = Object.freeze([
   { id: 'unicorn-meadow', title: 'Unicorn meadow', illustrationPath: unicornMeadow.scene,
     dependencies: [unicornMeadow.character], renderScene: inlineUnicornMeadow,
     label: 'A friendly unicorn in a meadow with a rainbow, rolling hills and large flowers' },
+  { id: 'whale-reef', title: "Whale's reef", illustrationPath: whaleReef.scene,
+    dependencies: [whaleReef.character], renderScene: inlineWhaleReef,
+    label: 'A friendly whale swimming above broad coral branches and a large starfish, with bubbles in open water' },
 ].map(entry => Object.freeze({ ...entry,
   illustrationPath: entry.illustrationPath ?? `design-source/animals/locked-poses/${entry.file}.svg`,
 })));
