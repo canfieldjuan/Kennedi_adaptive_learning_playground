@@ -247,7 +247,106 @@ Tests touching the two rules or the sample format:
 
 ## Contract Amendments
 
-None at the initial contract commit.
+### Amendment 1 (2026-11-12): fine spacing 1/8 frame, exact resolution statement
+
+Verification 1 hit this contract's stop condition before any code was written.
+Blender's own measurement noise at δ = 1/64 frame exceeds the limit where the
+leg is nearly straight, which is exactly where a valid heel strike sits. A knee
+of 5° leaves a reach gap of about 7e-4 units.
+
+**Evidence.** Alias `interval-measurement-2026-11-12/noise-floor`.
+
+- Probe and scenes:
+  - The read-only probe `fine_track_probe.py`
+    (`26682682eb2b6647d4687c96ab77d9fd19534c9dab4ce90d876f6b9ecb71f3f1`) ran in
+    pinned Blender `d13f752e3b9c`, in a fresh factory process with autoexec
+    disabled.
+  - It sampled the native, painted, release and candidate-02 scenes. Each scene
+    hash was checked before and after sampling, and no scene was saved.
+  - Candidate-02 (`ac941e798a4ac90d1f2746b2244a1a1300f8dd524376dbee3806481b62672d44`)
+    was compared against the float64 native model of the same authored source.
+- Angles agree to a median of 1e-4–4e-4° (`model-parity.json`
+  `7d02a494b8efc36b3485a18676f4629146b1f480a9a85434ea86b25ec129a8a6`).
+- **Maximum acceleration noise**, Blender vs model, by reach gap. The
+  quarter-frame-scaled limit is 2.0. Source: `spacing-sweep.json`
+  (`ee17ba459a79cdef360ae496cf3cec0f36e648b57f9c84f04ce55168b50c50d1`).
+
+  | δ (frames) | gap 0–1e-4 | 1e-4–1e-3 | 1e-3–1e-2 | > 1e-2 |
+  | --- | --- | --- | --- | --- |
+  | 1/64 | 15.5 | 16.9 | 2.56 | 0.77 |
+  | 1/32 | 5.25 | 5.55 | 0.469 | 0.208 |
+  | 1/16 | 1.14 | 0.8 | 0.135 | 0.0417 |
+  | 1/8 | 0.138 | 0.0887 | 0.0316 | 0.00869 |
+
+- **Third-fit heel-strike pop** (near knee, maximum measured acceleration):
+
+  | δ (frames) | 1/64 | 1/32 | 1/16 | 1/8 | 1/4 |
+  | --- | --- | --- | --- | --- | --- |
+  | Knee | 137.7 | 105.3 | 64.11 | 45.3 | 20.76 |
+
+  At δ = 1/8 there are 51 over-limit knee intervals in the cycle, against a
+  recorded validator value of 2.049.
+- **Forward-velocity disagreement at δ = 1/8** (`direction-noise.json`
+  `9c1156c5311d2d7d9c1046395239dadbe3c4a8e82a0fe34bf3abc6243dbe55ad`):
+  - near-straight knee (gap 0–1e-3): up to 0.000286 units/frame, 57% of the
+    .0005 tolerance;
+  - every other point and gap, outside clamped reach: at most 3e-5.
+
+**What this shows.** The original blind spot came from *pointwise* angular
+velocity at observation times, not from quarter-frame spacing. Secant velocities
+alone already reveal the pop, even at quarter-frame spacing (20.76 against a
+recorded 2.049).
+
+**Changes to Correct Fix Must Touch:**
+
+1. **δ = 1/8 frame** for both rules and both callers, replacing 1/64. This is the
+   finest power-of-two spacing at which the worst observed Blender noise in
+   every unclamped reach band (0.138) stays under 10% of the acceleration limit.
+   It keeps two intervals inside the quarter-frame minimum key gap. Objective
+   residuals are weighted by `sqrt(δ/.25) = sqrt(1/2)`. Over the cycle that is
+   about 193 acceleration intervals and 192 direction intervals per joint or
+   point, not the 1536 estimated earlier.
+2. **The δ/2δ check and `interval_measurement_unresolved` are removed.** At any
+   usable δ, that heuristic is tripped by noise and high-order IK curvature near
+   extension, not by hidden motion. It would fail valid contacts without proving
+   anything.
+
+   It is replaced by the exact definition. The measurement is
+   `.25*|θ(i+1)-2θ(i)+θ(i-1)|/δ²`, angle-wrapped. Each value is a
+   triangle-weighted average of true angular acceleration over `[t(i)-δ, t(i)+δ]`,
+   and the kernels sum to one at every instant. That gives a stated detection
+   bound, recorded in the report as `measurement_resolution`:
+   - every angle step larger than `16δ²` = 0.25° is detected. A step centred
+     on a grid time is the worst case, splitting into two half steps;
+   - every same-signed velocity change larger than `24δ` = 3°/frame,
+     concentrated within any δ window, is detected.
+
+   The direction rule measures exact average forward velocity over each δ
+   interval. It detects net backward displacement larger than `.0005·δ` within
+   any interval. The resolution restriction is removed, not relaxed: it served
+   no need the exact bound does not meet better.
+3. **Track domain.** The validator's track is `[-δ, 128+δ]`; the objective's is
+   `[-δ, 24+δ]`. Acceleration is evaluated at every grid time within each cycle
+   `[start, end]`, inclusive, so the contact seam itself is always centred. The
+   sampler already evaluates just before frame 1 (its 1/128 central difference
+   does), so this adds no new extrapolation class.
+
+**Known limits, reported rather than hidden:**
+
+- The third-fit knee reversal is narrower than 1/8 frame: −0.000405 at δ = 1/8
+  against −0.01659 at 1/128. The direction rule does not detect it at this
+  resolution. It lies inside the heel-strike pop, which the acceleration rule
+  detects with a large margin.
+- Near-straight knee direction carries up to 57% of its tolerance in
+  Blender-vs-model disagreement. A future failure that sits only within that
+  margin is reported as such. Neither the limit nor δ is adjusted.
+
+**Verification changes:** Verification 1 is complete; its receipts are listed
+above. Verification 3 drops the resolution probes and adds detection-bound
+probes: a 0.25° step and a 3°/frame concentrated velocity change, each just
+above and just below its bound, at every grid offset within one interval.
+Verification 4's Blender-vs-model parity uses the noise envelope in the table
+above.
 
 ## Implementation summary
 
