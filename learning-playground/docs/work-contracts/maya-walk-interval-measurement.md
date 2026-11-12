@@ -350,8 +350,148 @@ above.
 
 ## Implementation summary
 
-Not started. Awaiting contract acceptance.
+Implemented to the contract as amended. One owner, `validate.interval_motion`,
+measures angle-wrapped exact second differences and interval-average forward
+velocity on a uniform 1/8-frame track. It serves:
+
+- `validate_cycle`'s `angular_velocity_jump` and `point_backward`;
+- `fitting.Objective`'s two fine residual families.
+
+`spec.MotionTrack` admits only the qualified spacing and a closed, finite,
+equal-length inventory. Sample format v3 requires one full-domain track per
+side, plus one step of margin. The Blender sampler and `NativeGeometry` build
+tracks from their existing evaluated pose and geometry owners. Limits, the
+observation schedule and every other rule are unchanged.
 
 ## Cold Diff Audit
 
-Not started.
+### Gaps
+
+- **No PASS walk.** The new objective scores the third fit at 168334.03, against
+  425.91 under the old objective. The hidden heel-strike pop is now visible to
+  the optimizer. No fit was run, so whether a measured-correct walk is reachable
+  is unproven.
+- **Direction limit near full extension.** Blender-vs-model forward-velocity
+  disagreement on the near-straight knee reaches 0.000286 units/frame, 57% of
+  the tolerance (Amendment 1).
+- **Pointwise-value rules can miss values between samples.** These are extrema,
+  knee bands, ground, hold slip and reach. A follow-up issue for them has not
+  been opened yet.
+- **The validation report format is now v2** (`validate.py:404`). Violation
+  values for `point_backward` became a dictionary carrying the interval. That is
+  additive, and no repository consumer reads the old scalar.
+
+### Change By Change Reconstruction
+
+- **`spec.py:182-296`.** `FINE_SPACING = 1/8` and `PROGRESSION_POINTS`. The typed
+  `MotionTrack` refuses:
+  - a non-float or unqualified spacing, or a nonfinite start;
+  - an open joint or point inventory;
+  - unequal or fewer than three samples, or non-sequence columns;
+  - nonfinite, boolean or string values.
+
+  `SamplePacket` accepts only `maya-walk-samples-v3`. It requires exactly one
+  track per side, starting at `domain start - δ` with `span/δ + 3` samples.
+- **`validate.py:12-60`.**
+  - `progression_applies` gives one applicability rule for hip/knee and for
+    post-toe-off ankle/toe.
+  - `interval_motion` is the shared owner. It requires both window ends to lie on
+    the grid with a margin step, and refuses otherwise with
+    `TrackCoverageError`.
+  - `measurement_resolution` states the detection bounds as `8·L·δ²`, `12·L·δ`
+    and `tol·δ`.
+- **`validate.py:136-143`.** `tracks` is a required keyword argument; it must be
+  closed and typed, with one per side.
+- **`validate.py:301-304`.** The observation loop now only reports minimum
+  speed; its backward check moved to the track.
+- **`validate.py:322-347`.** Both interval rules read the track. Each violation
+  carries `interval_frames`. A track short of a cycle fails as `missing_sample`
+  on channel `fine_track`, never as a pass.
+- **`validate.py:404`.** The validation report format is now v2.
+- **`sample_scene.py:66-72`.** `fine_times` is the one schedule:
+  `[start-δ … end+δ]`. **`sample_scene.py:197-214`** builds the tracks from the
+  existing `sample()` pose definitions, and the packet is v3.
+- **`kinematics.py:84-95`.** `NativeGeometry.tracks()` uses `at()` per side over
+  the scene domain; `assess()` passes them to the validator.
+- **`fitting.py:289-299`.** The objective's fine grid is `fine_times(0,24)`, and
+  `fine_motion` calls the shared owner on the near side.
+- **`fitting.py:345-352`.** The two fine families replace the removed pointwise
+  angular-change residual (old `fitting.py:326`) and the secant-direction
+  residual (old `fitting.py:336-339`, including its hard-coded `14.4`).
+  - Threshold 1.98, scale /.15, backward expression and `velocity_weight` are
+    unchanged.
+  - Each residual is weighted by `sqrt(δ/.25)`.
+- **`__main__.py:41`.** `analyze` passes the packet's tracks.
+- **Tests.**
+  - `fixtures.py` lifts the analytic motion to module level and builds its
+    tracks.
+  - `test_validation.py` routes its three interval-rule tests through tracks and
+    adds proof that observation mutations no longer own those rules.
+  - `test_admission.py` adds track and packet refusals.
+  - New `test_interval_motion.py` covers the definition, both detection bounds,
+    boundaries, the seam, coverage, the third-fit pop, objective parity and the
+    residual block.
+- **Re-pinned frozen tests** (fixture files untouched; old values kept in
+  comments):
+  - `test_differential.py:204-214`: frozen column 31 now resolves and agrees
+    with the analytic column.
+  - `test_fitting_numerics.py` weak-direction test: it now resolves at the first
+    probe.
+  - `test_fitting_numerics.py` iteration-60 test: the first full step is
+    admitted.
+
+  Refusal and probe widening remain covered by the synthetic tests.
+- **`README.md`.** The measurement section is updated.
+
+### Contract Traceability
+
+Every touched file maps to Correct Fix Must Touch as amended. Must Not Change
+holds:
+
+- Primal parity is exact against the base commit on the authored source and the
+  third fit: 1156 observation rows each; every non-interval violation (216 and
+  162), cycle field, coverage and global result.
+- On three sealed baselines and candidate-02, pinned-Blender rows, non-interval
+  violations and global results are identical between the base sampler and
+  validator (v2) and this branch (v3).
+- Limits, the observation schedule, charts, PCHIP, step admission and the
+  differential owners are untouched.
+
+### Verification
+
+- Contract `d83966d`, Amendment 1 `3e6c40a`, each committed alone.
+- Full pure suite: 116 tests PASS before; 138 tests PASS after.
+- Old-path receipt on the third fit: 576 `angular_velocity_jump`, zero knee
+  `point_backward`, heel-strike knee recorded at 2.0486. New path: knee 45.301
+  in near cycle 0, and 1062 `angular_velocity_jump` overall.
+- Mutation: 30 single-clause mutants, all killed; the unmutated control passes.
+  Two first-round survivors (reported maximum, model domain) were closed by new
+  tests before the final run.
+- Equivalent mutant: `>=` versus `>` at toe-off applicability. No 1/8-frame grid
+  time equals toe-off for either spec (19.2 and 14.4 frames).
+- Pinned Blender `reproduce` with the branch: all three baselines still
+  demonstrate their documented failures (exit 0). Report SHA256s:
+  - native `930d3d6d9c03812efe9e6949533282462320048ef2edd6016d6b6e1c0defc6c3`
+  - painted `af5bb2cd1dbe26febba6aea5172b24a9beab6c406998e714c163703247621419`
+  - release `c2d470eebbd959e773c6b49a459066d6839ad0aba39444221790aa76b2dba882`
+- Candidate-02 v3 packet: the Blender track matches the native model within the
+  Amendment 1 envelope. Acceleration disagreement is at most 0.138 in every
+  unclamped band; the candidate fails, as before.
+
+Evidence alias `interval-measurement-2026-11-12` (SHA256):
+
+- before/old-rule-receipt.json `e72d9995304e642d783c47afa6a71b85bd2bf6f7c488f1a2c6bb09ff3410dfe0`
+- before/pure-tests.log `73e2e583f025c55586a1e8f71394df4c033ccf8daa526662f89438136fbc8ebd`
+- after/pure-tests.log `7c367c8773222a2348b505c56c71a6fa8c18ce2b4bc52866dcb21becf4f0ea57`
+- mutation/mutation-report.json `630271824e4d4f20694860d44045ba4fa2ef224804e06614b018cb844c852884`
+- parity/parity.json `a861761aff4be5b8a9ab041f2b3d05d99aa7ba615d69b465b234b8e98261e77a`
+- parity/baseline-parity.json `35366f400e0318913cd8906e4e6438e7e82d5652e8645ccb5968eb25bdb51e0f`
+- parity/candidate-base-parity.json `c888700ae72edde5dc1259200d74c0664e74dee41b2882485982ec00673525a0`
+- candidate/candidate-parity.json `3d2c243ef1a255d81181a77a2489199e77dacc06495b34875366f75672ee1f78`
+- repin/frozen-points-new-objective.json `f2b5bac12c21deb1bbd0cdee31cca809c5ab65144f509a7e4e7d96320f5e99b6`
+
+### Gap audit
+
+**DONE:** the measurement change and its local qualification. **NOT DONE:** remote
+CI and review, a fit under the new objective, the pointwise-value follow-up
+issue, any walk acceptance. No merge or playback acceptance is inferred.

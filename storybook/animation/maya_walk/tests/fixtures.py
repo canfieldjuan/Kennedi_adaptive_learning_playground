@@ -6,8 +6,9 @@ rules; the Blender adapter separately owns anatomical/coordinate consistency.
 from dataclasses import replace
 import math
 
-from storybook.animation.maya_walk.sample_scene import times
-from storybook.animation.maya_walk.spec import BASELINE, Point, Sample, SceneKind, Side
+from storybook.animation.maya_walk.sample_scene import fine_times, times
+from storybook.animation.maya_walk.spec import (BASELINE, FINE_SPACING, MotionTrack, PROGRESSION_POINTS,
+                                                Point, Sample, SceneKind, Side)
 
 
 def wave(phase, knots):
@@ -26,35 +27,36 @@ SPEC = replace(BASELINE, name="analytic-validator-fixture", speed_epsilon=.00001
                expected_cadence=90., expected_step_hip_ratio=.45/.94)
 
 
-def fixture():
-    def at(t, side):
-        q = (t+SPEC.offset(side))/SPEC.cycle_frames
-        p = q % 1
-        points = {"hip": (t*.9/32, 0., .94-.01*math.cos(4*math.pi*(p-.05))),
-                  "knee": (t*.9/32+.1, 0., .5)}
-        for hold in SPEC.holds(SceneKind.NATIVE):
-            point = hold.point.value
-            # Constant within the declared hold, otherwise advance to the next
-            # plant with zero boundary derivatives and a positive airborne arc.
-            cycle = math.floor(q-hold.start)
-            phase = q-cycle
-            if hold.start <= phase <= hold.end:
-                x, z = .1+cycle*.9, 0.
-            else:
-                u = (phase-hold.end)/(1+hold.start-hold.end)
-                x = .1+cycle*.9+.9*(1-math.cos(math.pi*u))/2
-                z = .05*math.sin(math.pi*u)**2
-            if hold.point is Point.TOE:
-                z = wave(p, ((.125, 0), (.6, 0), (.68, .08), (.80, .025), (.95, .08)))
-            points[point] = (x-SPEC.offset(side)*.9/32, 0., z+(.2 if point == "ankle" else 0))
-        angles = {
-            "knee": wave(p, ((0., 2), (.14, 18), (.40, 2), (.72, 62))),
-            "hip": wave(p, ((.53, -10), (.88, 30))),
-            "ankle": wave(p, ((.08, -10), (.45, 10), (.62, -20), (.90, 0))),
-            "foot_pitch": 0.,
-        }
-        return points, angles
+def at(t, side):
+    q = (t+SPEC.offset(side))/SPEC.cycle_frames
+    p = q % 1
+    points = {"hip": (t*.9/32, 0., .94-.01*math.cos(4*math.pi*(p-.05))),
+              "knee": (t*.9/32+.1, 0., .5)}
+    for hold in SPEC.holds(SceneKind.NATIVE):
+        point = hold.point.value
+        # Constant within the declared hold, otherwise advance to the next
+        # plant with zero boundary derivatives and a positive airborne arc.
+        cycle = math.floor(q-hold.start)
+        phase = q-cycle
+        if hold.start <= phase <= hold.end:
+            x, z = .1+cycle*.9, 0.
+        else:
+            u = (phase-hold.end)/(1+hold.start-hold.end)
+            x = .1+cycle*.9+.9*(1-math.cos(math.pi*u))/2
+            z = .05*math.sin(math.pi*u)**2
+        if hold.point is Point.TOE:
+            z = wave(p, ((.125, 0), (.6, 0), (.68, .08), (.80, .025), (.95, .08)))
+        points[point] = (x-SPEC.offset(side)*.9/32, 0., z+(.2 if point == "ankle" else 0))
+    angles = {
+        "knee": wave(p, ((0., 2), (.14, 18), (.40, 2), (.72, 62))),
+        "hip": wave(p, ((.53, -10), (.88, 30))),
+        "ankle": wave(p, ((.08, -10), (.45, 10), (.62, -20), (.90, 0))),
+        "foot_pitch": 0.,
+    }
+    return points, angles
 
+
+def fixture():
     rows = []
     h = 1/128
     for t in times(SPEC):
@@ -66,3 +68,23 @@ def fixture():
             omega = {key: (aa[key]-ba[key])/(2*h) for key in angles}
             rows.append(Sample(t, side, points, velocity, angles, omega, {}, (points["hip"][0], 0., points["hip"][2]-.74)))
     return rows
+
+
+def tracks():
+    """Fine interval tracks of the same analytic motion, one per side."""
+    grid = fine_times(0, 128)
+    result = {}
+    for side in Side:
+        rows = [at(t, side) for t in grid]
+        result[side] = MotionTrack(side, grid[0], FINE_SPACING,
+                                   {k: [a[k] for _, a in rows] for k in rows[0][1]},
+                                   {p: [pts[p][0] for pts, _ in rows] for p in PROGRESSION_POINTS})
+    return result
+
+
+def with_track(tracks_by_side, side, *, angles=None, progress_x=None):
+    """Copy of the tracks with one side's named columns replaced."""
+    old = tracks_by_side[side]
+    return {**tracks_by_side, side: MotionTrack(side, old.start, old.spacing,
+                                                {**old.angles, **(angles or {})},
+                                                {**old.progress_x, **(progress_x or {})})}

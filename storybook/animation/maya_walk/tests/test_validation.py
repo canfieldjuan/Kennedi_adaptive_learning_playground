@@ -5,11 +5,13 @@ import unittest
 from storybook.animation.maya_walk.reference import Kind
 from storybook.animation.maya_walk.spec import BASELINE, Hold, Point, SceneKind, Side
 from storybook.animation.maya_walk.validate import extrema, validate_cycle
-from storybook.animation.maya_walk.tests.fixtures import SPEC, fixture
+from storybook.animation.maya_walk.tests.fixtures import SPEC, fixture, tracks, with_track
+
+TRACKS = tracks()
 
 
-def report(rows, spec=SPEC):
-    return validate_cycle(rows, spec, SceneKind.NATIVE, fps=24., rest_hip_height=.94,
+def report(rows, spec=SPEC, tracks_by_side=None):
+    return validate_cycle(rows, spec, SceneKind.NATIVE, tracks=tracks_by_side or TRACKS, fps=24., rest_hip_height=.94,
                           scene_sha256="public-analytic-fixture", alias="fixture")
 
 
@@ -98,7 +100,13 @@ class WholeCycleTests(unittest.TestCase):
     def test_swing_stall_and_backward_hip_fail(self):
         rows = [replace(r, points={**r.points, "ankle": (.7, 0., .25), "hip": (-r.time, 0., r.points["hip"][2])})
                 if 24 <= r.time <= 26 else r for r in self.rows]
-        rules = report(rows)["violation_counts"]
+        # Direction is a fine-track rule: the same backward hip on the track.
+        tracks_by_side = TRACKS
+        for side in Side:
+            old = TRACKS[side]
+            hip = [-t if 24 <= t <= 26 else x for t, x in zip(old.times(), old.progress_x["hip"])]
+            tracks_by_side = with_track(tracks_by_side, side, progress_x={"hip": hip})
+        rules = report(rows, tracks_by_side=tracks_by_side)["violation_counts"]
         self.assertIn("point_stall", rules)
         self.assertIn("point_backward", rules)
 
@@ -132,19 +140,24 @@ class WholeCycleTests(unittest.TestCase):
                 if abs(((r.time+SPEC.offset(r.side))/SPEC.cycle_frames) % 1-SPEC.toe_off) < 1e-8 else r for r in self.rows]
         self.assertIn("hold_slip", report(rows)["violation_counts"])
 
-    def test_off_grid_observations_participate_in_direction_and_joint_rules(self):
-        for change, rule in (("position", "point_backward"), ("angle", "extrema_count"),
-                             ("velocity", "angular_velocity_jump")):
-            def mutate(r):
-                if abs(((r.time+SPEC.offset(r.side))/SPEC.cycle_frames) % 1-SPEC.toe_off) > 1e-8:
-                    return r
-                if change == "position":
-                    return replace(r, points={**r.points, "hip": (r.points["hip"][0]-.1, *r.points["hip"][1:])})
-                if change == "angle":
-                    return replace(r, angles={**r.angles, "knee": 100.})
-                return replace(r, angular_velocity={**r.angular_velocity, "knee": 100.})
-            with self.subTest(change=change):
-                self.assertIn(rule, report([mutate(r) for r in self.rows])["violation_counts"])
+    def test_off_grid_observations_participate_in_extrema(self):
+        def mutate(r):
+            if abs(((r.time+SPEC.offset(r.side))/SPEC.cycle_frames) % 1-SPEC.toe_off) > 1e-8:
+                return r
+            return replace(r, angles={**r.angles, "knee": 100.})
+        self.assertIn("extrema_count", report([mutate(r) for r in self.rows])["violation_counts"])
+
+    def test_pointwise_observations_no_longer_own_the_interval_rules(self):
+        # Single owner: observation velocities/positions cannot create or hide
+        # an interval-rule verdict; only the fine track can.
+        def mutate(r):
+            if abs(((r.time+SPEC.offset(r.side))/SPEC.cycle_frames) % 1-SPEC.toe_off) > 1e-8:
+                return r
+            return replace(r, angular_velocity={**r.angular_velocity, "knee": 100.},
+                           points={**r.points, "hip": (r.points["hip"][0]-.1, *r.points["hip"][1:])})
+        counts = report([mutate(r) for r in self.rows])["violation_counts"]
+        self.assertNotIn("angular_velocity_jump", counts)
+        self.assertNotIn("point_backward", counts)
 
     def test_later_missing_contacts_cannot_hide_behind_early_valid_steps(self):
         def mutate(r):
@@ -205,10 +218,11 @@ class WholeCycleTests(unittest.TestCase):
                 self.assertEqual(report(rows)["status"], "FAIL")
 
     def test_velocity_jump_at_seam_and_contact_reacceleration_fail(self):
-        rows = [replace(r, angular_velocity={**r.angular_velocity, "hip": 100.},
-                        velocity={**r.velocity, "heel": (10., 0., 0.)})
+        rows = [replace(r, velocity={**r.velocity, "heel": (10., 0., 0.)})
                 if r.time in (31.75, 32.) else r for r in self.rows]
-        rules = report(rows)["violation_counts"]
+        old = TRACKS[Side.NEAR]
+        hip = [x+(5. if t == 32. else 0.) for t, x in zip(old.times(), old.angles["hip"])]
+        rules = report(rows, tracks_by_side=with_track(TRACKS, Side.NEAR, angles={"hip": hip}))["violation_counts"]
         self.assertIn("angular_velocity_jump", rules)
         self.assertIn("contact_reacceleration", rules)
 

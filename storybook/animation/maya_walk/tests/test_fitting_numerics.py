@@ -265,7 +265,10 @@ class NumericalTests(unittest.TestCase):
             objective.score.assert_called_once_with(chart.initial);solver.assert_not_called()
 
 
-    def test_weak_frozen_direction_uses_available_probe_range(self):
+    def test_frozen_derivative_stop_direction_resolves_within_trust_bound(self):
+        # Under the old pointwise objective this direction needed probes > .1;
+        # the fine-interval objective resolves it at the first probe. Probe
+        # widening itself is covered by the synthetic ZeroResponseTests.
         import json
         from pathlib import Path
         from storybook.animation.maya_walk.fitting import PoseChart,TimingChart,Objective
@@ -283,7 +286,6 @@ class NumericalTests(unittest.TestCase):
         result=finite_difference(score,[values[index]],residuals)
         result.require_resolved()
         self.assertLessEqual(max(visited),.5+1e-12)
-        self.assertGreater(max(visited),.1)
         self.assertLessEqual(result.differences[0].relative_error,.05)
 
 
@@ -526,7 +528,11 @@ class StepAdmissionTests(unittest.TestCase):
         record, _ = _synthetic_fit(_Arctangent(), prior=prior)
         self.assertEqual(record['numerics']['attempts'][0]['damping'], .05)
 
-    def test_collapsed_damping_recovers_with_a_full_step_at_frozen_iteration_60(self):
+    def test_collapsed_damping_admits_a_full_step_at_frozen_iteration_60(self):
+        # The fixture's recorded score (428.685...) belongs to the old pointwise
+        # objective, under which the first attempts were refused. The
+        # fine-interval objective scores this point higher and admits the first
+        # full step; refusal and recovery are covered synthetically above.
         from storybook.animation.maya_walk.fitting import (
             PoseChart, TimingChart, Objective, admit_step, StepVerdict)
         fixture = json.loads(Path(__file__).with_name('frozen-outer-step.json').read_text())
@@ -534,7 +540,8 @@ class StepAdmissionTests(unittest.TestCase):
         objective = Objective(space, fixture['velocity_weight'], fixture['guide_weight'])
         x = fixture['values']
         score, residuals = objective.score(x)
-        self.assertAlmostEqual(score, fixture['score'], delta=1e-6)
+        self.assertGreater(score, fixture['score'])
+        self.assertAlmostEqual(score, 167627.33977017563, delta=1e-6)
         derivative = finite_difference(objective.score, x, residuals)
         columns = derivative.require_resolved()
         self.assertTrue(all(d.norm > 0 for d in derivative.differences))
@@ -548,14 +555,11 @@ class StepAdmissionTests(unittest.TestCase):
         update, damping, receipts, _ = admit_step(
             Counting(), space, x, score, residuals, columns, fixture['collapsed_damping'])
         verdicts = [r.verdict for r in receipts]
-        self.assertIs(verdicts[-1], StepVerdict.ADMITTED)
-        self.assertGreater(len(verdicts), 1)
-        self.assertNotIn(StepVerdict.ADMITTED, verdicts[:-1])
-        self.assertNotIn(StepVerdict.UNSOLVED, verdicts)
+        self.assertEqual(verdicts, [StepVerdict.ADMITTED])
         admitted = receipts[-1]
-        self.assertGreaterEqual(admitted.ratio, .25)
-        self.assertGreater(admitted.damping, 1e-7)
-        self.assertGreater(damping, 1e-7)
+        self.assertGreaterEqual(admitted.ratio, .75)
+        self.assertEqual(admitted.damping, 1e-7)
+        self.assertEqual(damping, 1e-7)
         # One evaluation per attempt, and the kept one is the full solved step.
         self.assertEqual(len(scored), len(receipts))
         full = bounded_least_squares(columns, [-v for v in residuals], admitted.damping).require_converged()

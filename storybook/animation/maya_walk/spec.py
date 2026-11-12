@@ -176,6 +176,64 @@ class Sample:
         return cls(**{**data, "side": Side(data["side"])})
 
 
+# Fine interval-measurement grid (contract maya-walk-interval-measurement,
+# Amendment 1). 1/8 frame is the finest spacing at which pinned-Blender
+# evaluation noise stays under 10% of the acceleration limit near extension.
+FINE_SPACING = 1/8
+PROGRESSION_POINTS = ("hip", "knee", "ankle", "toe")
+
+
+@dataclass(frozen=True)
+class MotionTrack:
+    """Uniform fine track of one side's joint angles and progression-point X.
+
+    Times are ``start + i*spacing``; a uniform grid cannot hold gaps. The two
+    interval rules read only this track, never the pointwise observations.
+    """
+    side: Side
+    start: float
+    spacing: float
+    angles: dict
+    progress_x: dict
+
+    def __post_init__(self):
+        if not isinstance(self.side, Side):
+            raise ValueError("Closed side required")
+        if not finite(self.start) or type(self.spacing) is not float or self.spacing != FINE_SPACING:
+            raise ValueError("Finite start and the qualified fine spacing required")
+        if (not isinstance(self.angles, (dict, MappingProxyType)) or set(self.angles) != JOINTS or
+                not isinstance(self.progress_x, (dict, MappingProxyType)) or set(self.progress_x) != set(PROGRESSION_POINTS)):
+            raise ValueError("Closed joint and progression-point inventory required")
+        columns = (*self.angles.values(), *self.progress_x.values())
+        if any(not isinstance(c, (list, tuple)) for c in columns):
+            raise ValueError("Sequence columns required")
+        counts = {len(c) for c in columns}
+        if len(counts) != 1 or counts.pop() < 3:
+            raise ValueError("Equal columns of at least three samples required")
+        if not all(finite(v) for c in columns for v in c):
+            raise ValueError("Finite track values required")
+        object.__setattr__(self, "angles", MappingProxyType({k: tuple(v) for k, v in self.angles.items()}))
+        object.__setattr__(self, "progress_x", MappingProxyType({k: tuple(v) for k, v in self.progress_x.items()}))
+
+    @property
+    def count(self):
+        return len(self.angles["knee"])
+
+    def times(self):
+        return tuple(self.start+i*self.spacing for i in range(self.count))
+
+    def to_dict(self):
+        return {"side": self.side.value, "start": self.start, "spacing": self.spacing,
+                "angles": {k: list(v) for k, v in self.angles.items()},
+                "progress_x": {k: list(v) for k, v in self.progress_x.items()}}
+
+    @classmethod
+    def from_dict(cls, data):
+        if type(data) is not dict or set(data) != {f.name for f in fields(cls)}:
+            raise ValueError("Unknown or missing track fields")
+        return cls(**{**data, "side": Side(data["side"])})
+
+
 @dataclass(frozen=True)
 class Runtime:
     version: str
@@ -207,9 +265,10 @@ class SamplePacket:
     point_definition: str
     actions: tuple
     samples: tuple[Sample, ...]
+    tracks: tuple[MotionTrack, ...]
 
     def __post_init__(self):
-        if self.format != "maya-walk-samples-v2" or not isinstance(self.alias, BaselineAlias):
+        if self.format != "maya-walk-samples-v3" or not isinstance(self.alias, BaselineAlias):
             raise ValueError("Closed baseline alias and sample format required")
         if not isinstance(self.scene_kind, SceneKind) or not isinstance(self.runtime, Runtime):
             raise ValueError("Typed scene kind and runtime required")
@@ -225,6 +284,17 @@ class SamplePacket:
             raise ValueError("Typed source specification and sample records required")
         if any(not self.time_domain[0] <= r.time <= self.time_domain[1] for r in self.samples):
             raise ValueError("Sample outside declared domain")
+        # One fine track per side, covering the whole domain plus one step on
+        # each side so every in-domain grid time has a centred measurement.
+        if (not isinstance(self.tracks, tuple) or not all(isinstance(t, MotionTrack) for t in self.tracks) or
+                sorted(t.side.value for t in self.tracks) != sorted(s.value for s in Side)):
+            raise ValueError("Exactly one typed fine track per side required")
+        span = self.time_domain[1]-self.time_domain[0]
+        if any(t.start != self.time_domain[0]-t.spacing or t.count != round(span/t.spacing)+3 for t in self.tracks):
+            raise ValueError("Fine track must cover the domain plus one step at each end")
+
+    def track_map(self):
+        return {t.side: t for t in self.tracks}
 
     @classmethod
     def from_dict(cls, data):
@@ -233,7 +303,8 @@ class SamplePacket:
         return cls(**{**data, "alias": BaselineAlias(data["alias"]), "scene_kind": SceneKind(data["scene_kind"]),
                       "runtime": Runtime(**data["runtime"]), "spec": GaitSpec(**data["spec"]),
                       "time_domain": tuple(data["time_domain"]), "validation_domain": tuple(data["validation_domain"]),
-                      "actions": tuple(data["actions"]), "samples": tuple(Sample.from_dict(r) for r in data["samples"])})
+                      "actions": tuple(data["actions"]), "samples": tuple(Sample.from_dict(r) for r in data["samples"]),
+                      "tracks": tuple(MotionTrack.from_dict(t) for t in data["tracks"])})
 
 
 # Single inventory shared by legacy parity and authored motion.

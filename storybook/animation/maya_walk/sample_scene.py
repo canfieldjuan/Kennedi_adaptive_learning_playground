@@ -13,7 +13,8 @@ sys.dont_write_bytecode = True
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from storybook.animation.maya_walk.spec import BASELINE, TARGET, GaitSpec, Side, SceneKind
+from storybook.animation.maya_walk.spec import (BASELINE, FINE_SPACING, PROGRESSION_POINTS, TARGET,
+                                                GaitSpec, Side, SceneKind)
 
 
 def weights_at(point, a, b, c):
@@ -60,6 +61,14 @@ def times(spec):
                         # One-sided departure in addition to a centered velocity.
                         values.update(round(t+d, 9) for d in (1/128, .25) if t+d <= 128)
     return sorted(values)
+
+
+def fine_times(start, end, spacing=FINE_SPACING):
+    """The one fine-track schedule: uniform grid from start-δ to end+δ."""
+    count = round((end-start)/spacing)+3
+    if count < 3 or abs(start+(count-3)*spacing-end) > 1e-9:
+        raise ValueError("Fine window must span whole grid steps")
+    return [start+(i-1)*spacing for i in range(count)]
 
 
 def action_inventory(bpy):
@@ -185,7 +194,14 @@ def main():
                          "velocity": velocity, "angular_velocity": omega})
         if index % 100 == 0:
             print(f"SAMPLE_PROGRESS {args.alias} {index}/{len(schedule)}", flush=True)
-    result = {"format": "maya-walk-samples-v2", "alias": args.alias,
+    # Fine interval track from the same evaluated pose definitions.
+    fine = fine_times(0, 128)
+    track_rows = [sample(t) for t in fine]
+    tracks = [{"side": side.value, "start": fine[0], "spacing": FINE_SPACING,
+               "angles": {key: [r[side]["angles"][key] for r in track_rows] for key in track_rows[0][side]["angles"]},
+               "progress_x": {key: [r[side]["points"][key][0] for r in track_rows] for key in PROGRESSION_POINTS}}
+              for side in Side]
+    result = {"format": "maya-walk-samples-v3", "alias": args.alias,
               "scene_sha256": digest, "scene_kind": kind.value,
               "runtime": {"version": bpy.app.version_string, "build": bpy.app.build_hash.decode(),
                           "factory_process": True, "autoexec_disabled": not bpy.context.preferences.filepaths.use_scripts_auto_execute},
@@ -195,7 +211,7 @@ def main():
               "spec": spec.to_dict(), "time_domain": [0, 128],
               "validation_domain": [0, 127], "derivative_half_width": h,
               "point_definition": "Native rest landmarks transformed by evaluated pose bones; painted heel is registered opaque material",
-              "actions": action_inventory(bpy), "samples": rows}
+              "actions": action_inventory(bpy), "samples": rows, "tracks": tracks}
     os.umask(0o077)
     args.output.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, separators=(",", ":"), allow_nan=False)+"\n")

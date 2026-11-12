@@ -201,10 +201,17 @@ class FrozenTests(unittest.TestCase):
                 self.assertEqual(len(result.require_resolved()),len(x))
                 self.assertTrue(all(v.status is DerivativeStatus.ANALYTIC for v in result.differences))
                 self.assertGreater(result.differences[31].norm,0.)
-        # The original finite-difference refusal stays intact as an independent
-        # check; analytic measurement does not relax its acceptance threshold.
+        # The finite-difference owner stays an independent cross-check. Under the
+        # old pointwise objective it refused this weak column (UNRESOLVED). The
+        # fine-interval objective (contract maya-walk-interval-measurement) makes
+        # the heel-strike pop visible; the column stays weak (~3e-8) but now
+        # resolves, and must agree with the analytic column.
         x=frozen['values'];objective=Objective(TimingChart(PoseChart()),1.,0.);_,r=objective.score(x)
-        self.assertIs(finite_difference(objective.score,x,r).differences[31].status,DerivativeStatus.UNRESOLVED)
+        sampled=finite_difference(objective.score,x,r).differences[31]
+        analytic=analytic_jacobian(objective.score,x,r).differences[31]
+        self.assertIs(sampled.status,DerivativeStatus.CENTRAL)
+        self.assertLess(analytic.norm,1e-7)
+        self.assertLess(abs(sampled.norm-analytic.norm)/analytic.norm,.01)
 
 
 if __name__=='__main__':unittest.main()
