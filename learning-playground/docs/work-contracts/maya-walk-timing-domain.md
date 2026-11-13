@@ -277,3 +277,182 @@ check. The chart now refuses it itself:
 Restriction-need: it fails closed at the owner and excludes nothing valid.
 **Kept.** Verification 4 gains this refusal, and verification 5 gains its
 mutant.
+
+## Implementation summary
+
+Implemented to the contract as amended, in commit `e4758d8`.
+
+- `bounded_least_squares` takes keyword-only per-coordinate step bounds. They
+  are admitted by one validator, `_step_bounds`, and enforced as active-set
+  constraints with a named `BOUND_TOLERANCE` in the convergence certificate.
+  Omitting them gives the old symmetric box, bit for bit.
+- Each chart states its domain through `step_bounds`:
+  - `PoseChart` returns the trust box.
+  - `TimingChart` clips the trust box to the ±20 wall, exactly.
+- `TimingChart.project` returns only a solver-rounding excess to the wall.
+- `admit_step` passes the chart's bounds to every solve.
+- No limit, chart encoding, objective term, verdict or damping rule changed.
+
+## Cold Diff Audit
+
+Diff `98d79aa..e4758d8`, read cold.
+
+### Gaps
+
+- **No PASS walk, and only the first step is measured.**
+  - At the frozen third-fit point, iteration 0 now admits on attempt 1 at
+    damping 0.05. The score goes from 168334.03107023708 to
+    31171.69262111069.
+  - Whole-cycle validation after that step is FAIL with 1440 violations.
+  - No fit was run, so whether later iterations keep descending, or a passing
+    walk is reachable, is unproven.
+- **Two mutants survive and are not caught by any test.** These are
+  "certificate lower side" and "certificate upper side". Each loosens one side
+  of the convergence certificate by 1.0, but the active set only ever sets a
+  coordinate to a bound or inside it, so no reachable step trips that side by
+  1.0. The certificate is live: "certificate slack zero" is caught.
+- **The quarter-frame minimum spacing is binding.** At the frozen point, three
+  keys sit at it before and after the first step: `foot_z` 10, `toe` 1 and
+  `toe` 4. One timing coordinate, `phase_toe[5]`, sits exactly on its wall at
+  −20.0 after the step. Whether a quarter frame is still the right minimum is
+  undetermined. This contract does not change it.
+- **Evidence head files.** The first `after/` runs were made on the uncommitted
+  tree, so `after/head.txt` records `82202f2`. The suite was rerun at
+  `e4758d8`, and `after/head-at-commit.txt` and `after/pure-tests-at-commit.log`
+  record it.
+- **Mutation runs 1 and 3 were stopped, and their partial logs are kept.**
+  - Run 1 hung on the unclipped bound, because the harness had no per-mutant
+    timeout yet.
+  - Run 3 had copied the tree before Amendment 2.
+  - Run 4, on the final tree, is the result of record.
+
+### Change By Change Reconstruction
+
+- **`numerics.py:16-18`.** `BOUND_TOLERANCE = 1e-12` names the existing literal
+  slack.
+- **`numerics.py:95-107`.** `_step_bounds` returns the symmetric box when both
+  bounds are `None`. It refuses:
+  - only one bound given;
+  - a non-list/tuple bound, or the wrong length;
+  - a nonfinite bound (`finite` also refuses bool);
+  - `lower > 0` or `upper < 0`;
+  - a bound beyond `±limit`.
+
+  It uses `is None`, never `or`.
+- **`numerics.py:110-111, 135`.** New keyword-only `lower` and `upper`, admitted
+  before any scaling.
+- **`numerics.py:147-149`.** Scaled `floors` and `ceilings` replace the
+  symmetric `bounds`, and `slack = BOUND_TOLERANCE*limit`.
+- **`numerics.py:167-168`.** The certificate checks the step against
+  `[lower-slack, upper+slack]` per coordinate.
+- **`numerics.py:191-199`.** The hit test checks each side against its own
+  bound. The step length uses that bound, and the pinned value is that bound.
+  A zero-width side gives `alpha = 0` and becomes active. The release step is
+  unchanged.
+- **`fitting.py:17`.** Imports `TRUST_LIMIT` and `BOUND_TOLERANCE` from their
+  owner.
+- **`fitting.py:163-166`.** `PoseChart.step_bounds` refuses an incomplete
+  vector and returns the trust box.
+- **`fitting.py:210-214, 247`.** `TIMING_COORDINATE_LIMIT = 20.`, with its
+  reason, replaces the literal in `layout`. The refusal is unchanged.
+- **`fitting.py:273-287`.** `TimingChart.step_bounds` does three things:
+  - refuses an incomplete timed vector (Amendment 2);
+  - refuses a coordinate that is nonfinite or outside the domain;
+  - returns `max(-TRUST_LIMIT, -limit-v)` and `min(TRUST_LIMIT, limit-v)`.
+
+  Its docstring states the exactness argument (Amendment 1).
+- **`fitting.py:289-293`.** `project` sets a timing excess of at most
+  `BOUND_TOLERANCE*TRUST_LIMIT` exactly onto the wall, keeping its sign.
+  Anything larger is returned unchanged, so `layout` refuses it.
+- **`fitting.py:551-553`.** `admit_step` computes the bounds once per call and
+  passes them to every attempt's solve.
+- **`README.md:199-202`.** States the behavior.
+- **`tests/test_fitting_numerics.py:36-37`.** The stub chart gains
+  `step_bounds`. No assertion was changed or weakened.
+- **`tests/test_timing_domain.py`** (new):
+  - `SolverBoundTests` (59-174): exact single-side, zero-width and release
+    cases; an exhaustive comparison over every active set on 300 random
+    asymmetric boxes; bit-identity of explicit `±limit` with the default;
+    every refusal; the adapter pass-through.
+  - `TimingChartBoundTests` (176-276): interior, near-wall and on-wall
+    bounds; the precondition; the exact-landing property; domain, nonfinite
+    and length refusals; the projection tolerance on both signs.
+  - `AdmissionUsesChartBoundsTests` (278-304).
+  - `FrozenTimingWallTests` (306-), the fail-first regression.
+
+### Contract Traceability
+
+- Solver per-coordinate bounds, with the default bit-identical:
+  `numerics.py:95-135`.
+  - Tests: `test_explicit_trust_box_is_bit_identical_to_the_default`, and
+    every pre-existing solver test, unchanged.
+- Admission refusals: `numerics.py:97-106`.
+  - Test: `test_invalid_bounds_are_refused`.
+  - Mutants: pair, sequence type, length, finite, and the four range clauses.
+- Asymmetric active set and zero-width side: `numerics.py:191-199`.
+  - Tests: the exhaustive active-set comparison, the zero-width cases and the
+    release case.
+  - Mutants: each hit side, floor alpha, swapped pin, release removed.
+- Certificate with the named tolerance: `numerics.py:149, 167-168`.
+  - Mutant: slack zero is caught. The two side mutants survive; see Gaps.
+- Chart owns its domain: `fitting.py:214, 247, 273-287`.
+  - Mutants: clip on each side, one ulp past the wall on each side, domain
+    refusal, length, layout constant.
+- Projection only at the solver tolerance: `fitting.py:289-293`.
+  - Mutants: tolerance zero, tolerance wide, sign, value part.
+- Admission passes the bounds: `fitting.py:551-553`.
+  - Test: `test_every_attempt_solves_inside_the_charts_bounds`.
+  - Mutant: admission drops bounds.
+- README: `README.md:199-202`.
+
+### Verification
+
+Run from the worktree with stdlib Python. Evidence alias
+`phase-domain-contract-2026-11-13`.
+
+- **Fail first, on base.** The regression test alone fails:
+  `before/regression-fails.log` (SHA256 `46e7c8a64ac8fed170944828e913e922393601bb0fd74059ae9a321d20fe2845`). The full suite on
+  base with the new tests has 139 tests and 1 failure:
+  `before/pure-tests.log` (`d3c86a0c9f366834f03ca62d25fc3fb1ff7da4cbeacd1708cebf63bdaa620daf`).
+- **Full suite at `e4758d8`.**
+  `python3 -B -m unittest discover -s storybook/animation/maya_walk/tests -p 'test_*.py'`
+  ran 155 tests, OK: `after/pure-tests-at-commit.log` (`5e0c836f3bced9a846ee0b7ec10c912c88bc20a96271c2e690a678ee7b1f4af9`).
+- **Parity.** `parity/parity.py` at base and branch writes identical score,
+  residual and report hashes at both frozen points:
+  `parity/base.json` = `parity/branch.json` (`246befc9df16aa99058aa870a4fd3c2c198fa680109c001cb865b9497672b45a`).
+- **First step at the frozen point.** `after/first-step.py` gave the same
+  result three times: before Amendment 1, after it, and at the final tree. All
+  three files are byte-identical (`333cce97d35a54aa59195ca637fe5f75e1077d04163b877a5cb1584513844578`).
+- **Mutation, run 4.** `mutation/mutate.py` (`f179fa381fc714b589eed31e9cc4d0de265958a69893c612ae533cd7b9fbf8ef`; it times the
+  control and gives each mutant ten times that, at least 120 s). 32 mutants,
+  30 caught, 0 by timeout:
+  `mutation/mutation-report.json` (`dbace14e207d9df8445a924d37b50c66ebf9e09d4b71d688c5851604d0771d77`) and `mutation/run-4.log`
+  (`faa8fd30825867f74442e6a243bead83ca60db69ed834242dc6caeab83ad6de1`).
+- **Run 2,** the run that found Amendment 1: `mutation/run-2.log`
+  (`2acd0a67bd5c0c537d1b120bffc91e665acc66865917cdbf33d480979cdad7bc`).
+
+### Gap audit
+
+- DONE: solver bounds, admission, active set, zero-width side, certificate
+  tolerance.
+- DONE: chart domain bounds, projection tolerance, admission wiring.
+- DONE: README and the stub chart.
+- DONE: fail-first regression, boundary probes on both sides, parity,
+  mutation (two survivors explained), the full suite at the commit.
+- DONE: recording bound-active coordinates and keys at the minimum after the
+  first step.
+- NOT DONE, out of scope: a fit run; deciding the minimum key spacing; a
+  passing walk. Each needs Juan's separate decision.
+
+`mechanism:` domain bounds are active-set constraints in the existing solver;
+the chart owns the domain, and one validator admits the bounds | that is the
+strongest mechanism this owner supports, since invalid steps cannot be
+represented | justified.
+
+`restriction:`
+- ±20 timing domain | overflow and conditioning | kept as a solver bound.
+- Whole-step refusal | no need | corrected.
+- Projection tolerance | solver rounding only | kept.
+- Incomplete-vector refusal | fail closed at the owner | kept.
+- Quarter-frame spacing | binding; whether it is needed is undetermined | kept,
+  decision deferred.
