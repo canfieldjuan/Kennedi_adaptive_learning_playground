@@ -114,10 +114,30 @@ runs. Contact/cadence/step measurements come from evaluated heel position and
 speed, separately from spec event labels. Both observed and expected values
 appear in reports.
 
-Every exact-event and one-sided observation participates in spatial, direction,
-joint extrema and angular-velocity checks. Only the duration-based stall rule
-counts fixed quarter-frame intervals; declared holds are checked at every
-observation, including their endpoints. Each complete cycle requires an observed
+Every exact-event and one-sided observation participates in spatial and joint
+extrema checks. Only the duration-based stall rule counts fixed quarter-frame
+intervals; declared holds are checked at every observation, including their
+endpoints.
+
+Angular acceleration and point direction are **interval rules**. They read only a
+uniform fine track, never the observation instants. The track runs every 1/8
+frame, from one step before frame 1 to one step after the domain, one per side,
+and is carried in sample format v3; v2 packets must be resampled. Measuring
+speed at single instants let a heel-strike pop compressed between two quarter
+frames pass at 2.05 when it was over 40 (contract
+`learning-playground/docs/work-contracts/maya-walk-interval-measurement.md`).
+
+- Acceleration at each grid time is the angle-wrapped exact second difference
+  `.25*|θ(t+δ)-2θ(t)+θ(t-δ)|/δ²`. This is a triangle-weighted average of true
+  acceleration, with the same 2.0 limit.
+- Direction is the exact average forward velocity over each interval.
+- Each cycle report states the detection bound: angle steps over 0.25°,
+  concentrated velocity changes over 3°/frame, and backward displacement over
+  6.25e-5 units within one interval.
+- 1/8 frame is the finest spacing at which pinned-Blender evaluation noise stays
+  under 10% of the limit near full leg extension.
+- `validate.interval_motion` is the single owner. The fitter's objective calls it
+  on the same grid, weighting each fine residual by `sqrt(δ/.25)`. Each complete cycle requires an observed
 heel contact at both its start and end, within one quarter frame of the declared
 event. The report lists every expected/observed contact match. A few early
 contacts cannot establish coverage of later cycles.
@@ -142,7 +162,8 @@ same `validate_cycle`. The writer refuses a source failure before replacing any
 action. A passing source assessment is only a prerequisite; independently
 reopened Blender geometry and painted preservation remain mandatory.
 
-Sample format v2 requires the measured IK target vector. V1 evidence is retained
+Sample format v2 added the measured IK target vector; v3 adds the fine interval
+tracks. V1 evidence is retained
 unchanged but must be resampled for the new reach rule; the reader never invents
 missing target data. `ik_target_unreachable` covers both maximum extension and
 minimum folded reach, over every observation in every complete cycle, including

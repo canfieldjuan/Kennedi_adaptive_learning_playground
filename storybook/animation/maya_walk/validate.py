@@ -4,8 +4,58 @@ from dataclasses import dataclass
 import math
 
 from .reference import Kind, SIGNATURES, SOURCES
-from .spec import (GaitSpec, Point, Sample, SceneKind, Side, finite,
+from .sample_scene import angle_delta
+from .spec import (GaitSpec, MotionTrack, Point, Sample, SceneKind, Side, finite,
                    THIGH_LENGTH, SHIN_LENGTH, REACH_TOLERANCE)
+
+
+class TrackCoverageError(ValueError):
+    """The fine track does not reach one grid step beyond a measured window."""
+
+
+def progression_applies(point, phase, spec):
+    """Hip and knee always progress; swing ankle/toe progress from release."""
+    return point in ("hip", "knee") or (point in ("ankle", "toe") and phase >= spec.toe_off-1e-10)
+
+
+def interval_motion(times, angles, progress_x, spec, start, end, spacing):
+    """The one fine-interval measurement shared by validator and objective.
+
+    ``times`` is a uniform grid of ``spacing``; each column holds one value per
+    time. At every grid time t in [start, end] the joint value is the
+    angle-wrapped exact second difference
+    ``.25*|θ(t+δ)-2θ(t)+θ(t-δ)|/δ²`` (degrees/frame per quarter frame): a
+    triangle-weighted average of true acceleration over [t-δ, t+δ], whose
+    weights sum to one at every instant. Forward velocity is the exact average
+    over each grid interval inside [start, end]. Plain floats and
+    differentiable scalars both pass through unchanged arithmetic.
+    """
+    tol = 1e-9
+    centres = [i for i in range(1, len(times)-1) if start-tol <= times[i] <= end+tol]
+    if (not centres or abs(times[centres[0]]-start) > tol or abs(times[centres[-1]]-end) > tol or
+            len(centres) < 2):
+        raise TrackCoverageError("Fine track must reach one step beyond both window ends on its grid")
+    acceleration = {joint: [(times[i], .25*abs(angle_delta(c[i+1], c[i])-angle_delta(c[i], c[i-1]))/spacing**2)
+                            for i in centres] for joint, c in angles.items()}
+    forward = {point: [(times[i], times[i+1], (c[i+1]-c[i])/spacing,
+                        progression_applies(point, (times[i]-start)/spec.cycle_frames, spec))
+                       for i in centres[:-1]] for point, c in progress_x.items()}
+    return {"acceleration": acceleration, "forward": forward}
+
+
+def measurement_resolution(spec, spacing):
+    """What the fine measurement is guaranteed to detect (Amendment 1).
+
+    A fast angle step centred on a grid time splits into two half steps, so a
+    step is detected above ``8·limit·δ²``. A same-signed velocity change inside
+    any δ window touches at most three unit-sum kernels, so it is detected above
+    ``12·limit·δ``. Forward velocity is an exact interval average.
+    """
+    limit = spec.velocity_change_per_quarter
+    return {"spacing_frames": spacing,
+            "angle_step_detected_above_degrees": 8*limit*spacing**2,
+            "velocity_change_detected_above_degrees_per_frame": 12*limit*spacing,
+            "backward_displacement_detected_above_units": spec.backward_tolerance*spacing}
 
 
 @dataclass(frozen=True)
@@ -77,15 +127,20 @@ def _speed(vector):
     return math.sqrt(sum(v*v for v in vector))
 
 
-def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, alias):
+def validate_cycle(samples, spec, kind, *, tracks, fps, rest_hip_height, scene_sha256, alias):
     """Validate every full steady cycle and report all rule violations.
 
     Missing observations are failures, never inferred success. Input types own
     structural validation; this function owns cross-channel/temporal semantics.
     Units are scene units and frames unless explicitly labeled otherwise.
+    Angular acceleration and point direction read only the fine ``tracks``
+    (one ``MotionTrack`` per side); every other rule reads ``samples``.
     """
     if not isinstance(spec, GaitSpec) or not isinstance(kind, SceneKind):
         raise ValueError("Typed gait spec and scene kind required")
+    if (not isinstance(tracks, dict) or set(tracks) != set(Side) or
+            any(not isinstance(t, MotionTrack) or t.side is not s for s, t in tracks.items())):
+        raise ValueError("One typed fine track per side required")
     if not finite(fps) or fps <= 0 or not finite(rest_hip_height) or rest_hip_height <= 0:
         raise ValueError("Positive finite fps and hip height required")
     if not all(isinstance(r, Sample) for r in samples):
@@ -243,17 +298,10 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                         drift = math.dist(anchor.points[point], row.points[point])
                         if drift > spec.hold_position_tolerance:
                             fail("hold_slip", side, number, row.time, point, drift, spec.hold_position_tolerance, "units")
-                intervals = []
-                for a, b in zip(observations, observations[1:]):
-                    dt = b.time-a.time
-                    velocity = [(y-x)/dt for x, y in zip(a.points[point], b.points[point])]
-                    speed = _speed(velocity)
-                    p0, p1 = (a.time-start)/spec.cycle_frames, (b.time-start)/spec.cycle_frames
-                    intervals.append((speed, a.time))
-                    progression = point in ("hip", "knee") or (point in ("ankle", "toe") and p0 >= spec.toe_off-1e-10)
-                    if progression and velocity[0] < -spec.backward_tolerance:
-                        fail("point_backward", side, number, a.time, point, velocity[0], -spec.backward_tolerance, "units/frame")
-                report["point_minimum_speed"][point] = min(v for v, _ in intervals)
+                # Reported speed only; direction is a fine-track rule below.
+                report["point_minimum_speed"][point] = min(
+                    _speed([(y-x)/(b.time-a.time) for x, y in zip(a.points[point], b.points[point])])
+                    for a, b in zip(observations, observations[1:]))
                 if point in holds:
                     hold = holds[point]
                     departure = by_time[round(start+hold.end*spec.cycle_frames, 9)]
@@ -271,16 +319,32 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
                         if delta > spec.contact_speed_tolerance:
                             fail("contact_reacceleration", side, number, b.time, point, delta, spec.contact_speed_tolerance, "units/frame")
 
-            for joint in observations[0].angles:
-                jumps = []
-                for a, b in zip(observations, observations[1:]):
-                    jump = abs(b.angular_velocity[joint]-a.angular_velocity[joint])*.25/(b.time-a.time)
-                    jumps.append(jump)
-                    if jump > spec.velocity_change_per_quarter:
-                        fail("angular_velocity_jump", side, number, b.time, joint,
-                             {"degrees_per_frame_per_quarter": jump, "degrees_per_second_squared": jump/.25*fps*fps},
-                             spec.velocity_change_per_quarter, "degrees/frame/quarter-frame")
-                report["joint_maximum_velocity_change"][joint] = max(jumps)
+            # Interval rules: measured across every fine interval, not only at
+            # observation instants, so motion between observations is visible.
+            track = tracks[side]
+            report["measurement_resolution"] = measurement_resolution(spec, track.spacing)
+            try:
+                motion = interval_motion(track.times(), track.angles, track.progress_x,
+                                         spec, start, end, track.spacing)
+            except TrackCoverageError:
+                fail("missing_sample", side, number, start, "fine_track", None,
+                     "fine track covering the cycle with one step of margin", "frame")
+                motion = None
+            if motion is not None:
+                for point, intervals in motion["forward"].items():
+                    for t0, t1, forward_velocity, applies in intervals:
+                        if applies and forward_velocity < -spec.backward_tolerance:
+                            fail("point_backward", side, number, t0, point,
+                                 {"forward_velocity": forward_velocity, "interval_frames": [t0+1, t1+1]},
+                                 -spec.backward_tolerance, "units/frame")
+                for joint, values in motion["acceleration"].items():
+                    for time, jump in values:
+                        if jump > spec.velocity_change_per_quarter:
+                            fail("angular_velocity_jump", side, number, time, joint,
+                                 {"degrees_per_frame_per_quarter": jump, "degrees_per_second_squared": jump/.25*fps*fps,
+                                  "interval_frames": [time-track.spacing+1, time+track.spacing+1]},
+                                 spec.velocity_change_per_quarter, "degrees/frame/quarter-frame")
+                    report["joint_maximum_velocity_change"][joint] = max(jump for _, jump in values)
 
             release = by_time[event_times["toe_off"]]
             report["release"] = {}
@@ -337,7 +401,7 @@ def validate_cycle(samples, spec, kind, *, fps, rest_hip_height, scene_sha256, a
             strides.append({"side": side.value, "from_frame": a["frame"], "to_frame": b["frame"],
                             "stride_length": distance, "stride_hip_ratio": distance/rest_hip_height,
                             "duration_frames": b["time"]-a["time"]})
-    return {"format": "maya-walk-validation-v1", "alias": alias, "scene_sha256": scene_sha256,
+    return {"format": "maya-walk-validation-v2", "alias": alias, "scene_sha256": scene_sha256,
             "status": "FAIL" if violations else "PASS", "spec": spec.to_dict(), "sources": SOURCES,
             "coverage": {"validation_scene_frames": [1, 128], "complete_cycles": len(cycles),
                          "expected_cycles": sum(len(spec.cycles(s)) for s in Side), "sample_rows": len(samples)},

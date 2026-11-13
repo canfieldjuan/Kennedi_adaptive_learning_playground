@@ -17,9 +17,10 @@ from .numerics import (bounded_step, bounded_least_squares, SolveStatus,
                        analytic_jacobian, UnreliableJacobian)
 from .curves import Motion
 from .poses import author, curve, HIP_HEIGHT
-from .spec import TARGET, SceneKind, Side, THIGH_LENGTH, SHIN_LENGTH, finite
+from .spec import FINE_SPACING, PROGRESSION_POINTS, TARGET, SceneKind, Side, THIGH_LENGTH, SHIN_LENGTH, finite
 from .kinematics import NativeGeometry
-from .sample_scene import times, angle_delta
+from .sample_scene import fine_times, times, angle_delta
+from .validate import interval_motion
 from .reference import SIGNATURES, Kind
 
 
@@ -285,7 +286,16 @@ class Objective:
         self.guide_weight=guide_weight
         self.schedule=sorted({t for t in times(TARGET) if 0<=t<=24}|
             {24*p for rows in ANCHORS.values() for p,*_ in rows})
+        # Same fine grid and measurement owner as the validator's interval rules.
+        self.fine=fine_times(0,24)
         self.calls=0
+
+    def fine_motion(self,model):
+        """Near-side fine interval measurements over the closed cycle and seam."""
+        rows=[model.at(t,Side.NEAR) for t in self.fine]
+        return interval_motion(self.fine,{k:[r[1][k] for r in rows] for k in rows[0][1]},
+                               {k:[r[0][k][0] for r in rows] for k in PROGRESSION_POINTS},
+                               TARGET,0.,24.,FINE_SPACING)
 
     def residuals(self,x):
         model=NativeGeometry(self.space.build(x)); self.calls+=1
@@ -323,7 +333,6 @@ class Objective:
         out.append(dmath.maximum(0.,samples[0][2]['knee']-4.95)/.15)
         for a,b in zip(samples,samples[1:]):
             dt=b[0]-a[0]
-            for joint in a[3]:out.append(self.velocity_weight*dmath.maximum(0.,abs(b[3][joint]-a[3][joint])*.25/dt-1.98)/.15)
             for joint in ANCHORS:
                 # One monotone branch between each window's selected extremum.
                 # This also guides away from extra reversals *inside* a window;
@@ -333,10 +342,14 @@ class Objective:
                 kind=prior[-1] if prior else turns[joint][-1][1]
                 sign=1 if kind is Kind.MINIMUM else -1
                 out.append(dmath.maximum(0.,-sign*(b[2][joint]-a[2][joint])/dt-.001)/.1)
-            for point in ('hip','knee','ankle','toe'):
-                vx=(b[1][point][0]-a[1][point][0])/dt
-                applies=point in ('hip','knee') or a[0]>=14.4-1e-9
-                out.append(dmath.maximum(0.,-vx+.0001)/.002 if applies else 0.)
+        # Fine interval families. sqrt(δ/.25) keeps a violation sustained over
+        # one quarter frame at its former weight; only hidden motion gains.
+        weight=math.sqrt(FINE_SPACING/.25)
+        motion=self.fine_motion(model)
+        for values in motion['acceleration'].values():
+            for _,jump in values:out.append(self.velocity_weight*weight*dmath.maximum(0.,jump-1.98)/.15)
+        for intervals in motion['forward'].values():
+            for _,_,vx,applies in intervals:out.append(weight*dmath.maximum(0.,-vx+.0001)/.002 if applies else 0.)
         grid=[r for r in samples if abs(r[0]*4-round(r[0]*4))<1e-8]
         holds={v.point.value:v for v in TARGET.holds(SceneKind.NATIVE)}
         for point in ('hip','knee','ankle','heel','ball','toe'):

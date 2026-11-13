@@ -10,8 +10,9 @@ from . import differential as dmath
 
 from .curves import Motion
 from .poses import ANKLE, BALL, HEEL, TIP, HIP_HEIGHT, rotate
-from .sample_scene import times, angle_delta
-from .spec import Sample, Side, SceneKind, THIGH_LENGTH, SHIN_LENGTH
+from .sample_scene import fine_times, times, angle_delta
+from .spec import (FINE_SPACING, MotionTrack, PROGRESSION_POINTS, Sample, Side, SceneKind,
+                   THIGH_LENGTH, SHIN_LENGTH)
 from .validate import validate_cycle
 
 
@@ -80,7 +81,17 @@ class NativeGeometry:
                 rows.append(Sample(time,side,points,velocity,angles,omega,{},target))
         return rows
 
+    def tracks(self, start=0, end=128):
+        """Fine interval tracks, one per side, from the same geometry owner."""
+        grid=fine_times(start,end); result={}
+        for side in Side:
+            rows=[self.at(t,side) for t in grid]
+            result[side]=MotionTrack(side,grid[0],FINE_SPACING,
+                {k:[r[1][k] for r in rows] for k in rows[0][1]},
+                {k:[r[0][k][0] for r in rows] for k in PROGRESSION_POINTS})
+        return result
+
     def assess(self):
-        return validate_cycle(self.samples(),self.motion.spec,SceneKind.NATIVE,
+        return validate_cycle(self.samples(),self.motion.spec,SceneKind.NATIVE,tracks=self.tracks(),
                               fps=self.motion.spec.fps,rest_hip_height=HIP_HEIGHT,
                               scene_sha256='source-assessment',alias='source-assessment')

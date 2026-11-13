@@ -38,7 +38,7 @@ def analyze(path):
         if model.scene_kind.value != kind or model.scene_sha256 != digest or model.spec != BASELINE:
             raise ValueError("Baseline identity or policy differs from the sealed owner")
     samples = model.samples
-    report = validate_cycle(samples, model.spec, model.scene_kind, fps=model.fps,
+    report = validate_cycle(samples, model.spec, model.scene_kind, tracks=model.track_map(), fps=model.fps,
                             rest_hip_height=model.rest_hip_height, scene_sha256=model.scene_sha256,
                             alias=model.alias.value)
     report["sample_packet_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
