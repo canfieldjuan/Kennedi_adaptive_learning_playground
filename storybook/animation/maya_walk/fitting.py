@@ -14,7 +14,7 @@ import time
 from . import differential as dmath
 
 from .numerics import (bounded_step, bounded_least_squares, SolveStatus,
-                       analytic_jacobian, UnreliableJacobian)
+                       analytic_jacobian, UnreliableJacobian, TRUST_LIMIT, BOUND_TOLERANCE)
 from .curves import Motion
 from .poses import author, curve, HIP_HEIGHT
 from .spec import FINE_SPACING, PROGRESSION_POINTS, TARGET, SceneKind, Side, THIGH_LENGTH, SHIN_LENGTH, finite
@@ -160,6 +160,11 @@ class PoseChart:
         raw=[plant]+[d[name][i] for name,ids in ACTIVE.items() for i in ids]
         return self.owner.build([v/s for v,s in zip(raw,self.owner.scales)])
 
+    def step_bounds(self,values):
+        """Value coordinates are open-interval charts: only the trust box bounds a step."""
+        if len(values)!=len(self.initial):raise ValueError('Complete pose vector required')
+        return [-TRUST_LIMIT]*len(values),[TRUST_LIMIT]*len(values)
+
     def project(self,values):return values
 
 
@@ -202,6 +207,13 @@ class PhaseLayout:
                     if not lo<actual<hi:raise ValueError('Interior key crossed a fixed anchor')
 
 
+# Timing coordinates are log gap ratios. Past this magnitude a key sits within
+# about 1e-9 frame of its minimum spacing and its Jacobian column is numerically
+# negligible; a finite bound is needed anyway because exp() raises past about
+# 709.78. The chart refuses values outside; the step solver receives it as a bound.
+TIMING_COORDINATE_LIMIT = 20.
+
+
 class TimingChart:
     """Ordered interior times; fixed anchors and minimum spacing by construction."""
     def __init__(self, value_chart):
@@ -232,7 +244,7 @@ class TimingChart:
         if len(values)!=len(self.initial) or any(not dmath.finite(v) for v in values):
             raise ValueError('Complete finite timed pose vector required')
         coordinates=values[self.value_count:]
-        if any(abs(v)>20 for v in coordinates):raise ValueError('Bounded phase coordinates required')
+        if any(abs(v)>TIMING_COORDINATE_LIMIT for v in coordinates):raise ValueError('Bounded phase coordinates required')
         data={k:list(v) for k,v in PHASES.items()};index=0
         for name,lo,hi,ids,minima,slack in self.segments:
             weights=[dmath.exp(v) for v in coordinates[index:index+len(ids)]]+[1.]
@@ -258,7 +270,27 @@ class TimingChart:
                 result[key]=replace(c,keys=tuple(replace(k,phase=p) for k,p in zip(c.keys,profile)))
         return Motion(motion.spec,tuple(result[k] for k in sorted(result)))
 
-    def project(self,values):return values
+    def step_bounds(self,values):
+        """Trust box clipped to the timing domain; x+bound stays inside in floating point.
+
+        Exact without correction while TRUST_LIMIT <= limit/2: a clipped side has
+        limit/2 <= |v| <= limit, so -limit-v is exact (Sterbenz) and v+bound lands on
+        the wall exactly; an unclipped side's exact sum is inside the wall, and
+        round-to-nearest cannot cross the representable wall.
+        """
+        if len(values)!=len(self.initial):raise ValueError('Complete timed pose vector required')
+        lower,upper=self.value_chart.step_bounds(values[:self.value_count])
+        limit=TIMING_COORDINATE_LIMIT
+        for v in values[self.value_count:]:
+            if not dmath.finite(v) or abs(v)>limit:raise ValueError('Timing coordinate outside its domain')
+            lower.append(max(-TRUST_LIMIT,-limit-v));upper.append(min(TRUST_LIMIT,limit-v))
+        return lower,upper
+
+    def project(self,values):
+        """Return the solver's rounding-level excess to the wall; larger excess stays refused."""
+        limit=TIMING_COORDINATE_LIMIT;edge=limit+BOUND_TOLERANCE*TRUST_LIMIT
+        return [*values[:self.value_count],
+                *(math.copysign(limit,v) if limit<abs(v)<=edge else v for v in values[self.value_count:])]
 
 
 # Search guide only; final acceptance is the independent validate_cycle result.
@@ -516,8 +548,9 @@ def admit_step(objective, space, x, score, residuals, columns, damping):
     Returns (update or None, next damping, receipts, solve records).
     """
     receipts, solves = [], []
+    lower, upper = space.step_bounds(x)
     for _ in range(STEP_ATTEMPTS):
-        solution = bounded_least_squares(columns, [-v for v in residuals], damping)
+        solution = bounded_least_squares(columns, [-v for v in residuals], damping, lower=lower, upper=upper)
         solves.append({k: v for k, v in asdict(solution).items() if k not in ('step', 'scales')})
         if solution.status is SolveStatus.CONVERGED:
             receipt, update = trial_step(objective, space, x, score, residuals, columns, solution, damping)
