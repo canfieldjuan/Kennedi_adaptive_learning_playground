@@ -13,6 +13,9 @@ from .spec import finite
 
 
 TRUST_LIMIT = .5
+# Relative slack, times the trust limit, within which a converged step may sit
+# outside its bounds from rounding. Chart projections absorb exactly this much.
+BOUND_TOLERANCE = 1e-12
 
 
 class SolveStatus(str, Enum):
@@ -89,9 +92,27 @@ def _backsolve(matrix, rhs):
     return x
 
 
-def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, max_iterations=1000, tolerance=1e-10):
-    """Minimize ||J step-rhs||² + damping*||D step||², |step| <= limit.
+def _step_bounds(lower, upper, n, limit):
+    """Per-coordinate step bounds; omitted means the symmetric trust box."""
+    if lower is None and upper is None:
+        return [-limit]*n, [limit]*n
+    if lower is None or upper is None:
+        raise ValueError('Lower and upper step bounds are given together')
+    if type(lower) not in (list, tuple) or type(upper) not in (list, tuple) or len(lower) != n or len(upper) != n:
+        raise ValueError('One lower and one upper step bound per coordinate required')
+    if any(not finite(v) for v in (*lower, *upper)):
+        raise ValueError('Finite step bounds required')
+    if any(not -limit <= a <= 0. <= b <= limit for a, b in zip(lower, upper)):
+        raise ValueError('Step bounds must keep a zero step and stay within the trust limit')
+    return [float(v) for v in lower], [float(v) for v in upper]
 
+
+def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=None, upper=None,
+                          max_iterations=1000, tolerance=1e-10):
+    """Minimize ||J step-rhs||² + damping*||D step||², lower <= step <= upper.
+
+    Without explicit bounds the box is |step| <= limit. A caller with a domain
+    passes per-coordinate bounds inside that box; a side may have zero width.
     D contains nonzero Jacobian column norms (one for zero columns). QR avoids
     squaring the condition number. Positive damping resolves duplicate directions
     in *normalized* coordinates; it does not invent information in a zero column.
@@ -111,6 +132,7 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, max_it
         raise ValueError('Complete nonempty least-squares system required')
     if any(not finite(v) for c in columns for v in c) or any(not finite(v) for v in rhs):
         raise ValueError('Finite least-squares system required')
+    lower, upper = _step_bounds(lower, upper, n, limit)
     norms = [math.hypot(*c) for c in columns]
     scales = [s if s else 1. for s in norms]
     if any(not math.isfinite(s) or not math.isfinite(limit*s) or limit*s == 0 for s in scales):
@@ -122,7 +144,9 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, max_it
     augmented = [[c[j] for j in rows] + [root if i == k else 0. for k in range(n)]
                  for i, c in enumerate(normalized)]
     target = [rhs[j] for j in rows] + [0.]*n
-    bounds = [limit*s for s in scales]
+    floors = [a*s for a, s in zip(lower, scales)]
+    ceilings = [b*s for b, s in zip(upper, scales)]
+    slack = BOUND_TOLERANCE*limit
     threshold = tolerance*max(1., math.hypot(*rhs))
     y = [0.]*n
     active = [0]*n  # -1 lower, +1 upper, 0 free
@@ -140,7 +164,8 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, max_it
         reduction = 2*_dot(effect, rhs)-_dot(effect, effect)-damping*_dot(y, y)
         if any(not math.isfinite(v) for v in (*step, optimality, reduction)):
             status = SolveStatus.NUMERICAL_FAILURE
-        if status is SolveStatus.CONVERGED and (optimality > threshold or any(abs(v) > limit+1e-12*limit for v in step)):
+        if status is SolveStatus.CONVERGED and (optimality > threshold or any(
+                v < a-slack or v > b+slack for v, a, b in zip(step, lower, upper))):
             status = SolveStatus.NUMERICAL_FAILURE
         return StepResult(step, status, iterations, optimality, threshold, reduction, tuple(scales))
 
@@ -163,14 +188,15 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, max_it
                 candidate[i] = v
             hits = []
             for i in free:
-                if abs(candidate[i]) > bounds[i]:
-                    sign = 1 if candidate[i] > 0 else -1
-                    hits.append(((sign*bounds[i]-y[i])/(candidate[i]-y[i]), i, sign))
+                if candidate[i] > ceilings[i]:
+                    hits.append(((ceilings[i]-y[i])/(candidate[i]-y[i]), i, 1))
+                elif candidate[i] < floors[i]:
+                    hits.append(((floors[i]-y[i])/(candidate[i]-y[i]), i, -1))
             if hits:
                 alpha, index, sign = min(hits)
                 for i in free:
                     y[i] += alpha*(candidate[i]-y[i])
-                y[index] = sign*bounds[index]
+                y[index] = ceilings[index] if sign > 0 else floors[index]
                 active[index] = sign
                 continue
             y = candidate

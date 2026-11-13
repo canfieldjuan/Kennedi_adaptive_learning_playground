@@ -33,6 +33,9 @@ class _Chart:
     def build(self, values):
         return _Source(tuple(values))
 
+    def step_bounds(self, values):
+        return [-.5]*len(values), [.5]*len(values)
+
     def project(self, values):
         return values
 

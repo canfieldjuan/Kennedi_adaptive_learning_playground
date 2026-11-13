@@ -196,6 +196,10 @@ incompatibility; no further scene or playback acceptance follows from it.
 
 `numerics.py` now owns scaled QR/active-set least squares. It replaces both the
 unconstrained-step/clipping path and the capped coordinate-minimization path.
+Each chart states its domain as per-coordinate step bounds, and the solver
+honors them. A timing coordinate at its ±20 wall stays there while the others
+keep moving. One coordinate's wall never refuses the whole step. The chart
+still refuses values outside the domain.
 A typed result records convergence, rank failure or budget exhaustion, and the
 fitter cannot apply an uncertified step. Numerical termination is recorded
 separately from whole-cycle gait status.
