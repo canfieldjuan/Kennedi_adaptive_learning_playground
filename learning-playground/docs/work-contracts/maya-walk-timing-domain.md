@@ -234,4 +234,46 @@ Tests touching these: `tests/test_fitting_numerics.py`, which also patches
 
 ## Contract Amendments
 
-None yet.
+Both amendments came up during implementation. They keep every guarantee
+above, and neither changes a limit, a chart encoding or the objective.
+
+### Amendment 1: no ulp-inward correction; exactness is proven and pinned
+
+The contract said a bound that would round outside the domain "steps one ulp
+inward". Mutation showed the correction never runs. The mutants that delete
+the inward loops on each side both survived, and so did a brute-force check
+of 3,280,000 coordinates near both walls, at ±limit/2 and at random: none
+needed a correction.
+
+The reason is exactness. While `TRUST_LIMIT <= TIMING_COORDINATE_LIMIT/2`:
+
+- A clipped side has `limit/2 <= |v| <= limit`. That makes `-limit-v` exact
+  (Sterbenz lemma), so `v+bound` lands on the wall exactly.
+- An unclipped side's exact sum lies inside the wall, and round-to-nearest
+  cannot cross the representable wall.
+
+**Amended clause.** `step_bounds` computes `max(-TRUST_LIMIT, -limit-v)` and
+`min(TRUST_LIMIT, limit-v)` with no correction loop. A test pins the
+precondition `TRUST_LIMIT <= TIMING_COORDINATE_LIMIT/2`. The floating-point
+property test now also asserts that a clipped side lands on the wall
+exactly. The guarantee is unchanged: `x_i + bound` stays inside the domain.
+
+**Amended verification 5.** The clause "the ulp-inward step" becomes:
+
+- the clip on each side;
+- the clip moved one ulp past the wall on each side.
+
+Code that cannot run is not kept as decoration. It would leave mutants that
+no test can catch.
+
+### Amendment 2: the timing chart refuses an incomplete timed vector
+
+`PoseChart.step_bounds` refuses a vector of the wrong length.
+`TimingChart.step_bounds` checked only the value part, so a timing part that
+was too short or too long was refused only later, by the solver's length
+check. The chart now refuses it itself:
+`ValueError('Complete timed pose vector required')`.
+
+Restriction-need: it fails closed at the owner and excludes nothing valid.
+**Kept.** Verification 4 gains this refusal, and verification 5 gains its
+mutant.
