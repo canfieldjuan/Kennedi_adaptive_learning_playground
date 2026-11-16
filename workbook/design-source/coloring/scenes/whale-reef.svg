@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+  width="700" height="820" viewBox="0 0 700 820">
+  <title>Whale reef: a friendly whale above broad coral and a starfish</title>
+  <desc>Editable original coloring setting around the established whale. Open water, broad coral branches and one large starfish. Keep the linked character and named layer order.</desc>
+  <g inkscape:groupmode="layer" inkscape:label="01 Open water and bubbles" id="reef-water"
+    fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="91" cy="91" r="23"/><circle cx="133" cy="49" r="13"/>
+    <circle cx="51" cy="157" r="12"/>
+    <circle cx="599" cy="121" r="24"/><circle cx="636" cy="63" r="14"/>
+    <path d="M238 73 C276 61 313 64 343 70 M390 97 C422 87 460 86 489 91"/>
+    <path d="M50 454 C72 448 88 451 102 455 M490 507 C532 495 574 498 604 506"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="02 Gently rolling seabed" id="reef-seabed"
+    fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 687 C142 641 239 645 340 680 C458 620 571 638 671 666"/>
+    <path d="M35 772 C162 742 216 768 299 764 M511 778 C567 760 621 766 667 783"/>
+    <path d="M254 796 Q287 790 319 796"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="03 Existing whale (linked editable SVG)" id="reef-whale">
+    <image id="whale-reference" href="../characters/whale-coloring-opaque.svg" x="70" y="151" width="560" height="407"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="04 Broad branching coral" id="reef-coral"
+    fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M67 778 C84 747 87 713 73 687 C46 680 24 657 29 641 C33 628 46 630 53 641 C60 652 69 657 79 656 C74 629 66 610 53 590 C28 584 12 564 20 552 C27 542 37 548 43 555 C39 539 40 524 49 522 C61 519 66 535 64 555 C62 572 74 584 85 594 C89 571 86 552 79 537 C63 525 60 506 70 500 C79 495 86 503 88 512 C95 499 107 497 112 506 C119 519 101 531 103 545 C106 561 109 570 110 582 C127 564 140 553 142 537 C136 522 141 506 151 507 C163 508 164 526 159 537 C175 530 189 534 188 544 C187 556 164 558 152 567 C136 580 126 600 123 619 C143 611 156 599 162 584 C161 567 168 555 179 559 C190 563 185 581 184 586 C200 582 210 587 207 597 C204 608 185 607 175 615 C159 631 140 646 119 650 C120 674 124 688 139 699 C164 687 174 670 175 657 C170 643 175 631 185 632 C197 633 195 650 195 656 C210 650 221 655 218 665 C215 675 200 675 194 682 C178 706 162 721 137 728 C127 747 128 766 134 780Z"/>
+    <path d="M102 754 Q113 715 100 674 Q93 642 103 616 M75 590 Q86 604 91 620 M129 602 L143 582 M137 705 L158 699" fill="none" stroke-width="2.4"/>
+    <path d="M540 781 C535 753 556 731 582 729 C596 713 623 716 637 733 C660 734 679 755 672 781 C651 792 625 785 603 792 C580 785 555 792 540 781Z"/>
+    <path d="M580 753 C600 716 591 684 594 658 C597 635 586 615 592 588 C594 577 609 573 617 585 C622 607 611 627 618 650 C625 678 617 702 628 750Z"/>
+    <path d="M547 715 C530 703 531 692 546 687 Q558 671 575 680 Q594 664 611 676 Q632 659 647 676 Q668 673 676 688 C691 694 685 708 667 714 Q642 729 614 720 Q581 732 547 715Z"/>
+    <path d="M557 657 C540 647 541 633 556 627 Q568 613 583 621 Q600 605 616 617 Q633 604 646 619 C663 620 672 635 661 645 Q643 665 615 658 Q585 669 557 657Z"/>
+    <path d="M574 606 C559 593 563 581 577 578 Q591 562 605 573 Q625 558 637 574 C655 576 657 590 644 600 Q615 616 574 606Z"/>
+    <path d="M560 700 Q583 709 601 701 M622 698 Q639 706 659 695 M572 640 Q589 646 604 638 M623 638 Q637 644 648 635 M590 589 Q607 596 626 585" fill="none" stroke-width="2.4"/>
+  </g>
+  <g inkscape:groupmode="layer" inkscape:label="05 Large foreground starfish" id="reef-starfish"
+    fill="#fff" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M423 692 C410 675 404 644 393 645 C382 646 380 676 373 697 C352 701 323 692 319 704 C314 717 341 729 359 740 C356 760 340 786 350 794 C361 802 382 780 398 766 C417 775 438 798 450 790 C462 781 444 758 439 740 C456 724 485 715 479 703 C474 690 444 699 423 692Z"/>
+    <path d="M396 683 L393 705 M354 713 L375 721 M368 769 L387 750 M431 765 L417 747 M449 712 L426 722" fill="none" stroke-width="2.4"/>
+    <path d="M389 718 Q400 709 411 720 Q417 732 405 738 Q392 742 386 731Z"/>
+  </g>
+</svg>

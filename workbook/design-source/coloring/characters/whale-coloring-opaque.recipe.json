@@ -1,0 +1,17 @@
+{
+  "aiGeneratedSource": true,
+  "artModified": false,
+  "vectorExportModified": true,
+  "input": "design-source/animals/locked-poses/whale-01-swimming.png",
+  "inputSha256": "e5834ec2e58c6a07919a6485986c444b7f0b866a8bf5d2bc017ef627281609b0",
+  "output": "design-source/coloring/characters/whale-coloring-opaque.svg",
+  "outputSha256": "af27a5260539dcb6dec61ed32276122e33703b9d840af9e1556dd80629652fec",
+  "thresholdPercent": 70,
+  "opaqueWhiteInteriors": true,
+  "tools": {
+    "convert": "Version: ImageMagick 6.9.12-98 Q16 x86_64 18038 https://legacy.imagemagick.org",
+    "potrace": "potrace 1.16. Copyright (C) 2001-2019 Peter Selinger."
+  },
+  "crop": "194.04 249.07 693.51 503.71",
+  "approval": "draft / owner visual approval required"
+}

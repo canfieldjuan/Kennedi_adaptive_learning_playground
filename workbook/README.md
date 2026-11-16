@@ -201,6 +201,31 @@ If necessary, `node tools/prepare-coloring-unicorn.mjs` prepares a CPU-only revi
 candidate from the original PNG, using the same shared threshold/Potrace owner.
 It never promotes candidates or changes canonical art automatically.
 
+### Owner-approved Whale reef
+
+One existing whale, large coral shapes, bubbles and a starfish. The owner
+visually approved this composition ("looks good"); original whale art and other
+scenes are unchanged. This is not approval of future scenes or physical printing.
+From `workbook/`, on Node 20 or later (this local proof used Node v26.7.0):
+
+```bash
+node scripts/workbook.mjs all --recipe recipes/coloring-whale-reef.json --out dist-recipes/whale-reef
+xdg-open dist-recipes/whale-reef/preview.html
+node scripts/workbook.mjs all --recipe dist-recipes/whale-reef/recipe.json --out dist-recipes/whale-reef-replay
+node --test tests/coloring-whale-reef.test.mjs
+```
+
+PDF: `dist-recipes/whale-reef/pdf/kennedi-coloring.pdf`. Inspect the actual
+`pdf-raster/page-1.png`. Use absolute output paths outside worktrees for review.
+Frozen replay requires the matching source checkout; no model/GPU is involved.
+
+Edit `design-source/coloring/scenes/whale-reef.svg` in Inkscape with its linked
+`../characters/whale-coloring-opaque.svg` alongside it. Publication inlines
+editable vectors and locks both sources. CPU-only candidate preparation:
+`node tools/prepare-coloring-whale.mjs`; review/adopt separately, never replace
+canonical whale files. Inherited cheek trace texture remains a visual-review
+risk. This is a coloring scene, not a literal marine-science illustration.
+
 ### Make another coloring pack
 
 Copy `recipes/coloring-starter.json` and change only the ordered `pages` list:
@@ -209,7 +234,7 @@ Copy `recipes/coloring-starter.json` and change only the ordered `pages` list:
 {"schemaVersion":1,"template":"coloring-pages-v1","pages":["whale","bunny","turtle"]}
 ```
 
-Choose 1-24 entries from `bunny`, `turtle`, `unicorn`, `whale`, `bunny-garden`, `turtle-pond`, `unicorn-meadow`. Repeated entries
+Choose 1-24 entries from `bunny`, `turtle`, `unicorn`, `whale`, `bunny-garden`, `turtle-pond`, `unicorn-meadow`, `whale-reef`. Repeated entries
 are allowed; each gets its own page. No file paths, HTML, prompts or arbitrary
 captions are accepted. A local language model only needs to emit this JSON;
 no model runtime integration is required. List choices with

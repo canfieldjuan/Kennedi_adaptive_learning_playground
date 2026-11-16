@@ -10,7 +10,7 @@ import { withPrintBrowser, measureArtworkCrops, stageInventory } from '../script
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const inputs = Object.freeze({ bunny: 'bunny-01-sitting.png', turtle: 'turtle-01-walking.png',
-  unicorn: 'unicorn-01-standing.png' });
+  unicorn: 'unicorn-01-standing.png', whale: 'whale-01-swimming.png' });
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 
 export async function prepareColoringCharacter(animal) {
