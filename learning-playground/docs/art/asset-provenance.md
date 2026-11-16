@@ -258,6 +258,38 @@ and must also document every legacy asset family it modifies or re-exports.
 - **Owner look approval:** Pending owner review of the seven new Cozy Town compositions, setting readability, clue continuity, Poppy/Biscuit consistency, and responsive crop in this PR
 - **Restrictions and notes:** These seven exports cover only Princess Poppy + Cozy Town + Lost Friend. Both clue routes and both gentle-help endings preserve the child's exact story choices; the two ending ids intentionally share one authored reunion art key. Existing Poppy/forest Lost Friend and Special Delivery families remain independently documented and unchanged. Every other character, setting, family, setup card, and choice card remains runtime-composed. Runtime depends only on local SVG exports; Inkscape is not a runtime dependency. Every scene is decorative, `aria-hidden`, and non-interactive. The sources and exports contain no `<text>`, font, remote reference, embedded image/data, Canva/Figma/Inkscape library content, stock media, community file, plugin resource, third-party asset, Content Foundry output, or generative image output. The complete third-party resource list is None. No unlisted stock or library element remains.
 
+## Story Stage Special Delivery Poppy-Cloud-Village Rollout Family
+
+- **Asset family:** Story Stage Special Delivery Princess Poppy in the Cloud Village scene family
+- **Game:** Story Stage
+- **Status:** `rights_verified`
+- **Production path(s):** `public/assets/images/story-stage-delivery-intro-poppy-cloud-village.svg`; `public/assets/images/story-stage-delivery-problem-poppy-cloud-village.svg`; `public/assets/images/story-stage-delivery-route-poppy-cloud-village.svg`; `public/assets/images/story-stage-delivery-bridge-poppy-cloud-village.svg`; `public/assets/images/story-stage-delivery-meadow-poppy-cloud-village.svg`; `public/assets/images/story-stage-delivery-protect-poppy-cloud-village.svg`; `public/assets/images/story-stage-delivery-ending-high-poppy-cloud-village.svg`; `public/assets/images/story-stage-delivery-ending-wagon-poppy-cloud-village.svg`
+- **Editable source path(s):** `design-source/story-stage/special-delivery-poppy-cloud-village/story-stage-delivery-intro-poppy-cloud-village.svg`; `design-source/story-stage/special-delivery-poppy-cloud-village/story-stage-delivery-problem-poppy-cloud-village.svg`; `design-source/story-stage/special-delivery-poppy-cloud-village/story-stage-delivery-route-poppy-cloud-village.svg`; `design-source/story-stage/special-delivery-poppy-cloud-village/story-stage-delivery-bridge-poppy-cloud-village.svg`; `design-source/story-stage/special-delivery-poppy-cloud-village/story-stage-delivery-meadow-poppy-cloud-village.svg`; `design-source/story-stage/special-delivery-poppy-cloud-village/story-stage-delivery-protect-poppy-cloud-village.svg`; `design-source/story-stage/special-delivery-poppy-cloud-village/story-stage-delivery-ending-high-poppy-cloud-village.svg`; `design-source/story-stage/special-delivery-poppy-cloud-village/story-stage-delivery-ending-wagon-poppy-cloud-village.svg`
+- **Creator:** Project developer, Codex Story Stage production-art rollout session
+- **Creation date:** 2026-07-15
+- **Creation tool and version:** Inkscape 1.4.4 Flatpak (`org.inkscape.Inkscape`), plain SVG exports produced with `--export-plain-svg`
+- **Origin category:** A original
+- **Original or third-party status:** Original project artwork
+- **Project-owned source material used:** The approved Story Stage Poppy/Enchanted-Forest Special Delivery family supplies the Poppy, sunshine-berry basket, bridge, butterfly, wagon, Biscuit, owl, route, payoff, palette, line-weight, and composition language. Those project-owned constructions were adapted into eight new original Cloud Village compositions with floating cloud islands, rounded cloud homes, airy paths, pastel pennants, cloud banks, and a party pavilion.
+- **Third-party elements:** None
+- **Source URL(s):** Not applicable
+- **License name and version/date:** Not applicable; original project artwork
+- **License file path:** Not applicable
+- **Commercial use permitted:** yes
+- **Modification permitted:** yes
+- **Software distribution permitted:** yes
+- **Public repository distribution permitted:** yes
+- **Continued use after subscription ends:** not applicable
+- **Attribution requirement:** None
+- **AI assistance:** none
+- **AI approval/terms record:** Not applicable
+- **Contact sheet path:** `docs/captures/story-stage/special-delivery-poppy-cloud-village-contact-sheet.webp`
+- **Existing/proposed comparison path:** The approved Story Stage direction remains documented at `docs/captures/story-stage/special-delivery-poppy-forest-contact-sheet.webp`; this family review is `docs/captures/story-stage/special-delivery-poppy-cloud-village-contact-sheet.webp`
+- **Desktop screenshot path(s):** `docs/captures/story-stage/special-delivery-poppy-cloud-village-desktop.webp`
+- **Mobile screenshot path(s):** `docs/captures/story-stage/special-delivery-poppy-cloud-village-mobile.webp`
+- **Owner look approval:** Pending owner review of the eight new Cloud Village compositions, environment readability, route and payoff continuity, Poppy/basket consistency, and responsive crop in this PR
+- **Restrictions and notes:** These eight exports cover only Princess Poppy + Cloud Village + Special Delivery. The bridge/meadow consequences and carry-high/wagon endings remain distinct and preserve the child's exact route and entrance choices. Existing Poppy/forest and Poppy/Cozy-Town production families remain independently documented and unchanged. Cozy Town is not a supported Special Delivery setting and was not added. Every other character, setting, family, setup card, and choice card remains runtime-composed. Runtime depends only on local SVG exports; Inkscape is not a runtime dependency. Every scene is decorative, `aria-hidden`, and non-interactive. The sources and exports contain no `<text>`, font, remote reference, embedded image/data, Canva/Figma/Inkscape library content, stock media, community file, plugin resource, third-party asset, Content Foundry output, or generative image output. The complete third-party resource list is None. No unlisted stock or library element remains.
+
 ## Bear Bakes Bread Deterministic Mixing Video Proof
 
 - **Asset family:** Bear Bakes Bread deterministic mixing vector proof
