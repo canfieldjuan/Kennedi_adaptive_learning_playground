@@ -8,11 +8,11 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from storybook.animation.maya_walk import fitting
+from storybook.animation.maya_walk import differential as dmath, fitting
 from storybook.animation.maya_walk.fitting import (
-    PoseChart, TimingChart, PHASES, CHANNEL, MOTION_FLOOR, POSE_COORDINATE_LIMIT,
+    BRANCHES, PoseChart, progress, TimingChart, PHASES, CHANNEL, MOTION_FLOOR, POSE_COORDINATE_LIMIT,
     TIMING_COORDINATE_LIMIT, carry_start, source_signature, floor_zero_signature, time_anchors, fit)
-from storybook.animation.maya_walk.numerics import TRUST_LIMIT, BOUND_TOLERANCE
+from storybook.animation.maya_walk.numerics import TRUST_LIMIT, BOUND_TOLERANCE, analytic_jacobian
 
 FLAT = Path(__file__).with_name('frozen-flat-stop.json')
 LIMIT = POSE_COORDINATE_LIMIT
@@ -78,14 +78,20 @@ class FloorConstantTests(unittest.TestCase):
             with self.subTest(floor=floor), self.assertRaises(ValueError):
                 PoseChart(floor=floor)
 
-    def test_branch_ends_are_fixed_anchors(self):
-        ends = {'hip_x': (0., .5), 'hip_z': (.05, .30), 'foot_x': (.6, 1.), 'foot_z': (.6, .72, 1.),
-                'heel': (.8, .94, .08), 'ball': (.35, .64, .88), 'toe': (.53, .64, .72)}
-        for name, phases in ends.items():
+    def test_branch_ends_are_fixed_anchors_and_keys_lie_between_them(self):
+        self.assertEqual(len(BRANCHES), 12)
+        for branch, (name, start, end, ids) in BRANCHES.items():
             period = .5 if name.startswith('hip_') else 1.
-            for p in phases:
-                with self.subTest(name=name, phase=p):
+            for p in (start, end):
+                with self.subTest(branch=branch, phase=p):
                     self.assertTrue(any(abs(p % period - a % period) < 1e-12 for a in time_anchors(name)))
+            unwrapped = [PHASES[name][i]+(1 if end > 1 and PHASES[name][i] < start else 0) for i in ids]
+            for p in unwrapped:
+                self.assertLess(min(start, end), p)
+                self.assertLess(p, max(start, end))
+            # Measuring order: keys move steadily away from the start.
+            distance = [abs(p-start) for p in unwrapped]
+            self.assertEqual(distance, sorted(distance))
 
 
 class FloorPropertyTests(unittest.TestCase):
@@ -168,6 +174,28 @@ class EncodingTests(unittest.TestCase):
             factors = {round((b-MOTION_FLOOR)/(a-MOTION_FLOOR), 9) for a, b in kept if a > MOTION_FLOOR+1e-6}
             self.assertLessEqual(len(factors), 1, name)
         self.assertGreater(raised, 0)
+
+    def test_a_segment_just_above_the_floor_still_encodes_inside_the_domain(self):
+        # Review finding on 19e0caf: a tiny positive excess (or a tiny last
+        # excess) used to encode past +-35, and build then refused the start.
+        # Step the key a float at a time across the floor point, so cancellation
+        # leaves every small excess, positive and negative.
+        values = {n: list(v) for n, v in self.chart.owner.fixed.items()}
+        z = values['hip_z']
+        lo, hi = z[0], z[2]
+        smooth = progress(PHASES, 'hip_fall')
+        index = self.chart.parameters.index(('hip_z', 3))
+        worst = 0.
+        for key, target in ((5, lo+MOTION_FLOOR*smooth[0]*(hi-lo)),
+                            (3, hi-MOTION_FLOOR*(1-smooth[2])*(hi-lo))):
+            trial = {n: list(v) for n, v in values.items()}
+            for k in range(-64, 65):
+                trial['hip_z'][key] = target+k*math.ulp(target)
+                _, coordinates = self.chart.encode(trial, PHASES)
+                worst = max(worst, *(abs(v) for v in coordinates[index:index+3]))
+                with self.subTest(key=key, step=k):
+                    self.assertTrue(all(abs(v) <= 30.+1e-9 for v in coordinates[index:index+3]))
+        self.assertGreater(worst, 29.)  # the scan reached the clip
 
     def test_floor_zero_encoding_is_the_original_log_gap_ratio(self):
         chart = PoseChart(floor=0.)
@@ -273,15 +301,22 @@ class PoseDomainTests(unittest.TestCase):
 
 
 class _HipReach:
-    """Scores a start only when its hip lowest point is at or below a ceiling."""
+    """Scores a start only when its hip lowest point is at or below a ceiling.
+
+    The residual is a hinge on that ceiling, so the smallest scoring drop sits
+    on the hinge's tie, as the real reach guard does.
+    """
     def __init__(self, space, ceiling):
         self.space, self.ceiling, self.calls = space, ceiling, 0
         self.index = space.parameters.index(('hip_z', 0))
 
     def score(self, x):
         self.calls += 1
-        lowest = .83+.17/(1+math.exp(-x[self.index]))
-        return (1., [1.]) if lowest <= self.ceiling else (math.inf, None)
+        lowest = .83+.17/(1+dmath.exp(-x[self.index]))
+        if dmath.primal(lowest) > self.ceiling:
+            return math.inf, None
+        r = [dmath.maximum(0., lowest-self.ceiling)+1.]
+        return dmath.total(v*v for v in r), r
 
 
 class CarryTests(unittest.TestCase):
@@ -304,11 +339,56 @@ class CarryTests(unittest.TestCase):
         x, drop = carry_start(self.fixture, self.space, objective)
         self.assertGreaterEqual(drop, need-1e-12)
         self.assertLess(drop, need+1e-9)
-        self.assertIsNotNone(objective.score(x)[1])
+        _, residuals = objective.score(x)
+        self.assertIsNotNone(residuals)
+        # The returned start is off the hinge: the fitter can differentiate it.
+        analytic_jacobian(objective.score, x, residuals).require_resolved()
 
     def test_no_drop_within_one_bob_is_refused(self):
         with self.assertRaises(ValueError):
             carry_start(self.fixture, self.space, _HipReach(self.space, self.lowest-1.01*self.bob))
+
+    def near_the_envelope(self, lowest, highest):
+        values = list(self.fixture['values'])
+        parameters = self.space.parameters
+        values[parameters.index(('hip_z', 0))] = math.log((lowest-.83)/(1-lowest))
+        values[parameters.index(('hip_z', 1))] = math.log((highest-lowest)/(1-highest))
+        return dict(self.fixture, values=values)
+
+    def test_a_carry_near_the_hip_envelope_searches_only_representable_drops(self):
+        # Review finding on 19e0caf: the whole-bob endpoint (.093) crossed the
+        # .83 envelope and encode raised, though a .005 drop scores.
+        prior = self.near_the_envelope(.85, .943)
+        x, drop = carry_start(prior, self.space, _HipReach(self.space, .845))
+        self.assertGreater(drop, .005-1e-9)
+        self.assertLess(drop, .005+1e-6)
+        with self.assertRaisesRegex(ValueError, 'No representable hip drop'):
+            carry_start(prior, self.space, _HipReach(self.space, .829))
+
+    def test_a_value_seed_must_carry_the_current_value_chart(self):
+        # Review finding on 19e0caf: a pre-floor value seed was copied as is and
+        # decoded as a different walk.
+        chart = PoseChart()
+        objective = Mock()
+        objective.score.return_value = (1., [1.])
+        objective.calls = 1
+        report = {'status': 'FAIL', 'violation_counts': {'synthetic': 1}}
+        with tempfile.TemporaryDirectory() as folder, \
+                patch(fitting.__name__+'.Objective', return_value=objective), \
+                patch(fitting.__name__+'.analytic_jacobian') as jacobian, \
+                patch(fitting.__name__+'.NativeGeometry') as geometry:
+            jacobian.return_value.require_resolved.side_effect = fitting.UnreliableJacobian('synthetic')
+            jacobian.return_value.differences = ()
+            geometry.return_value.assess.return_value = report
+            seed = Path(folder)/'value-seed.json'
+            base = {'parameters': [list(p) for p in chart.parameters], 'values': list(chart.initial)}
+            for signature in (floor_zero_signature(False), source_signature(True), None):
+                seed.write_text(json.dumps(dict(base, source_signature=signature)))
+                with self.subTest(signature=signature), self.assertRaisesRegex(ValueError, 'carry it first'):
+                    fit(Path(folder)/'out.json', iterations=1, timing=True, value_seed=seed)
+            seed.write_text(json.dumps(dict(base, source_signature=source_signature(False))))
+            record = fit(Path(folder)/'out.json', iterations=1, timing=True, value_seed=seed)
+            self.assertEqual(record['values'][:len(chart.initial)], chart.initial)
 
     def test_inventory_and_timing_mismatches_are_refused(self):
         objective = _HipReach(self.space, 1.)

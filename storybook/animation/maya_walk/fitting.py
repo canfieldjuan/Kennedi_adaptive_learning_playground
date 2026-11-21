@@ -113,6 +113,36 @@ def ease(u):
     return (1-dmath.cos(math.pi*u))/2
 
 
+# The moving branches the pose chart encodes: (control, start, end, keys). Start
+# is the end the encoding measures shares from; both ends are fixed anchors.
+# Keys are listed in that measuring order. An end past 1 crosses the seam.
+BRANCHES = {
+    'hip_forward': ('hip_x', 0., .5, (1, 2, 3, 4, 5)),
+    'hip_rise': ('hip_z', .05, .30, (1,)),
+    'hip_fall': ('hip_z', .55, .30, (5, 4, 3)),
+    'foot_swing': ('foot_x', .6, 1., (2, 3, 4, 5, 6, 7, 8, 9, 10, 11)),
+    'foot_lift': ('foot_z', .6, .72, (2, 3)),
+    'foot_lower': ('foot_z', 1., .72, (11, 10, 9, 8, 7, 6, 5)),
+    'heel_to_lowest': ('heel', .94, .8, (7, 6)),
+    'heel_from_lowest': ('heel', .94, 1.08, (9, 0, 1, 2, 3)),
+    'ball_rise': ('ball', .35, .64, (2, 3, 4, 5, 6, 7)),
+    'ball_fall': ('ball', .88, .64, (10, 9)),
+    'toe_rise': ('toe', .53, .64, (2, 3, 4, 5)),
+    'toe_fall': ('toe', .72, .64, (7,)),
+}
+
+
+def progress(phases, branch):
+    """The ease at each of a branch's keys, at the given key times, in its measuring order.
+
+    Whether a key lies past the seam is read from its authored phase: timing keeps
+    every key between the same anchors, and a comparison on a timed phase would
+    be a branch in the derivative.
+    """
+    name, start, end, ids = BRANCHES[branch]
+    return [ease((phases[name][i]+(1 if end > 1 and PHASES[name][i] < start else 0)-start)/(end-start)) for i in ids]
+
+
 class PoseChart:
     """Smooth interior coordinates of the same finite sparse key values.
 
@@ -145,31 +175,31 @@ class PoseChart:
             parameters.extend((name,i) for i in range(len(values)))
             coordinates.extend(values)
         def fraction(v,lo,hi):return math.log((v-lo)/(hi-v))
-        def along(p,start,end):return (1-math.cos(math.pi*(p-start)/(end-start)))/2
         def ramp(values,progress):
             gaps=[b-a for a,b in zip(values,values[1:])];span=values[-1]-values[0]
             smooth=[b-a for a,b in zip([0.,*progress],[*progress,1.])]
             excess=[g-floor*f*span for g,f in zip(gaps,smooth,strict=True)]
-            top=max(excess);excess=[v if v>0 else math.exp(-30)*top for v in excess]
+            # Every excess is at least e^-30 of the largest: each coordinate stays within +-30.
+            top=max(excess);excess=[max(v,math.exp(-30)*top) for v in excess]
             return [math.log(v/excess[-1]) for v in excess[:-1]]
         push('plant',[fraction(d['foot_x'][0],.05,.5)])
-        p=phases['hip_x'];push('hip_x',ramp([*d['hip_x'],self.stride/2],[along(p[i],0.,.5) for i in range(1,6)]))
-        z=d['hip_z'];lo,hi=z[0],z[2];p=phases['hip_z']
-        push('hip_z',[fraction(lo,.83,1.),fraction(hi,lo,1.),*ramp([lo,z[1],hi],[along(p[1],.05,.30)]),
-                      *ramp([lo,z[5],z[4],z[3],hi],[along(p[i],.55,.30) for i in (5,4,3)])])
-        p=phases['foot_x'];push('foot_x',ramp([*d['foot_x'][1:],d['foot_x'][0]+self.stride],[along(p[i],.6,1.) for i in range(2,12)]))
-        z=d['foot_z'];peak=z[4];p=phases['foot_z']
-        push('foot_z',[fraction(peak,0,.25),*ramp([0,z[2],z[3],peak],[along(p[i],.6,.72) for i in (2,3)]),
-                       *ramp([0,*reversed(z[5:]),peak],[along(p[i],1.,.72) for i in range(11,4,-1)])])
-        z=d['heel'];lo=z[8];p=phases['heel']
-        push('heel',[math.log(-lo),*ramp([lo,z[7],z[6],0],[along(p[i],.94,.8) for i in (7,6)]),
-                     *ramp([lo,z[9],z[0],z[1],z[2],z[3],0],[along(q,.94,1.08) for q in (p[9],1+p[0],1+p[1],1+p[2],1+p[3])])])
-        z=d['ball'];peak=z[8];p=phases['ball']
-        push('ball',[math.log(peak),*ramp([0,*z[2:9]],[along(p[i],.35,.64) for i in range(2,8)]),
-                     *ramp([0,z[10],z[9],peak],[along(p[i],.88,.64) for i in (10,9)])])
-        z=d['toe'];peak=z[6];p=phases['toe']
-        push('toe',[math.log(peak),*ramp([0,*z[2:7]],[along(p[i],.53,.64) for i in range(2,6)]),
-                    *ramp([0,z[7],peak],[along(p[7],.72,.64)])])
+        push('hip_x',ramp([*d['hip_x'],self.stride/2],progress(phases,'hip_forward')))
+        z=d['hip_z'];lo,hi=z[0],z[2]
+        push('hip_z',[fraction(lo,.83,1.),fraction(hi,lo,1.),*ramp([lo,z[1],hi],progress(phases,'hip_rise')),
+                      *ramp([lo,z[5],z[4],z[3],hi],progress(phases,'hip_fall'))])
+        push('foot_x',ramp([*d['foot_x'][1:],d['foot_x'][0]+self.stride],progress(phases,'foot_swing')))
+        z=d['foot_z'];peak=z[4]
+        push('foot_z',[fraction(peak,0,.25),*ramp([0,z[2],z[3],peak],progress(phases,'foot_lift')),
+                       *ramp([0,*reversed(z[5:]),peak],progress(phases,'foot_lower'))])
+        z=d['heel'];lo=z[8]
+        push('heel',[math.log(-lo),*ramp([lo,z[7],z[6],0],progress(phases,'heel_to_lowest')),
+                     *ramp([lo,z[9],z[0],z[1],z[2],z[3],0],progress(phases,'heel_from_lowest'))])
+        z=d['ball'];peak=z[8]
+        push('ball',[math.log(peak),*ramp([0,*z[2:9]],progress(phases,'ball_rise')),
+                     *ramp([0,z[10],z[9],peak],progress(phases,'ball_fall'))])
+        z=d['toe'];peak=z[6]
+        push('toe',[math.log(peak),*ramp([0,*z[2:7]],progress(phases,'toe_rise')),
+                    *ramp([0,z[7],peak],progress(phases,'toe_fall'))])
         return parameters,coordinates
 
     def build(self,values,phases=None):
@@ -182,7 +212,6 @@ class PoseChart:
         it=iter(values);floor=self.floor
         def take(n):return [next(it) for _ in range(n)]
         def fraction(v,lo,hi):return lo+(hi-lo)/(1+dmath.exp(-v))
-        def along(p,start,end):return ease((p-start)/(end-start))
         def share(v,lo,hi,u):
             """Two-segment branch key: one free logistic share blended with the ease."""
             return lo+((hi-lo)*floor*u+(1-floor)*((hi-lo)/(1+dmath.exp(-v))))
@@ -194,26 +223,26 @@ class PoseChart:
             return out
         d={name:list(vals) for name,vals in self.owner.fixed.items()}
         plant=fraction(next(it),.05,.5)
-        p=t['hip_x'];d['hip_x']=[0.,*ramp(0,self.stride/2,take(5),[along(p[i],0.,.5) for i in range(1,6)])]
+        d['hip_x']=[0.,*ramp(0,self.stride/2,take(5),progress(t,'hip_forward'))]
         a,b,c,*rest=take(6);lo=fraction(a,.83,1.);hi=fraction(b,lo,1.)
-        p=t['hip_z'];z5,z4,z3=ramp(lo,hi,rest,[along(p[i],.55,.30) for i in (5,4,3)])
-        d['hip_z']=[lo,share(c,lo,hi,along(p[1],.05,.30)),hi,z3,z4,z5]
-        p=t['foot_x'];d['foot_x']=[plant,plant,*ramp(plant,plant+self.stride,take(10),[along(p[i],.6,1.) for i in range(2,12)])]
-        a,*rest=take(10);peak=fraction(a,0,.25);p=t['foot_z']
-        z2,z3=ramp(0,peak,rest[:2],[along(p[i],.6,.72) for i in (2,3)])
-        tail=ramp(0,peak,rest[2:],[along(p[i],1.,.72) for i in range(11,4,-1)])
+        z5,z4,z3=ramp(lo,hi,rest,progress(t,'hip_fall'))
+        d['hip_z']=[lo,share(c,lo,hi,*progress(t,'hip_rise')),hi,z3,z4,z5]
+        d['foot_x']=[plant,plant,*ramp(plant,plant+self.stride,take(10),progress(t,'foot_swing'))]
+        a,*rest=take(10);peak=fraction(a,0,.25)
+        z2,z3=ramp(0,peak,rest[:2],progress(t,'foot_lift'))
+        tail=ramp(0,peak,rest[2:],progress(t,'foot_lower'))
         d['foot_z']=[0.,0.,z2,z3,peak,*reversed(tail)]
-        a,*rest=take(8);lo=-dmath.exp(a);p=t['heel']
-        z7,z6=ramp(lo,0,rest[:2],[along(p[i],.94,.8) for i in (7,6)])
-        z9,z0,z1,z2,z3=ramp(lo,0,rest[2:],[along(q,.94,1.08) for q in (p[9],1+p[0],1+p[1],1+p[2],1+p[3])])
+        a,*rest=take(8);lo=-dmath.exp(a)
+        z7,z6=ramp(lo,0,rest[:2],progress(t,'heel_to_lowest'))
+        z9,z0,z1,z2,z3=ramp(lo,0,rest[2:],progress(t,'heel_from_lowest'))
         d['heel']=[z0,z1,z2,z3,0.,0.,z6,z7,lo,z9]
-        a,*rest=take(9);peak=dmath.exp(a);p=t['ball']
-        rise=ramp(0,peak,rest[:6],[along(p[i],.35,.64) for i in range(2,8)])
-        z10,z9=ramp(0,peak,rest[6:],[along(p[i],.88,.64) for i in (10,9)])
+        a,*rest=take(9);peak=dmath.exp(a)
+        rise=ramp(0,peak,rest[:6],progress(t,'ball_rise'))
+        z10,z9=ramp(0,peak,rest[6:],progress(t,'ball_fall'))
         d['ball']=[0.,0.,*rise,peak,z9,z10,0.]
-        a,*rest=take(6);peak=dmath.exp(a);p=t['toe']
-        rise=ramp(0,peak,rest[:4],[along(p[i],.53,.64) for i in range(2,6)])
-        z7=share(rest[4],0,peak,along(p[7],.72,.64))
+        a,*rest=take(6);peak=dmath.exp(a)
+        rise=ramp(0,peak,rest[:4],progress(t,'toe_rise'))
+        z7=share(rest[4],0,peak,*progress(t,'toe_fall'))
         d['toe']=[0.,0.,*rise,peak,z7,0.]
         raw=[plant]+[d[name][i] for name,ids in ACTIVE.items() for i in ids]
         return self.owner.build([v/s for v,s in zip(raw,self.owner.scales)])
@@ -649,11 +678,13 @@ CARRY_BISECTIONS = 60
 def carry_start(prior, space, objective):
     """Start a fit from a checkpoint made under the floor-0 decoding.
 
-    The checkpoint's walk is decoded the way it was made, re-encoded under this
-    chart (only parked segments change), and, when that start cannot be scored,
-    the whole hip-height curve is lowered by the smallest drop that scores. The
-    drop is found by bisection on [0, bob height]; lowering the hips only shortens
-    each leg's reach. Returns (coordinates, hip drop).
+    The checkpoint's walk is decoded the way it was made and re-encoded under
+    this chart (only parked segments change). When that start cannot be scored,
+    the whole hip-height curve is lowered: bisection on [0, bob height] finds the
+    smallest drop that scores (lowering the hips only shortens each leg's reach),
+    then the drop steps up by doubling increments from one ulp until the first
+    derivatives resolve, since the smallest drop leaves a leg exactly on the
+    reach hinge. Returns (coordinates, hip drop).
     """
     if prior.get('parameters')!=[list(p) for p in space.parameters] or len(prior.get('values',()))!=len(space.initial):
         raise ValueError('Carried checkpoint parameter inventory differs')
@@ -671,16 +702,28 @@ def carry_start(prior, space, objective):
     def start(drop):
         d={name:[v-drop for v in vals] if name=='hip_z' else vals for name,vals in keys.items()}
         x=[*chart.encode(d,phases)[1],*tail]
-        return x,objective.score(x)[1] is not None
-    x,ok=start(0.)
-    if ok:return x,0.
-    low,high=0.,max(keys['hip_z'])-min(keys['hip_z'])
-    if not start(high)[1]:raise ValueError('No hip drop within one bob makes the carried start reachable')
+        return x,objective.score(x)[1]
+    x,r=start(0.)
+    if r is not None:return x,0.
+    # Search only drops that can be encoded: the lowest hip stays where its
+    # envelope coordinate is one unit inside the pose domain.
+    lowest=min(keys['hip_z']);floor_height=.83+.17/(1+math.exp(POSE_COORDINATE_LIMIT-1))
+    bob=min(max(keys['hip_z'])-lowest,lowest-floor_height);low,high=0.,bob
+    if bob<=0 or start(high)[1] is None:
+        raise ValueError('No representable hip drop within one bob makes the carried start reachable')
     for _ in range(CARRY_BISECTIONS):
         middle=(low+high)/2
-        if start(middle)[1]:high=middle
+        if start(middle)[1] is not None:high=middle
         else:low=middle
-    return start(high)[0],high
+    drop,step=high,math.ulp(high)
+    while drop<=bob:
+        x,r=start(drop)
+        if r is not None:
+            try:analytic_jacobian(objective.score,x,r).require_resolved()
+            except UnreliableJacobian:pass
+            else:return x,drop
+        drop=high+step;step*=2
+    raise ValueError('No hip drop within one bob gives the carried start resolved derivatives')
 
 
 def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timing=False, value_seed=None, guide_weight=1., carry=None):
@@ -706,6 +749,8 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
     if value_seed:
         prior=json.loads(Path(value_seed).read_text())
         if prior.get('parameters')!=[list(p) for p in value_chart.parameters]:raise ValueError('Value-seed parameter inventory differs')
+        if prior.get('source_signature')!=source_signature(False):
+            raise ValueError('Value seed was made under another chart; carry it first (--carry without --timing), then seed from that checkpoint')
         x[:space.value_count]=prior['values']
     carried_from=None;hip_drop=None
     if carry:
