@@ -461,6 +461,41 @@ push.
 
 No restriction is added. **Kept.**
 
+### Amendment 6: encoding stays in the domain, the carry search stays representable, and value seeds keep their chart
+
+Three findings from the automated review of `19e0caf`, each checked against
+the code:
+
+- **Encoded shares stay inside the domain by construction.**
+  - `encode` replaced only a non-positive excess. A positive excess far below
+    the branch's largest (a segment just above the floor, after cancellation)
+    still gave `log(v/q_last)` past ±35. So did a tiny last excess. `build` then
+    refused the start.
+  - **Amended clause.** Every excess is raised to at least `e^-30` × the
+    branch's largest. That keeps every share coordinate within ±30, inside the
+    ±35 domain. At floor 0 this changes nothing that base could represent.
+    Parity is rechecked.
+- **The carry search stays inside the hip envelope.**
+  - The bisection tried a whole-bob drop first. When the hips' lowest point
+    sits closer to the .83 envelope than one bob, that drop cannot be encoded
+    and the carry raised, even when a smaller drop scores.
+  - **Amended clause.** The upper end of the search is the smaller of one bob
+    and the largest drop that keeps the encoded lowest-hip coordinate one unit
+    inside the ±35 domain. The "no drop" refusal then speaks only for drops that
+    can be represented.
+- **Value seeds keep the chart they were made with.**
+  - `--value-seed` copied coordinates after checking only the parameter
+    inventory. A value checkpoint made before the floor would be decoded
+    differently, as a different walk.
+  - **Amended clause.** A value seed must carry the current value-only source
+    signature. A pre-floor value checkpoint is refused, with the supported path
+    named in the error: carry it first (`--carry`, without `--timing`), then
+    use that checkpoint as the value seed.
+  - Restriction-need: it fails closed on a walk the seed would silently change,
+    and the named migration path excludes nothing. **Kept.**
+
+Each clause gets a test on both sides and a mutant.
+
 ## Implementation summary
 
 Implemented to the contract as amended, in commits `c0da886` and `0554bad`.
