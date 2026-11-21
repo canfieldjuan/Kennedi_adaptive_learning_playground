@@ -434,6 +434,33 @@ Building the value chart with the untimed key times differs.
 
 Restriction-need: no restriction is added. **Kept.**
 
+### Amendment 5: one owner for the branches, and a carried start the fitter can differentiate
+
+Both came from the cold read and the repository's seam check after the first
+push.
+
+- **One table owns the branches.** The 12 branch ends, measuring directions
+  and key orders had been written twice, once in `encode` and once in
+  `build`. A module table, `BRANCHES`, and one function, `progress`, now own
+  them, and both sides read them.
+  - Whether a key lies past the seam is read from its authored phase. Timing
+    keeps every key between the same anchors, and comparing a timed phase
+    would be a branch in the forward-mode derivative.
+  - A test checks that every branch end is a fixed anchor, that every key lies
+    between its ends, and that the keys run in measuring order.
+- **The carried start steps off the reach hinge.**
+  - The smallest scoring drop leaves a leg exactly on the reach guard's
+    boundary. There, the reach residual's hinge ties exactly, and the forward
+    derivative refuses it as nonsmooth. The fitter then could not take its
+    first step. The first implementation avoided this only by rounding luck.
+  - After bisection, the drop now steps up from the boundary by doubling
+    increments, starting at one ulp, until the first derivatives resolve. It
+    refuses if that never happens within one bob.
+  - At the fourth fit's stop this took 10 derivative checks and moved the
+    drop by a few ulps.
+
+No restriction is added. **Kept.**
+
 ## Implementation summary
 
 Implemented to the contract as amended, in commits `c0da886` and `0554bad`.
