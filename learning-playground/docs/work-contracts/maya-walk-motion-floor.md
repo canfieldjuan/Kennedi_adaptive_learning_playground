@@ -419,3 +419,17 @@ audit lists each one.
 - the negative-excess clip;
 - the carry drop bisection on each side;
 - the drop refusal.
+
+### Amendment 4: the timing-only geometry check keeps floor 0, and the new coupling has its own test
+
+`test_geometry.py` checks that moving key times never changes key values. The
+accepted contract changes that on purpose: the floor's smooth reference is
+measured at the timed key times, so values now follow timing. With floor 0 the
+old property still holds exactly, so that test builds `PoseChart(floor=0.)`,
+and no assertion changes.
+
+`test_motion_floor.TimedKeysTests` covers the new behavior. Building through
+the timing chart equals building the value chart with the timed key times.
+Building the value chart with the untimed key times differs.
+
+Restriction-need: no restriction is added. **Kept.**
