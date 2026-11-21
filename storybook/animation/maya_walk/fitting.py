@@ -104,6 +104,11 @@ class PoseSpace:
 # about 709.78, and a logistic share is within 1e-15 of its end); the step
 # solver receives it as a bound, as it does the timing domain.
 POSE_COORDINATE_LIMIT = 35.
+
+
+def in_pose_domain(v):
+    """The one rule for a pose value coordinate: finite and within the domain."""
+    return dmath.finite(v) and abs(v)<=POSE_COORDINATE_LIMIT
 # Every interior key of a moving branch sits at least this fraction of the way
 # a smooth ease between the branch's ends would put it: each segment moves at
 # least half as much as smooth motion over the same frames, so no key parks
@@ -204,13 +209,13 @@ class PoseChart:
         z=d['toe'];peak=z[6]
         push('toe',[math.log(peak),*ramp([0,*z[2:7]],progress(phases,'toe_rise')),
                     *ramp([0,z[7],peak],progress(phases,'toe_fall'))])
-        if any(not math.isfinite(v) or abs(v)>POSE_COORDINATE_LIMIT for v in coordinates):
+        if not all(in_pose_domain(v) for v in coordinates):
             raise ValueError('Walk is not representable inside the pose domain')
         return parameters,coordinates
 
     def build(self,values,phases=None):
         """Key values for the coordinates; phases are the timed key times, else PHASES."""
-        if len(values)!=len(self.initial) or any(not dmath.finite(x) or abs(x)>POSE_COORDINATE_LIMIT for x in values):
+        if len(values)!=len(self.initial) or not all(in_pose_domain(x) for x in values):
             raise ValueError('Complete finite bounded pose-value chart required')
         t=PHASES if phases is None else phases
         if set(t)!=set(PHASES) or any(len(t[n])!=len(PHASES[n]) for n in PHASES):
@@ -258,7 +263,7 @@ class PoseChart:
         if len(values)!=len(self.initial):raise ValueError('Complete pose vector required')
         limit=POSE_COORDINATE_LIMIT;lower,upper=[],[]
         for v in values:
-            if not dmath.finite(v) or abs(v)>limit:raise ValueError('Pose coordinate outside its domain')
+            if not in_pose_domain(v):raise ValueError('Pose coordinate outside its domain')
             lower.append(max(-TRUST_LIMIT,-limit-v));upper.append(min(TRUST_LIMIT,limit-v))
         return lower,upper
 
