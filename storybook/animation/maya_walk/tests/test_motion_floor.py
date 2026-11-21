@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 from storybook.animation.maya_walk import fitting
 from storybook.animation.maya_walk.fitting import (
     PoseChart, TimingChart, PHASES, CHANNEL, MOTION_FLOOR, POSE_COORDINATE_LIMIT,
-    TIMING_COORDINATE_LIMIT, carry_start, source_signature, time_anchors, fit)
+    TIMING_COORDINATE_LIMIT, carry_start, source_signature, floor_zero_signature, time_anchors, fit)
 from storybook.animation.maya_walk.numerics import TRUST_LIMIT, BOUND_TOLERANCE
 
 FLAT = Path(__file__).with_name('frozen-flat-stop.json')
@@ -314,7 +314,9 @@ class CarryTests(unittest.TestCase):
         objective = _HipReach(self.space, 1.)
         for prior in (dict(self.fixture, parameters=self.fixture['parameters'][:-1]),
                       dict(self.fixture, values=self.fixture['values'][:-1]),
-                      dict(self.fixture, timing=False), dict(self.fixture, timing=None)):
+                      dict(self.fixture, timing=False), dict(self.fixture, timing=None),
+                      dict(self.fixture, source_signature=source_signature(True)),
+                      dict(self.fixture, source_signature=None)):
             with self.assertRaises(ValueError):
                 carry_start(prior, self.space, objective)
 
@@ -362,6 +364,9 @@ class CarryTests(unittest.TestCase):
 
     def test_the_signature_pins_the_floor_and_the_pose_domain(self):
         base = source_signature(True)
+        # The fixture came from a fit on 3802836, before the floor existed.
+        self.assertEqual(self.fixture['source_signature'], floor_zero_signature(True))
+        self.assertNotEqual(floor_zero_signature(True), floor_zero_signature(False))
         self.assertNotEqual(base, self.fixture['source_signature'])
         with patch(fitting.__name__+'.MOTION_FLOOR', .25):
             self.assertNotEqual(source_signature(True), base)

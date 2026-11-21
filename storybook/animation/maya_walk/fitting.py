@@ -628,11 +628,19 @@ def admit_step(objective, space, x, score, residuals, columns, damping):
     return None, damping, receipts, solves
 
 
+def _signature(timing, **chart):
+    return hashlib.sha256(json.dumps({'phases':PHASES,'holds':HOLDS,'minima':MINIMA,'maxima':MAXIMA,
+        'anchors':{n:time_anchors(n) for n in PHASES},'spacing':.25,'timing':timing,**chart},sort_keys=True).encode()).hexdigest()
+
+
 def source_signature(timing):
     """Pins every input that decides which walk a coordinate vector draws."""
-    return hashlib.sha256(json.dumps({'phases':PHASES,'holds':HOLDS,'minima':MINIMA,'maxima':MAXIMA,
-        'anchors':{n:time_anchors(n) for n in PHASES},'spacing':.25,'timing':timing,
-        'motion_floor':MOTION_FLOOR,'pose_limit':POSE_COORDINATE_LIMIT},sort_keys=True).encode()).hexdigest()
+    return _signature(timing,motion_floor=MOTION_FLOOR,pose_limit=POSE_COORDINATE_LIMIT)
+
+
+def floor_zero_signature(timing):
+    """The signature checkpoints carried before the motion floor; they decode with floor 0."""
+    return _signature(timing)
 
 
 CARRY_BISECTIONS = 60
@@ -651,6 +659,8 @@ def carry_start(prior, space, objective):
         raise ValueError('Carried checkpoint parameter inventory differs')
     timed=isinstance(space,TimingChart)
     if prior.get('timing') is not timed:raise ValueError('Carried checkpoint timing mode differs')
+    if prior.get('source_signature')!=floor_zero_signature(timed):
+        raise ValueError('Only a checkpoint made before the motion floor can be carried; resume newer ones')
     values=list(prior['values'])
     if timed:
         old=TimingChart(PoseChart(floor=0.));phases=dict(old.layout(values).profiles)
