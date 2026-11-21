@@ -46,6 +46,10 @@ MINIMA={'hip_x':(), 'hip_z':(.05,.55),'foot_x':(),'foot_z':(),'heel':(.94,),'bal
 MAXIMA={'hip_x':(), 'hip_z':(.30,.80),'foot_x':(),'foot_z':(.72,),'heel':(),'ball':(.64,),'toe':(.64,)}
 
 
+# The rig's hip-height envelope: every hip-height key lies strictly inside it.
+HIP_HEIGHT_ENVELOPE = (.83, 1.)
+
+
 class PoseSpace:
     def __init__(self):
         self.base=author()
@@ -73,7 +77,7 @@ class PoseSpace:
                 plant=x*scale
                 data['foot_x'][0]=plant;data['foot_x'][1]=plant
             else:data[name][i]=x*scale
-        if not .05<plant<.5 or not all(.83<z<1.0 for z in data['hip_z']):
+        if not .05<plant<.5 or not all(HIP_HEIGHT_ENVELOPE[0]<z<HIP_HEIGHT_ENVELOPE[1] for z in data['hip_z']):
             raise ValueError('Authoring search outside fixed rig envelope')
         if not all(0<x<self.stride/2 for x in data['hip_x'][1:]):raise ValueError('Forward hip phase order')
         if not all(0<z<.25 for z in data['foot_z'][2:]):raise ValueError('Swing source height bounds')
@@ -185,7 +189,7 @@ class PoseChart:
         push('plant',[fraction(d['foot_x'][0],.05,.5)])
         push('hip_x',ramp([*d['hip_x'],self.stride/2],progress(phases,'hip_forward')))
         z=d['hip_z'];lo,hi=z[0],z[2]
-        push('hip_z',[fraction(lo,.83,1.),fraction(hi,lo,1.),*ramp([lo,z[1],hi],progress(phases,'hip_rise')),
+        push('hip_z',[fraction(lo,*HIP_HEIGHT_ENVELOPE),fraction(hi,lo,HIP_HEIGHT_ENVELOPE[1]),*ramp([lo,z[1],hi],progress(phases,'hip_rise')),
                       *ramp([lo,z[5],z[4],z[3],hi],progress(phases,'hip_fall'))])
         push('foot_x',ramp([*d['foot_x'][1:],d['foot_x'][0]+self.stride],progress(phases,'foot_swing')))
         z=d['foot_z'];peak=z[4]
@@ -200,6 +204,8 @@ class PoseChart:
         z=d['toe'];peak=z[6]
         push('toe',[math.log(peak),*ramp([0,*z[2:7]],progress(phases,'toe_rise')),
                     *ramp([0,z[7],peak],progress(phases,'toe_fall'))])
+        if any(not math.isfinite(v) or abs(v)>POSE_COORDINATE_LIMIT for v in coordinates):
+            raise ValueError('Walk is not representable inside the pose domain')
         return parameters,coordinates
 
     def build(self,values,phases=None):
@@ -224,7 +230,7 @@ class PoseChart:
         d={name:list(vals) for name,vals in self.owner.fixed.items()}
         plant=fraction(next(it),.05,.5)
         d['hip_x']=[0.,*ramp(0,self.stride/2,take(5),progress(t,'hip_forward'))]
-        a,b,c,*rest=take(6);lo=fraction(a,.83,1.);hi=fraction(b,lo,1.)
+        a,b,c,*rest=take(6);lo=fraction(a,*HIP_HEIGHT_ENVELOPE);hi=fraction(b,lo,HIP_HEIGHT_ENVELOPE[1])
         z5,z4,z3=ramp(lo,hi,rest,progress(t,'hip_fall'))
         d['hip_z']=[lo,share(c,lo,hi,*progress(t,'hip_rise')),hi,z3,z4,z5]
         d['foot_x']=[plant,plant,*ramp(plant,plant+self.stride,take(10),progress(t,'foot_swing'))]
@@ -707,7 +713,8 @@ def carry_start(prior, space, objective):
     if r is not None:return x,0.
     # Search only drops that can be encoded: the lowest hip stays where its
     # envelope coordinate is one unit inside the pose domain.
-    lowest=min(keys['hip_z']);floor_height=.83+.17/(1+math.exp(POSE_COORDINATE_LIMIT-1))
+    lowest=min(keys['hip_z']);bottom,top=HIP_HEIGHT_ENVELOPE
+    floor_height=bottom+(top-bottom)/(1+math.exp(POSE_COORDINATE_LIMIT-1))
     bob=min(max(keys['hip_z'])-lowest,lowest-floor_height);low,high=0.,bob
     if bob<=0 or start(high)[1] is None:
         raise ValueError('No representable hip drop within one bob makes the carried start reachable')

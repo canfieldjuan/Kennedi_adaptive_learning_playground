@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch
 
 from storybook.animation.maya_walk import differential as dmath, fitting
 from storybook.animation.maya_walk.fitting import (
-    BRANCHES, PoseChart, progress, TimingChart, PHASES, CHANNEL, MOTION_FLOOR, POSE_COORDINATE_LIMIT,
+    BRANCHES, HIP_HEIGHT_ENVELOPE, PoseChart, progress, TimingChart, PHASES, CHANNEL, MOTION_FLOOR, POSE_COORDINATE_LIMIT,
     TIMING_COORDINATE_LIMIT, carry_start, source_signature, floor_zero_signature, time_anchors, fit)
 from storybook.animation.maya_walk.numerics import TRUST_LIMIT, BOUND_TOLERANCE, analytic_jacobian
 
@@ -196,6 +196,20 @@ class EncodingTests(unittest.TestCase):
                 with self.subTest(key=key, step=k):
                     self.assertTrue(all(abs(v) <= 30.+1e-9 for v in coordinates[index:index+3]))
         self.assertGreater(worst, 29.)  # the scan reached the clip
+
+    def test_encode_refuses_a_walk_outside_the_pose_domain(self):
+        # A peak encodes as log(peak): one below e^-35 lies outside the domain.
+        values = {n: list(v) for n, v in self.chart.owner.fixed.items()}
+        peak = values['ball'][8]
+        for scale in (math.exp(-36), math.exp(-34)):
+            values['ball'] = [v*scale/peak for v in values['ball']]
+            peak = values['ball'][8]
+            if scale < math.exp(-35):
+                with self.assertRaisesRegex(ValueError, 'not representable'):
+                    self.chart.encode(values, PHASES)
+            else:
+                self.chart.encode(values, PHASES)
+        self.assertLess(HIP_HEIGHT_ENVELOPE[0], HIP_HEIGHT_ENVELOPE[1])
 
     def test_floor_zero_encoding_is_the_original_log_gap_ratio(self):
         chart = PoseChart(floor=0.)
