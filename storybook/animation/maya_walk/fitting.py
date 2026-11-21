@@ -107,8 +107,8 @@ POSE_COORDINATE_LIMIT = 35.
 
 
 def in_pose_domain(v):
-    """The one rule for a pose value coordinate: finite and within the domain."""
-    return dmath.finite(v) and abs(v)<=POSE_COORDINATE_LIMIT
+    """The one rule for a pose value coordinate; NaN and infinities fail the comparison."""
+    return abs(v)<=POSE_COORDINATE_LIMIT
 # Every interior key of a moving branch sits at least this fraction of the way
 # a smooth ease between the branch's ends would put it: each segment moves at
 # least half as much as smooth motion over the same frames, so no key parks
@@ -144,9 +144,9 @@ BRANCHES = {
 def progress(phases, branch):
     """The ease at each of a branch's keys, at the given key times, in its measuring order.
 
-    Whether a key lies past the seam is read from its authored phase: timing keeps
-    every key between the same anchors, and a comparison on a timed phase would
-    be a branch in the derivative.
+    Whether a key lies past the seam is read from its authored phase. Timing keeps
+    every key between the same anchors, so the timed phase decides the same way;
+    the authored one makes the branch's shape fixed by construction.
     """
     name, start, end, ids = BRANCHES[branch]
     return [ease((phases[name][i]+(1 if end > 1 and PHASES[name][i] < start else 0)-start)/(end-start)) for i in ids]
