@@ -303,3 +303,119 @@ Tests touching these: `test_fitting_numerics.py`, `test_timing_domain.py`,
    - Evidence goes outside the worktree, with directories mode 700 and files
      mode 600, pinned by SHA256 in the PR.
    - No fit runs until Juan separately authorizes one.
+
+## Contract Amendments
+
+Juan accepted this contract on 2026-11-21 ("Accept the contract"). These three
+amendments came up during implementation. None changes the floor, the pose
+domain, a gait rule, an acceptance limit or the objective.
+
+Evidence alias `pose-domain-contract-20261121T175608Z`, hashes (SHA256):
+
+- `before/regression-fails.log` `923b697a00a3094195c45eae1d229404751ba9072b8bb63d9ae37f9a575b7633`
+- `parity/parity.py` `15ae3e90922c3dd28f61b7748b9462660c004d5297112fc75c361fea786f4e25`
+- `parity/base.json` = `parity/branch-floor0.json` `eef1013f02c4f955b0b6d68aa8c6b30af841fbc54d45593f4815b185bcbfb6d5`
+- `parity/branch-floor-half.json` `e8332892b60dadb1e6ef26d68e30faab49f22381dfd8493061c8f8646a6a5464`
+- `reach-probe.py` `f24d91108bd17b92edc35479c7e3469b4cfeeea4ae495933dd83b326b086a05c`
+- `reach-probe-flat-stop.json` `0fdaebd674a51984d4f01112e4867e6edd6c7617792d3cad14aed3c59aa7e23d`
+- `project-probe.py` `de5a69a9a756f43e0d8b305543b26d42becac5217265b41f5ae95db21ca5dfb3`
+- `project-probe-flat-stop.json` `a30aba563353f5cdebd48a34159fed9def6fb2e1f4fc28b18c96431d8a5ba1f4`
+- `crouch-probe-flat-stop.json` `b24d29d682c02aed8538068a407233a87a793d00b80d568266ae3108f312f882`
+
+### Amendment 1: starting points change only where they park
+
+**Finding.** The contract carried an old checkpoint's coordinates as they
+are, and kept today's encoding. Under the new decoding, that blends every
+branch halfway to smooth, including segments that already move well.
+
+At the fourth fit's stop, the blended walk breaks the reach guard
+(`Objective.residuals`, "Search proposals must remain strictly reachable").
+It cannot start a fit. `reach-probe-flat-stop.json` measures the worst leg
+over-reach:
+
+| Floor | Worst over-reach | Frame | Schedule frames over |
+|---|---|---|---|
+| 0.1 | 0.0024560198674570266 | 9.25 | 10 |
+| 0.5 | 0.0193708291078748 | 9.5 | 26 |
+
+The main cause is the hip's forward travel. It is nearly steady, and the
+blend reshapes it toward ease-in-out, which pushes the hip ahead of the
+planted foot in late stance.
+
+**Amended clause.** Decoding is unchanged:
+`MOTION_FLOOR*S(p) + (1-MOTION_FLOOR)*Q`, with any coordinates valid. Encoding
+key values into coordinates (`PoseChart.encode`, used by the constructor for
+the authored start and seeds, and by `--carry`) becomes the nearest
+representable walk:
+
+- A segment already at or above the floor keeps its shape.
+- A segment below the floor is raised to exactly the floor.
+- The above-floor segments of that branch give up their excess
+  proportionally.
+
+In coordinates:
+
+- Each gap's excess over the floor is `q_i = g_i - MOTION_FLOOR*f_i*span`.
+- Negative excess is set to `e^-30` × the branch's largest excess. This keeps
+  every coordinate well inside ±35.
+- Each coordinate is `log(q_i/q_last)`, today's formula on the excess.
+
+With the floor at 0, `q_i = g_i` exactly, so encoding is bit-identical to base.
+`--carry` decodes the old checkpoint with the floor-0 decoding it was made
+with, takes the key values at its timed key times, encodes them, and keeps the
+timing coordinates as they are.
+
+**Finding behind Amendment 2.** With only the parked segments raised
+(`project-probe-flat-stop.json`, floor 0.5, 13 segments raised), the leg
+still over-reaches by up to 0.001994397708082074, around heel strike (18
+schedule frames over, from frame 0 through 24).
+
+The fit had parked the hips at their lowest exactly as the front foot lands,
+because the leg needs the hips that low to reach the foot. Hips that keep
+moving are still just above their lowest point at that instant.
+
+### Amendment 2: a carried start drops the hips just enough to reach
+
+**Amended clause.** After encoding, `--carry` lowers the whole hip-height
+curve by the smallest drop for which the objective scores the start. That
+drop is found by bisection on `[0, bob height]`:
+
+- Lowering the hips only shortens the hip-to-foot distance, so feasibility is
+  monotone in the drop.
+- It refuses if even a whole-bob drop does not score.
+- It records the drop in the receipt.
+
+At the fourth fit's stop, the drop needed is 0.00213245783661149
+(`crouch-probe-flat-stop.json`). That is 7.4% of the bob and 0.23% of the
+hips' lowest height.
+
+This sets only the starting point. The hip envelope coordinates stay free, so
+the fit can raise the hips again wherever the leg allows.
+
+Restriction-need: it excludes nothing, and only a start that cannot be scored
+triggers it. **Kept.**
+
+### Amendment 3: the floor is a chart parameter, and historical fixtures keep their decoding
+
+`PoseChart(seed=None, floor=MOTION_FLOOR)` admits a float in `[0, 1)` and
+refuses anything else.
+
+`fit()` always uses `MOTION_FLOOR`, and the source signature pins it. The
+parameter exists so that a chart can reproduce a historical decoding. The
+parity check needs it, and so does every existing test that pins solver or
+derivative mechanics at a frozen point.
+
+Those points were recorded under floor 0. Under floor 0.5 all of them are out
+of the reach domain (`parity/branch-floor-half.json`: every score is `inf`).
+Those tests build `PoseChart(floor=0.)`, and no assertion changes. The cold
+audit lists each one.
+
+**Amended verification 3.** The parity check is `parity/base.json` =
+`parity/branch-floor0.json`, already shown above.
+
+**Amended verification 6.** Mutants are added for:
+
+- the encoding floor term;
+- the negative-excess clip;
+- the carry drop bisection on each side;
+- the drop refusal.
