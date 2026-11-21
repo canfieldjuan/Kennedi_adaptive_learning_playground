@@ -444,8 +444,10 @@ push.
   `build`. A module table, `BRANCHES`, and one function, `progress`, now own
   them, and both sides read them.
   - Whether a key lies past the seam is read from its authored phase. Timing
-    keeps every key between the same anchors, and comparing a timed phase
-    would be a branch in the forward-mode derivative.
+    keeps every key between the same anchors, so the timed phase would decide
+    the same way. (A first draft of this amendment said a timed comparison
+    would break the derivative. Mutation showed it does not; the failure seen
+    then was the reach-hinge tie below.)
   - A test checks that every branch end is a fixed anchor, that every key lies
     between its ends, and that the keys run in measuring order.
 - **The carried start steps off the reach hinge.**
@@ -498,144 +500,188 @@ Each clause gets a test on both sides and a mutant.
 
 ## Implementation summary
 
-Implemented to the contract as amended, in commits `c0da886` and `0554bad`.
+Implemented to the contract as amended (Amendments 1 to 6). The code commits
+are:
+
+- `c0da886`: the floor, encoding, domain and carry;
+- `0554bad`: carry only pre-floor checkpoints;
+- `8e1d296`: the branch table, the differentiable carry and the review fixes;
+- `67be16c`: one owner for the hip envelope, and encode checks its own domain;
+- `7d58251`: one domain predicate;
+- `b8ab87f`: a redundant check dropped and the seam note corrected.
+
+What changed:
 
 - **`PoseChart` decodes with a motion floor.** Each interior key of the 12
   moving branches sits at `MOTION_FLOOR*ease(u) + (1-MOTION_FLOOR)*Q`. The ease
   uses the key's timed phase, and `Q` is the old free share. A parked key
   cannot be represented.
-- **`PoseChart.encode` changes only segments below the floor.** The
-  constructor uses it, and so does `--carry`.
-- **The ±35 pose domain is named** (`POSE_COORDINATE_LIMIT`) and honored as
-  solver step bounds. `TimingChart` passes its layout to the value chart and
-  delegates the value part of `project`.
-- **`--carry` re-encodes a pre-floor checkpoint.** It lowers the hips by the
-  smallest drop that scores, refuses newer checkpoints, and records the drop
-  and the prior signature.
+- **One table, `BRANCHES`, owns each branch's ends, measuring direction and
+  key order.** `progress` reads it, and so do both `encode` and `build`.
+- **`PoseChart.encode` changes only segments below the floor.** It keeps every
+  share coordinate within ±30, and refuses any output outside the pose domain.
+- **One predicate, `in_pose_domain`, owns the ±35 domain.** `build`, `encode`
+  and `step_bounds` use it. The solver honors the domain as step bounds, and
+  `TimingChart` passes its layout and delegates the value part of `project`.
+- **`HIP_HEIGHT_ENVELOPE` owns the rig's hip-height envelope.**
+- **`--carry` re-encodes a pre-floor checkpoint.**
+  - It lowers the hips by the smallest drop that scores, searching only
+    representable drops.
+  - It steps off the reach hinge until the derivatives resolve.
+  - It refuses newer checkpoints.
+  - It records the drop and the prior signature.
+- **Value seeds must carry the current value-only signature.**
 - **No change** to the validator, the objective, gait limits, anchors,
   spacing, the solver, verdicts or damping.
 
 ## Cold Diff Audit
 
-Diff `origin/main` (`3802836`) `..0554bad`, read cold.
+Diff `origin/main` (`3802836`) `..b8ab87f`, read cold.
 
 ### Gaps
 
 - **No fit was run, and no passing walk is predicted.**
   - The fourth fit's stop now admits a step (the regression test).
-  - The walk it restarts from scores 34771.29126811241, against
-    1065.0984973977909 at the stop (`carried-start.json`). Holding every key
-    to the floor fights the other rules at first.
+  - The walk it restarts from scores 34771.291268078225, against
+    1065.0984973977909 at the stop (`carried-start-final.json`). Holding every
+    key to the floor fights the other rules at first.
   - Whether a fit recovers that, or reaches PASS, is unproven.
-- **The first attempt at the carried start is refused by the reach guard.**
-  The start sits on the reach edge by construction (the smallest drop), so a
-  long first step overreaches. Raised damping then admits a step. The
-  regression asserts admission and descent, not a clean first attempt.
+- **The first attempt at the carried start is refused by the reach guard.** The
+  start sits just off the reach edge (the smallest drop, plus the few ulps
+  needed to resolve the derivatives). Raised damping then admits a step.
 - **The carry bisection treats "scores" as "reaches".** At the fourth fit's
-  stop the only refusal is the reach guard (verified for attempt 1 and by the
-  probes). If another rule refused a carried start, the bisection would still
-  find a boundary, but not one that reach explains.
+  stop the only refusal is the reach guard. If another rule refused a carried
+  start, the search would find a boundary that reach does not explain.
 - **Envelope spans can still go flat.** Issue 183 records this. The property
-  test keeps envelope coordinates within ±8, because at ±35 a branch height
-  collapses to flat (205 of 300 random vectors refused, none with envelopes
-  within ±8).
-- **The authored start was already out of the reach domain on base**
+  test keeps envelope coordinates within ±8: at ±35 a branch height collapses
+  to flat (205 of 300 random vectors refused, none with envelopes within ±8).
+- **One equivalent mutant survives:** the seam decided from the timed phase.
+  Timing keeps every key between its anchors, so both choices decide the same
+  way.
+- **The authored start was already outside the reach domain on base**
   (`parity/base.json`: `initial` and `value-initial` score `inf`), and it still
-  is. Starting a fit from the authored walk was not possible before this change
-  either.
+  is.
 - **Fail-first evidence predates the carry path.** `before/regression-fails.log`
-  ran the first version of the regression on base `03725f3`, scoring the raw
-  coordinates. The committed regression calls `carry_start`, which base does
-  not have. The base behavior it guards, all 9 attempts refused
-  `out_of_domain`, is what that log shows.
-- **PR size.** Code and tests are 713 added lines. The contract and its
-  amendments make the PR larger than about 1,000 lines. The fixture is 105
-  lines.
+  ran the first version of the regression on base `03725f3`. The committed
+  regression calls `carry_start`, which base does not have.
+  - The base behavior it guards is all 9 attempts refused `out_of_domain`.
+  - The fail-first for each review finding was shown instead by a test that
+    fails on the old code: the float-step encoding scan, the
+    near-envelope carry and the value-seed signatures. The mutants
+    "encode clip only non-positive excess", "carry bracket whole bob" and
+    "value seed chart check" are all caught.
+- **Two problems the cold read and review caught after the first push.**
+  - The first push's carry depended on rounding luck to avoid the reach-hinge
+    tie.
+  - The first push restated the branch rules and the hip envelope in more than
+    one place.
+
+  Both are fixed (Amendments 5 and 6).
+- **PR size.** Code and tests are 860 added lines. The contract, with its six
+  amendments and this audit, takes the PR past about 1,000 lines. The fixture
+  is 105 lines.
 
 ### Change By Change Reconstruction
 
-- **`fitting.py:99-113`.** `POSE_COORDINATE_LIMIT = 35.` and
-  `MOTION_FLOOR = .5`, each with its reason, plus `ease(u)`, a cosine from 0
-  to 1.
-- **`fitting.py:125-133`.** The constructor admits `floor` (a float in
-  `[0, 1)`, refusing everything else) and encodes through `encode` at
-  `PHASES`.
-- **`fitting.py:135-173`.** `encode` computes, per branch:
+- **`fitting.py:50`.** `HIP_HEIGHT_ENVELOPE = (.83, 1.)`. `PoseSpace.build`,
+  `encode`, `build` and `carry_start` read it.
+- **`fitting.py:106-149`.** The constants and helpers:
+  - `POSE_COORDINATE_LIMIT = 35.` and `in_pose_domain(v)` (`abs(v)<=limit`;
+    NaN and infinities fail the comparison);
+  - `MOTION_FLOOR = .5` with its reason, and `ease(u)`;
+  - `BRANCHES`, the 12 branches;
+  - `progress`, which reads the seam crossing from the authored phase.
+- **`fitting.py:164-172`.** The constructor admits `floor` (a float in
+  `[0, 1)`) and encodes at `PHASES`.
+- **`fitting.py:174-214`.** `encode` computes, per branch:
   - each gap's excess over `floor*smooth*span`;
-  - a non-positive excess clipped to `e^-30` × the largest;
+  - every excess raised to at least `e^-30` × the largest;
   - log ratios to the last gap.
 
-  Branch ends and directions match `build`. Floor 0 gives the old formula
-  exactly.
-- **`fitting.py:175-219`.** `build(values, phases=None)` does the following:
-  - refuses past the named limit and refuses an incomplete phase profile;
-  - in `ramp` and `share`, blends `floor*u` with `(1-floor)` of the old share,
-    with one `progress` per output key (`zip(strict=True)`);
-  - uses these 12 branch ends: hip_x 0 to .5; hip_z rise .05 to .30; hip_z
-    fall .55 to .30; foot_x .6 to 1; foot_z lift .6 to .72; foot_z lower 1 to
-    .72; heel .94 to .8 and .94 to 1.08 (unwrapped); ball .35 to .64 and .88
-    to .64; toe .53 to .64 and .72 to .64.
-- **`fitting.py:221-233`.** `step_bounds` and `project` mirror
-  `TimingChart`, using the pose limit.
-- **`fitting.py:325`.** `TimingChart.build` passes its layout.
-- **`fitting.py:357`.** `TimingChart.project` delegates the value part.
-- **`fitting.py:631-646`.** `_signature`, `source_signature` (which adds the
+  It refuses any output outside the domain. Floor 0 gives the old formula.
+- **`fitting.py:216-259`.** `build(values, phases=None)` does the following:
+  - refuses inputs outside the domain and an incomplete phase profile;
+  - in `ramp` and `share`, blends `floor*u` with `(1-floor)` of the old share
+    (`zip(strict=True)`);
+  - takes each branch's progress from `progress`.
+- **`fitting.py:261-273`.** `step_bounds` and `project` mirror `TimingChart`,
+  using the pose domain.
+- **`fitting.py:365, 397`.** `TimingChart.build` passes its layout, and
+  `TimingChart.project` delegates the value part.
+- **`fitting.py:671-684`.** `_signature`, `source_signature` (which adds the
   floor and the limit) and `floor_zero_signature` (the base formula).
-- **`fitting.py:648-683`.** `carry_start`:
+- **`fitting.py:686-738`.** `carry_start`:
   - checks the inventory, the timing mode and the pre-floor signature;
-  - decodes with floor 0 at the old layout, then re-encodes at the timed
-    phases;
-  - bisects the hip drop on `[0, bob]` (`CARRY_BISECTIONS = 60`) and refuses
-    when a whole bob does not reach.
-- **`fitting.py:686-711`.** `fit(carry=...)` counts the carry as the one
-  starting source, pins its input hash, and records
-  `carried_from_signature` and `carry_hip_drop`. The CLI gains `--carry`.
+  - decodes with floor 0 at the old layout, then re-encodes;
+  - bounds the search by one bob and by the hip envelope one unit inside the
+    domain (`fitting.py:722`);
+  - bisects (`CARRY_BISECTIONS = 60`), then steps the drop up from the
+    boundary by doubling increments from one ulp until the derivatives
+    resolve;
+  - refuses when no representable drop works.
+- **`fitting.py:741-796`.** `fit`:
+  - counts the carry as the one starting source;
+  - requires the current value-only signature on a value seed
+    (`fitting.py:765`);
+  - records `carried_from_signature` and `carry_hip_drop` (`fitting.py:796`).
+
+  The CLI gains `--carry` (`fitting.py:833`).
 - **`README.md:202-212`.** States the floor, the pose domain and carry.
 - **Tests:**
-  - **`tests/test_motion_floor.py` (new).** Constants and admission; the
-    floor property; the wall case; encode round trip; projection; timed keys;
-    the pose domain; carry. Its `branches()` restates the 12 branches
-    independently of the code.
+  - **`tests/test_motion_floor.py` (new):**
+    - `FloorConstantTests`: the constants, admission, and the branch-table
+      anchors and order.
+    - `FloorPropertyTests`: 300 random vectors, the wall case, and floor 0
+      parking.
+    - `EncodingTests`: the round trip, projection, the float-step domain scan,
+      encode's domain refusal, and the floor-0 formula.
+    - `TimedKeysTests`, `PoseDomainTests` and `CarryTests` (the refusals, both
+      bisection sides, the hinge step-off, the near-envelope carry, value-seed
+      signatures and the receipts).
+
+    Its `branches()` restates the branches independently of the code.
   - **`tests/test_motion_floor_regression.py` (new).** The fourth fit's stop
     admits a step after carry.
-  - **`tests/frozen-flat-stop.json` (new).** The fourth fit's final
-    coordinates, parameters, signature and timing mode.
+  - **`tests/frozen-flat-stop.json` (new).**
 - **Historical tests pinned to `PoseChart(floor=0.)`, with no assertion
-  changed:**
-  - `test_differential.FrozenTests` (2 lines);
+  changed (Amendments 3 and 4):**
+  - `test_differential.FrozenTests`;
   - `test_fitting_numerics` derivative stop, outer step and saturated
     coordinate;
   - `test_interval_motion.FrozenFitTests`;
   - `test_timing_domain.FrozenTimingWallTests`;
-  - `test_geometry` timing-only check (Amendments 3 and 4).
+  - the `test_geometry` timing-only check.
 
 ### Contract Traceability
 
-- **Motion floor by construction:** `fitting.py:99-113, 175-219`.
-  - Tests: `FloorPropertyTests` (300 random vectors) and
-    `test_floor_zero_can_park_and_the_floor_cannot`.
+- **Motion floor by construction:** `fitting.py:117-149, 216-259`.
+  - Tests: `FloorPropertyTests`.
   - Mutants: floor constant, linear ease, both blend terms, each of the 12
-    branches, wrong end.
-- **Real key times:** `fitting.py:325`.
+    branches, the table's wrong end, wrong key order and wrong end phase,
+    seam unwrap removed.
+- **Real key times:** `fitting.py:365`.
   - Test: `TimedKeysTests`.
   - Mutants: untimed phases, phase admission.
-- **Pose domain honored:** `fitting.py:177, 221-233, 357`.
+- **Pose domain:** `fitting.py:106-111, 261-273, 397`.
   - Test: `PoseDomainTests`.
-  - Mutants: cap constant, each bound side, domain refusal, each project
-    tolerance, delegation.
-- **Encoding changes only parked segments (Amendment 1):**
-  `fitting.py:135-173`.
+  - Mutants: predicate limit, predicate admits NaN, each domain check removed,
+    each bound side, each project tolerance, delegation.
+- **Encoding (Amendments 1 and 6):** `fitting.py:174-214`.
   - Tests: `EncodingTests`.
-  - Mutants: encode floor term, negative clip, wrong end.
-- **Carry and its drop (Amendment 2):** `fitting.py:648-683`.
+  - Mutants: floor term, clip removed, clip only on non-positive excess,
+    domain check removed.
+- **Carry (Amendments 2, 5 and 6):** `fitting.py:686-738`.
   - Tests: `CarryTests` and the regression.
-  - Mutants: inventory, timing, pre-floor signature check (and its formula),
-    feasible start lowered, drop refusal, each bisection side, infeasible end
-    returned.
-- **Receipts:** `fitting.py:631-646, 700-711, 739`.
+  - Mutants: inventory, timing, pre-floor signature and its formula; feasible
+    start lowered; drop refusal; whole-bob bracket; each bisection side; the
+    step-off skipped or started above the boundary.
+- **Value seeds (Amendment 6):** `fitting.py:765`.
+  - Mutants: check removed, checked against the timed chart.
+- **Hip envelope owner:** `fitting.py:50`.
+  - Mutant: envelope bottom moved.
+- **Receipts:** `fitting.py:671-684, 796`.
   - Mutants: each signature field, carried signature, drop recorded.
-- **Floor parameter and historical decoding (Amendments 3 and 4):**
-  `fitting.py:125-128`.
+- **Floor parameter:** `fitting.py:164-167`.
   - Mutants: admission type and range.
 - **README:** `README.md:202-212`.
 
@@ -647,49 +693,57 @@ Run from the worktree with stdlib Python. Evidence alias
 - **Fail first, on base `03725f3`.** `before/regression-fails.log`
   (`923b697a00a3094195c45eae1d229404751ba9072b8bb63d9ae37f9a575b7633`): all 9
   attempts `out_of_domain`.
-- **Parity.** `parity/parity.py` at floor 0 gives the same file as base:
-  `parity/base.json` = `parity/branch-floor0.json` =
+- **Parity.** At floor 0 the output equals base: `parity/base.json` =
   `parity/branch-floor0-final.json`
   (`eef1013f02c4f955b0b6d68aa8c6b30af841fbc54d45593f4815b185bcbfb6d5`). It
-  covers the motion, score and residual hashes at all four frozen points and
-  both starts.
-- **Full suite at `0554bad`.**
+  covers all four frozen points and both starts, rechecked after every code
+  commit.
+- **Full suite at `b8ab87f`.**
   `python3 -B -m unittest discover -s storybook/animation/maya_walk/tests -p 'test_*.py'`
-  ran 180 tests, OK: `after/suite-final.log`
-  (`073213639bf6bdcf5bc3bb7ea00b926c9bc56ff4ed70c2b7fba8cdab932928ec`).
-- **Mutation.** `mutation/mutate.py` copies `storybook/` per mutant and runs
-  the full suite, with a timeout of ten times the control time, at least
-  120 s.
-  - **Run 1**, harness `d8c907b2cc861cd742660ef74c039c30115433de935c1178c8ec7c6b12dc6d2b`:
-    42 mutants, 41 caught, 0 by timeout. The survivor was "carry drop not
-    recorded": the mocked carry needed no drop. A test now records a nonzero
-    drop. Files: `mutation/mutation-report.json`
-    (`cc615843c59b040324e2fc97045de953147a9408cb8c80db840efaf2464d8d45`) and
-    `mutation/run-1.log`
-    (`be24c4de71e7db7f9c856e172787bd5a6126fe6a83e1d0f3c70fed3dc7affc15`).
-  - **Run 2:** the survivor and two controls, all caught.
-    `mutation/mutation-report-2.json`
-    (`927315953de6f52c3362ec9f79fbe1d7220185674287af8b7ead759a07cf3124`).
-  - **Run 3**, final harness `18b686440033f433a7a727f076b2775878bcfa9caaec90a3eba63268a34e59b5`
-    with the pre-floor signature check: 4 carry mutants, all caught.
-    `mutation/mutation-report-3.json`
-    (`133ce538e68fdf10210aa18206824bfd2c3f292fb4876c7c5bd0382ca6111998`).
-  - No survivors remain.
-- **Picture of the real carried start.** `carried-picture.py` drew
-  `carried-start.html`
+  ran 184 tests, OK: `after/suite-final.log`
+  (`bcb7377d2c65a84cef62ec8f19250a8ece71d4dc75b7d85216a5184b354feb79`).
+- **Mutation.** Each harness copies `storybook/` per mutant and runs the full
+  suite, with a timeout of ten times the control time, at least 120 s.
+  - **Runs 1 to 3**, on `c0da886` and `0554bad`, are kept with their hashes
+    in the history above: 42 mutants, 41 caught, then the survivor closed by a
+    test.
+  - **Run v2** was stopped when the review fixes changed the code. Its
+    partial log is kept: `mutation/run-v2.log`
+    (`ff40928bcac8ac02172c4f33ea9f970672ad05a994fc5cbc9bd3b0970c2efd58`).
+  - **Run v4 on `7d58251`**, harness `mutation/mutate-v4.py`
+    (`c0adcf1544c09635b4b2b4b64c2fdf40d72cb3b2bc26147a040d838e01dacdaa`): 56
+    mutants, 54 caught, 0 by timeout. Files: `mutation/mutation-report-v4.json`
+    (`a9f8993d4375f3a5c7d08f519a33789b7695e6dfaceff066dd8441043f282d2b`) and
+    `mutation/run-v4.log`
+    (`62cbe5bc201851621ce43929950cafd849f5710bf6b900622ed3eea1edb0b1ab`).
+  - **The two v4 survivors:**
+    - The redundant finiteness check was removed in `b8ab87f`.
+    - The seam choice is equivalent and stays, explained.
+  - **Run v5 on the final tree**, harness `mutation/mutate-v5.py`
+    (`fda1cb021e6b7de953e63c98f5338c02e879d08f8722e677917ee402f8ad0df2`):
+    every domain mutant, plus the seam one. Domain mutants: predicate limit,
+    predicate admits NaN, and the build, encode and bound checks each removed.
+    All caught; the seam mutant survives, as explained. Files:
+    `mutation/mutation-report-v5.json`
+    (`034f4b7c3abcb151934e4e766055c00b8a1328e6c18c138ffe541a7dc9657816`) and
+    `mutation/run-v5.log`
+    (`2e468864121dc31a1c69d56753cc7ed318db7eb8d25fb85c54970a0440818278`).
+- **Picture of the real carried start, from the final code.**
+  `carried-picture.py` drew `carried-start-final.html`
   (`f90fc9aef64d00a3783cfdcb113fb10cc3c2610bd76a8a4a677266b9ccb737e7`), with
-  data in `carried-start.json`
-  (`686b200ad0721d793a63b60f90e918dc77f1c755c795f260c3ccd8c1fade8f3f`). The
-  hip drop is 0.0021324578366133666.
+  data in `carried-start-final.json`
+  (`433be02174bc9e2eac3af6a06ae72765f97e71bc235133976e6d4c544c0e322a`). The
+  hip drop is 0.0021324578366134776.
 - **Fixture.** `frozen-flat-stop.json`
   (`85864d17d2173a5d7a108e79c029c652f772f0e8c84ecf5655d477d8e802865d`).
 
 ### Gap audit
 
-- DONE: motion floor, timed keys, pose domain, encoding, carry, receipts,
-  README.
-- DONE: fail-first, parity, boundary probes on both sides, mutation (no
-  survivors), the full suite, the picture.
+- DONE: motion floor, branch table, timed keys, pose domain, encoding, carry,
+  value seeds, receipts, README.
+- DONE: fail-first, parity, boundary probes on both sides, mutation (one
+  equivalent survivor, explained), the full suite, the picture, the three
+  review findings.
 - NOT DONE, out of scope:
   - a fit run;
   - the envelope-span floor (issue 183);
@@ -697,17 +751,22 @@ Run from the worktree with stdlib Python. Evidence alias
 
   Each needs Juan's separate decision.
 
-`mechanism:` parked keys unrepresentable by the chart's decoding; the pose
-domain is active-set bounds in the existing solver; carry admission uses one
-named signature function | strongest tier this owner supports | justified.
+`mechanism:` parked keys unrepresentable by the chart's decoding; one table
+owns the branches, one predicate the domain, one constant the hip envelope;
+the pose domain is active-set bounds in the existing solver; carry and value
+seeds are admitted by named signature functions | strongest tier this owner
+supports | justified.
 
 `restriction:`
 - Motion floor 0.5 | Juan's direction and the flat wall | kept (accepted
   2026-11-21).
-- ±35 pose domain | overflow and conditioning | kept, as a solver bound.
+- ±35 pose domain | overflow and conditioning | kept, as a solver bound and in
+  encode.
 - Whole-step refusal | no need | corrected.
 - Carry requires the inventory, timing mode and pre-floor signature | values
   are read by position, and are decoded with floor 0 | kept.
+- Value seed requires the current value-only signature | a pre-floor seed
+  draws a different walk; the error names the migration path | kept.
 - Floor admission `[0, 1)` | floor 1 zeroes every share column, and a
   negative floor breaks the guarantee | kept.
 - Envelope-span floor | needs Juan's gait number | deferred (issue 183).
