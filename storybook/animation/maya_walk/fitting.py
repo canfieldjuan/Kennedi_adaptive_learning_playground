@@ -96,76 +96,141 @@ class PoseSpace:
         return Motion(TARGET,tuple(result[k] for k in sorted(result)))
 
 
+# Pose value coordinates are refused past this magnitude (exp() raises past
+# about 709.78, and a logistic share is within 1e-15 of its end); the step
+# solver receives it as a bound, as it does the timing domain.
+POSE_COORDINATE_LIMIT = 35.
+# Every interior key of a moving branch sits at least this fraction of the way
+# a smooth ease between the branch's ends would put it: each segment moves at
+# least half as much as smooth motion over the same frames, so no key parks
+# (Juan: "move like a child"; contract maya-walk-motion-floor). Kept below 2/pi
+# so steady travel, which moves at 2/pi of the ease's peak speed, stays possible.
+MOTION_FLOOR = .5
+
+
+def ease(u):
+    """Smooth (cosine) progress along a branch: 0 at its start, 1 at its end."""
+    return (1-dmath.cos(math.pi*u))/2
+
+
 class PoseChart:
     """Smooth interior coordinates of the same finite sparse key values.
 
     Positive interval fractions encode the fixed monotone branches. This avoids
     a singular active-set system when several neighboring values coincide.
+    Decoding blends each interior share with a smooth ease between the branch's
+    fixed ends (MOTION_FLOOR), so a parked key is unrepresentable.
     No phase, derivative, handle or polynomial coefficient is a fit variable.
     """
-    def __init__(self, seed=None):
+    def __init__(self, seed=None, floor=MOTION_FLOOR):
+        if type(floor) is not float or not 0<=floor<1:
+            raise ValueError('Motion floor must be a float in [0, 1)')
+        self.floor=floor
         self.owner=PoseSpace();d=self.owner.fixed;self.stride=self.owner.stride
         if seed is not None:
             curves={c.rule.channel:c for c in seed.curves}
             d={name:[curves[CHANNEL[name]].at(p) for p in phases] for name,phases in PHASES.items()}
-        self.parameters=[];self.initial=[]
-        def push(name, values):
-            self.parameters.extend((name,i) for i in range(len(values)))
-            self.initial.extend(values)
-        def fraction(v,lo,hi):return math.log((v-lo)/(hi-v))
-        def ramp(values):
-            gaps=[b-a for a,b in zip(values,values[1:])]
-            return [math.log(g/gaps[-1]) for g in gaps[:-1]]
-        push('plant',[fraction(d['foot_x'][0],.05,.5)])
-        push('hip_x',ramp([*d['hip_x'],self.stride/2]))
-        z=d['hip_z'];lo,hi=z[0],z[2]
-        push('hip_z',[fraction(lo,.83,1.),fraction(hi,lo,1.),fraction(z[1],lo,hi),*ramp([lo,z[5],z[4],z[3],hi])])
-        push('foot_x',ramp([*d['foot_x'][1:],d['foot_x'][0]+self.stride]))
-        z=d['foot_z'];peak=z[4]
-        push('foot_z',[fraction(peak,0,.25),*ramp([0,z[2],z[3],peak]),
-                       *ramp([0,*reversed(z[5:]),peak])])
-        z=d['heel'];lo=z[8]
-        push('heel',[math.log(-lo),*ramp([lo,z[7],z[6],0]),*ramp([lo,z[9],z[0],z[1],z[2],z[3],0])])
-        z=d['ball'];peak=z[8]
-        push('ball',[math.log(peak),*ramp([0,*z[2:9]]),*ramp([0,z[10],z[9],peak])])
-        z=d['toe'];peak=z[6]
-        push('toe',[math.log(peak),*ramp([0,*z[2:7]]),fraction(z[7],0,peak)])
+        self.parameters,self.initial=self.encode(d,PHASES)
 
-    def build(self,values):
-        if len(values)!=len(self.initial) or any(not dmath.finite(x) or abs(x)>35 for x in values):
+    def encode(self,d,phases):
+        """Coordinates for key values d at key times phases, changing only parked segments.
+
+        A segment at or above the floor keeps its shape; one below it is raised
+        to the floor and its branch's other segments give up their excess
+        proportionally. With floor 0 this is the original encoding, bit for bit.
+        Returns (parameters, coordinates).
+        """
+        floor=self.floor;parameters=[];coordinates=[]
+        def push(name, values):
+            parameters.extend((name,i) for i in range(len(values)))
+            coordinates.extend(values)
+        def fraction(v,lo,hi):return math.log((v-lo)/(hi-v))
+        def along(p,start,end):return (1-math.cos(math.pi*(p-start)/(end-start)))/2
+        def ramp(values,progress):
+            gaps=[b-a for a,b in zip(values,values[1:])];span=values[-1]-values[0]
+            smooth=[b-a for a,b in zip([0.,*progress],[*progress,1.])]
+            excess=[g-floor*f*span for g,f in zip(gaps,smooth,strict=True)]
+            top=max(excess);excess=[v if v>0 else math.exp(-30)*top for v in excess]
+            return [math.log(v/excess[-1]) for v in excess[:-1]]
+        push('plant',[fraction(d['foot_x'][0],.05,.5)])
+        p=phases['hip_x'];push('hip_x',ramp([*d['hip_x'],self.stride/2],[along(p[i],0.,.5) for i in range(1,6)]))
+        z=d['hip_z'];lo,hi=z[0],z[2];p=phases['hip_z']
+        push('hip_z',[fraction(lo,.83,1.),fraction(hi,lo,1.),*ramp([lo,z[1],hi],[along(p[1],.05,.30)]),
+                      *ramp([lo,z[5],z[4],z[3],hi],[along(p[i],.55,.30) for i in (5,4,3)])])
+        p=phases['foot_x'];push('foot_x',ramp([*d['foot_x'][1:],d['foot_x'][0]+self.stride],[along(p[i],.6,1.) for i in range(2,12)]))
+        z=d['foot_z'];peak=z[4];p=phases['foot_z']
+        push('foot_z',[fraction(peak,0,.25),*ramp([0,z[2],z[3],peak],[along(p[i],.6,.72) for i in (2,3)]),
+                       *ramp([0,*reversed(z[5:]),peak],[along(p[i],1.,.72) for i in range(11,4,-1)])])
+        z=d['heel'];lo=z[8];p=phases['heel']
+        push('heel',[math.log(-lo),*ramp([lo,z[7],z[6],0],[along(p[i],.94,.8) for i in (7,6)]),
+                     *ramp([lo,z[9],z[0],z[1],z[2],z[3],0],[along(q,.94,1.08) for q in (p[9],1+p[0],1+p[1],1+p[2],1+p[3])])])
+        z=d['ball'];peak=z[8];p=phases['ball']
+        push('ball',[math.log(peak),*ramp([0,*z[2:9]],[along(p[i],.35,.64) for i in range(2,8)]),
+                     *ramp([0,z[10],z[9],peak],[along(p[i],.88,.64) for i in (10,9)])])
+        z=d['toe'];peak=z[6];p=phases['toe']
+        push('toe',[math.log(peak),*ramp([0,*z[2:7]],[along(p[i],.53,.64) for i in range(2,6)]),
+                    *ramp([0,z[7],peak],[along(p[7],.72,.64)])])
+        return parameters,coordinates
+
+    def build(self,values,phases=None):
+        """Key values for the coordinates; phases are the timed key times, else PHASES."""
+        if len(values)!=len(self.initial) or any(not dmath.finite(x) or abs(x)>POSE_COORDINATE_LIMIT for x in values):
             raise ValueError('Complete finite bounded pose-value chart required')
-        it=iter(values)
+        t=PHASES if phases is None else phases
+        if set(t)!=set(PHASES) or any(len(t[n])!=len(PHASES[n]) for n in PHASES):
+            raise ValueError('Complete phase profile per owned control required')
+        it=iter(values);floor=self.floor
         def take(n):return [next(it) for _ in range(n)]
         def fraction(v,lo,hi):return lo+(hi-lo)/(1+dmath.exp(-v))
-        def ramp(lo,hi,params):
+        def along(p,start,end):return ease((p-start)/(end-start))
+        def share(v,lo,hi,u):
+            """Two-segment branch key: one free logistic share blended with the ease."""
+            return lo+((hi-lo)*floor*u+(1-floor)*((hi-lo)/(1+dmath.exp(-v))))
+        def ramp(lo,hi,params,progress):
+            """progress[j]: the ease at output key j, measured from lo's end of the branch."""
             weights=[dmath.exp(v) for v in params]+[1.];total=dmath.total(weights);out=[];c=0.
-            for w in weights[:-1]:c+=w;out.append(lo+(hi-lo)*c/total)
+            for w,u in zip(weights[:-1],progress,strict=True):
+                c+=w;out.append(lo+((hi-lo)*floor*u+(1-floor)*((hi-lo)*c/total)))
             return out
         d={name:list(vals) for name,vals in self.owner.fixed.items()}
         plant=fraction(next(it),.05,.5)
-        d['hip_x']=[0.,*ramp(0,self.stride/2,take(5))]
+        p=t['hip_x'];d['hip_x']=[0.,*ramp(0,self.stride/2,take(5),[along(p[i],0.,.5) for i in range(1,6)])]
         a,b,c,*rest=take(6);lo=fraction(a,.83,1.);hi=fraction(b,lo,1.)
-        z5,z4,z3=ramp(lo,hi,rest)
-        d['hip_z']=[lo,fraction(c,lo,hi),hi,z3,z4,z5]
-        d['foot_x']=[plant,plant,*ramp(plant,plant+self.stride,take(10))]
-        a,*rest=take(10);peak=fraction(a,0,.25)
-        z2,z3=ramp(0,peak,rest[:2]);tail=ramp(0,peak,rest[2:])
+        p=t['hip_z'];z5,z4,z3=ramp(lo,hi,rest,[along(p[i],.55,.30) for i in (5,4,3)])
+        d['hip_z']=[lo,share(c,lo,hi,along(p[1],.05,.30)),hi,z3,z4,z5]
+        p=t['foot_x'];d['foot_x']=[plant,plant,*ramp(plant,plant+self.stride,take(10),[along(p[i],.6,1.) for i in range(2,12)])]
+        a,*rest=take(10);peak=fraction(a,0,.25);p=t['foot_z']
+        z2,z3=ramp(0,peak,rest[:2],[along(p[i],.6,.72) for i in (2,3)])
+        tail=ramp(0,peak,rest[2:],[along(p[i],1.,.72) for i in range(11,4,-1)])
         d['foot_z']=[0.,0.,z2,z3,peak,*reversed(tail)]
-        a,*rest=take(8);lo=-dmath.exp(a);z7,z6=ramp(lo,0,rest[:2]);z9,z0,z1,z2,z3=ramp(lo,0,rest[2:])
+        a,*rest=take(8);lo=-dmath.exp(a);p=t['heel']
+        z7,z6=ramp(lo,0,rest[:2],[along(p[i],.94,.8) for i in (7,6)])
+        z9,z0,z1,z2,z3=ramp(lo,0,rest[2:],[along(q,.94,1.08) for q in (p[9],1+p[0],1+p[1],1+p[2],1+p[3])])
         d['heel']=[z0,z1,z2,z3,0.,0.,z6,z7,lo,z9]
-        a,*rest=take(9);peak=dmath.exp(a);rise=ramp(0,peak,rest[:6]);z10,z9=ramp(0,peak,rest[6:])
+        a,*rest=take(9);peak=dmath.exp(a);p=t['ball']
+        rise=ramp(0,peak,rest[:6],[along(p[i],.35,.64) for i in range(2,8)])
+        z10,z9=ramp(0,peak,rest[6:],[along(p[i],.88,.64) for i in (10,9)])
         d['ball']=[0.,0.,*rise,peak,z9,z10,0.]
-        a,*rest=take(6);peak=dmath.exp(a);rise=ramp(0,peak,rest[:4]);z7=fraction(rest[4],0,peak)
+        a,*rest=take(6);peak=dmath.exp(a);p=t['toe']
+        rise=ramp(0,peak,rest[:4],[along(p[i],.53,.64) for i in range(2,6)])
+        z7=share(rest[4],0,peak,along(p[7],.72,.64))
         d['toe']=[0.,0.,*rise,peak,z7,0.]
         raw=[plant]+[d[name][i] for name,ids in ACTIVE.items() for i in ids]
         return self.owner.build([v/s for v,s in zip(raw,self.owner.scales)])
 
     def step_bounds(self,values):
-        """Value coordinates are open-interval charts: only the trust box bounds a step."""
+        """Trust box clipped to the pose domain, exactly as TimingChart.step_bounds."""
         if len(values)!=len(self.initial):raise ValueError('Complete pose vector required')
-        return [-TRUST_LIMIT]*len(values),[TRUST_LIMIT]*len(values)
+        limit=POSE_COORDINATE_LIMIT;lower,upper=[],[]
+        for v in values:
+            if not dmath.finite(v) or abs(v)>limit:raise ValueError('Pose coordinate outside its domain')
+            lower.append(max(-TRUST_LIMIT,-limit-v));upper.append(min(TRUST_LIMIT,limit-v))
+        return lower,upper
 
-    def project(self,values):return values
+    def project(self,values):
+        """Return the solver's rounding-level excess to the wall; larger excess stays refused."""
+        limit=POSE_COORDINATE_LIMIT;edge=limit+BOUND_TOLERANCE*TRUST_LIMIT
+        return [math.copysign(limit,v) if limit<abs(v)<=edge else v for v in values]
 
 
 def time_anchors(name):
@@ -257,7 +322,7 @@ class TimingChart:
 
     def build(self, values):
         phases=dict(self.layout(values).profiles)
-        motion=self.value_chart.build(values[:self.value_count])
+        motion=self.value_chart.build(values[:self.value_count],phases)
         result={c.rule.channel:c for c in motion.curves}
         for name,profile in phases.items():
             keys=[CHANNEL[name]]
@@ -289,7 +354,7 @@ class TimingChart:
     def project(self,values):
         """Return the solver's rounding-level excess to the wall; larger excess stays refused."""
         limit=TIMING_COORDINATE_LIMIT;edge=limit+BOUND_TOLERANCE*TRUST_LIMIT
-        return [*values[:self.value_count],
+        return [*self.value_chart.project(values[:self.value_count]),
                 *(math.copysign(limit,v) if limit<abs(v)<=edge else v for v in values[self.value_count:])]
 
 
@@ -563,18 +628,62 @@ def admit_step(objective, space, x, score, residuals, columns, damping):
     return None, damping, receipts, solves
 
 
-def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timing=False, value_seed=None, guide_weight=1.):
+def source_signature(timing):
+    """Pins every input that decides which walk a coordinate vector draws."""
+    return hashlib.sha256(json.dumps({'phases':PHASES,'holds':HOLDS,'minima':MINIMA,'maxima':MAXIMA,
+        'anchors':{n:time_anchors(n) for n in PHASES},'spacing':.25,'timing':timing,
+        'motion_floor':MOTION_FLOOR,'pose_limit':POSE_COORDINATE_LIMIT},sort_keys=True).encode()).hexdigest()
+
+
+CARRY_BISECTIONS = 60
+
+
+def carry_start(prior, space, objective):
+    """Start a fit from a checkpoint made under the floor-0 decoding.
+
+    The checkpoint's walk is decoded the way it was made, re-encoded under this
+    chart (only parked segments change), and, when that start cannot be scored,
+    the whole hip-height curve is lowered by the smallest drop that scores. The
+    drop is found by bisection on [0, bob height]; lowering the hips only shortens
+    each leg's reach. Returns (coordinates, hip drop).
+    """
+    if prior.get('parameters')!=[list(p) for p in space.parameters] or len(prior.get('values',()))!=len(space.initial):
+        raise ValueError('Carried checkpoint parameter inventory differs')
+    timed=isinstance(space,TimingChart)
+    if prior.get('timing') is not timed:raise ValueError('Carried checkpoint timing mode differs')
+    values=list(prior['values'])
+    if timed:
+        old=TimingChart(PoseChart(floor=0.));phases=dict(old.layout(values).profiles)
+        chart=space.value_chart;tail=values[space.value_count:]
+    else:old=PoseChart(floor=0.);phases=PHASES;chart=space;tail=[]
+    curves={c.rule.channel:c for c in old.build(values).curves}
+    keys={name:[k.value for k in curves[CHANNEL[name]].keys[:len(PHASES[name])]] for name in PHASES}
+    def start(drop):
+        d={name:[v-drop for v in vals] if name=='hip_z' else vals for name,vals in keys.items()}
+        x=[*chart.encode(d,phases)[1],*tail]
+        return x,objective.score(x)[1] is not None
+    x,ok=start(0.)
+    if ok:return x,0.
+    low,high=0.,max(keys['hip_z'])-min(keys['hip_z'])
+    if not start(high)[1]:raise ValueError('No hip drop within one bob makes the carried start reachable')
+    for _ in range(CARRY_BISECTIONS):
+        middle=(low+high)/2
+        if start(middle)[1]:high=middle
+        else:low=middle
+    return start(high)[0],high
+
+
+def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timing=False, value_seed=None, guide_weight=1., carry=None):
     if type(iterations) is not int or not 1<=iterations<=1000:
         raise ValueError('Fitting requires an explicit bounded iteration count')
     if not finite(velocity_weight) or not .01<=velocity_weight<=1.:
         raise ValueError('Positive bounded objective weight required; acceptance is always unchanged')
     if not finite(guide_weight) or not 0<=guide_weight<=1.:
         raise ValueError('Bounded shaping preference required; acceptance is always unchanged')
-    if sum(p is not None for p in (resume,seed,value_seed))>1:raise ValueError('One explicit starting source required')
+    if sum(p is not None for p in (resume,seed,value_seed,carry))>1:raise ValueError('One explicit starting source required')
     if type(timing) is not bool or (value_seed and not timing):raise ValueError('Value-to-timing transition requires timing mode')
-    signature=hashlib.sha256(json.dumps({'phases':PHASES,'holds':HOLDS,'minima':MINIMA,'maxima':MAXIMA,
-        'anchors':{n:time_anchors(n) for n in PHASES},'spacing':.25,'timing':timing},sort_keys=True).encode()).hexdigest()
-    starting_path=next((p for p in (resume,seed,value_seed) if p is not None),None)
+    signature=source_signature(timing)
+    starting_path=next((p for p in (resume,seed,value_seed,carry) if p is not None),None)
     input_pin=hashlib.sha256(Path(starting_path).read_bytes()).hexdigest() if starting_path else None
     seed=PoseSpace().build(json.loads(Path(seed).read_text())['values']) if seed else None
     value_chart=PoseChart(seed)
@@ -588,6 +697,11 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
         prior=json.loads(Path(value_seed).read_text())
         if prior.get('parameters')!=[list(p) for p in value_chart.parameters]:raise ValueError('Value-seed parameter inventory differs')
         x[:space.value_count]=prior['values']
+    carried_from=None;hip_drop=None
+    if carry:
+        # A floor-0 checkpoint re-encoded under this chart: an explicit start, never a silent resume.
+        prior=json.loads(Path(carry).read_text())
+        x,hip_drop=carry_start(prior,space,objective);carried_from=prior.get('source_signature')
     score,r=objective.score(x)
     if r is None:raise ValueError('Initial pose outside closed curve constraints')
     damping=DAMPING_START;start=time.monotonic();stuck=0
@@ -612,7 +726,7 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
         if iteration==iterations-1 and termination is FitTermination.RUNNING:
             termination=FitTermination.ITERATION_LIMIT
         record={'iteration':iteration,'score':score,'values':x,'parameters':space.parameters,'velocity_weight':velocity_weight,'guide_weight':guide_weight,
-                'source_signature':signature,'input_sha256':input_pin,'timing':timing,
+                'source_signature':signature,'input_sha256':input_pin,'carried_from_signature':carried_from,'carry_hip_drop':hip_drop,'timing':timing,
                 'calls':objective.calls,'seconds':time.monotonic()-start,'damping':damping,
                 'numerics':{'method':'scaled-qr-active-set-v1','jacobian':'forward-mode-v1','solves':solves,'attempts':attempts,
                             'differences':[asdict(d) for d in derivative.differences]},
@@ -649,4 +763,5 @@ if __name__=='__main__':
     parser.add_argument('--velocity-weight',type=float,default=1.)
     parser.add_argument('--guide-weight',type=float,default=1.)
     parser.add_argument('--timing',action='store_true');parser.add_argument('--value-seed',type=Path)
-    args=parser.parse_args();fit(args.output,args.iterations,args.resume,args.seed,args.velocity_weight,args.timing,args.value_seed,args.guide_weight)
+    parser.add_argument('--carry',type=Path)
+    args=parser.parse_args();fit(args.output,args.iterations,args.resume,args.seed,args.velocity_weight,args.timing,args.value_seed,args.guide_weight,args.carry)

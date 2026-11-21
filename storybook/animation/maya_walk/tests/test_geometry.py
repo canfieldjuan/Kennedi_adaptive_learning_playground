@@ -95,7 +95,7 @@ class FittingTests(unittest.TestCase):
     def test_timing_chart_preserves_anchors_spacing_and_curve_contract(self):
         from storybook.animation.maya_walk.fitting import PoseChart,TimingChart,PHASES,time_anchors
         from storybook.animation.maya_walk.spec import TARGET
-        chart=TimingChart(PoseChart());base=chart.value_chart.build(chart.value_chart.initial)
+        chart=TimingChart(PoseChart(floor=0.));base=chart.value_chart.build(chart.value_chart.initial)
         original={c.rule.channel:c for c in base.curves}
         for delta in (-4.,0.,4.):
             values=chart.initial[:]

@@ -306,7 +306,7 @@ class AdmissionUsesChartBoundsTests(unittest.TestCase):
 class FrozenTimingWallTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.space = TimingChart(PoseChart())
+        cls.space = TimingChart(PoseChart(floor=0.))
         cls.objective = Objective(cls.space, 1., 0.)
         cls.x = json.loads(FROZEN.read_text())['values']
         cls.score, cls.residuals = cls.objective.score(cls.x)

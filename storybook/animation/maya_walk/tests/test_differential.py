@@ -194,7 +194,7 @@ class FrozenTests(unittest.TestCase):
         frozen=json.loads((Path(__file__).parent/'frozen-jacobian-stop.json').read_text())
         for offset in (4.,0.,-2.):
             x=list(frozen['values']);x[31]+=offset
-            objective=Objective(TimingChart(PoseChart()),1.,0.)
+            objective=Objective(TimingChart(PoseChart(floor=0.)),1.,0.)
             _,r=objective.score(x)
             result=analytic_jacobian(objective.score,x,r)
             with self.subTest(offset=offset):
@@ -206,7 +206,7 @@ class FrozenTests(unittest.TestCase):
         # fine-interval objective (contract maya-walk-interval-measurement) makes
         # the heel-strike pop visible; the column stays weak (~3e-8) but now
         # resolves, and must agree with the analytic column.
-        x=frozen['values'];objective=Objective(TimingChart(PoseChart()),1.,0.);_,r=objective.score(x)
+        x=frozen['values'];objective=Objective(TimingChart(PoseChart(floor=0.)),1.,0.);_,r=objective.score(x)
         sampled=finite_difference(objective.score,x,r).differences[31]
         analytic=analytic_jacobian(objective.score,x,r).differences[31]
         self.assertIs(sampled.status,DerivativeStatus.CENTRAL)
