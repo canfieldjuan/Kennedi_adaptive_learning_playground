@@ -129,9 +129,11 @@ Tests touching these: `test_fitting_numerics.py`, `test_motion_floor.py`
     unresolved margin derivative ends the fit `derivatives_unresolved`, as an
     unresolved residual derivative does today.
   - Every attempt requires its step `d` to satisfy, for every sample `k`,
-    `G_k·d <= m_k - REACH_BACKOFF`, where `m_k` is the margin and `G_k` its
-    gradient. In words, the linearized margin after the step is at least
-    `REACH_BACKOFF`.
+    `m_k + G_k·d >= REACH_BACKOFF`, where `m_k` is the margin and `G_k` the
+    gradient of the margin. As a solver row that is
+    `-G_k·d <= m_k - REACH_BACKOFF`. In words, the linearized margin after the
+    step is at least `REACH_BACKOFF`. A test pins the sign: at `m_k = 0` the
+    row admits a step that grows the margin and refuses one that shrinks it.
   - `REACH_BACKOFF = 1e-6` is a named numerical constant, one tenth of the
     existing guard gap below full extension. It leaves room for the margin's
     curvature, which the linear rows cannot see. A margin already below it
