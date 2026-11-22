@@ -198,7 +198,7 @@ class FrozenFitTests(unittest.TestCase):
         from storybook.animation.maya_walk.fitting import Objective, PoseChart, TimingChart
         from storybook.animation.maya_walk.kinematics import NativeGeometry
         cls.x = json.loads((Path(__file__).parent/"frozen-jacobian-stop.json").read_text())["values"]
-        cls.space = TimingChart(PoseChart())
+        cls.space = TimingChart(PoseChart(floor=0.))
         cls.model = NativeGeometry(cls.space.build(cls.x))
         cls.report = cls.model.assess()
         cls.Objective = Objective

@@ -199,7 +199,17 @@ unconstrained-step/clipping path and the capped coordinate-minimization path.
 Each chart states its domain as per-coordinate step bounds, and the solver
 honors them. A timing coordinate at its ±20 wall stays there while the others
 keep moving. One coordinate's wall never refuses the whole step. The chart
-still refuses values outside the domain.
+still refuses values outside the domain. The pose chart's ±35 value domain is
+honored the same way.
+
+Every moving key keeps moving (contract `maya-walk-motion-floor`). The pose
+chart places each interior key at least halfway to where a smooth ease between
+its branch's fixed ends would put it, at the key's actual time. So no segment
+moves less than half as much as smooth motion over the same frames, and a
+parked hip or hovering foot cannot be represented. Encoding a walk changes only
+segments below that floor. `--carry` starts from an older checkpoint this way,
+lowering the hips by the smallest drop that keeps every leg in reach, and
+records the drop.
 A typed result records convergence, rank failure or budget exhaustion, and the
 fitter cannot apply an uncertified step. Numerical termination is recorded
 separately from whole-cycle gait status.

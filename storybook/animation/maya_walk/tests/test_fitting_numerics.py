@@ -277,7 +277,7 @@ class NumericalTests(unittest.TestCase):
         from storybook.animation.maya_walk.fitting import PoseChart,TimingChart,Objective
         from storybook.animation.maya_walk.numerics import finite_difference
         fixture=json.loads(Path(__file__).with_name('frozen-derivative-stop.json').read_text())
-        space=TimingChart(PoseChart());objective=Objective(space,guide_weight=0.)
+        space=TimingChart(PoseChart(floor=0.));objective=Objective(space,guide_weight=0.)
         values=fixture['values'];index=fixture['unresolved_coordinate']
         self.assertEqual(list(space.parameters[index]),fixture['parameter'])
         visited=[]
@@ -539,7 +539,7 @@ class StepAdmissionTests(unittest.TestCase):
         from storybook.animation.maya_walk.fitting import (
             PoseChart, TimingChart, Objective, admit_step, StepVerdict)
         fixture = json.loads(Path(__file__).with_name('frozen-outer-step.json').read_text())
-        space = TimingChart(PoseChart())
+        space = TimingChart(PoseChart(floor=0.))
         objective = Objective(space, fixture['velocity_weight'], fixture['guide_weight'])
         x = fixture['values']
         score, residuals = objective.score(x)
@@ -639,7 +639,7 @@ class ZeroResponseTests(unittest.TestCase):
     def test_saturated_frozen_coordinate_is_refused_not_certified_zero(self):
         from storybook.animation.maya_walk.fitting import PoseChart, TimingChart, Objective
         fixture = json.loads(Path(__file__).with_name('frozen-derivative-stop.json').read_text())
-        space = TimingChart(PoseChart())
+        space = TimingChart(PoseChart(floor=0.))
         objective = Objective(space, guide_weight=0.)
         index = 64
         self.assertEqual(space.parameters[index], ('phase_foot_x', 2))
