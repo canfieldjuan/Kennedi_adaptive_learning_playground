@@ -373,7 +373,8 @@ Diff `3d58321..b8c54f6`, read cold. Evidence alias
   solve, because the contract froze `bounded_least_squares`. The amendment
   under Must Not Change moves them to one shared helper.
 - **PR size.** Code and tests are about 860 added lines. The fixture adds 497
-  lines of numbers, and the contract with this audit about 380.
+  lines of numbers, and the contract with this audit is 500 lines (1,841 added
+  lines in all).
 
 ### Change By Change Reconstruction
 
