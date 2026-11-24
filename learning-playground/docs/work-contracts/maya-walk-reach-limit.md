@@ -216,6 +216,10 @@ Tests touching these: `test_fitting_numerics.py`, `test_motion_floor.py`
   turning points, `PHASES`, `ACTIVE`, spacing, the key cap and PCHIP.
 - `bounded_least_squares` itself, `TRUST_LIMIT`, `BOUND_TOLERANCE`, the
   verdicts, `next_damping`, the damping constants and the attempt budget.
+  **Amended:** the input checks, column scaling and damped system that
+  `bounded_least_squares` and the new solve share move to one helper both
+  call. The arithmetic is unchanged, and parity against base `3d58321` proves
+  it. Two copies of that rule would drift.
 - The carry's checks, its bisection and its recorded fields.
 - Existing frozen fixtures, sealed evidence and the backup branch.
 - No fit run, no saved animation, no scene writes. No dependency.
@@ -364,8 +368,9 @@ Diff `3d58321..9efd961`, read cold. Evidence alias
   about 25 to 37 per iteration at a fixed damping of 0.122. That is the
   objective's own landscape near the wall, not a refusal.
 - **Two equivalent mutants survive**, explained under Verification.
-- **`bounded_least_squares` keeps its own input checks.** The new solve
-  repeats them, because this contract froze `bounded_least_squares`.
+- **`9efd961` repeated `bounded_least_squares`'s input checks** in the new
+  solve, because the contract froze `bounded_least_squares`. The amendment
+  under Must Not Change moves them to one shared helper.
 - **PR size.** Code and tests are about 860 added lines. The fixture adds 497
   lines of numbers, and the contract with this audit about 380.
 
