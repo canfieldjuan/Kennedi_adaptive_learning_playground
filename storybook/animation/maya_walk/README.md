@@ -210,6 +210,15 @@ parked hip or hovering foot cannot be represented. Encoding a walk changes only
 segments below that floor. `--carry` starts from an older checkpoint this way,
 lowering the hips by the smallest drop that keeps every leg in reach, and
 records the drop.
+
+The step solve honors the leg's reach limit (contract `maya-walk-reach-limit`).
+The search refuses any sample where a leg would pass just short of full
+extension. Each iteration now linearizes that margin at every scheduled sample,
+and every step must keep the linearized margin at least a small backoff above
+zero. A step that already meets those rows is the box-only solve's, unchanged;
+otherwise a least-squares solve with linear inequalities (Lawson and Hanson's
+LSI through LDP and NNLS) honors the rows and the box together. Curvature can
+still carry a step past the limit, and the full step is still refused then.
 A typed result records convergence, rank failure or budget exhaustion, and the
 fitter cannot apply an uncertified step. Numerical termination is recorded
 separately from whole-cycle gait status.

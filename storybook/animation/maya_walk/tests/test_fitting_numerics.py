@@ -50,6 +50,9 @@ class _Arctangent:
         r = [dmath.atan(10*v) for v in x]
         return sum(v*v for v in r), r
 
+    def reach_margins(self, x):
+        return []  # The synthetic chart has no legs, so no reach rows.
+
 
 class _Linear:
     """r = x. The linear model is exact, so actual equals predicted."""
@@ -57,6 +60,9 @@ class _Linear:
 
     def score(self, x):
         return sum(v*v for v in x), list(x)
+
+    def reach_margins(self, x):
+        return []
 
 
 def _strict(text):
@@ -219,6 +225,7 @@ class NumericalTests(unittest.TestCase):
         derivative=finite_difference(lambda x:(0.,x),[0.]*n,[0.]*n)
         bad=bounded_step([[2.,1.],[1.,2.]],[4.,1.],max_iterations=1)
         objective=Mock();objective.score.return_value=(1.,[1.]);objective.calls=1
+        objective.reach_margins.return_value=[]
         report={'status':'FAIL','violation_counts':{'synthetic':1}}
         with tempfile.TemporaryDirectory() as folder, \
              patch('storybook.animation.maya_walk.fitting.Objective',return_value=objective), \
@@ -495,6 +502,7 @@ class StepAdmissionTests(unittest.TestCase):
         objective = Mock()
         objective.score.return_value = (1., [1., 1.])
         objective.calls = 1
+        objective.reach_margins.return_value = []
         identity = finite_difference(lambda x: (0., x), [0., 0.], [0., 0.])
         # A fixed converged solve keeps this about the outer policy alone.
         solution = bounded_least_squares([[1., 0.], [0., 1.]], [.1, .1])

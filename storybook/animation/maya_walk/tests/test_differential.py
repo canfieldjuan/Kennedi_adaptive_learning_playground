@@ -180,6 +180,8 @@ class ScalarTests(unittest.TestCase):
                 self.calls+=1
                 r=[d.sqrt(1.+1e-20*d.exp(x[0]))-1.,x[1]]
                 return d.total(v*v for v in r),r
+            def reach_margins(self,x):
+                return []
         stopped=StepResult((0.,0.),SolveStatus.ITERATION_LIMIT,1,1.,1e-10,0.,(1.,1.))
         record,saved=_synthetic_fit(Weak(),solver={'return_value':stopped})
         self.assertEqual(json.loads(json.dumps(record,allow_nan=False)),saved)

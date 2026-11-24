@@ -13,7 +13,7 @@ from pathlib import Path
 import time
 from . import differential as dmath
 
-from .numerics import (bounded_step, bounded_least_squares, SolveStatus,
+from .numerics import (bounded_step, bounded_least_squares, constrained_least_squares, rows_hold, SolveStatus,
                        analytic_jacobian, UnreliableJacobian, TRUST_LIMIT, BOUND_TOLERANCE)
 from .curves import Motion
 from .poses import author, curve, HIP_HEIGHT
@@ -416,6 +416,18 @@ def desired(phase, knots):
     raise AssertionError('Guide coverage')
 
 
+# The search keeps every scored sample strictly inside full leg extension.
+REACH_LIMIT = THIGH_LENGTH+SHIN_LENGTH-1e-5
+# Numerical, one tenth of the guard's gap: the linearized margin after a step
+# keeps this much, leaving room for the curvature the linear rows cannot see.
+REACH_BACKOFF = 1e-6
+
+
+def reach_margin(points, target):
+    """The one owner of the search reach measurement: distance below the limit."""
+    return REACH_LIMIT-dmath.dist(points['hip'], target)
+
+
 class Objective:
     def __init__(self, space, velocity_weight=1., guide_weight=1.):
         self.space=space
@@ -444,10 +456,8 @@ class Objective:
             velocity={k:tuple((v-u)/(2*h) for u,v in zip(b[k],c[k])) for k in pts}
             samples.append((t,pts,a,omega,velocity))
             p=t/24
-            reach=dmath.dist(pts['hip'],target)
-            if reach>THIGH_LENGTH+SHIN_LENGTH-1e-5:
+            if reach_margin(pts,target)<0:
                 raise ValueError('Search proposals must remain strictly reachable')
-            out.append(dmath.maximum(0.,reach-(THIGH_LENGTH+SHIN_LENGTH-1e-5))/.0001)
             for point in ('heel','ball','toe'):out.append(dmath.maximum(0.,-pts[point][2])/ .001)
             for point in ('hip','knee','ankle','toe'):
                 applies=point in ('hip','knee') or p>=TARGET.toe_off-1e-9
@@ -519,6 +529,11 @@ class Objective:
             row=dmath.minimum(samples,key=lambda r:abs(r[0]-phase*24))
             out.append(dmath.maximum(0.,-sign*row[4]['toe'][2])/.001)
         return out
+
+    def reach_margins(self,x):
+        """reach_margin at every scheduled near sample, the samples the guard refuses on."""
+        model=NativeGeometry(self.space.build(x))
+        return [reach_margin(pts,target) for pts,_,target in (model.at(t,Side.NEAR) for t in self.schedule)]
 
     def score(self,x):
         try:r=self.residuals(x)
@@ -646,24 +661,52 @@ def trial_step(objective, space, x, score, residuals, columns, solution, damping
     return StepReceipt(damping, StepVerdict.ADMITTED, actual, predicted), (trial, value, after)
 
 
-def admit_step(objective, space, x, score, residuals, columns, damping):
+def reach_linearization(objective, x):
+    """Margins at x and their forward-mode derivative, from the margin owner."""
+    margins = objective.reach_margins(x)
+    if not margins:
+        return margins, None
+    return margins, analytic_jacobian(lambda values: (0., objective.reach_margins(values)), x, margins)
+
+
+def reach_rows(margins, columns):
+    """Linearized reach rows `G_k·d >= REACH_BACKOFF - m_k`.
+
+    That is, `m_k + G_k·d >= REACH_BACKOFF`: the margin after the step, to
+    first order, keeps the backoff. columns are the margins' derivative
+    columns, one per coordinate.
+    """
+    return tuple((tuple(c[k] for c in columns), REACH_BACKOFF-m) for k, m in enumerate(margins))
+
+
+def admit_step(objective, space, x, score, residuals, columns, damping, rows=()):
     """One iteration's bounded attempts on one linearization.
 
     Each attempt solves at the current damping and scores that full step once.
+    rows are linear rows `c·d >= bound` every step must meet (the reach rows).
+    The box-only solve answers when its converged step already meets them: it
+    is then the constrained optimum too. Otherwise the constrained solve runs.
+    A certified infeasible solve ends the attempts, since damping cannot
+    change the rows or the box.
     Returns (update or None, next damping, receipts, solve records).
     """
     receipts, solves = [], []
     lower, upper = space.step_bounds(x)
+    rhs = [-v for v in residuals]
     for _ in range(STEP_ATTEMPTS):
-        solution = bounded_least_squares(columns, [-v for v in residuals], damping, lower=lower, upper=upper)
-        solves.append({k: v for k, v in asdict(solution).items() if k not in ('step', 'scales')})
+        solution = bounded_least_squares(columns, rhs, damping, lower=lower, upper=upper)
+        constrained = bool(rows) and not (solution.status is SolveStatus.CONVERGED and rows_hold(solution.step, rows))
+        if constrained:
+            solution = constrained_least_squares(columns, rhs, damping, lower=lower, upper=upper, rows=rows)
+        solves.append({**{k: v for k, v in asdict(solution).items() if k not in ('step', 'scales')},
+                       'constrained': constrained})
         if solution.status is SolveStatus.CONVERGED:
             receipt, update = trial_step(objective, space, x, score, residuals, columns, solution, damping)
         else:
             receipt, update = StepReceipt(damping, StepVerdict.UNSOLVED), None
         receipts.append(receipt)
         damping = next_damping(receipt)
-        if update is not None:
+        if update is not None or solution.status is SolveStatus.INFEASIBLE:
             return update, damping, receipts, solves
     return None, damping, receipts, solves
 
@@ -692,10 +735,10 @@ def carry_start(prior, space, objective):
     The checkpoint's walk is decoded the way it was made and re-encoded under
     this chart (only parked segments change). When that start cannot be scored,
     the whole hip-height curve is lowered: bisection on [0, bob height] finds the
-    smallest drop that scores (lowering the hips only shortens each leg's reach),
-    then the drop steps up by doubling increments from one ulp until the first
-    derivatives resolve, since the smallest drop leaves a leg exactly on the
-    reach hinge. Returns (coordinates, hip drop).
+    smallest drop that scores (lowering the hips only shortens each leg's reach).
+    That start may leave a leg at full reach; the fit's reach rows then move it
+    off the wall. Its first derivatives must resolve, or the carry is refused.
+    Returns (coordinates, hip drop).
     """
     if prior.get('parameters')!=[list(p) for p in space.parameters] or len(prior.get('values',()))!=len(space.initial):
         raise ValueError('Carried checkpoint parameter inventory differs')
@@ -727,15 +770,11 @@ def carry_start(prior, space, objective):
         middle=(low+high)/2
         if start(middle)[1] is not None:high=middle
         else:low=middle
-    drop,step=high,math.ulp(high)
-    while drop<=bob:
-        x,r=start(drop)
-        if r is not None:
-            try:analytic_jacobian(objective.score,x,r).require_resolved()
-            except UnreliableJacobian:pass
-            else:return x,drop
-        drop=high+step;step*=2
-    raise ValueError('No hip drop within one bob gives the carried start resolved derivatives')
+    x,r=start(high)
+    try:analytic_jacobian(objective.score,x,r).require_resolved()
+    except UnreliableJacobian as error:
+        raise ValueError('The carried start has unresolved derivatives at its smallest reaching drop') from error
+    return x,high
 
 
 def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timing=False, value_seed=None, guide_weight=1., carry=None):
@@ -775,16 +814,22 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
     termination=FitTermination.RUNNING
     for iteration in range(iterations):
         derivative=analytic_jacobian(objective.score,x,r)
-        accepted=False;solves=[];attempts=[]
+        accepted=False;solves=[];attempts=[];reach=None
         try:
             jac=derivative.require_resolved()
+            margins,reach=reach_linearization(objective,x)
+            rows=reach_rows(margins,reach.require_resolved()) if reach else ()
         except UnreliableJacobian:
             termination=FitTermination.DERIVATIVES_UNRESOLVED
         else:
-            update,damping,receipts,solves=admit_step(objective,space,x,score,r,jac,damping)
-            attempts=[{'solve_status':solve['status'].value,**receipt.record()} for solve,receipt in zip(solves,receipts)]
+            update,damping,receipts,solves=admit_step(objective,space,x,score,r,jac,damping,rows)
+            attempts=[{'solve_status':solve['status'].value,'constrained':solve['constrained'],**receipt.record()}
+                      for solve,receipt in zip(solves,receipts)]
             if update is not None:
                 x,score,r=update;accepted=True
+            # An infeasible solve ends the attempts. Every attempt before it was
+            # unsolved too: the rows and box do not change with damping, so an
+            # earlier converged step would have proved them feasible.
             if all(receipt.verdict is StepVerdict.UNSOLVED for receipt in receipts):
                 termination=FitTermination.LINEAR_SOLVE_FAILED
         stuck=0 if accepted else stuck+1
@@ -795,8 +840,9 @@ def fit(output, iterations=160, resume=None, seed=None, velocity_weight=1., timi
         record={'iteration':iteration,'score':score,'values':x,'parameters':space.parameters,'velocity_weight':velocity_weight,'guide_weight':guide_weight,
                 'source_signature':signature,'input_sha256':input_pin,'carried_from_signature':carried_from,'carry_hip_drop':hip_drop,'timing':timing,
                 'calls':objective.calls,'seconds':time.monotonic()-start,'damping':damping,
-                'numerics':{'method':'scaled-qr-active-set-v1','jacobian':'forward-mode-v1','solves':solves,'attempts':attempts,
-                            'differences':[asdict(d) for d in derivative.differences]},
+                'numerics':{'method':'scaled-qr-active-set-v1+reach-lsi-v1','jacobian':'forward-mode-v1','solves':solves,'attempts':attempts,
+                            'differences':[asdict(d) for d in derivative.differences],
+                            'reach_differences':[asdict(d) for d in reach.differences] if reach else []},
                 'termination':termination.value}
         if iteration%10==0 or stuck:
             report=NativeGeometry(space.build(x)).assess()

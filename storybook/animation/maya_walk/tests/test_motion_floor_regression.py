@@ -4,7 +4,8 @@ from pathlib import Path
 import unittest
 
 from storybook.animation.maya_walk.fitting import (
-    PoseChart, TimingChart, Objective, admit_step, StepVerdict, DAMPING_START, carry_start)
+    PoseChart, TimingChart, Objective, admit_step, StepVerdict, DAMPING_START, carry_start,
+    reach_linearization, reach_rows)
 from storybook.animation.maya_walk.numerics import analytic_jacobian
 
 FROZEN = Path(__file__).with_name('frozen-flat-stop.json')
@@ -26,13 +27,17 @@ class FrozenFlatStopTests(unittest.TestCase):
         score, residuals = objective.score(x)
         self.assertIsNotNone(residuals)
         columns = analytic_jacobian(objective.score, x, residuals).require_resolved()
-        update, _, receipts, _ = admit_step(objective, space, x, score, residuals, columns, DAMPING_START)
-        # The carried start sits on the reach edge (smallest drop), so a long
-        # first attempt may be refused by the reach guard; damping then shortens
-        # it. The flat-segment wall cannot recur: parked keys are unrepresentable.
+        margins, derivative = reach_linearization(objective, x)
+        rows = reach_rows(margins, derivative.require_resolved())
+        update, _, receipts, _ = admit_step(objective, space, x, score, residuals, columns, DAMPING_START, rows)
+        # The carried start sits on the reach wall (smallest drop). The reach
+        # rows move it off; curvature may still refuse a long first attempt,
+        # and damping then shortens it. The flat-segment wall cannot recur:
+        # parked keys are unrepresentable.
         self.assertIsNotNone(update)
         self.assertIs(receipts[-1].verdict, StepVerdict.ADMITTED)
         self.assertLess(update[1], score)
+        self.assertGreater(min(objective.reach_margins(update[0])), 0.)
 
 
 if __name__ == '__main__':
