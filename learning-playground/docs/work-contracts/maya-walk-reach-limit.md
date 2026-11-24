@@ -316,3 +316,171 @@ added.
    - Evidence goes outside the worktree, with directories mode 700 and files
      mode 600, pinned by SHA256 in the PR.
    - No fit runs until Juan separately authorizes one.
+
+## Implementation summary
+
+Juan accepted the contract on 2026-11-24. It was amended in `0c05d0f`, before
+any code was committed, and implemented in `9efd961`.
+
+- **`reach_margin` owns the search reach measurement.** `REACH_LIMIT` names the
+  unchanged threshold. The guard refuses a negative margin, the same set the
+  old `reach > threshold` refused. `Objective.reach_margins` returns the
+  margin at every scheduled near sample.
+- **The dead hinge residual is gone.** It was 0 at every scoring point, so no
+  score changed.
+- **Each iteration linearizes the margins** with `analytic_jacobian` and builds
+  the rows `G_k·d >= REACH_BACKOFF - m_k`. An unresolved margin derivative ends
+  the fit `derivatives_unresolved`, with its receipts recorded.
+- **`constrained_least_squares`** solves the box and the rows together (LSI,
+  LDP, NNLS). It runs only when the box-only step misses a row. It certifies a
+  converged step (KKT) or an infeasible set (Farkas); anything else is
+  `numerical_failure`.
+- **An infeasible solve is `unsolved`.** It ends the attempts, and the fit then
+  ends `linear_solve_failed`.
+- **The carry returns the bisection's smallest drop** and refuses it if its
+  derivatives do not resolve. The step-off is gone.
+- **No change** to the validator, gait rules, scored terms, guard threshold,
+  charts, `bounded_least_squares`, verdicts, damping or the attempt budget.
+
+## Cold Diff Audit
+
+Diff `3d58321..9efd961`, read cold. Evidence alias
+`reach-limit-20261124T205906Z`.
+
+### Gaps
+
+- **No fit was run, and no passing walk is predicted.** A read-only replay of
+  the carried fit's first 26 iterations shows the solver no longer stalls on
+  the wall (below). Whether a fit reaches PASS needs a fit Juan authorizes.
+- **The "55 refused trials" in Root Cause counted the carry's probes.** The
+  carried fit's 55 reach refusals were 28 carry bisection probes and 27 step
+  attempts. Iterations 0 to 25 each admitted a step after zero to three
+  refused attempts, as stated.
+- **Curvature still refuses some steps.** At the carried start, the first
+  constrained step was refused `out_of_domain`; the next attempt was admitted.
+- **Very high damping fails closed** (Assumptions): `numerical_failure` from
+  1e9 at the carried stop.
+- **The replay crawls along the backoff.** From iteration 11 the score falls
+  about 25 to 37 per iteration at a fixed damping of 0.122. That is the
+  objective's own landscape near the wall, not a refusal.
+- **Two equivalent mutants survive**, explained under Verification.
+- **`bounded_least_squares` keeps its own input checks.** The new solve
+  repeats them, because this contract froze `bounded_least_squares`.
+- **PR size.** Code and tests are about 860 added lines. The fixture adds 497
+  lines of numbers, and the contract with this audit about 380.
+
+### Change By Change Reconstruction
+
+- **`fitting.py:419-428`.** `REACH_LIMIT`, `REACH_BACKOFF = 1e-6` and
+  `reach_margin(points, target)`.
+- **`fitting.py:459-461`.** The guard calls `reach_margin` and refuses below 0.
+  The hinge `out.append` is removed.
+- **`fitting.py:533-536`.** `Objective.reach_margins(x)`.
+- **`fitting.py:664-679`.** `reach_linearization` (margins and their
+  `analytic_jacobian`) and `reach_rows`.
+- **`fitting.py:682-711`.** `admit_step` takes `rows`. It runs
+  `bounded_least_squares` first and calls `constrained_least_squares` only
+  when that step is not converged or misses a row (`rows_hold`). Each solve
+  record says whether the constrained solve ran. An infeasible solve ends the
+  attempts.
+- **`fitting.py:738-778`.** The `carry_start` docstring is updated. It returns
+  `start(high)` after the derivative check; the step-off loop is gone.
+- **`fitting.py:817-848`.** `fit` linearizes the reach rows after the residual
+  derivatives resolve and passes them on. It records `constrained` per
+  attempt and `reach_differences`, and the method label is
+  `scaled-qr-active-set-v1+reach-lsi-v1`. A comment explains why
+  all-unsolved already covers infeasibility.
+- **`numerics.py:6-7`.** The Lawson and Hanson reference.
+- **`numerics.py:28-29, 55-56`.** `SolveStatus.INFEASIBLE`, and an infeasible
+  result carries no step.
+- **`numerics.py:219-255`.** `_rows` (validation), `row_shortfall` (distance
+  along the unit normal) and `rows_hold` (within `BOUND_TOLERANCE*limit`), the
+  one feasibility test.
+- **`numerics.py:258-317`.** `_transposed_solve` and `_nnls`.
+- **`numerics.py:320-364`.** `_certificate` (bound-aware stationarity, signs,
+  complementarity in real units) and `_farkas`.
+- **`numerics.py:367-487`.** `constrained_least_squares`.
+  - Validation and scaling are as in `bounded_least_squares`.
+  - Zero rows: infeasible if the bound is positive, dropped otherwise.
+  - Box and unit-normalized rows in scaled coordinates. QR of the damped
+    system, the LDP transform, then NNLS.
+  - Multipliers, the step, then exact bound placement.
+  - The certificate, then the Farkas check, else `numerical_failure`.
+- **Tests.**
+  - `test_reach_limit.py` (new).
+  - `_HipReach` now models the real guard, and three carry tests were added
+    (`test_motion_floor.py`).
+  - The regression test passes the reach rows.
+  - The synthetic objectives return no margins.
+  - Fixture `frozen-reach-stop.json`.
+- **README.** One paragraph on the reach rows.
+
+### Contract Traceability
+
+- **One owner for margins:** `reach_margin`, used by the guard and by
+  `reach_margins`. Tests: `test_margins_match_the_guard_distance_on_floats_and_duals`
+  and `test_the_guard_refuses_through_the_margin_owner`.
+- **The dead hinge is removed:**
+  `test_the_hinge_rows_were_zero_so_removing_them_leaves_the_solve_bit_identical`;
+  scores at the frozen points equal base.
+- **The step solve honors linearized reach:**
+  - `test_derivatives_resolve_and_a_step_keeping_every_leg_reachable_is_admitted`;
+  - `test_a_start_below_the_backoff_forces_a_step_that_grows_its_wall_margins`;
+  - the sign test.
+- **One bounded solver for box and rows:** `ConstrainedSolveTests` and
+  `CertificateTests`.
+- **Box-only shortcut and parity:**
+  `test_no_attempt_runs_the_constrained_solve_and_steps_match_the_box_only_path`,
+  and `parity-*.json` against base.
+- **Infeasible ends the fit:** `test_an_infeasible_solve_is_unsolved_and_ends_the_fit`.
+- **Admission is unchanged:** `trial_step` is untouched, and the curvature
+  refusal is seen at the carried start.
+- **Carry:**
+  - `test_the_smallest_reaching_drop_is_found_from_both_sides`;
+  - `test_the_returned_start_is_the_smallest_drop_the_search_scored`;
+  - `test_the_carry_refuses_a_start_whose_derivatives_do_not_resolve`.
+- **Must Not Change:** the diff touches no validator, chart, objective term,
+  damping, verdict or `bounded_least_squares` line.
+
+### Verification
+
+- **Fail first** (`fail-first-base.json`, `fail-first-after.json`).
+  - On base, 59 of 98 directions are unresolved (nonsmooth) at the frozen
+    stop, and no step is allowed.
+  - After, all 98 are analytic. The first attempt is admitted, and the score
+    goes from 26734.496978721134 to 23555.39173664729. The smallest margin
+    after the step is 5.6e-7.
+- **Parity** (`parity-base.json`, `parity-after.json`). At the fourth fit's
+  stop and the frozen outer step, at damping 0.05 and 1e-7, base and after
+  match in every attempt's step, receipt, solve record, update and next
+  damping.
+- **Replay** (`replay.json`, read-only, 26 iterations from the carried start),
+  against the carried fit:
+  - step attempts refused by reach: 1, against 27;
+  - damping: between 0.0078 and 0.244, against a rise to 1.11e10;
+  - score: 34771.3 to 19039.7, against 26734.5.
+- **Mutation.**
+  - **First run:** 20 of 27 caught. Tests were then added for:
+    - the sign and complementarity clauses inside the solve;
+    - the lower bound;
+    - the guard's zero boundary;
+    - the carry's smallest drop.
+    A redundant `fit` clause was removed.
+  - **Second run:** 24 of 26 caught. Both survivors are equivalent:
+    - Box feasibility ignored: exact placement makes that check unable to
+      fail.
+    - A one-ulp carry step-off: it gives the identical 98 coordinates at the
+      real carried start.
+  - **Third run:** a 1e-9 step-off is caught.
+- **Suite:** `python3 -B -m unittest discover -s storybook/animation/maya_walk/tests -p 'test_*.py'`
+  ran 216 tests, OK.
+
+### Gap audit
+
+- **DONE:**
+  - every Correct Fix Must Touch item;
+  - verification items 1 to 8;
+  - the amendments.
+- **NOT DONE:**
+  - A fit. It needs Juan's separate authorization.
+  - Issue 183, the envelope spans. Left open, out of scope.
