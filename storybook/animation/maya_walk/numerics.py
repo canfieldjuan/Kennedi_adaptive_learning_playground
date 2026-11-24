@@ -3,6 +3,8 @@
 Active-set/QR method: Stark & Parker, Bounded-Variable Least-Squares (1995),
 https://www.stat.berkeley.edu/~stark/Preprints/bvls.pdf . This is an independent
 stdlib implementation. Scaling transforms both variables and bounds exactly.
+General linear inequality rows: Lawson & Hanson, Solving Least Squares Problems
+(1974), ch. 23 (LSI reduced to LDP, solved by NNLS), also implemented here.
 """
 from dataclasses import dataclass
 from enum import Enum
@@ -23,6 +25,8 @@ class SolveStatus(str, Enum):
     ITERATION_LIMIT = 'iteration_limit'
     RANK_DEFICIENT = 'rank_deficient'
     NUMERICAL_FAILURE = 'numerical_failure'
+    # Certified: no step inside the box satisfies the general rows.
+    INFEASIBLE = 'infeasible'
 
 
 class UnconvergedStep(RuntimeError):
@@ -48,6 +52,8 @@ class StepResult:
                 or self.optimality > self.tolerance
                 or not self.step or any(not finite(v) for v in self.step)):
             raise ValueError('Converged step requires a finite passing certificate')
+        if self.status is SolveStatus.INFEASIBLE and any(self.step):
+            raise ValueError('An infeasible solve has no step')
 
     def require_converged(self):
         if self.status is not SolveStatus.CONVERGED:
@@ -107,18 +113,24 @@ def _step_bounds(lower, upper, n, limit):
     return [float(v) for v in lower], [float(v) for v in upper]
 
 
-def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=None, upper=None,
-                          max_iterations=1000, tolerance=1e-10):
-    """Minimize ||J step-rhs||² + damping*||D step||², lower <= step <= upper.
+@dataclass(frozen=True)
+class _ScaledSystem:
+    """The checked, column-scaled and damped system both bounded solves work on."""
+    n: int
+    lower: list
+    upper: list
+    scales: list
+    normalized: list
+    augmented: list
+    target: list
+    floors: list
+    ceilings: list
+    slack: float
+    threshold: float
 
-    Without explicit bounds the box is |step| <= limit. A caller with a domain
-    passes per-coordinate bounds inside that box; a side may have zero width.
-    D contains nonzero Jacobian column norms (one for zero columns). QR avoids
-    squaring the condition number. Positive damping resolves duplicate directions
-    in *normalized* coordinates; it does not invent information in a zero column.
-    The finite active-set budget is never reported as convergence. The KKT check
-    uses the original scaled columns, independently of the reduced QR solve.
-    """
+
+def _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, tolerance):
+    """Input checks, column scaling and the damped system: one owner for both solves."""
     if not finite(limit) or limit <= 0:
         raise ValueError('Positive finite step limit required')
     if not finite(damping) or damping < 0:
@@ -139,15 +151,32 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=
         raise ValueError('Unrepresentable numerical scale or bound')
     normalized = [[v/s for v in c] for c, s in zip(columns, scales)]
     # Exact zero rows carry no directional information, even if rhs is nonzero.
-    rows = [j for j in range(len(rhs)) if any(c[j] for c in normalized)]
+    used = [j for j in range(len(rhs)) if any(c[j] for c in normalized)]
     root = math.sqrt(damping)
-    augmented = [[c[j] for j in rows] + [root if i == k else 0. for k in range(n)]
+    augmented = [[c[j] for j in used] + [root if i == k else 0. for k in range(n)]
                  for i, c in enumerate(normalized)]
-    target = [rhs[j] for j in rows] + [0.]*n
-    floors = [a*s for a, s in zip(lower, scales)]
-    ceilings = [b*s for b, s in zip(upper, scales)]
-    slack = BOUND_TOLERANCE*limit
-    threshold = tolerance*max(1., math.hypot(*rhs))
+    target = [rhs[j] for j in used] + [0.]*n
+    return _ScaledSystem(n, lower, upper, scales, normalized, augmented, target,
+                         [a*s for a, s in zip(lower, scales)], [b*s for b, s in zip(upper, scales)],
+                         BOUND_TOLERANCE*limit, tolerance*max(1., math.hypot(*rhs)))
+
+
+def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=None, upper=None,
+                          max_iterations=1000, tolerance=1e-10):
+    """Minimize ||J step-rhs||² + damping*||D step||², lower <= step <= upper.
+
+    Without explicit bounds the box is |step| <= limit. A caller with a domain
+    passes per-coordinate bounds inside that box; a side may have zero width.
+    D contains nonzero Jacobian column norms (one for zero columns). QR avoids
+    squaring the condition number. Positive damping resolves duplicate directions
+    in *normalized* coordinates; it does not invent information in a zero column.
+    The finite active-set budget is never reported as convergence. The KKT check
+    uses the original scaled columns, independently of the reduced QR solve.
+    """
+    system = _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, tolerance)
+    n, lower, upper, scales = system.n, system.lower, system.upper, system.scales
+    normalized, augmented, target = system.normalized, system.augmented, system.target
+    floors, ceilings, slack, threshold = system.floors, system.ceilings, system.slack, system.threshold
     y = [0.]*n
     active = [0]*n  # -1 lower, +1 upper, 0 free
 
@@ -208,6 +237,253 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=
             return result(SolveStatus.NUMERICAL_FAILURE, iteration)
         active[max(releases)[1]] = 0
     return result(SolveStatus.ITERATION_LIMIT, max_iterations)
+
+
+def _rows(rows, n):
+    """General rows `coefficients·step >= bound`, validated as [(tuple, float)]."""
+    if type(rows) not in (list, tuple):
+        raise ValueError('Rows are a sequence of (coefficients, bound)')
+    checked = []
+    for row in rows:
+        if type(row) not in (list, tuple) or len(row) != 2:
+            raise ValueError('Each row is (coefficients, bound)')
+        coefficients, bound = row
+        if type(coefficients) not in (list, tuple) or len(coefficients) != n:
+            raise ValueError('One row coefficient per coordinate required')
+        if any(not finite(v) for v in (*coefficients, bound)):
+            raise ValueError('Finite rows required')
+        checked.append((tuple(float(v) for v in coefficients), float(bound)))
+    return checked
+
+
+def row_shortfall(step, rows):
+    """Largest distance by which a step falls short of a row `c·step >= bound`.
+
+    Distance is measured along the row's unit normal, the same units as the
+    box's per-coordinate slack. A zero row is met exactly or never.
+    """
+    worst = 0.
+    for coefficients, bound in _rows(rows, len(step)):
+        norm = math.hypot(*coefficients)
+        gap = bound-_dot(coefficients, step)
+        if norm:
+            worst = max(worst, gap/norm)
+        elif gap > 0:
+            return math.inf
+    return worst
+
+
+def rows_hold(step, rows, limit=TRUST_LIMIT):
+    """The one feasibility test for general rows: within the box's rounding slack."""
+    return row_shortfall(step, rows) <= BOUND_TOLERANCE*limit
+
+
+def _transposed_solve(matrix, rhs, start=0):
+    """Solve R^T h = rhs for upper-triangular R; rhs is zero before `start`."""
+    h = [0.]*len(rhs)
+    for i in range(start, len(rhs)):
+        h[i] = (rhs[i]-math.fsum(matrix[j][i]*h[j] for j in range(start, i)))/matrix[i][i]
+    return h
+
+
+def _nnls(columns, target, max_iterations):
+    """Lawson and Hanson's NNLS: minimize |A u - target| over u >= 0.
+
+    A is given by columns. Returns (u, iterations, converged); u is None when
+    the passive-set solve becomes rank deficient. The caller certifies
+    whatever it builds from u, so this returns no claim of optimality.
+    """
+    p = len(columns)
+    u = [0.]*p
+    passive = []
+    tolerance = 32*math.ulp(1.)*len(target)*max((math.hypot(*c) for c in columns), default=1.)
+
+    def solve(indices):
+        q, b = _qr([columns[j] for j in indices], target)
+        return _backsolve(q, b)
+    for iteration in range(1, max_iterations+1):
+        residual = [t-math.fsum(columns[j][i]*u[j] for j in passive) for i, t in enumerate(target)]
+        dual = [_dot(c, residual) for c in columns]
+        excluded = set(passive)
+        while True:
+            entering = max(((dual[j], j) for j in range(p) if j not in excluded), default=None)
+            if entering is None or entering[0] <= tolerance:
+                return u, iteration, True
+            index = entering[1]
+            try:
+                solution = solve(passive+[index])
+            except ArithmeticError:
+                excluded.add(index)
+                continue
+            if solution[-1] > 0:
+                break
+            # Rounding left the entering column no positive weight; skip it.
+            excluded.add(index)
+        passive.append(index)
+        while min(solution) <= 0:
+            alpha, leaving = min((u[j]/(u[j]-s), j) for j, s in zip(passive, solution) if s <= 0)
+            for j, s in zip(passive, solution):
+                u[j] += alpha*(s-u[j])
+            u[leaving] = 0.
+            for j in passive:
+                if u[j] <= 0:
+                    u[j] = 0.
+            passive = [j for j in passive if u[j] > 0]
+            try:
+                solution = solve(passive) if passive else []
+            except ArithmeticError:
+                return None, iteration, False
+            if not passive:
+                break
+        for j, s in zip(passive, solution):
+            u[j] = s
+    return u, max_iterations, False
+
+
+def _certificate(normalized, rhs, damping, y, floors, ceilings, rows, multipliers, step, slack):
+    """KKT conditions on the original scaled columns: (stationarity, signs, complementary).
+
+    rows are (scaled coefficients, scaled bound, coefficients, bound), one
+    multiplier each. The reduced gradient is the objective gradient less the
+    rows' combination. As in bounded_least_squares, a coordinate exactly on a
+    bound may keep a reduced gradient pointing out of the box (that bound's
+    multiplier); any other component is a violation. A row with a positive
+    multiplier must hold with equality within the feasibility slack, measured
+    in real units like the box, so the check does not scale with the
+    multiplier's size.
+    """
+    residual = [_dot(row, y)-b for row, b in zip(zip(*normalized), rhs)]
+    gradient = [_dot(c, residual)+damping*v for c, v in zip(normalized, y)]
+    force = [math.fsum(m*c[i] for (c, *_), m in zip(rows, multipliers) if m) for i in range(len(y))]
+    stationarity = 0.
+    for g, f, v, a, b in zip(gradient, force, y, floors, ceilings):
+        reduced = g-f
+        if v == a and a != b:
+            reduced = min(reduced, 0.)
+        elif v == b and a != b:
+            reduced = max(reduced, 0.)
+        elif v == a == b:
+            reduced = 0.
+        stationarity = max(stationarity, abs(reduced))
+    complementary = all((_dot(c, step)-b)/math.hypot(*c) <= slack
+                        for (_, _, c, b), m in zip(rows, multipliers) if m)
+    return stationarity, all(m >= 0 for m in multipliers), complementary
+
+
+def _farkas(constraints, multipliers, floors, ceilings):
+    """True when nonnegative multipliers prove no point of the box meets the rows.
+
+    Every point y of the box has Σ m (c·y) <= the box's supremum of that
+    combination, so a demand Σ m bound above it cannot be met.
+    """
+    if any(m < 0 for m in multipliers) or not any(multipliers):
+        return False
+    n = len(floors)
+    combined = [math.fsum(m*c[i] for (c, _), m in zip(constraints, multipliers)) for i in range(n)]
+    supremum = math.fsum(max(v*a, v*b) for v, a, b in zip(combined, floors, ceilings))
+    demand = math.fsum(m*b for (_, b), m in zip(constraints, multipliers))
+    scale = math.fsum(abs(m*b) for (_, b), m in zip(constraints, multipliers)) + math.fsum(
+        abs(v)*max(abs(a), abs(b)) for v, a, b in zip(combined, floors, ceilings))
+    return demand-supremum > 64*math.ulp(1.)*(len(constraints)+n)*scale
+
+
+def constrained_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=None, upper=None, rows=(),
+                              max_iterations=1000, tolerance=1e-10):
+    """bounded_least_squares's problem with general rows `c·step >= bound` added.
+
+    Lawson & Hanson, Solving Least Squares Problems (1974), ch. 23: the
+    least-squares problem with linear inequalities (LSI) is reduced, through
+    the QR factor R of the scaled and damped system, to least distance
+    programming (LDP), which is solved by their nonnegative least squares
+    (NNLS). The box enters as rows, so one solve honors both. Scaling matches
+    bounded_least_squares exactly.
+
+    A converged step carries a KKT certificate checked on the original scaled
+    columns, independently of the reduction: every bound and row holds within
+    the box's rounding slack, multipliers are nonnegative, and stationarity
+    and complementarity are within tolerance. INFEASIBLE is returned only with
+    a Farkas certificate on the general rows. Anything else that cannot be
+    certified is NUMERICAL_FAILURE. Every status but CONVERGED returns a zero
+    step and zero optimality and reduction.
+    """
+    system = _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, tolerance)
+    n, lower, upper, scales = system.n, system.lower, system.upper, system.scales
+    normalized, floors, ceilings = system.normalized, system.floors, system.ceilings
+    slack, threshold = system.slack, system.threshold
+    rows = _rows(rows, n)
+
+    def refused(status, iterations=0):
+        return StepResult((0.,)*n, status, iterations, 0., threshold, 0., tuple(scales))
+    general = []
+    for coefficients, bound in rows:
+        if not any(coefficients):
+            if bound > 0:
+                return refused(SolveStatus.INFEASIBLE)
+            continue
+        scaled = [v/s for v, s in zip(coefficients, scales)]
+        norm = math.hypot(*scaled)
+        if not norm or not math.isfinite(norm):
+            return refused(SolveStatus.NUMERICAL_FAILURE)
+        general.append(([v/norm for v in scaled], bound/norm, coefficients, bound))
+    box = []
+    for i in range(n):
+        box.append(([1. if k == i else 0. for k in range(n)], floors[i]))
+        box.append(([-1. if k == i else 0. for k in range(n)], -ceilings[i]))
+    constraints = box+[(c, b) for c, b, *_ in general]
+    try:
+        reduced, reduced_rhs = _qr(system.augmented, system.target)
+    except ArithmeticError:
+        return refused(SolveStatus.RANK_DEFICIENT)
+    try:
+        center = _backsolve(reduced, reduced_rhs)
+        transformed = []
+        for i in range(n):
+            unit = _transposed_solve(reduced, [1. if k == i else 0. for k in range(n)], i)
+            transformed += [unit, [-v for v in unit]]
+        transformed += [_transposed_solve(reduced, c) for c, *_ in general]
+        # LDP: minimize |z| subject to h·z >= bound - c·center, z = R y - Q^T rhs.
+        ldp = [[*h, b-_dot(c, center)] for h, (c, b) in zip(transformed, constraints)]
+        lengths = [math.hypot(*a) for a in ldp]
+    except (ZeroDivisionError, OverflowError):
+        return refused(SolveStatus.NUMERICAL_FAILURE)
+    if any(not math.isfinite(v) or not v for v in lengths):
+        return refused(SolveStatus.NUMERICAL_FAILURE)
+    weights, iterations, finished = _nnls([[v/w for v in a] for a, w in zip(ldp, lengths)],
+                                          [0.]*n+[1.], max_iterations)
+    if weights is None:
+        return refused(SolveStatus.NUMERICAL_FAILURE, iterations)
+    if not finished:
+        return refused(SolveStatus.ITERATION_LIMIT, iterations)
+    weights = [v/w for v, w in zip(weights, lengths)]
+    fitted = [math.fsum(m*a[i] for a, m in zip(ldp, weights) if m) for i in range(n+1)]
+    denominator = 1.-fitted[n]
+    if denominator > 0 and math.isfinite(denominator):
+        multipliers = [m/denominator for m in weights]
+        y = _backsolve(reduced, [f/denominator+b for f, b in zip(fitted[:n], reduced_rhs)])
+        # LDP meets each row only to absolute rounding in scaled coordinates;
+        # a near-zero column turns that into a large miss in real units. Like
+        # bounded_least_squares, a coordinate whose bound is active, or that
+        # lies past it, is placed exactly on it. Every certificate clause
+        # below is checked after this.
+        for i in range(n):
+            if multipliers[2*i] > 0 or y[i] < floors[i]:
+                y[i] = floors[i]
+            elif multipliers[2*i+1] > 0 or y[i] > ceilings[i]:
+                y[i] = ceilings[i]
+        step = tuple(v/s for v, s in zip(y, scales))
+        effect = [_dot(row, step) for row in zip(*columns)]
+        reduction = 2*_dot(effect, rhs)-_dot(effect, effect)-damping*_dot(y, y)
+        if all(math.isfinite(v) for v in (*step, *multipliers, reduction)):
+            optimality, signs, complementary = _certificate(
+                normalized, rhs, damping, y, floors, ceilings, general, multipliers[len(box):], step, slack)
+            if (math.isfinite(optimality) and optimality <= threshold and signs and complementary
+                    and all(a-slack <= v <= b+slack for v, a, b in zip(step, lower, upper))
+                    and rows_hold(step, rows, limit)):
+                return StepResult(step, SolveStatus.CONVERGED, iterations, optimality, threshold,
+                                  reduction, tuple(scales))
+    if _farkas([(c, b) for c, b, *_ in general], weights[len(box):], floors, ceilings):
+        return refused(SolveStatus.INFEASIBLE, iterations)
+    return refused(SolveStatus.NUMERICAL_FAILURE, iterations)
 
 
 def bounded_step(matrix, vector, limit=TRUST_LIMIT, **options):

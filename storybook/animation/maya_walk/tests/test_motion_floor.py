@@ -317,20 +317,46 @@ class PoseDomainTests(unittest.TestCase):
 class _HipReach:
     """Scores a start only when its hip lowest point is at or below a ceiling.
 
-    The residual is a hinge on that ceiling, so the smallest scoring drop sits
-    on the hinge's tie, as the real reach guard does.
+    Like the real reach guard: past the ceiling there is no score, and below
+    it the residual is smooth. There is no hinge, so the smallest scoring drop
+    is differentiable.
     """
     def __init__(self, space, ceiling):
         self.space, self.ceiling, self.calls = space, ceiling, 0
         self.index = space.parameters.index(('hip_z', 0))
 
+    def lowest(self, x):
+        return .83+.17/(1+dmath.exp(-x[self.index]))
+
+    def residual(self, lowest):
+        return lowest-self.ceiling+1.
+
     def score(self, x):
         self.calls += 1
-        lowest = .83+.17/(1+dmath.exp(-x[self.index]))
+        lowest = self.lowest(x)
         if dmath.primal(lowest) > self.ceiling:
             return math.inf, None
-        r = [dmath.maximum(0., lowest-self.ceiling)+1.]
+        r = [self.residual(lowest)]
         return dmath.total(v*v for v in r), r
+
+
+class _RecordingReach(_HipReach):
+    """Remembers the hip lowest point of every start it scored."""
+    def __init__(self, space, ceiling):
+        super().__init__(space, ceiling)
+        self.scored = []
+
+    def score(self, x):
+        value, residuals = super().score(x)
+        if residuals is not None:
+            self.scored.append(dmath.primal(self.lowest(x)))
+        return value, residuals
+
+
+class _KinkedReach(_HipReach):
+    """The same guard with a residual that is nonsmooth everywhere it scores."""
+    def residual(self, lowest):
+        return dmath.maximum(dmath.primal(lowest), lowest)
 
 
 class CarryTests(unittest.TestCase):
@@ -352,11 +378,28 @@ class CarryTests(unittest.TestCase):
         objective = _HipReach(self.space, self.lowest-need)
         x, drop = carry_start(self.fixture, self.space, objective)
         self.assertGreaterEqual(drop, need-1e-12)
-        self.assertLess(drop, need+1e-9)
+        self.assertLess(drop, need+1e-12)
         _, residuals = objective.score(x)
         self.assertIsNotNone(residuals)
-        # The returned start is off the hinge: the fitter can differentiate it.
+        # The returned drop is the bisection's: no step-off past it. With no
+        # hinge the start on the wall differentiates, and the fit's reach rows
+        # move it off. A drop a bisection width smaller does not score.
+        gap = objective.ceiling-dmath.primal(objective.lowest(x))
+        self.assertGreaterEqual(gap, 0.)
+        self.assertLess(gap, 1e-12)
         analytic_jacobian(objective.score, x, residuals).require_resolved()
+
+    def test_the_returned_start_is_the_smallest_drop_the_search_scored(self):
+        # A smaller drop leaves the hips higher. No step-off: the returned
+        # start is the highest-hipped start that scored, not one past it.
+        objective = _RecordingReach(self.space, self.lowest-.3*self.bob)
+        x, _ = carry_start(self.fixture, self.space, objective)
+        self.assertEqual(dmath.primal(objective.lowest(x)), max(objective.scored))
+
+    def test_the_carry_refuses_a_start_whose_derivatives_do_not_resolve(self):
+        need = .3*self.bob
+        with self.assertRaisesRegex(ValueError, 'unresolved derivatives'):
+            carry_start(self.fixture, self.space, _KinkedReach(self.space, self.lowest-need))
 
     def test_no_drop_within_one_bob_is_refused(self):
         with self.assertRaises(ValueError):
