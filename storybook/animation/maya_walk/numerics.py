@@ -113,18 +113,24 @@ def _step_bounds(lower, upper, n, limit):
     return [float(v) for v in lower], [float(v) for v in upper]
 
 
-def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=None, upper=None,
-                          max_iterations=1000, tolerance=1e-10):
-    """Minimize ||J step-rhs||² + damping*||D step||², lower <= step <= upper.
+@dataclass(frozen=True)
+class _ScaledSystem:
+    """The checked, column-scaled and damped system both bounded solves work on."""
+    n: int
+    lower: list
+    upper: list
+    scales: list
+    normalized: list
+    augmented: list
+    target: list
+    floors: list
+    ceilings: list
+    slack: float
+    threshold: float
 
-    Without explicit bounds the box is |step| <= limit. A caller with a domain
-    passes per-coordinate bounds inside that box; a side may have zero width.
-    D contains nonzero Jacobian column norms (one for zero columns). QR avoids
-    squaring the condition number. Positive damping resolves duplicate directions
-    in *normalized* coordinates; it does not invent information in a zero column.
-    The finite active-set budget is never reported as convergence. The KKT check
-    uses the original scaled columns, independently of the reduced QR solve.
-    """
+
+def _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, tolerance):
+    """Input checks, column scaling and the damped system: one owner for both solves."""
     if not finite(limit) or limit <= 0:
         raise ValueError('Positive finite step limit required')
     if not finite(damping) or damping < 0:
@@ -145,15 +151,32 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=
         raise ValueError('Unrepresentable numerical scale or bound')
     normalized = [[v/s for v in c] for c, s in zip(columns, scales)]
     # Exact zero rows carry no directional information, even if rhs is nonzero.
-    rows = [j for j in range(len(rhs)) if any(c[j] for c in normalized)]
+    used = [j for j in range(len(rhs)) if any(c[j] for c in normalized)]
     root = math.sqrt(damping)
-    augmented = [[c[j] for j in rows] + [root if i == k else 0. for k in range(n)]
+    augmented = [[c[j] for j in used] + [root if i == k else 0. for k in range(n)]
                  for i, c in enumerate(normalized)]
-    target = [rhs[j] for j in rows] + [0.]*n
-    floors = [a*s for a, s in zip(lower, scales)]
-    ceilings = [b*s for b, s in zip(upper, scales)]
-    slack = BOUND_TOLERANCE*limit
-    threshold = tolerance*max(1., math.hypot(*rhs))
+    target = [rhs[j] for j in used] + [0.]*n
+    return _ScaledSystem(n, lower, upper, scales, normalized, augmented, target,
+                         [a*s for a, s in zip(lower, scales)], [b*s for b, s in zip(upper, scales)],
+                         BOUND_TOLERANCE*limit, tolerance*max(1., math.hypot(*rhs)))
+
+
+def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=None, upper=None,
+                          max_iterations=1000, tolerance=1e-10):
+    """Minimize ||J step-rhs||² + damping*||D step||², lower <= step <= upper.
+
+    Without explicit bounds the box is |step| <= limit. A caller with a domain
+    passes per-coordinate bounds inside that box; a side may have zero width.
+    D contains nonzero Jacobian column norms (one for zero columns). QR avoids
+    squaring the condition number. Positive damping resolves duplicate directions
+    in *normalized* coordinates; it does not invent information in a zero column.
+    The finite active-set budget is never reported as convergence. The KKT check
+    uses the original scaled columns, independently of the reduced QR solve.
+    """
+    system = _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, tolerance)
+    n, lower, upper, scales = system.n, system.lower, system.upper, system.scales
+    normalized, augmented, target = system.normalized, system.augmented, system.target
+    floors, ceilings, slack, threshold = system.floors, system.ceilings, system.slack, system.threshold
     y = [0.]*n
     active = [0]*n  # -1 lower, +1 upper, 0 free
 
@@ -383,27 +406,11 @@ def constrained_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lo
     certified is NUMERICAL_FAILURE. Every status but CONVERGED returns a zero
     step and zero optimality and reduction.
     """
-    if not finite(limit) or limit <= 0:
-        raise ValueError('Positive finite step limit required')
-    if not finite(damping) or damping < 0:
-        raise ValueError('Nonnegative finite damping required')
-    if type(max_iterations) is not int or not 1 <= max_iterations <= 10000:
-        raise ValueError('Explicit bounded positive solve budget required')
-    if not finite(tolerance) or not 0 < tolerance <= 1e-6:
-        raise ValueError('Positive bounded numerical tolerance required')
-    n = len(columns)
-    if not n or not rhs or any(len(c) != len(rhs) for c in columns):
-        raise ValueError('Complete nonempty least-squares system required')
-    if any(not finite(v) for c in columns for v in c) or any(not finite(v) for v in rhs):
-        raise ValueError('Finite least-squares system required')
-    lower, upper = _step_bounds(lower, upper, n, limit)
+    system = _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, tolerance)
+    n, lower, upper, scales = system.n, system.lower, system.upper, system.scales
+    normalized, floors, ceilings = system.normalized, system.floors, system.ceilings
+    slack, threshold = system.slack, system.threshold
     rows = _rows(rows, n)
-    norms = [math.hypot(*c) for c in columns]
-    scales = [s if s else 1. for s in norms]
-    if any(not math.isfinite(s) or not math.isfinite(limit*s) or limit*s == 0 for s in scales):
-        raise ValueError('Unrepresentable numerical scale or bound')
-    threshold = tolerance*max(1., math.hypot(*rhs))
-    slack = BOUND_TOLERANCE*limit
 
     def refused(status, iterations=0):
         return StepResult((0.,)*n, status, iterations, 0., threshold, 0., tuple(scales))
@@ -418,21 +425,13 @@ def constrained_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lo
         if not norm or not math.isfinite(norm):
             return refused(SolveStatus.NUMERICAL_FAILURE)
         general.append(([v/norm for v in scaled], bound/norm, coefficients, bound))
-    normalized = [[v/s for v in c] for c, s in zip(columns, scales)]
-    floors = [a*s for a, s in zip(lower, scales)]
-    ceilings = [b*s for b, s in zip(upper, scales)]
     box = []
     for i in range(n):
         box.append(([1. if k == i else 0. for k in range(n)], floors[i]))
         box.append(([-1. if k == i else 0. for k in range(n)], -ceilings[i]))
     constraints = box+[(c, b) for c, b, *_ in general]
-    used = [j for j in range(len(rhs)) if any(c[j] for c in normalized)]
-    root = math.sqrt(damping)
-    augmented = [[c[j] for j in used] + [root if i == k else 0. for k in range(n)]
-                 for i, c in enumerate(normalized)]
-    target = [rhs[j] for j in used] + [0.]*n
     try:
-        reduced, reduced_rhs = _qr(augmented, target)
+        reduced, reduced_rhs = _qr(system.augmented, system.target)
     except ArithmeticError:
         return refused(SolveStatus.RANK_DEFICIENT)
     try:
