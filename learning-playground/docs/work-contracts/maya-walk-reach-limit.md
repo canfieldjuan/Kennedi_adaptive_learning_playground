@@ -153,6 +153,19 @@ Tests touching these: `test_fitting_numerics.py`, `test_motion_floor.py`
     that checks feasibility of every row within `BOUND_TOLERANCE*TRUST_LIMIT`,
     stationarity, nonnegative multipliers and complementarity, independently
     of the reduction it solved.
+  - **Amended after implementation began.** The LDP meets each row only to
+    absolute rounding in scaled coordinates, and a near-zero Jacobian column
+    turns that into a large miss in real units. At the carried fit's stop,
+    `('toe', 1)` has column norm 8e-15, and a 2e-12 scaled miss became 284.
+    So, as `bounded_least_squares` does, a coordinate whose bound is active
+    or passed is placed exactly on it before the certificate runs. A
+    coordinate on a bound may keep a reduced gradient pointing out of the box.
+    Complementarity is checked in real units: a row with a positive
+    multiplier must hold with equality within the same slack. A product of
+    multiplier and gap would grow with the multiplier and fail on rounding.
+  - **Amended.** The fit record gains, per attempt, whether the constrained
+    solve ran, and the margin derivatives' receipts, so a stop on an
+    unresolved margin derivative says why.
   - When no step satisfies the rows inside the box, it returns a new closed
     status `infeasible`. `admit_step` records that as the existing `unsolved`
     verdict. Infeasibility does not depend on damping, so a fit that meets it
@@ -252,6 +265,10 @@ added.
   this contract does not promise none.
 - **The fixture adds the carried fit's coordinates** (98 numbers) to the repo.
   Numbers only, no path, name or private data.
+- **Amended.** At very high damping the constrained solve cannot certify its
+  step to the existing tolerance. At the carried fit's stop it certifies up to
+  damping 1e8 and returns `numerical_failure` from 1e9. The fit treats that as
+  `unsolved`, as it does any uncertified solve; it fails closed.
 
 ## Verification plan
 
@@ -263,8 +280,11 @@ added.
    - After: the residual and margin derivatives resolve, and `admit_step`
      admits a step whose every sample keeps a positive margin.
 3. **Parity.**
-   - At the fourth fit's frozen point and the authored start, where no reach
-     row binds, every attempt's step is bit-identical to base.
+   - At the fourth fit's frozen point and the frozen outer-step point
+     (`frozen-outer-step.json`), where no reach row binds, every attempt's
+     step is bit-identical to base. **Amended:** the authored start cannot be
+     used. The reach guard refuses it under both charts on base `3d58321`
+     too, so it has no step to compare.
    - Removing the hinge changes no score at the frozen points and in the
      suite's objective tests.
 4. **Constrained solve, both sides.**
