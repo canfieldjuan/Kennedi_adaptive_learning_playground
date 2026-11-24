@@ -324,7 +324,8 @@ added.
 ## Implementation summary
 
 Juan accepted the contract on 2026-11-24. It was amended in `0c05d0f`, before
-any code was committed, and implemented in `9efd961`.
+any code was committed, and implemented in `9efd961`. `d057621` amended it
+again to share the solves' input checks, done in `b8c54f6`.
 
 - **`reach_margin` owns the search reach measurement.** `REACH_LIMIT` names the
   unchanged threshold. The guard refuses a negative margin, the same set the
@@ -348,7 +349,7 @@ any code was committed, and implemented in `9efd961`.
 
 ## Cold Diff Audit
 
-Diff `3d58321..9efd961`, read cold. Evidence alias
+Diff `3d58321..b8c54f6`, read cold. Evidence alias
 `reach-limit-20261124T205906Z`.
 
 ### Gaps
@@ -396,15 +397,20 @@ Diff `3d58321..9efd961`, read cold. Evidence alias
   `scaled-qr-active-set-v1+reach-lsi-v1`. A comment explains why
   all-unsolved already covers infeasibility.
 - **`numerics.py:6-7`.** The Lawson and Hanson reference.
+- **`numerics.py:116-161`.** `_ScaledSystem` and `_scaled_system`: the input
+  checks, column scaling and damped system, moved out of
+  `bounded_least_squares` (`b8c54f6`, per the amendment in `d057621`). Both
+  solves call it; parity with base stays bit-identical
+  (`parity-after-2.json`).
 - **`numerics.py:28-29, 55-56`.** `SolveStatus.INFEASIBLE`, and an infeasible
   result carries no step.
-- **`numerics.py:219-255`.** `_rows` (validation), `row_shortfall` (distance
+- **`numerics.py:242-278`.** `_rows` (validation), `row_shortfall` (distance
   along the unit normal) and `rows_hold` (within `BOUND_TOLERANCE*limit`), the
   one feasibility test.
-- **`numerics.py:258-317`.** `_transposed_solve` and `_nnls`.
-- **`numerics.py:320-364`.** `_certificate` (bound-aware stationarity, signs,
+- **`numerics.py:281-340`.** `_transposed_solve` and `_nnls`.
+- **`numerics.py:343-387`.** `_certificate` (bound-aware stationarity, signs,
   complementarity in real units) and `_farkas`.
-- **`numerics.py:367-487`.** `constrained_least_squares`.
+- **`numerics.py:390-486`.** `constrained_least_squares`.
   - Validation and scaling are as in `bounded_least_squares`.
   - Zero rows: infeasible if the bound is positive, dropped otherwise.
   - Box and unit-normalized rows in scaled coordinates. QR of the damped
@@ -445,7 +451,8 @@ Diff `3d58321..9efd961`, read cold. Evidence alias
   - `test_the_returned_start_is_the_smallest_drop_the_search_scored`;
   - `test_the_carry_refuses_a_start_whose_derivatives_do_not_resolve`.
 - **Must Not Change:** the diff touches no validator, chart, objective term,
-  damping, verdict or `bounded_least_squares` line.
+  damping or verdict line. `bounded_least_squares` changes only by the amended
+  extraction of its setup into `_scaled_system`, with bit-identical parity.
 
 ### Verification
 
@@ -477,6 +484,8 @@ Diff `3d58321..9efd961`, read cold. Evidence alias
     - A one-ulp carry step-off: it gives the identical 98 coordinates at the
       real carried start.
   - **Third run:** a 1e-9 step-off is caught.
+  - **Fourth run, after the `_scaled_system` extraction:** the same 24 of 26
+    caught, with the same two equivalent survivors.
 - **Suite:** `python3 -B -m unittest discover -s storybook/animation/maya_walk/tests -p 'test_*.py'`
   ran 216 tests, OK.
 
