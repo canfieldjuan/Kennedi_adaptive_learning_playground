@@ -8,6 +8,8 @@ export type Route =
   | { view: 'home' }
   | { view: 'parent' }
   | { view: 'story-stage' }
+  | { view: 'math' }
+  | { view: 'garden' }
   | { view: 'activity'; activityId: string };
 
 type RouteChangeHandler = (route: Route) => void;
@@ -19,6 +21,8 @@ let _handler: RouteChangeHandler | null = null;
  */
 export function parseRoute(): Route {
   const hash = window.location.hash.replace('#', '') || 'home';
+
+  if (hash === 'math' || hash === 'garden') return { view: hash };
 
   if (hash === 'parent') {
     return { view: 'parent' };
@@ -43,6 +47,10 @@ export function navigate(route: Route): void {
   switch (route.view) {
     case 'home':
       window.location.hash = '#home';
+      break;
+    case 'math':
+    case 'garden':
+      window.location.hash = `#${route.view}`;
       break;
     case 'parent':
       window.location.hash = '#parent';

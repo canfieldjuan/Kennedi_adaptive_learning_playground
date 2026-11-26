@@ -38,7 +38,7 @@ const HOME_OPTIONS: HomeOption[] = [
     label: 'Math',
     color: 'green',
     speechLabel: 'Math',
-    route: '#activity/number-train',
+    route: '#math',
   },
   {
     id: 'home-art',
