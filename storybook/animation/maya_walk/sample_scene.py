@@ -14,7 +14,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from storybook.animation.maya_walk.spec import (BASELINE, FINE_SPACING, PROGRESSION_POINTS, TARGET,
-                                                GaitSpec, Side, SceneKind)
+                                                GaitSpec, Side, SceneKind, admitted_policy)
 
 
 def weights_at(point, a, b, c):
@@ -71,6 +71,14 @@ def fine_times(start, end, spacing=FINE_SPACING):
     return [start+(i-1)*spacing for i in range(count)]
 
 
+def admit_saved_candidate(saved_gait_spec):
+    """A saved candidate scene's gait_spec JSON must pass the one policy gate for TARGET."""
+    try:
+        admitted_policy(GaitSpec.from_dict(json.loads(saved_gait_spec)), TARGET)
+    except (ValueError, TypeError) as error:
+        raise ValueError("Saved source clock differs from candidate specification") from error
+
+
 def action_inventory(bpy):
     result = []
     for obj in bpy.data.objects:
@@ -113,8 +121,8 @@ def main():
         raise ValueError("Playback handlers violate source-only native evaluation")
     kind = SceneKind(args.kind)
     spec = TARGET if args.alias == "candidate" else BASELINE
-    if args.alias == "candidate" and GaitSpec(**json.loads(bpy.context.scene.get("gait_spec", "null"))) != spec:
-        raise ValueError("Saved source clock differs from candidate specification")
+    if args.alias == "candidate":
+        admit_saved_candidate(bpy.context.scene.get("gait_spec", "null"))
     scene = bpy.context.scene
     rig = bpy.data.objects["MAYA_CONTROL_RIG"]
     upper = bpy.data.objects.get("MAYA_PAINTED_UPPER_RIG")

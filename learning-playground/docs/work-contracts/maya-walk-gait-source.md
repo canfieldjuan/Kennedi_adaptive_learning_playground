@@ -461,6 +461,17 @@ Parity and preservation evidence remain applicable only after a no-relevant-diff
 check of their writer, fixture, inputs and harness. Any future scope expansion or
 motion-target change still requires its own recorded acceptance.
 
+### 2026-11-26: velocity-continuity limits measured from real children
+
+Proposed for Juan's acceptance in `maya-walk-joint-velocity-limits.md`. That
+contract replaces the "Velocity continuity" row's initial 2 degrees/frame per
+quarter frame with one limit per joint: hip 1.47, knee 3.54, ankle 4.35 and
+foot pitch 5.06. Each limit is the largest value measured on 64 legs of
+typically developing children (MCRI CGM2 dataset, CC BY 4.0), rounded up.
+The row's other requirements stay in force: all joints, the whole cycle and
+seams, and reporting in degrees/s and degrees/s². This amendment takes effect
+only when Juan accepts that contract.
+
 ## Implementation Summary
 
 This step adds only this contract. No animation package, CI edit, validator,

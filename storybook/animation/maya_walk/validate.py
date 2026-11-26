@@ -5,7 +5,7 @@ import math
 
 from .reference import Kind, SIGNATURES, SOURCES
 from .sample_scene import angle_delta
-from .spec import (GaitSpec, MotionTrack, Point, Sample, SceneKind, Side, finite,
+from .spec import (JOINTS, GaitSpec, MotionTrack, Point, Sample, SceneKind, Side, finite,
                    THIGH_LENGTH, SHIN_LENGTH, REACH_TOLERANCE)
 
 
@@ -51,10 +51,10 @@ def measurement_resolution(spec, spacing):
     any δ window touches at most three unit-sum kernels, so it is detected above
     ``12·limit·δ``. Forward velocity is an exact interval average.
     """
-    limit = spec.velocity_change_per_quarter
+    limits = spec.velocity_change_per_quarter
     return {"spacing_frames": spacing,
-            "angle_step_detected_above_degrees": 8*limit*spacing**2,
-            "velocity_change_detected_above_degrees_per_frame": 12*limit*spacing,
+            "angle_step_detected_above_degrees": {j: 8*limits.of(j)*spacing**2 for j in sorted(JOINTS)},
+            "velocity_change_detected_above_degrees_per_frame": {j: 12*limits.of(j)*spacing for j in sorted(JOINTS)},
             "backward_displacement_detected_above_units": spec.backward_tolerance*spacing}
 
 
@@ -338,12 +338,13 @@ def validate_cycle(samples, spec, kind, *, tracks, fps, rest_hip_height, scene_s
                                  {"forward_velocity": forward_velocity, "interval_frames": [t0+1, t1+1]},
                                  -spec.backward_tolerance, "units/frame")
                 for joint, values in motion["acceleration"].items():
+                    limit = spec.velocity_change_per_quarter.of(joint)
                     for time, jump in values:
-                        if jump > spec.velocity_change_per_quarter:
+                        if jump > limit:
                             fail("angular_velocity_jump", side, number, time, joint,
                                  {"degrees_per_frame_per_quarter": jump, "degrees_per_second_squared": jump/.25*fps*fps,
                                   "interval_frames": [time-track.spacing+1, time+track.spacing+1]},
-                                 spec.velocity_change_per_quarter, "degrees/frame/quarter-frame")
+                                 limit, "degrees/frame/quarter-frame")
                     report["joint_maximum_velocity_change"][joint] = max(jump for _, jump in values)
 
             release = by_time[event_times["toe_off"]]
