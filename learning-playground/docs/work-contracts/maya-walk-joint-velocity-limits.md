@@ -107,6 +107,7 @@ Every reader of the limit at the base commit:
 | `fitting.py:497` | the objective's hinge at `1.98` |
 | `spec.py:304` | `SamplePacket.from_dict` rebuilds `GaitSpec(**data["spec"])` from saved packets |
 | `sample_scene.py:116` | compares a saved candidate scene's `gait_spec` to `TARGET` |
+| `__main__.py:30-39` | `analyze` admits a packet only if its whole spec equals `TARGET` (candidate) or `BASELINE` (baselines), then validates with the packet's spec |
 | `tests/test_interval_motion.py:71-94` | detection bounds asserted for the single limit (`.25`, `3.`) |
 | `tests/test_interval_motion.py:115-140` | hidden-spike, boundary and seam tests at 2.0 (boundary on `foot_pitch`) |
 | `tests/test_interval_motion.py:185-190` | the reported `measurement_resolution` |
@@ -158,16 +159,34 @@ the same formulas (`8·L·δ²`, `12·L·δ`) applied to that joint's limit.
 - `OBJECTIVE_LIMIT_MARGIN = .02` is the existing margin, named once. The scale
   `/.15`, the weight `sqrt(δ/.25)` and `velocity_weight` are unchanged.
 
-**6. Legacy packets keep their own meaning.** One owner rebuilds a spec from
-saved JSON: `GaitSpec.from_dict`, used at `spec.py:304` and
-`sample_scene.py:116`.
+**6. Saved packets and scenes: one reader and one policy gate.** A packet
+records the spec it was sampled with. Its velocity limits only ever feed
+validation; sampling never reads them (`sample_scene.py` uses the spec for the
+clock and events). Two owners in `spec.py`:
 
-- **Legacy form.** A packet saved with a single number applied that number to
-  every joint, so it becomes `JointLimits` with that number for all four.
-  Historical evidence then reproduces under the rule it was made with.
-- **New form.** A mapping must hold exactly the four joints.
-- **Anything else is refused.** That includes a missing or extra joint, a
-  non-finite value, zero, a negative, a bool or a string.
+- **`GaitSpec.from_dict` reads saved JSON.** It is used at `spec.py:304` and
+  `sample_scene.py:116`.
+  - **Legacy form.** A single number becomes `JointLimits` with that number
+    for all four joints.
+  - **New form.** A mapping must hold exactly the four joints.
+  - **Anything else is refused:** a missing or extra joint, a non-finite
+    value, zero, a negative, a bool or a string.
+- **`admitted_policy(recorded, owner)` is the one policy gate.** It is used by
+  both `analyze` branches (`__main__.py:30-39`) and by the candidate check
+  at `sample_scene.py:116`.
+  - **Sampling stays exact.** Every field except the velocity limits must
+    equal the owner's, as today.
+  - **Only two limit forms are admitted.** The recorded limits must be either
+    the owner's limits or the legacy uniform 2.0 (`LEGACY_UNIFORM_LIMIT`,
+    named once). Any other limit set is refused, because it comes from a
+    policy nobody reviewed.
+  - **Return value.** The gate returns the owner's spec, and `analyze`
+    validates with that spec. It never uses the packet's recorded limits.
+  - **Reporting.** The report records which limit form the packet carried
+    (`"packet_limits": "current"` or `"legacy-uniform-2.0"`).
+- **Result.** An old packet or scene is analyzed under today's validator, with
+  the same identity checks as before. Its historical verdict stays in its
+  sealed report; it is not recomputed.
 
 **7. Tests.**
 
@@ -197,8 +216,13 @@ whole cycle, seams, reporting in degrees/s and degrees/s².
   The 10-harmonic reconstruction keeps everything a 1 s stride holds up to
   10 Hz, above the usual 6 Hz capture filter, and agrees with 6, 8 and 15
   harmonics to within the reported spread.
-- **Refusing legacy packets.** That would make every historical reproduction
-  unrunnable, although their single number has an exact per-joint meaning.
+- **Refusing legacy packets.** That would make every saved sample packet
+  unanalyzable. Their samples do not depend on the limit, and their single
+  number has an exact per-joint meaning.
+- **Validating legacy packets under their recorded limits.** That would need a
+  second admitted owner policy for the same scene, and an analysis verdict
+  would then depend on when the packet was sampled. Historical verdicts
+  already live in their sealed reports.
 
 ### Must Not Change
 
@@ -237,6 +261,10 @@ restriction:
 - **Malformed limit data refused.** Needed because a limit that silently
   defaults would make validation meaningless. The legacy scalar is migrated
   exactly, not refused. **Kept, scoped.**
+- **Packet limits admitted only as current or legacy uniform 2.0.** Needed
+  because any other limit set comes from a policy nobody reviewed. These are
+  the only two forms that have ever existed, and admitting them costs nothing
+  because validation uses the owner's limits. **Kept.**
 
 mechanism:
 - **Per-joint limits:** a closed frozen dataclass with four named fields (an
@@ -282,6 +310,22 @@ mechanism:
    joint, an extra joint, NaN, inf, 0, a negative, `True` and a string. A
    legacy scalar 2.0 rebuilds as four 2.0 limits, and a packet with the new
    mapping round-trips exactly.
+4a. **End-to-end legacy analysis.** These go through `analyze` itself, not
+   only deserialization. They use written packet files: a baseline packet
+   whose identity matches the sealed digest, and a candidate packet.
+   - **Admitted.** A packet recording the legacy scalar 2.0, and one recording
+     the current limits, are both admitted. Both are validated with the
+     owner's limits: a knee value of 3.0 passes in both, and a hip value of
+     1.6 fails in both. The report records `packet_limits`.
+   - **Refused, with nothing validated.**
+     - recorded limits of uniform 2.5;
+     - recorded limits of the current set with one joint changed;
+     - a legacy-limit packet whose clock or event differs from the owner;
+     - a candidate saved scene whose `gait_spec` differs from `TARGET` in
+       anything other than an admitted limit form.
+   - **Mutants that must fail a test.** Each of these, applied alone: removing
+     the identity comparison, admitting any limit set, and validating with the
+     packet's recorded limits.
 5. **One owner.**
    - Changing `TARGET`'s knee limit in a test changes both the validator's
      knee verdict and the objective's knee hinge.
@@ -316,7 +360,8 @@ mechanism:
     - The full pure walk suite passes.
     - One mutant per new clause, including the first; every survivor is
       explained: each joint lookup, each admission clause, legacy migration,
-      rounding direction, the objective margin, and each detection bound.
+      each policy-gate clause, rounding direction, the objective margin, and
+      each detection bound.
     - A cold diff audit with file:line citations.
 12. **Evidence** goes under `G` (directories 700, files 600), cited by alias
     and SHA256.
