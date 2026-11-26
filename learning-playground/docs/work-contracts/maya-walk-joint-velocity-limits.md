@@ -431,4 +431,177 @@ changes.
 
 ## Implementation summary
 
-Not started. Implementation follows in its own commit.
+- **Commits.** Implementation `b456f44`, on top of the amendment `0896850`.
+- **Evidence alias.** `JL` = `G/joint-limits-20261126T200145Z` (directories
+  700, files 600).
+- **Limits.** Hip 1.47, knee 3.54, ankle 4.35 and foot pitch 5.06. They are
+  derived in code from the cited maxima and reported per joint.
+- **One threshold source.** The validator, the detection bounds and the
+  objective all read the spec's `JointLimits`.
+- **One gate.** Saved packets and scenes pass `admitted_policy`, and
+  validation always uses the owner's limits.
+- **No fit, scene write, animation or walk acceptance.**
+
+Actual counts under the new limits (Verification plan items 8 and 10):
+
+| Scene | Velocity failures before | After | By joint after | All violations after |
+|---|---|---|---|---|
+| native baseline (6 cycles) | 360 | 216 | hip 120, knee 78, ankle 18 | 482 |
+| painted baseline | 360 | 216 | hip 120, knee 78, ankle 18 | 488 |
+| release baseline | 480 | 174 | hip 84, knee 66, ankle 24 | 380 |
+| fourth fit, near cycle 1 | 116 | 22 | hip 20, knee 2 | 378 overall (was 1224) |
+| reach fit, near cycle 1 | 139 | 45 | hip 31, knee 10, ankle 4 | 612 overall (was 1458) |
+
+The walk still fails validation.
+
+## Cold Diff Audit
+
+### Gaps
+
+1. **One mutant survives.** Removing the call to `admit_saved_candidate` from
+   Blender's `main` (`sample_scene.py:125`) survives, and no unit test can
+   reach it. It would be caught only by sampling a saved candidate scene in
+   Blender, and none exists. The function itself is tested
+   (`SavedSceneTests`), and its gate-skipping mutant is caught.
+2. **The weak-column bound is looser** (amendment). The finite-difference
+   cross-check is now judged against the estimator's own reported error (.047)
+   instead of a fixed 1%.
+3. **Reach rows are first-order at collapsed damping.** At the frozen outer
+   step, at 1e-7 (`DAMPING_FLOOR`), four near-Gauss-Newton steps leave the
+   leg's reach before one is admitted, even with reach rows (`JL/outer-step-probe-after.log`).
+   PR 184 introduced this, not this change. It belongs to the solver contract
+   (scale floor and reach hold), which is still to be written.
+4. **The contract's estimates were low.** It estimated 168, 168, 150, 8 and
+   28 velocity failures; the actual counts are 216, 216, 174, 22 and 45. The
+   estimates came from old reports that only listed values above 2.0.
+5. **One AnalyzeTests case already passed on the base.** The candidate case
+   passes on `85276ef`, where there is only one limit form, so it is not a
+   fail-first test. The legacy, current and refusal cases are.
+6. **Size.** About 960 lines before this audit (code, tests and contract),
+   slightly over 1,000 with it.
+
+### Change By Change Reconstruction
+
+- **`reference.py:50-66`.**
+  - `SOURCES["joint_acceleration"]` cites the dataset, its DOI, its licence
+    and the file's SHA256.
+  - `CHILD_JOINT_ACCELERATION_MAXIMA` holds the four maxima at full
+    precision, with the method in a comment.
+- **`spec.py:7`.** Imports the maxima; `reference.py` imports nothing from
+  `spec`, so there is no import cycle.
+- **`spec.py:63-102`.**
+  - `JOINTS` moves above its first user.
+  - `LEGACY_UNIFORM_LIMIT = 2.` is named once.
+  - `JointLimits` admits only finite positive floats (lines 76-80).
+  - `of` refuses names outside `JOINTS`.
+  - `uniform` builds four equal limits.
+  - `from_dict` requires a dict with exactly the four joints.
+  - An import-time check ties the field names to `JOINTS`.
+  - `CHILD_JOINT_LIMITS` rounds each maximum up to a hundredth (line 102).
+- **`spec.py:120, 132-147`.** The `GaitSpec` field is `JointLimits` with the
+  child default. The numeric checks skip it and a type check admits only
+  `JointLimits`, so a scalar is refused at construction.
+- **`spec.py:175-186`.** `GaitSpec.from_dict` reads a float as
+  `JointLimits.uniform` and a mapping through `JointLimits.from_dict`.
+  Anything else fails in `JointLimits.from_dict`.
+- **`spec.py:191-210`.** `admitted_policy` checks types and classifies the
+  recorded limits as `current` or `legacy-uniform-2.0`, refusing anything
+  else. It compares every other field exactly, by replacing the limits with
+  the owner's, and returns `(owner, form)`.
+- **`spec.py:385`.** `SamplePacket.from_dict` uses `GaitSpec.from_dict`.
+- **`validate.py:8, 54-57`.** Detection bounds are mappings per joint, over
+  `sorted(JOINTS)`.
+- **`validate.py:341-347`.** Each joint's own limit gates its values and is
+  the limit reported in the violation.
+- **`fitting.py:433, 502`.** `OBJECTIVE_LIMIT_MARGIN = .02`, and each joint's
+  hinge starts at `TARGET`'s limit for that joint less the margin. The scale
+  `/.15`, the weight and `velocity_weight` are unchanged.
+- **`__main__.py:30-53`.**
+  - Both branches keep their identity checks: scene kind for both, plus the
+    digest for baselines.
+  - The gate replaces whole-spec equality, with the original error messages
+    chained.
+  - Validation uses the gate's owner spec, and `packet_limits` is reported.
+- **`sample_scene.py:74-80, 125`.** `admit_saved_candidate` runs the saved
+  JSON through `GaitSpec.from_dict` and the gate against `TARGET`, mapping any
+  error to the original message. `main` calls it for candidates.
+- **Tests.**
+  - New `tests/test_joint_limits.py` (300 lines).
+  - `test_interval_motion.py`: per-joint bounds, boundary and hinge.
+  - `test_reach_limit.py`, `test_fitting_numerics.py`, `test_timing_domain.py`
+    and `test_differential.py`: the frozen points, as the amendment records.
+
+### Contract Traceability
+
+| Contract item | Where |
+|---|---|
+| 1 Closed owner | `spec.py:63-102`, `120-147` |
+| 2 Provenance | `reference.py:50-66`, `spec.py:102` |
+| 3 Validator per joint | `validate.py:341-347` |
+| 4 Detection bounds | `validate.py:54-57` |
+| 5 Objective owner | `fitting.py:433, 502` |
+| 6 Reader and gate | `spec.py:175-210, 385`, `__main__.py:30-53`, `sample_scene.py:74-80, 125` |
+| 7 Tests | the test files above |
+| 8 Contract trail | `maya-walk-gait-source.md` amendment entry (commit `0c55ca9`) |
+| Amendment | this file's Contract Amendments section (commit `0896850`) |
+
+### Verification
+
+1. **Fail first on `85276ef`** (`JL/fail-first.log`, SHA256
+   `ae6b600a3584cd25c38f01cde3728cad94fd79fdbb0b6968eaa17625a4e726c0`):
+   18 tests, 6 failures and 14 errors.
+   - A knee value of 3.0 is refused, and a hip value of 1.6 is admitted.
+   - A 3.0 value is refused on the knee, ankle and foot.
+   - The API tests error on missing names.
+2. **New tests after the change.** All pass: 19 tests, including
+   `SavedSceneTests`.
+3. **Full pure walk suite.** Command: `python3 -B -m unittest discover -s
+   storybook/animation/maya_walk/tests -p 'test_*.py'`. It ran 235 tests, OK
+   (`JL/suite-final.log`,
+   `48d9c70fd3d6719fe9c4a8b3e0242327162cf13e409a2204879c95966ef8cc3d`).
+4. **Mutation** (`JL/mutants-2.json`,
+   `7cb605dea9316fd90c91c911d6fc1f8593d9f80aa0dfad42e49f5c9cfdd2afb6`). 30 of
+   31 mutants were caught, and the control passed. The survivor is Gap 1.
+5. **Baselines.** `reproduce` with Blender 5.2.2 re-sampled the three sealed
+   scenes. All are REPRODUCED on their required rules, with knee and hip
+   velocity failures in all 6 complete cycles of each
+   (`JL/reproduction/reproduction.json`,
+   `14ca650ae1ae1b77b9e27d4bb87984f68cf72f94b3f225bcceda66e270d6e7ac`).
+6. **Legacy packets end to end.** The 2026-11-12 baseline packets record the
+   single 2.0. `analyze` admits each as `legacy-uniform-2.0`, and its
+   violations equal the fresh re-sample's exactly
+   (`JL/legacy-packets/{native,painted,release}.json`, SHA256
+   `0dd265d8b49c80aba1c84e37961e6eb6d8e02027b76643e08d9b2bf9c24f0355`,
+   `12fc0b134d377919877e0cd4ce888473a02c4af295f82e0f0d58fcf8330e1a9d`,
+   `a6b14aebe0c3b3568b467b3e0b938e63ed2d7a61b2219f7e61e87d071822321f`).
+7. **Frozen points.** Before and after values are in the amendment
+   (`JL/frozen-probe-base.log`
+   `93edc429e6bbc3fa3ff50b6d819868d14913f6d06e7256f6e65f7ba852d6741c`,
+   `JL/frozen-probe-after.log`
+   `6d12c2e90659e2a4ac490fb765028424436f9e3813a5077a5eaa2f1330d29295`,
+   `JL/outer-step-probe-after.log`
+   `930866d1b65f90e3c425f23c61d5fb8e68f64a443930e58d3d998e0077440924`). The
+   heel-strike pop still fails above 40 and 45.
+8. **Recount** (`JL/recount.json`,
+   `4e7426fbff498b1cb33cf5b5405591c7d19bc20d76371770f6dbf4f8573c9cc3`):
+   the table above.
+9. **Contract check.** `node scripts/check-work-contract.mjs` passes, and
+   `git diff --check` is clean.
+
+### Gap audit
+
+- **DONE.**
+  - Per-joint limits with recorded provenance.
+  - One threshold source for the validator, the detection bounds and the
+    objective.
+  - The saved-packet and saved-scene gate, with legacy packets analyzable end
+    to end.
+  - Baselines still fail on their complaints.
+  - Fail-first, suite, mutation and recount evidence.
+- **NOT DONE.**
+  - The walk does not pass: the fourth fit still has 378 violations, and the
+    reach fit 612.
+  - The solver repair (scale floor and reach hold) needs its own contract.
+  - The Blender-only call-site mutant (Gap 1) survives until a candidate
+    scene exists.
+  - No fit has been run under the new limits.
