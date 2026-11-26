@@ -316,9 +316,14 @@ class FrozenTimingWallTests(unittest.TestCase):
     def test_first_step_at_frozen_third_fit_point_is_admitted_inside_the_domain(self):
         # On base 98d79aa every attempt here is refused out_of_domain: the solved
         # step takes phase_toe[5] from -19.78 to -20.28 and the chart refuses it.
+        # The step is taken as fit() takes it, with the reach rows (PR 184): an
+        # out_of_domain verdict then cannot come from the reach guard instead.
+        from storybook.animation.maya_walk.fitting import reach_linearization, reach_rows
         self.assertAlmostEqual(self.x[self.wall], -19.783354649571557, delta=0)
+        margins, derivative = reach_linearization(self.objective, self.x)
+        rows = reach_rows(margins, derivative.require_resolved())
         update, _, receipts, _ = admit_step(
-            self.objective, self.space, self.x, self.score, self.residuals, self.columns, DAMPING_START)
+            self.objective, self.space, self.x, self.score, self.residuals, self.columns, DAMPING_START, rows)
         self.assertNotIn(StepVerdict.OUT_OF_DOMAIN, [r.verdict for r in receipts])
         self.assertIsNotNone(update)
         self.assertIs(receipts[-1].verdict, StepVerdict.ADMITTED)

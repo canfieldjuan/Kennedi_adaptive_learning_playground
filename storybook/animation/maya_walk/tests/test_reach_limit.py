@@ -55,7 +55,8 @@ class FrozenReachStopTests(unittest.TestCase):
         # (nonsmooth, from the reach hinge's exact tie at frame 22.25).
         x = self.fixture['values']
         score, residuals, columns, margins, rows = _linearize(self.objective, x)
-        self.assertEqual(score, 26734.496978721134)
+        # Per-joint velocity limits; under the single 2.0 limit: 26734.496978721134.
+        self.assertEqual(score, 20522.667167307874)
         self.assertEqual(min(margins), 0.)
         update, _, receipts, solves = admit_step(self.objective, self.space, x, score, residuals, columns,
                                                  DAMPING_START, rows)
@@ -77,27 +78,42 @@ class ParityTests(unittest.TestCase):
         flat = json.loads(FLAT_STOP.read_text())
         outer = json.loads(OUTER_STEP.read_text())
         space = TimingChart(PoseChart(floor=0.))
-        yield 'fourth fit', space, Objective(space, 1., 0.), flat['values'], 1065.0984973977909
+        # Scores under per-joint velocity limits (maya-walk-joint-velocity-limits).
+        # Under the single 2.0 limit, on base 3d58321 and 85276ef: 1065.0984973977909
+        # and 167627.33977017563.
+        # Under the single limit no reach row bound at either point. Under per-joint
+        # limits the outer step's box-only step misses a reach row, so that point
+        # now exercises the constrained branch instead of parity.
+        yield 'fourth fit', space, Objective(space, 1., 0.), flat['values'], 540.7090271604817, False
         yield 'outer step', space, Objective(space, outer['velocity_weight'], outer['guide_weight']), \
-            outer['values'], 167627.33977017563
+            outer['values'], 150777.21595978676, True
 
     def test_no_attempt_runs_the_constrained_solve_and_steps_match_the_box_only_path(self):
-        for name, space, objective, x, base_score in self.points():
+        for name, space, objective, x, base_score, binds in self.points():
             with self.subTest(name):
                 score, residuals, columns, margins, rows = _linearize(objective, x)
-                # Removing the dead hinge changes no score: these are base 3d58321's.
+                # Removing the dead hinge changes no score (base 3d58321 matched it exactly).
                 self.assertEqual(score, base_score)
                 self.assertGreater(min(margins), REACH_BACKOFF)
+                lower, upper = space.step_bounds(x)
+                box_step = bounded_least_squares(columns, [-v for v in residuals], DAMPING_START,
+                                                 lower=lower, upper=upper).require_converged()
+                self.assertEqual(rows_hold(box_step, rows), not binds)
                 with_rows = admit_step(objective, space, x, score, residuals, columns, DAMPING_START, rows)
                 box_only = admit_step(objective, space, x, score, residuals, columns, DAMPING_START)
-                self.assertEqual([s['constrained'] for s in with_rows[3]], [False]*len(with_rows[3]))
-                self.assertEqual(with_rows[0], box_only[0])
-                self.assertEqual(with_rows[1:3], box_only[1:3])
+                if not binds:
+                    self.assertEqual([s['constrained'] for s in with_rows[3]], [False]*len(with_rows[3]))
+                    self.assertEqual(with_rows[0], box_only[0])
+                    self.assertEqual(with_rows[1:3], box_only[1:3])
+                else:
+                    self.assertEqual([s['constrained'] for s in with_rows[3]], [True]*len(with_rows[3]))
+                    self.assertIsNotNone(with_rows[0])
+                    self.assertGreater(min(objective.reach_margins(with_rows[0][0])), 0.)
 
     def test_the_hinge_rows_were_zero_so_removing_them_leaves_the_solve_bit_identical(self):
         # On base each scheduled sample also appended the hinge: an exact zero
         # Jacobian row with a zero right-hand side wherever the point scored.
-        for name, space, objective, x, _ in self.points():
+        for name, space, objective, x, _, _ in self.points():
             with self.subTest(name):
                 score, residuals, columns, _, _ = _linearize(objective, x)
                 extra = len(objective.schedule)

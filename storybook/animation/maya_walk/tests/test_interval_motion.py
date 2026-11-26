@@ -9,7 +9,7 @@ from pathlib import Path
 import unittest
 
 from storybook.animation.maya_walk.sample_scene import fine_times, times
-from storybook.animation.maya_walk.spec import FINE_SPACING, SceneKind, Side
+from storybook.animation.maya_walk.spec import CHILD_JOINT_LIMITS, FINE_SPACING, SceneKind, Side
 from storybook.animation.maya_walk.validate import (TrackCoverageError, interval_motion,
                                                     measurement_resolution, validate_cycle)
 from storybook.animation.maya_walk.tests.fixtures import SPEC, fixture, tracks, with_track
@@ -72,16 +72,18 @@ class SharedOwnerTests(unittest.TestCase):
         width = 1e-6
         def ramp(size, centre):
             return lambda t: size*min(1., max(0., (t-centre+width/2)/width))
-        bound = measurement_resolution(SPEC, D)["angle_step_detected_above_degrees"]
-        self.assertEqual(bound, .25)
-        self.assertLess(self.worst(ramp(bound*.96, 0.)), 2.)          # centred: two half steps
+        limit = CHILD_JOINT_LIMITS.knee                               # self.worst measures the knee
+        bound = measurement_resolution(SPEC, D)["angle_step_detected_above_degrees"]["knee"]
+        self.assertEqual(bound, 8*limit*D**2)
+        self.assertLess(self.worst(ramp(bound*.96, 0.)), limit)       # centred: two half steps
         for k in range(17):                                           # every offset in one interval
             with self.subTest(offset=k):
-                self.assertGreater(self.worst(ramp(bound*1.04, k/16*D)), 2.)
+                self.assertGreater(self.worst(ramp(bound*1.04, k/16*D)), limit)
 
     def test_concentrated_velocity_change_bound_holds_at_every_offset_and_width(self):
-        bound = measurement_resolution(SPEC, D)["velocity_change_detected_above_degrees_per_frame"]
-        self.assertEqual(bound, 3.)
+        limit = CHILD_JOINT_LIMITS.knee                               # self.worst measures the knee
+        bound = measurement_resolution(SPEC, D)["velocity_change_detected_above_degrees_per_frame"]["knee"]
+        self.assertEqual(bound, 12*limit*D)
         def velocity_ramp(change, start, width):
             def f(t):
                 u = t-start
@@ -90,7 +92,7 @@ class SharedOwnerTests(unittest.TestCase):
         for width in (1e-6, D/2, D):
             for k in range(17):
                 with self.subTest(width=width, offset=k):
-                    self.assertGreater(self.worst(velocity_ramp(bound*1.001, k/16*D, width)), 2.)
+                    self.assertGreater(self.worst(velocity_ramp(bound*1.001, k/16*D, width)), limit)
 
     def test_forward_velocity_is_the_exact_interval_average_with_applicability(self):
         grid = fine_times(0., 32.)
@@ -123,8 +125,10 @@ class ValidatorIntervalTests(unittest.TestCase):
         self.assertEqual(set(result["violation_counts"]), {"angular_velocity_jump"})
 
     def test_acceleration_limit_boundary_both_sides_first_and_last_cycles(self):
+        # A V-kink of slope c measures 4c at its vertex (see the definition test).
+        slope = CHILD_JOINT_LIMITS.foot_pitch/4
         for side, vertex in ((Side.NEAR, 1.), (Side.FAR, 111.)):
-            for c, rejected in ((.5, False), (.5*(1+1e-9), True)):
+            for c, rejected in ((slope*(1-1e-9), False), (slope*(1+1e-9), True)):
                 with self.subTest(side=side, slope=c):
                     result = report(add_angle(side, "foot_pitch", lambda t, c=c, vertex=vertex: c*abs(t-vertex)))
                     hits = violations(result, "angular_velocity_jump")
@@ -185,8 +189,11 @@ class ValidatorIntervalTests(unittest.TestCase):
     def test_report_states_measurement_resolution(self):
         cycle = report(TRACKS)["cycles"][0]
         self.assertEqual(cycle["measurement_resolution"],
-                         {"spacing_frames": .125, "angle_step_detected_above_degrees": .25,
-                          "velocity_change_detected_above_degrees_per_frame": 3.,
+                         {"spacing_frames": .125,
+                          "angle_step_detected_above_degrees": {j: 8*CHILD_JOINT_LIMITS.of(j)*.125**2
+                                                                for j in ("ankle", "foot_pitch", "hip", "knee")},
+                          "velocity_change_detected_above_degrees_per_frame": {j: 12*CHILD_JOINT_LIMITS.of(j)*.125
+                                                                               for j in ("ankle", "foot_pitch", "hip", "knee")},
                           "backward_displacement_detected_above_units": .0005*.125})
 
 
@@ -220,7 +227,9 @@ class FrozenFitTests(unittest.TestCase):
     def test_both_fine_families_enter_the_residuals_as_one_weighted_block(self):
         from unittest import mock
         w = math.sqrt(D/.25)
-        crafted = {"acceleration": {"knee": [(0., 1.98+.15*k) for k in (1, 2, 3)], "hip": [(0., 1.)]},
+        knee = CHILD_JOINT_LIMITS.knee-.02                            # the objective's knee threshold
+        self.assertLess(1., CHILD_JOINT_LIMITS.hip-.02)               # the hip value stays under its own
+        crafted = {"acceleration": {"knee": [(0., knee+.15*k) for k in (1, 2, 3)], "hip": [(0., 1.)]},
                    "forward": {"hip": [(0., D, -.0019, True), (D, 2*D, -.0019, False)], "toe": [(0., D, .5, True)]}}
         objective = self.Objective(self.space, .5, 0.)
         with mock.patch.object(self.Objective, "fine_motion", return_value=crafted):
@@ -252,8 +261,8 @@ class FrozenFitTests(unittest.TestCase):
         heavy, light = (self.Objective(self.space, w, 0.) for w in (1., 0.))
         (s1, _), (s0, _) = heavy.score(self.x), light.score(self.x)
         motion = heavy.fine_motion(self.model)
-        expected = sum((math.sqrt(D/.25)*max(0., j-1.98)/.15)**2
-                       for values in motion["acceleration"].values() for _, j in values)
+        expected = sum((math.sqrt(D/.25)*max(0., j-(CHILD_JOINT_LIMITS.of(joint)-.02))/.15)**2
+                       for joint, values in motion["acceleration"].items() for _, j in values)
         self.assertAlmostEqual((s1-s0)/expected, 1., places=9)
 
 

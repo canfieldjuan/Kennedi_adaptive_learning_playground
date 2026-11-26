@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from .spec import BASELINE, TARGET, SamplePacket
+from .spec import BASELINE, TARGET, SamplePacket, admitted_policy
 from .validate import validate_cycle
 from .review import render_plots
 
@@ -31,16 +31,26 @@ def analyze(path):
     packet = json.loads(path.read_text())
     model = SamplePacket.from_dict(packet)
     if model.alias.value == "candidate":
-        if model.spec != TARGET or model.scene_kind.value != "painted":
+        if model.scene_kind.value != "painted":
             raise ValueError("Candidate policy differs from the source owner")
+        try:
+            spec, limits = admitted_policy(model.spec, TARGET)
+        except ValueError as error:
+            raise ValueError("Candidate policy differs from the source owner") from error
     else:
         _, kind, digest = BASELINES[model.alias.value]
-        if model.scene_kind.value != kind or model.scene_sha256 != digest or model.spec != BASELINE:
+        if model.scene_kind.value != kind or model.scene_sha256 != digest:
             raise ValueError("Baseline identity or policy differs from the sealed owner")
+        try:
+            spec, limits = admitted_policy(model.spec, BASELINE)
+        except ValueError as error:
+            raise ValueError("Baseline identity or policy differs from the sealed owner") from error
     samples = model.samples
-    report = validate_cycle(samples, model.spec, model.scene_kind, tracks=model.track_map(), fps=model.fps,
+    # Validation always uses the owner's limits, never the packet's recorded ones.
+    report = validate_cycle(samples, spec, model.scene_kind, tracks=model.track_map(), fps=model.fps,
                             rest_hip_height=model.rest_hip_height, scene_sha256=model.scene_sha256,
                             alias=model.alias.value)
+    report["packet_limits"] = limits
     report["sample_packet_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
     return packet, samples, report
 

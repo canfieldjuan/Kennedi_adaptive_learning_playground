@@ -47,6 +47,22 @@ SOURCES = {
     "pelvis_proxy": "https://ouhsc.edu/bserdac/dthompso/web/gait/knmatics/gait.htm",
     "global": "https://ouhsc.edu/bserdac/dthompso/web/gait/knmatics/stride.htm",
     "toe": "https://pubmed.ncbi.nlm.nih.gov/21354576/",
+    "joint_acceleration": ("Kerr B, Pascoe J, Thomason P, Rutz E, Passmore E (2025). Gait dataset - Typically "
+                           "developing children processed with CGM2. Murdoch Children's Research Institute. "
+                           "doi:10.25374/MCRI.28216448.v2, CC BY 4.0; file SHA256 "
+                           "f9905a48c32fa4c84f61c8a12269170a5d762b35ce25d20378d9e15c3d5e8149"),
+}
+
+# Velocity-continuity value (validate.interval_motion, degrees/frame per quarter
+# frame) of 64 typically developing children's legs (PiG_KAD sagittal angles,
+# SOURCES["joint_acceleration"]) placed on the 24-frame, 24 fps target cycle
+# through a periodic 10-harmonic reconstruction: the largest value per joint.
+# Cited maxima only; the per-leg table stays in private evidence.
+CHILD_JOINT_ACCELERATION_MAXIMA = {
+    "hip": 1.464747588210571,
+    "knee": 3.5305865452809826,
+    "ankle": 4.343150958120987,
+    "foot_pitch": 5.053233555034353,
 }
 
 # Circular order starts with the extremum nearest the initial-contact seam.

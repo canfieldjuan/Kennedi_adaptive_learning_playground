@@ -1,8 +1,10 @@
 """Closed measurement/specification types. Cross-channel rules live in validate."""
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass, fields, replace
 from enum import Enum
 import math
 from types import MappingProxyType
+
+from .reference import CHILD_JOINT_ACCELERATION_MAXIMA
 
 
 class Side(str, Enum):
@@ -58,6 +60,48 @@ class Hold:
         return self.start - 1e-10 <= start <= end <= self.end + 1e-10
 
 
+JOINTS = frozenset(("hip", "knee", "ankle", "foot_pitch"))
+# The single limit every joint shared before per-joint limits; legacy packets
+# recorded it as one number.
+LEGACY_UNIFORM_LIMIT = 2.
+
+
+@dataclass(frozen=True)
+class JointLimits:
+    """Velocity-continuity limit per measured joint, degrees/frame per quarter frame."""
+    hip: float
+    knee: float
+    ankle: float
+    foot_pitch: float
+
+    def __post_init__(self):
+        if any(type(getattr(self, j)) is not float or not math.isfinite(getattr(self, j)) or getattr(self, j) <= 0
+               for j in JOINTS):
+            raise ValueError("Finite positive float limit per joint required")
+
+    def of(self, joint):
+        if joint not in JOINTS:
+            raise ValueError("Closed joint required")
+        return getattr(self, joint)
+
+    @classmethod
+    def uniform(cls, value):
+        return cls(value, value, value, value)
+
+    @classmethod
+    def from_dict(cls, data):
+        if type(data) is not dict or set(data) != JOINTS:
+            raise ValueError("Exactly one limit per joint required")
+        return cls(**data)
+
+
+if {f.name for f in fields(JointLimits)} != JOINTS:
+    raise RuntimeError("JointLimits must name exactly the measured joints")
+# Largest value per joint over 64 measured children's legs, rounded up to the
+# next hundredth so every measured leg passes (reference.SOURCES).
+CHILD_JOINT_LIMITS = JointLimits(**{j: math.ceil(v*100)/100 for j, v in CHILD_JOINT_ACCELERATION_MAXIMA.items()})
+
+
 @dataclass(frozen=True)
 class GaitSpec:
     name: str
@@ -73,7 +117,7 @@ class GaitSpec:
     stall_intervals: int = 2
     angular_prominence: float = 1.
     height_prominence: float = .001
-    velocity_change_per_quarter: float = 2.
+    velocity_change_per_quarter: JointLimits = CHILD_JOINT_LIMITS
     contact_speed_tolerance: float = .0005
     ground_tolerance: float = .00001
     ratio_tolerance: float = .01
@@ -85,8 +129,8 @@ class GaitSpec:
     def __post_init__(self):
         if not isinstance(self.name, str) or not self.name:
             raise ValueError("Named spec required")
-        if not (all(finite(getattr(self, f.name)) for f in fields(self)
-                    if f.name != "name") and self.cycle_frames > 0):
+        scalars = [f.name for f in fields(self) if f.name not in {"name", "velocity_change_per_quarter"}]
+        if not (all(finite(getattr(self, name)) for name in scalars) and self.cycle_frames > 0):
             raise ValueError("Finite numeric spec fields required")
         if not 0 < self.foot_flat < self.heel_off < self.ball_off < self.toe_off < 1:
             raise ValueError("Strictly ordered foot events required")
@@ -96,9 +140,11 @@ class GaitSpec:
             raise ValueError("Positive integral stall duration required")
         if not 0 < self.contact_time_tolerance <= .25:
             raise ValueError("Contact matching tolerance must be at most one quarter frame")
-        if any(getattr(self, f.name) <= 0 for f in fields(self)
-               if f.name not in {"name", "foot_flat", "heel_off", "ball_off", "toe_off"}):
+        if any(getattr(self, name) <= 0 for name in scalars
+               if name not in {"foot_flat", "heel_off", "ball_off", "toe_off"}):
             raise ValueError("Positive measurement limits required")
+        if type(self.velocity_change_per_quarter) is not JointLimits:
+            raise ValueError("Per-joint velocity-continuity limits required")
 
     def offset(self, side):
         if not isinstance(side, Side):
@@ -125,10 +171,45 @@ class GaitSpec:
     def to_dict(self):
         return asdict(self)
 
+    @classmethod
+    def from_dict(cls, data):
+        """The one reader of saved spec JSON. A legacy single limit applied to every joint."""
+        if type(data) is not dict:
+            raise ValueError("Spec object required")
+        limits = data.get("velocity_change_per_quarter", CHILD_JOINT_LIMITS)
+        if type(limits) is float:
+            limits = JointLimits.uniform(limits)
+        elif type(limits) is not JointLimits:
+            limits = JointLimits.from_dict(limits)
+        return cls(**{**data, "velocity_change_per_quarter": limits})
+
 
 BASELINE = GaitSpec("native-painted-release-original-clock", 32., 4/32, 10/32, 17/32, .6)
 TARGET = GaitSpec("reference-candidate", 24., .08, .35, .53, .6)
-JOINTS = frozenset(("hip", "knee", "ankle", "foot_pitch"))
+
+
+def admitted_policy(recorded, owner):
+    """The one policy gate for saved packets and scenes.
+
+    Every field that shapes sampling must equal the owner's. The recorded
+    velocity limits, which only feed validation, must be the owner's or the
+    legacy uniform limit. Returns (owner, recorded limit form); validation
+    always uses the owner's limits.
+    """
+    if type(recorded) is not GaitSpec or type(owner) is not GaitSpec:
+        raise ValueError("Typed specs required")
+    limits = recorded.velocity_change_per_quarter
+    if limits == owner.velocity_change_per_quarter:
+        form = "current"
+    elif limits == JointLimits.uniform(LEGACY_UNIFORM_LIMIT):
+        form = "legacy-uniform-2.0"
+    else:
+        raise ValueError("Recorded velocity limits are neither the owner's nor the legacy uniform limit")
+    if replace(recorded, velocity_change_per_quarter=owner.velocity_change_per_quarter) != owner:
+        raise ValueError("Recorded policy differs from the owner")
+    return owner, form
+
+
 UPPER = frozenset(("free_arm", "free_forearm", "holding_arm", "holding_forearm", "lantern"))
 
 
@@ -301,7 +382,7 @@ class SamplePacket:
         if type(data) is not dict or set(data) != {f.name for f in fields(cls)}:
             raise ValueError("Unknown or missing packet fields")
         return cls(**{**data, "alias": BaselineAlias(data["alias"]), "scene_kind": SceneKind(data["scene_kind"]),
-                      "runtime": Runtime(**data["runtime"]), "spec": GaitSpec(**data["spec"]),
+                      "runtime": Runtime(**data["runtime"]), "spec": GaitSpec.from_dict(data["spec"]),
                       "time_domain": tuple(data["time_domain"]), "validation_domain": tuple(data["validation_domain"]),
                       "actions": tuple(data["actions"]), "samples": tuple(Sample.from_dict(r) for r in data["samples"]),
                       "tracks": tuple(MotionTrack.from_dict(t) for t in data["tracks"])})

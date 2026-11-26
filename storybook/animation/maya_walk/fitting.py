@@ -428,6 +428,11 @@ def reach_margin(points, target):
     return REACH_LIMIT-dmath.dist(points['hip'], target)
 
 
+# The objective's velocity-continuity hinge starts this far below each joint's
+# validator limit (TARGET.velocity_change_per_quarter), so the search aims inside it.
+OBJECTIVE_LIMIT_MARGIN = .02
+
+
 class Objective:
     def __init__(self, space, velocity_weight=1., guide_weight=1.):
         self.space=space
@@ -493,8 +498,9 @@ class Objective:
         # one quarter frame at its former weight; only hidden motion gains.
         weight=math.sqrt(FINE_SPACING/.25)
         motion=self.fine_motion(model)
-        for values in motion['acceleration'].values():
-            for _,jump in values:out.append(self.velocity_weight*weight*dmath.maximum(0.,jump-1.98)/.15)
+        for joint,values in motion['acceleration'].items():
+            threshold=TARGET.velocity_change_per_quarter.of(joint)-OBJECTIVE_LIMIT_MARGIN
+            for _,jump in values:out.append(self.velocity_weight*weight*dmath.maximum(0.,jump-threshold)/.15)
         for intervals in motion['forward'].values():
             for _,_,vx,applies in intervals:out.append(weight*dmath.maximum(0.,-vx+.0001)/.002 if applies else 0.)
         grid=[r for r in samples if abs(r[0]*4-round(r[0]*4))<1e-8]
