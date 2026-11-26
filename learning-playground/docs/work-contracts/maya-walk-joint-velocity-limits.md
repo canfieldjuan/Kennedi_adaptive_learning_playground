@@ -371,7 +371,64 @@ still fail on its remaining velocity failures, its knee kink (19.86) and the
 curve-shape rules. A new fit needs Juan's separate authorization, and the
 solver repair needs its own contract.
 
+## Contract Amendments
+
+### 2026-11-26 (after acceptance): frozen points the per-joint objective moves
+
+Juan accepted this contract on 2026-11-26 ("I accept") at `5f84496`. Wiring
+the objective to per-joint thresholds changed the objective's value and its
+first step at several frozen points. The contract named pinned scores
+(Verification plan item 9) but not these behavioural assertions, so they are
+recorded here before the code that changes them. No frozen fixture file
+changes.
+
+- **Pinned scores, before → after.** Each test keeps its value under the
+  single 2.0 limit in a comment.
+  - fourth-fit stop: 1065.0984973977909 → 540.7090271604817
+  - frozen outer step: 167627.33977017563 → 150777.21595978676
+  - carried reach stop: 26734.496978721134 → 20522.667167307874
+  - Not pinned, recorded only. Frozen jacobian stop:
+    168334.03107023708 → 151409.24912460503.
+- **Timing wall (`test_timing_domain.py`).** At `frozen-jacobian-stop.json` the
+  first attempt is now refused by the search reach guard (`fitting.py:465`),
+  not the timing domain the test is about. The test called `admit_step`
+  without the reach rows `fit()` passes since PR 184, so it now passes them.
+  Its assertions are unchanged.
+- **Collapsed damping at frozen iteration 60 (`test_fitting_numerics.py`).**
+  - **What changed.** At 1e-7 the near-Gauss-Newton steps now leave the
+    leg's reach 4 times before one is admitted at `1e-7·5⁴`. The reach rows
+    don't prevent this, because they are first-order.
+  - **Updated test.** It asserts that sequence explicitly, keeps
+    one-evaluation-per-attempt and the full-solved-step identity, and uses
+    the step bounds `admit_step` applies.
+  - **Dropped.** The "ratio ≥ .75 keeps damping at 1e-7" claim no longer
+    describes this point. `test_next_damping_follows_every_row_of_the_policy_table`
+    and `test_well_predicted_step_lowers_damping_and_poor_one_raises_it`
+    still cover it synthetically.
+- **Reach parity at the outer step (`test_reach_limit.py`).**
+  - **What changed.** The box-only step now misses a reach row there.
+  - **Updated test.** Each point declares whether a row binds, and the test
+    asserts that declaration. The fourth-fit point still proves parity. The
+    outer-step point asserts the constrained branch: every attempt is
+    constrained, and the admitted step keeps every margin above 0.
+- **Weak-column cross-check (`test_differential.py`, column 31,
+  `foot_z[9]`).** This bound is loosened, and the change is flagged.
+  - **What changed.** The central difference agreed with the analytic column
+    to .0036 before and .0105 after, against its own reported error of .045
+    before and .047 after.
+  - **Why the old bound goes.** The fixed 1% bound was never derived from the
+    estimator.
+  - **New assertion.** The gap must be below the estimator's own reported
+    error, which must itself be below .05. Status CENTRAL and analytic norm
+    < 1e-7 stay.
+- **Saved-scene check.** The candidate check at `sample_scene.py:116` becomes
+  a pure function, `admit_saved_candidate(saved_gait_spec)`, that Blender's
+  `main` calls. This lets a unit test reach the gate on saved scene JSON.
+- **Estimates corrected.** The estimates in Verification plan items 8 and 10
+  undercounted the hip. They re-filtered old reports, which only listed values
+  above 2.0, so hip values between 1.47 and 2.0 were missing. The actual
+  counts are recorded in the implementation summary; they are not gates.
+
 ## Implementation summary
 
-Not started. This commit adds only this contract and the pointer amendment in
-`maya-walk-gait-source.md`.
+Not started. Implementation follows in its own commit.
