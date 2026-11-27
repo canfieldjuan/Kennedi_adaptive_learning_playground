@@ -199,6 +199,26 @@ test('scheduler orders repeated keys, blur, canceled callbacks and route teardow
   await clock('stall');
   const afterStall = Number(await page.getByTestId('garden-player').getAttribute('data-x'));
   expect(afterStall - beforeStall).toBeLessThanOrEqual(11);
+  const position = () => page.getByTestId('garden-player').evaluate(player => ({
+    x: Number(player.dataset.x), y: Number(player.dataset.y),
+  }));
+  const beforeDiagonal = await position();
+  await page.keyboard.down('ArrowUp');
+  await clock('tick');
+  const diagonal = await position();
+  expect(diagonal.x).toBeGreaterThan(beforeDiagonal.x);
+  expect(diagonal.y).toBeLessThan(beforeDiagonal.y);
+
+  await page.keyboard.up('ArrowUp');
+  await clock('tick');
+  const continuingRight = await position();
+  expect(continuingRight.x).toBeGreaterThan(diagonal.x);
+  expect(continuingRight.y).toBe(diagonal.y);
+
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  expect(await clock('size')).toBe(0);
+  await clock('stale');
+  expect(await position()).toEqual(continuingRight);
   await page.keyboard.up('ArrowRight');
   await clock('tick');
   expect(await clock('size')).toBe(0);

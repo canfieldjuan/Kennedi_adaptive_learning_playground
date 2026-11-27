@@ -214,14 +214,17 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     givingArm.style.transform = '';
     receivingArm.style.transform = '';
   }
-  function interruptHandoff(): void {
-    stopMoving();
+  function cancelActiveHandoff(): void {
     if (!flight) return;
     flight = undefined;
     cancelHandoff(state);
     clearHandoffArt();
     paint();
     paintPosition();
+  }
+  function stopActivity(): void {
+    stopMoving();
+    cancelActiveHandoff();
   }
   function landmark(selector: string): Point {
     const box = get(selector).getBoundingClientRect();
@@ -253,7 +256,7 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     passingApple.style.top = `${point.y}px`;
   }
   function approach(target: Point, next?: Intent): void {
-    interruptHandoff();
+    stopActivity();
     counting.close();
     intent = next;
     if (next && near(position, target)) {
@@ -391,7 +394,7 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     root.style.setProperty('--picnic-cloth', colors[state.cloth]);
   }
   function replay(): void {
-    interruptHandoff();
+    stopActivity();
     state = newGarden();
     counted = new Set();
     position = START;
@@ -417,7 +420,7 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     if (movementKeys.has(event.key)) {
       event.preventDefault();
       viewport.focus({ preventScroll: true });
-      interruptHandoff();
+      cancelActiveHandoff();
       route = [];
       intent = undefined;
       destination.hidden = true;
@@ -437,8 +440,8 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     }
   }, { signal });
   window.addEventListener('keyup', event => { keys.delete(event.key); }, { signal });
-  window.addEventListener('blur', interruptHandoff, { signal });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) interruptHandoff(); }, { signal });
+  window.addEventListener('blur', stopActivity, { signal });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopActivity(); }, { signal });
   const resize = new ResizeObserver(paintCamera);
   resize.observe(viewport);
   paint();
@@ -447,7 +450,7 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
   void speech.speak('Bear has two apples. Pick three more and bring them to the picnic.');
   teardown = () => {
     disposed = true;
-    interruptHandoff();
+    stopActivity();
     controller.abort();
     resize.disconnect();
     speech.stop();
