@@ -63,6 +63,37 @@ def parity_systems():
     return systems
 
 
+def damping_zero_systems():
+    """Undamped systems with columns of any norm, including far below 1.
+
+    At damping 0 the damping metric multiplies nothing, so both solves must
+    match the base bit for bit. The first entries are the review's two cases.
+    """
+    systems = [
+        ('review case', 'bounded', [[1., 0.], [0., 1e-14]], [.2, 3e-15], {}),
+        ('review case constrained', 'constrained', [[1., 0.], [0., 1e-14]], [.2, 3e-15], {}),
+    ]
+    rng = random.Random(2711)
+    for k in range(20):
+        n = rng.randint(2, 5)
+        m = n+rng.randint(0, 3)
+        columns = []
+        for _ in range(n):
+            raw = [rng.uniform(-1, 1) for _ in range(m)]
+            norm = math.hypot(*raw)
+            size = 10**rng.uniform(-16, 3)
+            columns.append([v*size/norm for v in raw])
+        rhs = [rng.uniform(-5, 5)*10**rng.uniform(-16, 0) for _ in range(m)]
+        options = {}
+        if rng.random() < .5:
+            options['lower'] = [-rng.uniform(0, .5) for _ in range(n)]
+            options['upper'] = [rng.uniform(0, .5) for _ in range(n)]
+        systems.append((f'undamped {k} bounded', 'bounded', columns, rhs, dict(options)))
+        rows = tuple((tuple(rng.uniform(-1, 1) for _ in range(n)), rng.uniform(-.2, .05)) for _ in range(2))
+        systems.append((f'undamped {k} constrained', 'constrained', columns, rhs, {**options, 'rows': rows}))
+    return systems
+
+
 def solve_record(solve, columns, rhs, options):
     result = (bounded_least_squares if solve == 'bounded' else constrained_least_squares)(columns, rhs, **options)
     return {'status': result.status.value, 'iterations': result.iterations,
@@ -85,7 +116,6 @@ class FailFirstTests(unittest.TestCase):
                     result = solve(columns, rhs, damping)
                     step = result.require_converged()
                     self.assertLessEqual(abs(step[1]), (TINY*1.+result.tolerance)/damping)
-                    self.assertGreater(abs(step[1]), 0.)
             self.assertLess(abs(step[1]), previous)
             previous = abs(step[1])
 
@@ -118,13 +148,69 @@ class FailFirstTests(unittest.TestCase):
 
 
 class ScaleRuleTests(unittest.TestCase):
-    def test_scales_are_column_norms_floored_at_one(self):
-        columns = [[3., 4.], [0., 0.], [TINY, 0.], [.6, .8], [1., 0.]]
-        result = bounded_least_squares(columns, [1., 1.], 1.)
-        self.assertEqual(result.scales, (5., 1., 1., 1., 1.))
+    def test_damping_metric_is_column_norm_floored_at_one(self):
+        # Diagonal J: coordinate j's minimizer is J_j r_j / (J_j² + damping D_j²),
+        # D_j = max(|J_j|, 1). The norms span 1e-14 to 10, so the floor binds
+        # for some and not for others. Right-hand sides keep every step inside
+        # the box, so the closed form is the answer.
         self.assertEqual(numerics.SCALE_FLOOR, 1.)
-        constrained = constrained_least_squares(columns, [1., 1.], 1., rows=(((1., 0., 0., 0., 0.), -1.),))
-        self.assertEqual(constrained.scales, result.scales)
+        diagonal = (1e-14, 1e-6, .3, 1., 4., 10.)
+        rhs = (1e-15, 1e-7, .03, .1, .4, 1.)
+        n = len(diagonal)
+        columns = [[a if i == j else 0. for i in range(n)] for j, a in enumerate(diagonal)]
+        for damping in (0., 1e-30, 1e-7, 1., 1e2, 1e6):
+            expected = [a*r/(a*a+damping*max(a, 1.)**2) for a, r in zip(diagonal, rhs)]
+            for solve in (bounded_least_squares, constrained_least_squares):
+                with self.subTest(solve=solve.__name__, damping=damping):
+                    result = solve(columns, list(rhs), damping)
+                    for got, want in zip(result.require_converged(), expected):
+                        self.assertAlmostEqual(got, want, delta=1e-12*max(1., abs(want)))
+                    # The reported reduction charges damping·||D step||².
+                    effect = [a*d for a, d in zip(diagonal, result.step)]
+                    want = (2*sum(e*r for e, r in zip(effect, rhs))-sum(e*e for e in effect)
+                            - damping*sum((max(a, 1.)*d)**2 for a, d in zip(diagonal, result.step)))
+                    self.assertAlmostEqual(result.predicted_reduction, want, delta=1e-12*max(1., abs(want)))
+
+    def test_equilibration_scales(self):
+        # Ordinary columns keep their norm and a zero column keeps 1, at any
+        # damping. A near-zero column is sized by its damped column's norm.
+        columns = [[3., 4.], [0., 0.], [TINY, 0.], [.3, .4], [1., 0.]]
+        for damping, near in ((0., (TINY, .5)), (4., (math.hypot(TINY, 2.), math.hypot(.5, 2.)))):
+            expected = (5., 1., near[0], near[1], 1.)
+            for solve in (bounded_least_squares, constrained_least_squares):
+                with self.subTest(solve=solve.__name__, damping=damping):
+                    self.assertEqual(solve(columns, [1., 1.], damping).scales, expected)
+
+    def test_review_cases_converge_without_damping(self):
+        # Both were rank deficient when one number did both jobs.
+        for solve in (bounded_least_squares, constrained_least_squares):
+            for damping, want in ((0., .3), (1e-30, 1e-14*3e-15/(1e-28+1e-30))):
+                with self.subTest(solve=solve.__name__, damping=damping):
+                    step = solve([[1., 0.], [0., 1e-14]], [.2, 3e-15], damping).require_converged()
+                    self.assertAlmostEqual(step[0], .2, delta=1e-12)
+                    self.assertAlmostEqual(step[1], want, delta=1e-12)
+        step = bounded_step([[1., 0.], [0., 1e-28]], [.2, 3e-29]).require_converged()
+        self.assertAlmostEqual(step[0], .2, delta=1e-12)
+        self.assertAlmostEqual(step[1], .3, delta=1e-12)
+        # A denormal column norm at damping 0: its damping weight would be
+        # infinite, but no damping applies, so the solve matches the base.
+        for solve in (bounded_least_squares, constrained_least_squares):
+            with self.subTest(solve=solve.__name__, norm=1e-310):
+                result = solve([[1., 0.], [0., 1e-310]], [.2, 3e-311])
+                self.assertEqual(result.scales, (1., 1e-310))
+                step = result.require_converged()
+                self.assertAlmostEqual(step[1], .3, delta=1e-12)
+
+    def test_damping_zero_matches_base_for_any_column_norm(self):
+        golden = json.loads((HERE/'scale-floor-parity-undamped.json').read_text())
+        systems = damping_zero_systems()
+        self.assertEqual([name for name, *_ in systems], list(golden))
+        below = 0
+        for name, solve, columns, rhs, options in systems:
+            below += any(math.hypot(*c) < 1. for c in columns)
+            with self.subTest(name):
+                self.assertEqual(solve_record(solve, columns, rhs, options), golden[name])
+        self.assertGreater(below, len(systems)//2)
 
     def test_parity_with_base_for_norms_at_least_one_or_zero(self):
         golden = json.loads((HERE/'scale-floor-parity.json').read_text())

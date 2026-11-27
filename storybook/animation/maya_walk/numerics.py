@@ -18,10 +18,11 @@ TRUST_LIMIT = .5
 # Relative slack, times the trust limit, within which a converged step may sit
 # outside its bounds from rounding. Chart projections absorb exactly this much.
 BOUND_TOLERANCE = 1e-12
-# Smallest damping scale D_j, in chart coordinate units. Damping then costs at
-# least damping*d_j**2 for every coordinate, so a nearly flat Jacobian column
-# can no longer escape it. A zero column has always had scale 1; this
-# continues that rule to near-zero columns.
+# Smallest damping metric D_j, in chart coordinate units. Damping then costs
+# at least damping*d_j**2 for every coordinate, so a nearly flat Jacobian
+# column can no longer escape it. A zero column has always had metric 1; this
+# continues that rule to near-zero columns. It is not the QR equilibration
+# scale; _scaled_system keeps the two apart.
 SCALE_FLOOR = 1.
 
 
@@ -120,11 +121,17 @@ def _step_bounds(lower, upper, n, limit):
 
 @dataclass(frozen=True)
 class _ScaledSystem:
-    """The checked, column-scaled and damped system both bounded solves work on."""
+    """The checked, column-scaled and damped system both bounded solves work on.
+
+    The solve's variables are y_j = scales[j]*step_j. damping_weights[j] is
+    D_j/scales[j], so the damping term is damping*sum((damping_weights[j]*y_j)**2),
+    which is damping*||D step||**2.
+    """
     n: int
     lower: list
     upper: list
     scales: list
+    damping_weights: list
     normalized: list
     augmented: list
     target: list
@@ -151,17 +158,26 @@ def _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, t
         raise ValueError('Finite least-squares system required')
     lower, upper = _step_bounds(lower, upper, n, limit)
     norms = [math.hypot(*c) for c in columns]
-    scales = [max(s, SCALE_FLOOR) for s in norms]
+    root = math.sqrt(damping)
+    # Damping metric D_j: the column norm, never below SCALE_FLOOR.
+    metric = [max(s, SCALE_FLOOR) for s in norms]
+    # Equilibration c_j sizes each column for QR's relative rank test. An
+    # ordinary column is normalized by its norm and a zero column keeps 1, as
+    # always. A near-zero column is normalized by the norm of its damped
+    # column [J_j; sqrt(damping)*D_j], so with damping it reaches QR at unit
+    # size, and at damping 0 it is normalized by its own norm.
+    scales = [1. if not s else s if s >= SCALE_FLOOR else math.hypot(s, root*SCALE_FLOOR) for s in norms]
     if any(not math.isfinite(s) or not math.isfinite(limit*s) or limit*s == 0 for s in scales):
         raise ValueError('Unrepresentable numerical scale or bound')
+    # Exactly 1. wherever D_j == c_j, so those columns are damped as before.
+    damping_weights = [d/s if damping else 1. for d, s in zip(metric, scales)]
     normalized = [[v/s for v in c] for c, s in zip(columns, scales)]
     # Exact zero rows carry no directional information, even if rhs is nonzero.
     used = [j for j in range(len(rhs)) if any(c[j] for c in normalized)]
-    root = math.sqrt(damping)
-    augmented = [[c[j] for j in used] + [root if i == k else 0. for k in range(n)]
-                 for i, c in enumerate(normalized)]
+    augmented = [[c[j] for j in used] + [root*w if i == k else 0. for k in range(n)]
+                 for i, (c, w) in enumerate(zip(normalized, damping_weights))]
     target = [rhs[j] for j in used] + [0.]*n
-    return _ScaledSystem(n, lower, upper, scales, normalized, augmented, target,
+    return _ScaledSystem(n, lower, upper, scales, damping_weights, normalized, augmented, target,
                          [a*s for a, s in zip(lower, scales)], [b*s for b, s in zip(upper, scales)],
                          BOUND_TOLERANCE*limit, tolerance*max(1., math.hypot(*rhs)))
 
@@ -173,7 +189,8 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=
     Without explicit bounds the box is |step| <= limit. A caller with a domain
     passes per-coordinate bounds inside that box; a side may have zero width.
     D contains the Jacobian column norms floored at SCALE_FLOOR, so damping
-    shortens every coordinate's step, including a nearly flat one. QR avoids
+    shortens every coordinate's step, including a nearly flat one. Columns are
+    equilibrated for QR separately (see _scaled_system). QR avoids
     squaring the condition number. Positive damping resolves duplicate directions
     in *normalized* coordinates; it does not invent information in a zero column.
     The finite active-set budget is never reported as convergence. The KKT check
@@ -181,6 +198,7 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=
     """
     system = _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, tolerance)
     n, lower, upper, scales = system.n, system.lower, system.upper, system.scales
+    damping_weights = system.damping_weights
     normalized, augmented, target = system.normalized, system.augmented, system.target
     floors, ceilings, slack, threshold = system.floors, system.ceilings, system.slack, system.threshold
     y = [0.]*n
@@ -188,7 +206,7 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=
 
     def certificate():
         residual = [_dot(row, y)-b for row, b in zip(zip(*normalized), rhs)]
-        gradient = [_dot(c, residual)+damping*v for c, v in zip(normalized, y)]
+        gradient = [_dot(c, residual)+damping*w*w*v for c, w, v in zip(normalized, damping_weights, y)]
         violation = [abs(g) if a == 0 else max(0., a*g) for a, g in zip(active, gradient)]
         return gradient, max(violation)
 
@@ -196,7 +214,8 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=
         _, optimality = certificate()
         step = tuple(v/s for v, s in zip(y, scales))
         effect = [_dot(row, step) for row in zip(*columns)]
-        reduction = 2*_dot(effect, rhs)-_dot(effect, effect)-damping*_dot(y, y)
+        damped = [w*v for w, v in zip(damping_weights, y)]
+        reduction = 2*_dot(effect, rhs)-_dot(effect, effect)-damping*_dot(damped, damped)
         if any(not math.isfinite(v) for v in (*step, optimality, reduction)):
             status = SolveStatus.NUMERICAL_FAILURE
         if status is SolveStatus.CONVERGED and (optimality > threshold or any(
@@ -346,7 +365,7 @@ def _nnls(columns, target, max_iterations):
     return u, max_iterations, False
 
 
-def _certificate(normalized, rhs, damping, y, floors, ceilings, rows, multipliers, step, slack):
+def _certificate(normalized, rhs, damping, damping_weights, y, floors, ceilings, rows, multipliers, step, slack):
     """KKT conditions on the original scaled columns: (stationarity, signs, complementary).
 
     rows are (scaled coefficients, scaled bound, coefficients, bound), one
@@ -359,7 +378,7 @@ def _certificate(normalized, rhs, damping, y, floors, ceilings, rows, multiplier
     multiplier's size.
     """
     residual = [_dot(row, y)-b for row, b in zip(zip(*normalized), rhs)]
-    gradient = [_dot(c, residual)+damping*v for c, v in zip(normalized, y)]
+    gradient = [_dot(c, residual)+damping*w*w*v for c, w, v in zip(normalized, damping_weights, y)]
     force = [math.fsum(m*c[i] for (c, *_), m in zip(rows, multipliers) if m) for i in range(len(y))]
     stationarity = 0.
     for g, f, v, a, b in zip(gradient, force, y, floors, ceilings):
@@ -414,6 +433,7 @@ def constrained_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lo
     """
     system = _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, tolerance)
     n, lower, upper, scales = system.n, system.lower, system.upper, system.scales
+    damping_weights = system.damping_weights
     normalized, floors, ceilings = system.normalized, system.floors, system.ceilings
     slack, threshold = system.slack, system.threshold
     rows = _rows(rows, n)
@@ -467,10 +487,10 @@ def constrained_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lo
         multipliers = [m/denominator for m in weights]
         y = _backsolve(reduced, [f/denominator+b for f, b in zip(fitted[:n], reduced_rhs)])
         # LDP meets each row only to absolute rounding in scaled coordinates;
-        # every scale is at least SCALE_FLOOR, so the miss is no larger in
-        # real units. Like bounded_least_squares, a coordinate whose bound is
-        # active, or that lies past it, is placed exactly on it. Every
-        # certificate clause below is checked after this.
+        # a near-zero column turns that into a large miss in real units. Like
+        # bounded_least_squares, a coordinate whose bound is active, or that
+        # lies past it, is placed exactly on it. Every certificate clause
+        # below is checked after this.
         for i in range(n):
             if multipliers[2*i] > 0 or y[i] < floors[i]:
                 y[i] = floors[i]
@@ -478,10 +498,11 @@ def constrained_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lo
                 y[i] = ceilings[i]
         step = tuple(v/s for v, s in zip(y, scales))
         effect = [_dot(row, step) for row in zip(*columns)]
-        reduction = 2*_dot(effect, rhs)-_dot(effect, effect)-damping*_dot(y, y)
+        damped = [w*v for w, v in zip(damping_weights, y)]
+        reduction = 2*_dot(effect, rhs)-_dot(effect, effect)-damping*_dot(damped, damped)
         if all(math.isfinite(v) for v in (*step, *multipliers, reduction)):
             optimality, signs, complementary = _certificate(
-                normalized, rhs, damping, y, floors, ceilings, general, multipliers[len(box):], step, slack)
+                normalized, rhs, damping, damping_weights, y, floors, ceilings, general, multipliers[len(box):], step, slack)
             if (math.isfinite(optimality) and optimality <= threshold and signs and complementary
                     and all(a-slack <= v <= b+slack for v, a, b in zip(step, lower, upper))
                     and rows_hold(step, rows, limit)):

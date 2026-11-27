@@ -223,7 +223,7 @@ class CertificateTests(unittest.TestCase):
     def certify(self, y, multiplier, rows=None):
         # min |y-(1,1)|² on the box [-.5, .5]² with the row -y0-y1 >= -.6.
         rows = rows or [((-1/math.sqrt(2), -1/math.sqrt(2)), -.6/math.sqrt(2), (-1., -1.), -.6)]
-        return _certificate(IDENTITY, [1., 1.], 0., list(y), [-.5, -.5], [.5, .5], rows, [multiplier],
+        return _certificate(IDENTITY, [1., 1.], 0., [1., 1.], list(y), [-.5, -.5], [.5, .5], rows, [multiplier],
                             tuple(y), SLACK)
 
     def test_the_true_multiplier_passes(self):
@@ -248,18 +248,18 @@ class CertificateTests(unittest.TestCase):
 
     def test_a_coordinate_on_its_bound_may_push_out_of_the_box_only(self):
         # rhs (1, 1), no row: at (.5, .5) the gradient points out of the box.
-        stationarity, _, _ = _certificate(IDENTITY, [1., 1.], 0., [.5, .5], [-.5, -.5], [.5, .5], [], [],
+        stationarity, _, _ = _certificate(IDENTITY, [1., 1.], 0., [1., 1.], [.5, .5], [-.5, -.5], [.5, .5], [], [],
                                           (.5, .5), SLACK)
         self.assertEqual(stationarity, 0.)
-        stationarity, _, _ = _certificate(IDENTITY, [-1., 1.], 0., [.5, .5], [-.5, -.5], [.5, .5], [], [],
+        stationarity, _, _ = _certificate(IDENTITY, [-1., 1.], 0., [1., 1.], [.5, .5], [-.5, -.5], [.5, .5], [], [],
                                           (.5, .5), SLACK)
         self.assertEqual(stationarity, 1.5)
 
     def test_a_coordinate_on_its_lower_bound_may_push_out_of_the_box_only(self):
-        stationarity, _, _ = _certificate(IDENTITY, [-1., -1.], 0., [-.5, -.5], [-.5, -.5], [.5, .5], [], [],
+        stationarity, _, _ = _certificate(IDENTITY, [-1., -1.], 0., [1., 1.], [-.5, -.5], [-.5, -.5], [.5, .5], [], [],
                                           (-.5, -.5), SLACK)
         self.assertEqual(stationarity, 0.)
-        stationarity, _, _ = _certificate(IDENTITY, [1., -1.], 0., [-.5, -.5], [-.5, -.5], [.5, .5], [], [],
+        stationarity, _, _ = _certificate(IDENTITY, [1., -1.], 0., [1., 1.], [-.5, -.5], [-.5, -.5], [.5, .5], [], [],
                                           (-.5, -.5), SLACK)
         self.assertEqual(stationarity, 1.5)
 
