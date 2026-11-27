@@ -594,3 +594,18 @@ Paths in this entry are from the repository root, not `learning-playground/`.
   and a new pick, never a retouched PNG. AI output is not assumed exclusive or
   copyrightable. Child sheets (Kennedi, Leo), friend sheets and book pages are
   not in this entry: none is committed or locked here.
+
+
+## Addition garden first playable
+
+- **Asset family / game:** Apple garden environment, explorer, Bear, tree, apples and picnic table.
+- **Status:** base garden and character look accepted by the operator ("Looks good"); new handoff motion is `draft` pending its rendered preview review.
+- **Editable source:** `design-source/addition-garden/{garden,explorer,bear,tree,apple,table}.svg`.
+- **Production use:** those same canonical local SVGs imported by `src/modules/addition-garden/GardenScene.ts`; Vite emits local production assets or inline SVG. No duplicate hand-maintained export, hosted viewer or authoring-tool runtime.
+- **Creator / date / tool:** Codex session for Juan, 2026-11-26; original SVG paths, shapes and gradients authored as text; Inkscape used only to render the contact sheet.
+- **Origin category:** A for the new garden family; B for the unchanged existing Number Train icon reused from `src/modules/home/home-icons.ts` in the Math chooser. No stock, library, third-party character, external font or traced asset. Original authored forms reconstruct the accepted garden concept's composition and clothing, not any branded character or artist style.
+- **AI assistance:** Codex-authored vector source; the user-approved generated concept served as a visual reference only. No generative-image output is incorporated into production assets. The concept itself is not committed.
+- **Source URL / third-party license / attribution:** not applicable; no third-party art resources incorporated. Editable project source is freely modifiable and distributable with this project, including commercial/software/public-repository distribution. No authoring subscription is needed.
+- **Owner direction:** after the playable preview the operator said "Looks good", then explicitly requested a visible per-apple handoff. Existing identities stay intact; the canonical explorer right arm is grouped and the Bear arm is animated from its existing group, with invisible hand landmarks. Bear is rendered inline to articulate the original source. No replacement artwork or external asset.
+- **Proof artifacts:** durable aliases `garden-contact-sheet`, `garden-desktop`, `garden-mobile`, `garden-picnic`, `garden-mobile-picnic`; hashes in the implementation report/PR. Proof lives outside the worktree.
+- **Scope:** one representative first playable. New narration uses the existing device-speech fallback. No mastery, learning-progress or durable ownership-history claim.

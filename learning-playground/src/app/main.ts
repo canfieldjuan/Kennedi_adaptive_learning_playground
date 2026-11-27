@@ -5,6 +5,7 @@
  * physical interaction and emotional feedback preschool-safe."
  */
 
+import { renderGarden, destroyGarden, renderMathGardenMenu } from '../modules/addition-garden/GardenScene';
 import '../styles/base.css';
 import '../styles/child-ui.css';
 import '../styles/parent-ui.css';
@@ -108,6 +109,7 @@ sessionTimer.start();
 // — Route handler —
 function handleRoute(route: Route): void {
   // Destroy existing views
+  destroyGarden();
   destroyHomeScreen();
   destroyParentGate();
   destroyParentPanel();
@@ -125,6 +127,12 @@ function handleRoute(route: Route): void {
   switch (route.view) {
     case 'home':
       renderHomeScreen(app, speech);
+      break;
+    case 'math':
+      renderMathGardenMenu(app, speech);
+      break;
+    case 'garden':
+      renderGarden(app, speech);
       break;
     case 'parent': {
       const parentGateSettings = storage.getSettings();
