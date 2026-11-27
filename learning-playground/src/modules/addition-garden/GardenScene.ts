@@ -3,13 +3,14 @@ import type { SpeechServiceInterface } from '../../types/runtime';
 import background from '../../../design-source/addition-garden/garden.svg';
 import tree from '../../../design-source/addition-garden/tree.svg';
 import bear from '../../../design-source/addition-garden/bear.svg';
+import bearArt from '../../../design-source/addition-garden/bear.svg?raw';
 import apple from '../../../design-source/addition-garden/apple.svg';
 import explorer from '../../../design-source/addition-garden/explorer.svg?raw';
 import table from '../../../design-source/addition-garden/table.svg?raw';
 import {
   APPLE_IDS, BEAR_APPLES, REQUESTED_APPLES, START, TREE_STOP, BEAR_STOP, WALK_SPEED,
   newGarden, fruitAt, near, pickApple, returnApple, deliver, answer, totalOnTable,
-  pathTo, walk, type Point, type AppleId, type Cloth,
+  beginHandoff, finishHandoff, cancelHandoff, pathTo, walk, type Point, type AppleId, type Cloth,
 } from './garden-model';
 import './garden.css';
 
@@ -36,12 +37,14 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
   let state = newGarden();
   let position: Point = START;
   let route: Point[] = [];
-  type Intent = { kind: 'pick'; id: AppleId } | { kind: 'return' } | { kind: 'deliver' };
+  type Intent = { kind: 'pick'; id: AppleId } | { kind: 'return' } | { kind: 'deliver' } | { kind: 'give' };
   let intent: Intent | undefined;
   const keys = new Set<string>();
   let frame: number | undefined;
   let previousTime = 0;
   let disposed = false;
+  let flight: { id: AppleId; elapsed: number } | undefined;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   let scale = 1;
   let cameraX = 0;
   let cameraY = 0;
@@ -63,8 +66,10 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
         <img class="garden-ground" src="${background}" alt="" draggable="false">
         <img class="garden-tree" src="${tree}" alt="" draggable="false">
         <div class="garden-table">${table}</div>
-        <img class="garden-bear" src="${bear}" alt="" draggable="false">
-        <button class="garden-bear-target" aria-label="Walk to Bear and bring the apples"><span>Bear’s picnic</span><span class="garden-bear-apples">${appleImage()}${appleImage()}</span></button>
+        <div class="garden-bear">${bearArt}</div>
+        <button class="garden-bear-target" aria-label="Walk to Bear and bring the apples"><span>Bear’s picnic</span></button>
+        <div class="garden-bear-apples" aria-label="Apples on the picnic table"></div>
+        <div class="garden-handoff-apple" hidden>${appleImage()}</div>
         <div class="garden-orchard"></div>
         <div class="garden-destination" hidden></div>
         <div class="garden-player" data-testid="garden-player" aria-label="Your explorer"><div class="garden-player-shadow"></div><div class="garden-player-art">${explorer}<div class="garden-carried"></div></div></div>
@@ -86,6 +91,9 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
   const basket = get('.garden-basket-fruit');
   const actions = get('.garden-actions');
   const counting = get<HTMLDialogElement>('.garden-counting');
+  const passingApple = get('.garden-handoff-apple');
+  const givingArm = get<SVGElement & HTMLElement>('.garden-give-arm');
+  const receivingArm = get<SVGElement & HTMLElement>('.garden-bear-hand');
   const messageNode = get('[data-message]');
   const treeButtons = new Map<AppleId, HTMLButtonElement>();
   const points = [[140, 115], [245, 90], [330, 165], [155, 195], [285, 200]];
@@ -112,7 +120,7 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     scale = height / 800;
     const horizontalRoom = 1200 - width / scale;
     cameraX = horizontalRoom < 0 ? horizontalRoom / 2
-      : Math.max(0, Math.min(horizontalRoom, position.x - width / scale / 2));
+      : Math.max(0, Math.min(horizontalRoom, (flight ? (position.x + 860) / 2 : position.x) - width / scale / 2));
     cameraY = 0;
     world.style.setProperty('--hit-size', `${Math.max(90, 80 / scale)}px`);
     world.style.transform = `translate(${-cameraX * scale}px, ${-cameraY * scale}px) scale(${scale})`;
@@ -143,7 +151,8 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     basket.innerHTML = carried.length ? carried.map(appleImage).join('') : '<span class="garden-empty-basket" aria-hidden="true">⌒</span>';
     basket.setAttribute('aria-label', `${carried.length} apples in your basket`);
     get('.garden-carried').innerHTML = carried.map(appleImage).join('');
-    get('.garden-bear-apples').innerHTML = Array.from({ length: totalOnTable(state) }, appleImage).join('');
+    get('.garden-bear-apples').innerHTML = Array.from({ length: BEAR_APPLES + REQUESTED_APPLES }, (_, i) => `<span data-table-slot="${i}">${i < totalOnTable(state) ? appleImage() : ''}</span>`).join('');
+    get<HTMLButtonElement>('.garden-bear-target').disabled = !!flight;
     actions.replaceChildren();
     if (state.phase === 'collecting') {
       actions.append(button('Pick an apple from the tree', `${appleImage()}<span>Pick an apple</span>`, () => {
@@ -153,11 +162,19 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
       }));
       if (carried.length) actions.append(button('Put an apple back on the tree', '↶<span>Put one back</span>', () => approach(TREE_STOP, { kind: 'return' }), true));
       actions.append(button('Bring apples to Bear', `<img src="${bear}" alt=""><span>To Bear</span>`, () => approach(BEAR_STOP, { kind: 'deliver' })));
+    } else if (state.phase === 'sharing') {
+      const give = button('Give an apple to Bear', `${appleImage()}<span>${flight ? 'Passing the apple…' : 'Give an apple'}</span>`, () => approach(BEAR_STOP, { kind: 'give' }));
+      give.disabled = !!flight;
+      actions.append(give);
     } else {
       actions.append(button('Count the picnic apples', `${appleImage()}<span>Our picnic</span>`, () => showCounting()));
     }
   }
   function interact(next: Intent): void {
+    if (next.kind === 'give') {
+      giveApple();
+      return;
+    }
     if (next.kind === 'pick') {
       if (pickApple(state, next.id, position)) {
         const n = fruitAt(state, 'basket').length;
@@ -170,16 +187,73 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
       const n = fruitAt(state, 'basket').length;
       if (result === 'need-more') say(`You brought ${n}. Pick ${REQUESTED_APPLES - n} more ${REQUESTED_APPLES - n === 1 ? 'apple' : 'apples'} for Bear.`);
       if (result === 'bring-fewer') say(`You brought ${n}. Put ${n - REQUESTED_APPLES} back on the tree, then come see Bear.`);
-      if (result === 'delivered') {
-        say('I had two. You brought three! How many apples do we have altogether?');
-        showCounting();
+      if (result === 'ready-to-share') {
+        facing = 1;
+        paintPosition();
+        say('You brought apples! Give me one, and I’ll put it on our table.');
       }
       if (result === 'already-delivered') showCounting();
     }
     paint();
   }
-  function approach(target: Point, next?: Intent): void {
+  function giveApple(): void {
+    const id = beginHandoff(state, position);
+    if (id === undefined) return;
     stopMoving();
+    facing = 1;
+    flight = { id, elapsed: 0 };
+    paint();
+    paintPosition();
+    viewport.focus({ preventScroll: true });
+    paintHandoff(0);
+    schedule();
+  }
+  function clearHandoffArt(): void {
+    passingApple.hidden = true;
+    delete root.dataset.handoff;
+    givingArm.style.transform = '';
+    receivingArm.style.transform = '';
+  }
+  function interruptHandoff(): void {
+    stopMoving();
+    if (!flight) return;
+    flight = undefined;
+    cancelHandoff(state);
+    clearHandoffArt();
+    paint();
+    paintPosition();
+  }
+  function landmark(selector: string): Point {
+    const box = get(selector).getBoundingClientRect();
+    const view = viewport.getBoundingClientRect();
+    return { x: (box.x + box.width / 2 - view.x) / scale + cameraX,
+      y: (box.y + box.height / 2 - view.y) / scale + cameraY };
+  }
+  function paintHandoff(progress: number): void {
+    const stage = progress < .4 ? 'offering' : progress < .65 ? 'receiving' : 'placing';
+    root.dataset.handoff = stage;
+    passingApple.hidden = false;
+    // Reduced motion shows ordered held poses, never a flying trajectory.
+    const p = reducedMotion.matches ? (stage === 'offering' ? .2 : stage === 'receiving' ? .5 : 1) : progress;
+    givingArm.style.transform = `rotate(${-65 * Math.sin(Math.min(1, p / .65) * Math.PI)}deg)`;
+    receivingArm.style.transform = `rotate(${p < .65 ? -50 * Math.sin(p / .65 * Math.PI) : 60 * Math.sin((p - .65) / .35 * Math.PI)}deg)`;
+    const from = landmark('.garden-offer-anchor');
+    const paw = landmark('.garden-receive-anchor');
+    const slot = landmark(`[data-table-slot="${totalOnTable(state)}"]`);
+    let point = paw;
+    if (p < .4) {
+      const t = p / .4;
+      point = { x: from.x + (paw.x - from.x) * t, y: from.y + (paw.y - from.y) * t - 12 * Math.sin(t * Math.PI) };
+    } else if (p > .65) {
+      const t = Math.min(1, (p - .65) / .25);
+      point = { x: paw.x + (slot.x - paw.x) * t, y: paw.y + (slot.y - paw.y) * t - 18 * Math.sin(t * Math.PI) };
+    }
+    if (reducedMotion.matches) point = stage === 'offering' ? from : stage === 'receiving' ? paw : slot;
+    passingApple.style.left = `${point.x}px`;
+    passingApple.style.top = `${point.y}px`;
+  }
+  function approach(target: Point, next?: Intent): void {
+    interruptHandoff();
     counting.close();
     intent = next;
     if (next && near(position, target)) {
@@ -205,6 +279,24 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     // Ignore suspended-tab time; a delayed frame must not teleport the child.
     const seconds = Math.min((time - previousTime) / 1000, .05);
     previousTime = time;
+    if (flight) {
+      flight.elapsed += seconds;
+      const progress = Math.min(1, flight.elapsed / (reducedMotion.matches ? .6 : 1.8));
+      paintHandoff(progress);
+      if (progress < 1) frame = requestAnimationFrame(tick);
+      else {
+        const id = flight.id;
+        flight = undefined;
+        finishHandoff(state, id);
+        clearHandoffArt();
+        paint();
+        if (state.phase === 'counting') {
+          say('Thank you! I had two, and you gave me three. How many altogether?');
+          showCounting();
+        } else say('Thank you! Give me another apple.');
+      }
+      return;
+    }
     const before = position;
     if (keys.size) {
       const dx = Number(keys.has('ArrowRight')) - Number(keys.has('ArrowLeft'));
@@ -299,7 +391,7 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     root.style.setProperty('--picnic-cloth', colors[state.cloth]);
   }
   function replay(): void {
-    stopMoving();
+    interruptHandoff();
     state = newGarden();
     counted = new Set();
     position = START;
@@ -325,6 +417,7 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     if (movementKeys.has(event.key)) {
       event.preventDefault();
       viewport.focus({ preventScroll: true });
+      interruptHandoff();
       route = [];
       intent = undefined;
       destination.hidden = true;
@@ -333,7 +426,10 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     } else if ((event.key === ' ' || event.key.toLowerCase() === 'e') && event.target === viewport) {
       event.preventDefault();
       if (event.repeat) return;
-      if (near(position, TREE_STOP)) {
+      if (state.phase === 'sharing') {
+        if (near(position, BEAR_STOP)) giveApple();
+        else say('Come back to Bear to give him an apple.');
+      } else if (near(position, TREE_STOP)) {
         const id = fruitAt(state, 'tree')[0];
         if (id) interact({ kind: 'pick', id });
       } else if (near(position, BEAR_STOP)) interact({ kind: 'deliver' });
@@ -341,8 +437,8 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     }
   }, { signal });
   window.addEventListener('keyup', event => { keys.delete(event.key); }, { signal });
-  window.addEventListener('blur', stopMoving, { signal });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stopMoving(); }, { signal });
+  window.addEventListener('blur', interruptHandoff, { signal });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) interruptHandoff(); }, { signal });
   const resize = new ResizeObserver(paintCamera);
   resize.observe(viewport);
   paint();
@@ -351,7 +447,7 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
   void speech.speak('Bear has two apples. Pick three more and bring them to the picnic.');
   teardown = () => {
     disposed = true;
-    stopMoving();
+    interruptHandoff();
     controller.abort();
     resize.disconnect();
     speech.stop();

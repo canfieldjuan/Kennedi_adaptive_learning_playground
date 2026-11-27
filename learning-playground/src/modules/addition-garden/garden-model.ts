@@ -2,8 +2,8 @@
 export type Point = Readonly<{ x: number; y: number }>;
 export const APPLE_IDS = ['a', 'b', 'c', 'd', 'e'] as const;
 export type AppleId = typeof APPLE_IDS[number];
-export type AppleLocation = 'tree' | 'basket' | 'table';
-export type GardenPhase = 'collecting' | 'counting' | 'complete';
+export type AppleLocation = 'tree' | 'basket' | 'hand' | 'table';
+export type GardenPhase = 'collecting' | 'sharing' | 'counting' | 'complete';
 export type Cloth = 'rose' | 'sky' | 'honey';
 export interface GardenState {
   phase: GardenPhase;
@@ -42,16 +42,36 @@ export function returnApple(state: GardenState, position: Point): boolean {
   state.apples[id] = 'tree';
   return true;
 }
-export type Delivery = 'not-near' | 'already-delivered' | 'need-more' | 'bring-fewer' | 'delivered';
+export type Delivery = 'not-near' | 'already-delivered' | 'need-more' | 'bring-fewer' | 'ready-to-share';
 export function deliver(state: GardenState, position: Point): Delivery {
-  if (state.phase !== 'collecting') return 'already-delivered';
   if (!near(position, BEAR_STOP)) return 'not-near';
+  if (state.phase === 'sharing') return 'ready-to-share';
+  if (state.phase !== 'collecting') return 'already-delivered';
   const basket = fruitAt(state, 'basket');
   if (basket.length < REQUESTED_APPLES) return 'need-more';
   if (basket.length > REQUESTED_APPLES) return 'bring-fewer';
-  for (const id of basket) state.apples[id] = 'table';
-  state.phase = 'counting';
-  return 'delivered';
+  state.phase = 'sharing';
+  return 'ready-to-share';
+}
+/** Fruit location is the inventory and the in-flight admission lock. */
+export function beginHandoff(state: GardenState, position: Point): AppleId | undefined {
+  if (state.phase !== 'sharing') return;
+  if (!near(position, BEAR_STOP)) return;
+  if (fruitAt(state, 'hand').length) return;
+  const id = fruitAt(state, 'basket')[0];
+  if (id === undefined) return;
+  state.apples[id] = 'hand';
+  return id;
+}
+export function finishHandoff(state: GardenState, id: AppleId): boolean {
+  if (state.phase !== 'sharing') return false;
+  if (state.apples[id] !== 'hand') return false;
+  state.apples[id] = 'table';
+  if (fruitAt(state, 'basket').length === 0) state.phase = 'counting';
+  return true;
+}
+export function cancelHandoff(state: GardenState): void {
+  for (const id of fruitAt(state, 'hand')) state.apples[id] = 'basket';
 }
 export function totalOnTable(state: GardenState): number {
   return BEAR_APPLES + fruitAt(state, 'table').length;

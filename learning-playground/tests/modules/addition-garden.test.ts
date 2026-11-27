@@ -1,7 +1,7 @@
 // @ts-expect-error Node is test-only; app ships no Node typings.
 import { Worker } from 'node:worker_threads';
 import { describe, expect, test } from 'vitest';
-import { APPLE_IDS, BEAR_STOP, TREE_STOP, START, REACH, WALK_SPEED, answer, deliver, fruitAt, near, newGarden, pathTo, pickApple, returnApple, totalOnTable, walk, walkable } from '../../src/modules/addition-garden/garden-model';
+import { APPLE_IDS, BEAR_STOP, TREE_STOP, START, REACH, WALK_SPEED, answer, deliver, beginHandoff, finishHandoff, cancelHandoff, fruitAt, near, newGarden, pathTo, pickApple, returnApple, totalOnTable, walk, walkable } from '../../src/modules/addition-garden/garden-model';
 
 function picked(n = 3) {
   const state = newGarden();
@@ -11,7 +11,8 @@ function picked(n = 3) {
 describe('addition garden fruit owner', () => {
   test('exact delivery combines actual fruit and requires the correct total', () => {
     const state = picked();
-    expect(deliver(state, BEAR_STOP)).toBe('delivered');
+    expect(deliver(state, BEAR_STOP)).toBe('ready-to-share');
+    for (let i = 0; i < 3; i++) expect(finishHandoff(state, beginHandoff(state, BEAR_STOP)!)).toBe(true);
     expect(totalOnTable(state)).toBe(5);
     expect(fruitAt(state, 'basket')).toEqual([]);
     expect(fruitAt(state, 'table')).toHaveLength(3);
@@ -27,7 +28,7 @@ describe('addition garden fruit owner', () => {
     expect(state).toEqual(before);
     while (fruitAt(state, 'basket').length > 3) expect(returnApple(state, TREE_STOP)).toBe(true);
     while (fruitAt(state, 'basket').length < 3) expect(pickApple(state, fruitAt(state, 'tree')[0]!, TREE_STOP)).toBe(true);
-    expect(deliver(state, BEAR_STOP)).toBe('delivered');
+    expect(deliver(state, BEAR_STOP)).toBe('ready-to-share');
     expect(Object.values(state.apples)).toHaveLength(5);
   });
   test('no remote picking, return or delivery; reach boundary is inclusive', () => {
@@ -54,7 +55,8 @@ describe('addition garden fruit owner', () => {
     const state = picked();
     expect(answer(state, 2)).toBe(false);
     expect(answer(state, 5)).toBe(false);
-    expect(deliver(state, BEAR_STOP)).toBe('delivered');
+    expect(deliver(state, BEAR_STOP)).toBe('ready-to-share');
+    for (let i = 0; i < 3; i++) expect(finishHandoff(state, beginHandoff(state, BEAR_STOP)!)).toBe(true);
     const delivered = structuredClone(state);
     expect(pickApple(state, 'd', TREE_STOP)).toBe(false);
     expect(returnApple(state, TREE_STOP)).toBe(false);
@@ -127,4 +129,60 @@ test('path search refuses cycles and completes a two-step route within its worke
     worker.on('error', (error: Error) => { clearTimeout(timer); reject(error); });
   });
   expect(result).toBe('complete');
+});
+
+
+describe('one-apple handoff', () => {
+  test('arrival moves nothing; each accepted pass lands once before counting', () => {
+    const state = picked();
+    expect(deliver(state, BEAR_STOP)).toBe('ready-to-share');
+    expect(totalOnTable(state)).toBe(2);
+    expect(fruitAt(state, 'basket')).toHaveLength(3);
+    for (let count = 0; count < 3; count++) {
+      expect(state.phase).toBe('sharing');
+      const id = beginHandoff(state, BEAR_STOP)!;
+      expect(id).toBeDefined();
+      expect(fruitAt(state, 'hand')).toEqual([id]);
+      expect(beginHandoff(state, BEAR_STOP)).toBeUndefined();
+      expect(totalOnTable(state)).toBe(2 + count);
+      expect(answer(state, 5)).toBe(false);
+      expect(finishHandoff(state, 'e')).toBe(false);
+      expect(finishHandoff(state, id)).toBe(true);
+      expect(finishHandoff(state, id)).toBe(false);
+      expect(totalOnTable(state)).toBe(3 + count);
+      expect(Object.keys(state.apples)).toHaveLength(5);
+    }
+    expect(state.phase).toBe('counting');
+    expect(beginHandoff(state, BEAR_STOP)).toBeUndefined();
+    expect(answer(state, 5)).toBe(true);
+  });
+  test('cancel, walk away and resume preserve placed fruit and reject stale completion', () => {
+    const state = picked();
+    expect(beginHandoff(state, BEAR_STOP)).toBeUndefined();
+    expect(finishHandoff(state, 'a')).toBe(false);
+    deliver(state, BEAR_STOP);
+    expect(beginHandoff(state, START)).toBeUndefined();
+    const first = beginHandoff(state, BEAR_STOP)!;
+    finishHandoff(state, first);
+    const second = beginHandoff(state, BEAR_STOP)!;
+    cancelHandoff(state);
+    cancelHandoff(state);
+    expect(finishHandoff(state, second)).toBe(false);
+    expect(fruitAt(state, 'hand')).toEqual([]);
+    expect(fruitAt(state, 'basket')).toHaveLength(2);
+    expect(totalOnTable(state)).toBe(3);
+    expect(deliver(state, START)).toBe('not-near');
+    expect(deliver(state, BEAR_STOP)).toBe('ready-to-share');
+    expect(pickApple(state, 'd', TREE_STOP)).toBe(false);
+    expect(returnApple(state, TREE_STOP)).toBe(false);
+    expect(beginHandoff(state, BEAR_STOP)).toBe(second);
+    expect(finishHandoff(state, second)).toBe(true);
+  });
+  test('empty basket cannot start a pass even in an externally constructed sharing state', () => {
+    const state = newGarden();
+    state.phase = 'sharing';
+    const before = structuredClone(state);
+    expect(beginHandoff(state, BEAR_STOP)).toBeUndefined();
+    expect(state).toEqual(before);
+  });
 });
