@@ -260,7 +260,11 @@ Measured on `e5ebb31` with the candidate installed in process
 
 No behavior, scope or restriction changes.
 
-### 2. Certified tolerance, one comment, fixture format (2026-11-27, before those edits)
+### 2. Certified tolerance, one comment, fixture format (2026-11-27)
+
+Order, stated plainly: the tolerance change landed in the code commit
+`b2b9808` before this amendment was written. The comment and fixture-format
+edits come after it.
 
 - **Synthetic bound.** The bound `|rhs·J_j|/damping` is exact arithmetic. The
   solve certifies its gradient only to its reported tolerance, so the test
