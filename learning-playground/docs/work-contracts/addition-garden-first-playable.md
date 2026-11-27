@@ -123,3 +123,13 @@ Origin repairs in this uncommitted implementation: camera height-fitting at `Gar
 DONE — the requested local first-playable finish line is implemented and exercised.
 
 Staged locally: complete. Merged to main: NOT DONE. Installed/deployed and verified in Kennedi's desktop web app: NOT DONE. No production change or merge authorization inferred. Remote CI and independent review are pending publication. Final vector artwork acceptance remains with the operator. Assessment integration, saved garden progress, recorded narration and additional lessons are outside this slice.
+
+## Quality gate amendment — Math chooser regression coverage
+
+The initial garden commit `121eb56e9f63a290ae424899ddc7b956eb595a41` intentionally changed the Math tile in `src/modules/home/HomeScreen.ts:41` to open the chooser. It left the Number Train unit test expecting the previous direct route at `tests/modules/number-train.test.ts:58`. The required GitHub quality gate and a local run on `8a468f56e6c26cb2f945a8eb700d189f5cf00368` both reproduce expected `#activity/number-train`, received `#math`.
+
+The repair updates the obsolete unit expectation at that test. The existing browser regression in `tests/browser/addition-garden.spec.ts:77` already exercises Home → Math chooser → Number Train and opens the garden from the same chooser. Retain both checks. No runtime navigation, artwork, gameplay, or CI condition changes. No guards change, so this test and documentation repair does not introduce a mutation sweep.
+
+Verification and cold diff audit follow below.
+
+The cold diff changes only the Math tile test name and expected destination in `tests/modules/number-train.test.ts:51` and `:58`, plus this amendment. The exact local reproduction failed before the correction. Afterward `npm test` passed all 930 tests across 65 files. The existing Playwright case “Math offers garden and preserves Number Train” passed, exercising both game links. GitHub quality gate and independent review of the corrected revision remain pending.

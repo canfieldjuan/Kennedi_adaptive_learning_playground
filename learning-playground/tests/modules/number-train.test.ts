@@ -48,14 +48,14 @@ describe('number train routing', () => {
     vi.unstubAllGlobals();
   });
 
-  test('the Math home tile opens Number Train', async () => {
+  test('the Math home tile opens the game chooser', async () => {
     const root = document.createElement('div');
     renderHomeScreen(root, createMockSpeech());
 
     findById(root, 'home-math')?.click();
     await vi.runAllTimersAsync();
 
-    expect(window.location.hash).toBe('#activity/number-train');
+    expect(window.location.hash).toBe('#math');
   });
 
   test('Words, Cafe, and Art home routes are unchanged', async () => {
