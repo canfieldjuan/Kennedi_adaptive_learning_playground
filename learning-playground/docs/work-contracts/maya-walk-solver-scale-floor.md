@@ -462,3 +462,114 @@ strongest available | justified.
 - `python3 -B SI/replay-real.py real <carry> SI/replay-real.json 160`.
   - It ran under a memory-capped `systemd-run` scope.
   - The carry is the fourth fit's checkpoint, SHA256 `49f41e7b…`.
+
+## Cold diff audit, review round (`ce2d060..f791269`, amendment 3)
+
+The audit above cites line numbers at `2847bf0`. For `numerics.py` and
+`test_scale_floor.py` this section supersedes it.
+
+### Gaps first
+
+1. **A reader the inventory missed.** `tests/test_reach_limit.py` calls the
+   private `_certificate` directly (lines 226, 251, 254, 259, 262). The Rule
+   20 inventory listed only production readers. Its five calls now pass unit
+   damping weights `[1., 1.]`. All of them run at damping 0, where the weight
+   multiplies nothing. No default was added to the parameter, so a caller
+   that forgets the weights fails loudly.
+2. **The clamp comment is back to the base text.** Amendment 2 changed it in
+   `2847bf0`. With the equilibration of amendment 3, a near-zero column can
+   again have a scale below 1, so the base wording ("a near-zero column turns
+   that into a large miss in real units") is accurate again. `numerics.py`
+   now matches `e5ebb31` there.
+3. **Replay trajectory.** The replay is no longer bit-identical to the
+   `ce2d060` replay. Near-zero columns are now normalized differently.
+   - The damping path and every attempt's verdict are identical over 160
+     iterations.
+   - The largest relative score difference is 4.2e-11.
+4. **Base behavior that parity keeps.** On the base, 12 of the 20 random
+   undamped constrained systems end `numerical_failure`. Parity reproduces
+   them exactly; this change does not fix them.
+5. **Unchanged from the first audit:** the walk still fails validation, the
+   forced recovery stays in issue 186, and no fit was run.
+
+### Change by change (`f791269`)
+
+- **`numerics.py:26`.** `SCALE_FLOOR = 1.` Its comment now says it is the
+  damping metric, not the QR scale.
+- **`numerics.py:163`.** `metric = [max(s, SCALE_FLOOR) for s in norms]`:
+  the damping metric `D_j`.
+- **`numerics.py:169`.** The equilibration `c_j`:
+  - 1 for a zero column;
+  - `||J_j||` when `||J_j|| >= SCALE_FLOOR`;
+  - otherwise `hypot(||J_j||, sqrt(damping)·SCALE_FLOOR)`.
+- **`numerics.py:173`.** `damping_weights = D_j/c_j` at positive damping, 1
+  at damping 0.
+  - For ordinary and zero columns it is exactly 1.
+  - The damping-0 branch keeps a denormal column norm from making an
+    infinite weight. The test with column norm 1e-310 pins it.
+- **Where the weight enters:**
+  - the augmented diagonal, `root*w` (`numerics.py:177`);
+  - the bounded gradient (`:209`) and reduction (`:217`);
+  - `_certificate` (`:368`, `:381`);
+  - the constrained reduction (`:501`).
+- **`_ScaledSystem`** gains `damping_weights`, with a docstring stating the
+  variables and the damping term.
+- **`tests/test_scale_floor.py`:**
+  - The scale-rule test is replaced by a closed-form damping-metric test
+    (151) and an equilibration test (174).
+  - New: the review cases (184), and damping-0 parity against a new base
+    golden (204, systems at 66).
+  - The synthetic test drops its `> 0` assertion. At damping 1e6 the exact
+    answer, 1e-19, is far below the certified tolerance, so a returned 0.0 is
+    a correct answer.
+- **`tests/scale-floor-parity-undamped.json`.** 42 records, captured on
+  `e5ebb31` by `SI/make_undamped_golden.py`. The script loads the test file
+  against a base export and refuses to run unless `numerics` comes from it.
+
+### Traceability (amendment 3's verification list)
+
+| Item | Result |
+|---|---|
+| 1. Review cases | `test_review_cases_converge_without_damping` errors on `ce2d060` (`SI/fail-first-review.log`) and passes after |
+| 2. Damping-0 parity | 42 base records bit-identical; every one of the 42 systems has a column below 1. The original 52-record golden is still bit-identical. |
+| 3. Closed-form metric | `d_j = J_j r_j/(J_j² + damping·D_j²)` and the reported reduction, for columns 1e-14 to 10 and damping 0 to 1e6, both solves |
+| 4. Earlier checks rerun | Frozen and synthetic pass. Stall-point steps on the real code (`SI/measure_stall-review.log`): box-only 4.73e-2 / 7.03e-4 / 7.06e-6, with rows 1.83e-3 / 3.38e-4 / 3.40e-4. Suite 247 OK (`SI/suite-review.log`). |
+| 4. Replay at `f791269` | 160 iterations, `iteration_limit`, 0 iterations all-unsolved, largest damping 29.8, score 13531.029054962095, 774 violations (`SI/replay-review.json`) |
+| 5. Mutants | 13 of 13 killed (`SI/mutants-2.json`) |
+
+The 13 mutants:
+
+- the `ce2d060` code;
+- equilibration that ignores damping;
+- a zero column scaled by damping;
+- weight 1 everywhere;
+- no damping-0 guard;
+- the weight dropped from each of the bounded gradient, the constrained
+  certificate, the bounded reduction, the constrained reduction and the
+  diagonal;
+- `SCALE_FLOOR` 2 and 1e-3;
+- `min` for the metric.
+
+restriction: none added; kept.
+mechanism: one owner (`_scaled_system`) computes the metric, the
+equilibration and the weight, and every solve reads them from it | strongest
+available | justified.
+
+Evidence (`SI`, SHA256):
+
+| File | SHA256 |
+|---|---|
+| `codex_repro.log` | `4305efab9515509b33f0908454e92a9fb9496c0ecae9f3feed0d74b05b6cc621` |
+| `fail-first-review.log` | `94dbbe6797a535036907672b96d3b7f910d313713c124e6a3af3a5610cf67211` |
+| `make_undamped_golden.py` | `9012e8c92efb437ac9b9d6f0e368065b94fa792749d10d9292387c5275dfe0ac` |
+| `scale-floor-parity-undamped.captured.json` | `b880ecaa9e08dc85ae39318864988f06d42257e1b4381ff8114e59bc6070bc83` |
+| `suite-review.log` | `daf7cdb022875ac5032bd803f3b74eed669a0032ffb5b8419554d49486861b09` |
+| `mutants-2.py` | `67b03b4ca789c499faeb0afd7a5ab51d83d5192594860ee786d1fc154e9dc567` |
+| `mutants-2.json` | `06729807f6eb81da68a1d5c0daa90a56d4ddc374ef422f971f00e56f554a9346` |
+| `measure_stall-review.log` | `d76f0e14370facde22d76171a0253d74f97d944acdc5aab575b53c1c223813f5` |
+| `replay-review.commit` | `6d1b849313db07ad531c6b2dda3c8a62c2b4ecd9ab78ba38c5554f366b9870ec` |
+| `replay-review.json` | `874443bbd686e827302b1a2a07041ff00eb99bf3a10d148496088a45f19f026c` |
+
+`measure_stall-review.log` exits 1 after its real-code rows. Its second half
+installs the old in-process candidate, which no longer fits `_ScaledSystem`.
+Only the real-code rows are cited.
