@@ -283,4 +283,116 @@ No behavior, scope or restriction changes.
 
 ## Implementation summary
 
-Not started. This commit adds only this contract.
+Juan accepted this contract on 2026-11-27 ("I accept the contract").
+
+| Commit | What |
+|---|---|
+| `fb6af3d` | this contract |
+| `d08d299` | amendment 1 (frozen-test wording), before any code |
+| `b2b9808` | the scale floor and its tests |
+| `a9e8d97`, `30dad14` | amendment 2 and its ordering note |
+| `2847bf0` | the clamp comment and the parity golden's line layout |
+| this commit | this summary and the cold diff audit |
+
+Evidence under `SI` (directories 700, files 600):
+
+| File | SHA256 |
+|---|---|
+| `fail-first.log` | `61400d4e84f96a8a22888256c8835a7887726e300139343fbe9cb701b12508a4` |
+| `make_parity_golden.py` | `6a67ef908a73e6932459a48c155201e6ce7ed80299a7b88166e2c0aad9b32185` |
+| `scale-floor-parity.captured.json` | `7d9a53beb9f8343e20c8bfd4aabfe20dcc9471ca12525f413226013f21d0f603` |
+| `suite-final.log` | `917f402547334532b46f0902c92393f72b9af0a47d27b5a2914d7f83d5371897` |
+| `mutants.py` | `e595a85621cc35b3afb1096ebbcf32bcf4893b81e5c036dd200bd375555226f7` |
+| `mutants.json` | `1513920f2263ef113752bb23296533c7ab2dabefeb7e46020fea071b8b7c5ff6` |
+| `replay-real.py` | `c99dd1ae5b045e7677003b75d5601d7e5891b16f6ace52b109c1c46691ce551f` |
+| `variants.py` (installs nothing) | `12d49857500772d350a4835fece4bb72bdbc5f6408dc8a6a8f746c11bdb722ca` |
+| `replay-real.commit` | `99b3a646a5515b42dbb181b040624e09b2ae87dcfd1c7bff6f20851f9c27fa69` |
+| `replay-real.json` | `396055cc73fcaa407a0e361a198d00435ce1704f92f4466bd429ef299aa05f79` |
+
+## Cold diff audit (`e5ebb31..2847bf0`)
+
+### Gaps first
+
+1. **The walk still fails validation.** The replay ends at 774 violations,
+   576 of them `angular_velocity_jump`. This contract only lets the solver
+   keep descending. It does not make the walk pass.
+2. **Forced recovery remains** (issue 186, left open). At the frozen stall
+   point, the step with reach rows levels off at about 3.4e-4 for damping
+   1e4 and 1e6 (`SI/measure_stall.log`), because a row inside the backoff
+   forces it.
+3. **Order.** The test tolerance change landed in `b2b9808` before amendment
+   2 recorded it. Amendment 2 says so.
+4. **Replay commit.** The replay ran at `b2b9808`. The later code commit
+   `2847bf0` changes one comment and the golden file's line layout only
+   (parsed contents identical). The full suite was rerun at `2847bf0`.
+5. **No fit was run.** Nothing was written to a checkpoint, animation or
+   scene.
+
+### Change by change
+
+- **`numerics.py:21-25`.** The new constant `SCALE_FLOOR = 1.` with its
+  reason.
+- **`numerics.py:154`.** `scales = [max(s, SCALE_FLOOR) for s in norms]`
+  replaces `s if s else 1.`. This is the only line that changes behavior.
+  - Both solves take `system.scales` from `_scaled_system`
+    (`numerics.py:183`, `numerics.py:416`); no other code computes a scale.
+- **`numerics.py:175-176`.** `bounded_least_squares` docstring states the
+  floor.
+- **`numerics.py:469-473`.** The clamp comment is corrected. The code is
+  unchanged.
+- **`tests/test_scale_floor.py`.**
+  - Synthetic 1e-13 column, both solves (75).
+  - Frozen stall point (92).
+  - Scale rule (121) and golden parity (129).
+  - Constrained: free rows, binding row, infeasible (149, 159, 171).
+  - Damping 0 (178, 191).
+- **`tests/frozen-stall-point.json`.** Byte-identical to `SS/stall-point.json`
+  (SHA256 `2337f148…`).
+- **`tests/scale-floor-parity.json`.** 52 records captured on `e5ebb31` by
+  `SI/make_parity_golden.py`, which refuses to run unless `numerics.py`
+  matches the base.
+
+### Contract traceability
+
+| Contract item | Where | Result |
+|---|---|---|
+| Correct Fix 1, the scale rule | `numerics.py:25`, `:154` | done |
+| Correct Fix 2, one owner | `_scaled_system` only | done |
+| Correct Fix 3, docstring | `numerics.py:175` | done |
+| Verify 1, synthetic | test line 75 | fails on base (moves 0.5), passes after |
+| Verify 1, frozen | test line 92 | fails on base (0.5 at every rung), passes after |
+| Verify 2, parity | test line 129 | 52 records bit-identical; 11 of 24 constrained records have a binding row |
+| Verify 3, constrained | test lines 149-176 | passes; the base certifies the infeasible case as `numerical_failure` |
+| Verify 4, damping 0 | test lines 178-198 | passes on base and after |
+| Verify 5, replay | `SI/replay-real.json` | 160 iterations, `iteration_limit`, 0 iterations all-unsolved, score 13531.0290551439, 774 violations; trajectory identical to `SS/replay-floor.json` |
+| Verify 6, suite | `SI/suite-final.log` | 244 tests OK |
+| Verify 6, mutants | `SI/mutants.json` | 7 of 7 killed (see below) |
+| Must Not Change | `git diff e5ebb31..2847bf0 --stat` | only `numerics.py`, three new test files and this contract |
+
+Each mutant was applied to `HEAD`, and the new test file then failed:
+
+- floor 0 (the base rule);
+- `min` instead of `max`;
+- the floor in the bounded solve only;
+- the floor in the constrained solve only;
+- `SCALE_FLOOR = 2`;
+- `SCALE_FLOOR = 1e-3`;
+- the floor applied after normalization.
+
+No survivors.
+
+restriction: none added (see Restriction and mechanism); kept.
+mechanism: one named constant at the single owner `_scaled_system` |
+strongest available | justified.
+
+### Commands run
+
+- `python3 -B -m unittest storybook.animation.maya_walk.tests.test_scale_floor -v`
+  on the base `numerics.py` gave 14 failures (`SI/fail-first.log`).
+- `python3 -B -m unittest discover -s storybook/animation/maya_walk/tests -p 'test_*.py'`
+  ran 244 tests OK at `2847bf0` (`SI/suite-final.log`).
+- `python3 -B SI/mutants.py <repo> SI/mutants.json <scratch>` reported all
+  killed.
+- `python3 -B SI/replay-real.py real <carry> SI/replay-real.json 160`.
+  - It ran under a memory-capped `systemd-run` scope.
+  - The carry is the fourth fit's checkpoint, SHA256 `49f41e7b…`.
