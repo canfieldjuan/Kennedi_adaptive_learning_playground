@@ -281,6 +281,72 @@ edits come after it.
 
 No behavior, scope or restriction changes.
 
+### 3. Damping metric and column equilibration are separate (2026-11-27, before the code)
+
+Codex review on `ce2d060` (numerics.py:154), reproduced in
+`SI/codex_repro.log` (SHA256 `4305efab9515509b33f0908454e92a9fb9496c0ecae9f3feed0d74b05b6cc621`):
+
+- `columns=[[1., 0.], [0., 1e-14]]`, `rhs=[.2, 3e-15]`. At damping 0 and
+  1e-30 both solves return `rank_deficient` on `ce2d060`; on `e5ebb31` they
+  converge to `(0.2, 0.3)`.
+- `bounded_step([[1., 0.], [0., 1e-28]], [.2, 3e-29])` is `rank_deficient`
+  on `ce2d060` and converges on `e5ebb31`.
+
+**Root cause.** The implementation used one number, `max(||J_j||, 1)`, for
+two jobs:
+
+- **The damping metric D_j.** This is what this contract is about.
+- **The equilibration scale c_j.** This sizes each column for the QR rank
+  test. `_qr`'s threshold is relative to the largest column
+  (`numerics.py:81`), so with little or no damping a 1e-14 column left
+  unnormalized is refused as rank deficient.
+
+The Assumptions bullet "Damping 0 … only the normalization of a column below
+1 changes" was wrong. That normalization change is exactly what breaks it.
+
+**Corrected design** (one owner, `_scaled_system`):
+
+| Quantity | Rule |
+|---|---|
+| damping metric `D_j` | `max(||J_j||, SCALE_FLOOR)` (unchanged from the accepted contract) |
+| equilibration `c_j` | `||J_j||` when `||J_j|| >= SCALE_FLOOR`; 1 for a zero column; otherwise the norm of the column's damped form, `hypot(||J_j||, sqrt(damping)·SCALE_FLOOR)` |
+| damping weight `w_j = D_j/c_j` | 1 exactly for ordinary and zero columns; `SCALE_FLOOR/c_j` for a near-zero column; 1 at damping 0, where it multiplies nothing |
+
+- **How it is solved.** The solve works in `y_j = c_j·d_j`. The augmented
+  diagonal is `sqrt(damping)·w_j`. The damping term is
+  `damping·Σ(w_j y_j)²`, which equals `damping·||D d||²`. The certificates'
+  gradient adds `damping·w_j·w_j·y_j`, and the predicted reduction subtracts
+  `damping·||w∘y||²`.
+- **Damping 0.** `c_j` equals the base scale for every column, so the
+  results are bit-identical to `e5ebb31`. This replaces the wrong
+  assumption.
+- **Ordinary and zero columns.** At any damping `c_j` and `w_j` equal the
+  base's (`w_j = 1.` exactly), so the results stay bit-identical, as before.
+- **Near-zero columns at positive damping.** The damped column has norm 1
+  in `y`, so QR sees a well-sized column, and damping still costs
+  `damping·d_j²`.
+- **Must Not Change, clarified.** The certificates check the same KKT
+  conditions for the same objective, now with the per-coordinate damping
+  weight written out. The QR, active-set and LSI algorithms, tolerances and
+  statuses are unchanged.
+- **`StepResult.scales`** reports `c_j`. No production code reads it
+  (`fitting.py` drops it from solve records).
+
+**Verification added.**
+
+1. Codex's two cases are tests. They fail on `ce2d060` and pass after.
+2. Damping-0 parity covers columns below 1 too: golden results captured on
+   `e5ebb31` for columns of any norm at damping 0.
+3. A closed-form diagonal test pins the damping metric itself:
+   `d_j = J_j·r / (||J_j||² + damping·D_j²)` across columns from 1e-14 to
+   10 and damping from 0 to 1e6.
+4. The fail-first, frozen, parity, constrained and replay checks all rerun.
+5. New mutants:
+   - one number for both jobs (the `ce2d060` code);
+   - equilibration that ignores damping;
+   - a weight of 1 for near-zero columns;
+   - the weight dropped from the certificate.
+
 ## Implementation summary
 
 Juan accepted this contract on 2026-11-27 ("I accept the contract").
