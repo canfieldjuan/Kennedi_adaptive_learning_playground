@@ -260,6 +260,23 @@ Measured on `e5ebb31` with the candidate installed in process
 
 No behavior, scope or restriction changes.
 
+### 2. Certified tolerance, one comment, fixture format (2026-11-27, before those edits)
+
+- **Synthetic bound.** The bound `|rhs·J_j|/damping` is exact arithmetic. The
+  solve certifies its gradient only to its reported tolerance, so the test
+  checks `(|rhs·J_j| + tolerance)/damping`. At damping 1e6 the committed code
+  returned 2.2e-19 against an exact bound of 1e-19; that is rounding, not a
+  defect. The base still fails it by moving 0.5.
+- **Comment at `numerics.py:469-473`** (constrained solve's bound clamp). It
+  says "a near-zero column turns that into a large miss in real units". With
+  every scale at least SCALE_FLOOR, a miss in scaled coordinates is no larger
+  in real units. The comment is corrected; the clamp is unchanged.
+- **Golden fixture format.** The parity golden file is rewritten with one
+  record per line. Its parsed contents must be identical to the file captured
+  on the base. This keeps the PR near its size limit.
+
+No behavior, scope or restriction changes.
+
 ## Implementation summary
 
 Not started. This commit adds only this contract.
