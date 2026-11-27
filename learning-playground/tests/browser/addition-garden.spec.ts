@@ -104,13 +104,12 @@ test('touch-sized portrait scene completes without overflow', async ({ page }, t
 test('keyboard moves the explorer, Space picks nearby, and blur cancels travel', async ({ page }) => {
   const player = page.getByTestId('garden-player');
   const x = Number(await player.getAttribute('data-x'));
-  await page.locator('.garden-viewport').focus();
   await page.keyboard.down('ArrowRight');
   await expect.poll(async () => Number(await player.getAttribute('data-x'))).toBeGreaterThan(x + 30);
   await page.keyboard.up('ArrowRight');
   await page.getByRole('button', { name: 'Pick an apple from the tree', exact: true }).click();
   await expect(page.getByLabel('1 apples in your basket', { exact: true })).toBeVisible({ timeout: 8_000 });
-  await page.locator('.garden-viewport').focus();
+  await page.keyboard.press('ArrowLeft');
   await page.keyboard.press('Space');
   await expect(page.getByLabel('2 apples in your basket', { exact: true })).toBeVisible();
   // Controlled event ordering, with the actual frame scheduler and DOM.
@@ -247,4 +246,67 @@ test('counting keeps keyboard focus on the picnic instead of background actions'
   await expect(page.getByRole('heading', { name: 'How many altogether?' })).toBeHidden();
   await page.getByRole('button', { name: 'Count the picnic apples', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'How many altogether?' })).toBeVisible();
+});
+
+
+async function walkByKey(page: Page, key: string, axis: 'x' | 'y', target: number, direction: 'less' | 'greater') {
+  await page.keyboard.down(key);
+  const coordinate = () => page.getByTestId('garden-player').getAttribute(`data-${axis}`).then(Number);
+  try {
+    if (direction === 'less') await expect.poll(coordinate, { intervals: [16], timeout: 4000 }).toBeLessThanOrEqual(target);
+    else await expect.poll(coordinate, { intervals: [16], timeout: 4000 }).toBeGreaterThanOrEqual(target);
+  } finally { await page.keyboard.up(key); }
+}
+
+for (const interaction of ['Space', 'e']) {
+  test(`keyboard from Math picks and delivers with ${interaction} without a focus setup`, async ({ page }) => {
+    await page.goto('/#math');
+    await page.getByRole('link', { name: /Apple garden/ }).click();
+    await expect(page.getByLabel('Apple garden addition game')).toBeVisible();
+    const goToTree = async () => {
+      await walkByKey(page, 'ArrowLeft', 'x', 370, 'less');
+      await walkByKey(page, 'ArrowUp', 'y', 475, 'less');
+    };
+    await goToTree();
+    for (let count = 1; count <= 3; count++) {
+      await page.keyboard.press(interaction);
+      await expect(page.getByLabel(`${count} apples in your basket`, { exact: true })).toBeVisible();
+    }
+    await walkByKey(page, 'ArrowDown', 'y', 550, 'greater');
+    await walkByKey(page, 'ArrowRight', 'x', 690, 'greater');
+    await page.keyboard.press(interaction);
+    await expect(page.getByRole('heading', { name: 'How many altogether?' })).toBeVisible();
+    await page.getByRole('button', { name: 'Answer 5', exact: true }).click();
+    await page.getByRole('button', { name: 'Play again', exact: true }).click();
+    await goToTree();
+    await page.keyboard.press(interaction);
+    await expect(page.getByLabel('1 apples in your basket', { exact: true })).toBeVisible();
+  });
+}
+
+test('keyboard ownership respects focused controls and counting before arrow takeover', async ({ page }) => {
+  await pick(page, 1);
+  const repeat = page.getByRole('button', { name: 'Hear the instructions again', exact: true });
+  await repeat.click();
+  await expect(repeat).toBeFocused();
+  await page.keyboard.press('x');
+  await page.keyboard.press('Space');
+  await page.keyboard.press('e');
+  await expect(repeat).toBeFocused();
+  await expect(page.getByLabel('1 apples in your basket', { exact: true })).toBeVisible();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('.garden-viewport')).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(page.getByLabel('2 apples in your basket', { exact: true })).toBeVisible();
+  await page.keyboard.press('e');
+  await page.getByRole('button', { name: 'Bring apples to Bear', exact: true }).click();
+  const wrongAnswer = page.getByRole('button', { name: 'Answer 4', exact: true });
+  await wrongAnswer.click();
+  const player = page.getByTestId('garden-player');
+  const x = await player.getAttribute('data-x');
+  await page.keyboard.down('ArrowRight');
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.keyboard.up('ArrowRight');
+  await expect(wrongAnswer).toBeFocused();
+  await expect(player).toHaveAttribute('data-x', x!);
 });

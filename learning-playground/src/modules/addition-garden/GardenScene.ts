@@ -324,6 +324,7 @@ export function renderGarden(parent: HTMLElement, speech: SpeechServiceInterface
     if (counting.open) return;
     if (movementKeys.has(event.key)) {
       event.preventDefault();
+      viewport.focus({ preventScroll: true });
       route = [];
       intent = undefined;
       destination.hidden = true;
