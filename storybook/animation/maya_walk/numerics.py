@@ -467,10 +467,10 @@ def constrained_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lo
         multipliers = [m/denominator for m in weights]
         y = _backsolve(reduced, [f/denominator+b for f, b in zip(fitted[:n], reduced_rhs)])
         # LDP meets each row only to absolute rounding in scaled coordinates;
-        # a near-zero column turns that into a large miss in real units. Like
-        # bounded_least_squares, a coordinate whose bound is active, or that
-        # lies past it, is placed exactly on it. Every certificate clause
-        # below is checked after this.
+        # every scale is at least SCALE_FLOOR, so the miss is no larger in
+        # real units. Like bounded_least_squares, a coordinate whose bound is
+        # active, or that lies past it, is placed exactly on it. Every
+        # certificate clause below is checked after this.
         for i in range(n):
             if multipliers[2*i] > 0 or y[i] < floors[i]:
                 y[i] = floors[i]
