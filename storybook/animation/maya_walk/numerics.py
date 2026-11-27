@@ -18,6 +18,11 @@ TRUST_LIMIT = .5
 # Relative slack, times the trust limit, within which a converged step may sit
 # outside its bounds from rounding. Chart projections absorb exactly this much.
 BOUND_TOLERANCE = 1e-12
+# Smallest damping scale D_j, in chart coordinate units. Damping then costs at
+# least damping*d_j**2 for every coordinate, so a nearly flat Jacobian column
+# can no longer escape it. A zero column has always had scale 1; this
+# continues that rule to near-zero columns.
+SCALE_FLOOR = 1.
 
 
 class SolveStatus(str, Enum):
@@ -146,7 +151,7 @@ def _scaled_system(columns, rhs, damping, limit, lower, upper, max_iterations, t
         raise ValueError('Finite least-squares system required')
     lower, upper = _step_bounds(lower, upper, n, limit)
     norms = [math.hypot(*c) for c in columns]
-    scales = [s if s else 1. for s in norms]
+    scales = [max(s, SCALE_FLOOR) for s in norms]
     if any(not math.isfinite(s) or not math.isfinite(limit*s) or limit*s == 0 for s in scales):
         raise ValueError('Unrepresentable numerical scale or bound')
     normalized = [[v/s for v in c] for c, s in zip(columns, scales)]
@@ -167,7 +172,8 @@ def bounded_least_squares(columns, rhs, damping=0., limit=TRUST_LIMIT, *, lower=
 
     Without explicit bounds the box is |step| <= limit. A caller with a domain
     passes per-coordinate bounds inside that box; a side may have zero width.
-    D contains nonzero Jacobian column norms (one for zero columns). QR avoids
+    D contains the Jacobian column norms floored at SCALE_FLOOR, so damping
+    shortens every coordinate's step, including a nearly flat one. QR avoids
     squaring the condition number. Positive damping resolves duplicate directions
     in *normalized* coordinates; it does not invent information in a zero column.
     The finite active-set budget is never reported as convergence. The KKT check
