@@ -29,6 +29,7 @@ Evidence aliases (beneath `G` = `~/Desktop/codex-evidence/kennedi-storybook/maya
 | SS | `solver-scaling-20261126T211242Z` | replays and stall-point ladder on `e5ebb31` |
 | SF | `scale-floor-test-20261124T235342Z` | the first measurement on `85276ef` (old objective) |
 | RF | `reach-fit-20261124T230813Z` | the fit whose stop first showed the defect |
+| SI | `scale-floor-impl-20261127T165821Z` | implementation evidence (amendment 1 onward) |
 
 Pinned files (SHA256):
 
@@ -44,6 +45,8 @@ Pinned files (SHA256):
 - `SS/stall-ladder.json`: `95980364dc6c98e17d4644fc95c132008eae72654730cbf759da66fa524a52c5`
 - `SS/suite-with-floor.log`: `9b945008d637fa03b72517c68fd06de96e25697c7e3d4fa9157473176e2bf60b`
 - `RF/step-scale.json`: `a92570be39f8798057fc6803264901f754922966cef948f9572f2f06cab11a32`
+- `SI/measure_stall.log`: `913b854d378c090695e30deb9b51f53355fd3d9011251174383f4d358289d151`
+  (both solves at the stall point, base and candidate; amendment 1)
 
 ### Root Cause
 
@@ -181,14 +184,20 @@ mechanism:
      coordinate to its box bound. After the change its step is at most
      `|rhs·J_j|/damping` (the normal-equations bound with `D_j = 1`) and falls
      as damping rises.
-   - **Frozen.** `SS/stall-point.json` frozen as a test fixture, with values
-     only. At damping 1e2, 1e4 and 1e6 the base's largest move is 0.5. After
-     the change it shrinks with damping and stays below 1e-2 at 1e2. This
-     test is about step size; it does not claim admission (see Gaps to
-     expect).
+   - **Frozen** (amended, see Amendments). `SS/stall-point.json` frozen as a
+     test fixture, with values only, at damping 1e2, 1e4 and 1e6.
+     - **Base.** Both solves' largest move is 0.5 at every rung.
+     - **Box-only solve after.** Its largest move falls at every rung and is
+       below 1e-4 at 1e6.
+     - **Solve with the reach rows after** (the step `admit_step` scores
+       here). Its largest move is below 1e-2 at every rung.
+     - This test is about step size; it does not claim admission (see Gaps
+       to expect).
 2. **Parity.** For any system whose column norms are all ≥ 1 or exactly 0,
-   both solves return bit-identical results before and after. Tested on the
-   existing scaled fixtures and a random set.
+   both solves return bit-identical results before and after. The "before"
+   is a golden file of exact (hex) results captured on `e5ebb31` from seeded
+   random systems plus the existing scaled fixtures. The test rebuilds the
+   same systems and compares exactly.
 3. **Constrained solve.** The constrained solve with near-zero columns still
    certifies: stationarity, multiplier signs, complementarity, box
    feasibility and rows. Its step equals the bounded solve's when no row
@@ -223,6 +232,33 @@ mechanism:
   not reach that point, but another start could. Issue 186 tracks this.
 - **No fit** is run under this contract. A new fit needs Juan's separate
   authorization.
+
+## Amendments
+
+### 1. Frozen-test wording (2026-11-27, before any code)
+
+Measured on `e5ebb31` with the candidate installed in process
+(`SI/measure_stall.log`), at damping 1e2 / 1e4 / 1e6:
+
+| Solve | Base largest move | Candidate largest move |
+|---|---|---|
+| box only | 0.5 / 0.5 / 0.5 | 4.73e-2 / 7.03e-4 / 7.06e-6 |
+| with reach rows | 0.5 / 0.5 / 0.5 | 1.83e-3 / 3.38e-4 / 3.40e-4 |
+
+- **What was wrong.** The accepted wording, "shrinks with damping and stays
+  below 1e-2 at 1e2", holds for neither solve.
+  - The box-only step shrinks at every rung, but it is 4.73e-2 at 1e2.
+  - The step with rows is below 1e-2, but it levels off at about 3.4e-4:
+    a reach row inside the backoff forces that move whatever the damping.
+    That is issue 186's forced recovery, which this contract leaves open.
+- **The amendment.** The frozen test checks each solve for what the floor
+  actually guarantees. The box-only step falls with damping. The production
+  step stays below 1e-2. The base fails both.
+- **Parity "before".** The amendment also names how parity's "before" is
+  obtained: a golden file captured on the base, not a reimplementation of
+  the old rule inside the test.
+
+No behavior, scope or restriction changes.
 
 ## Implementation summary
 
